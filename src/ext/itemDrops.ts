@@ -23,6 +23,7 @@ const integer = (n: unknown, min = 0, max = Number.MAX_SAFE_INTEGER): n is numbe
 const exact = (o: object, keys: string) => Object.keys(o).sort().join(',') === keys;
 export class ItemDrops {
   private readonly providers = new Map<DropSource, { owner: string; provider: DropProvider }>();
+  private readonly materials = new Map<string, ReadonlySet<string>>();
   private readonly plans = new WeakMap<object, Prepared>();
   private readonly catalogs = new Map<string, readonly string[]>();
   private readonly declarations = new Map<string, readonly string[]>();
@@ -38,6 +39,7 @@ export class ItemDrops {
         this.encounterForms.set(m.id, new Set((m.generationContributions ?? []).filter(t => m.itemEncounters!.includes(t.id)).map(t => t.formId)));
       }
       const p = m.itemDrops; if (!p) continue;
+      this.materials.set(m.id,new Set((m.worldDefinitions?.items??[]).filter(d=>d.owner===m.id&&d.category==='material'&&d.maxStack===99&&d.tool===null&&d.nativeTemplate===null).map(d=>d.id)));
       if (!m.itemDataValidators?.[m.id] || typeof p.roll !== 'function' || typeof p.settle !== 'function'
         || !Array.isArray(p.sources) || !p.sources.length || new Set(p.sources).size !== p.sources.length
         || Object.keys(p).some(k => !['sources','roll','settle','uniqueCatalog','statKeys','validateReceipts'].includes(k))) fail();
@@ -155,7 +157,13 @@ export class ItemDrops {
       || ['floor','vault'].includes(event.source) && (proposal.items.length > 1 || proposal.gold !== 0)) fail();
     const unique = new Set<string>();
     proposal.items.forEach((spec, i) => {
-      if (!spec || !exact(spec, 'moduleData,native') || !spec.moduleData || Object.keys(spec.moduleData).join(',') !== entry.owner) fail();
+      if(spec?.kind==='material'){
+        if(!exact(spec,'definitionId,kind,quantity')
+          ||!this.materials.get(entry.owner)?.has(spec.definitionId)||!integer(spec.quantity,1,99)
+          ||proposal.uniqueIds[i]!==null||!['kill','encounter'].includes(event.source))fail();
+        return;
+      }
+      if (!spec || spec.kind!=='native' || !exact(spec, 'kind,moduleData,native') || !spec.moduleData || Object.keys(spec.moduleData).join(',') !== entry.owner) fail();
       validateNativeAssembly(spec.native);
       if ((event.source === 'floor' || event.source === 'vault') && spec.native.category !== event.itemClass
         || event.source === 'vault' && event.baseId !== null && spec.native.kind !== event.baseId) fail();

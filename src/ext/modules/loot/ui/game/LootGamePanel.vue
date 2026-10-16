@@ -9,7 +9,7 @@ import LootSalvagePanel from '../LootSalvagePanel.vue';
 import type { LootGameView } from '../../gameView';
 import type { LootPickupFilterDraft } from '../types';
 const props=defineProps<{view:LootGameView|null;tab:string;comparing:boolean;selectedIds:readonly number[];submitting:boolean;feedback:string;readOnly:boolean;presentationHidden?:boolean}>();
-const emit=defineEmits<{close:[];back:[];compare:[value:boolean];tab:[value:string];select:[id:number];batch:[ids:number[]];filter:[draft:LootPickupFilterDraft];salvage:[];identify:[];enchant:[];equip:[unequip:boolean,replace?:'left'|'right']}>();
+const emit=defineEmits<{close:[];back:[];compare:[value:boolean];tab:[value:string];select:[id:number];batch:[ids:number[]];filter:[draft:LootPickupFilterDraft];salvage:[];identify:[];enchant:[];socket:[runeItemId:number];equip:[unequip:boolean,replace?:'left'|'right']}>();
 const {t}=useTranslation();
 const filter=ref('all');
 const entries=computed(()=>props.view?.entries.filter(e=>filter.value==='all'||e.itemClass===filter.value)??[]);
@@ -34,11 +34,19 @@ function back(){emit('back');}
     <h3>{{ view.selected.name }}</h3><p>{{ view.selected.location==='floor'?t('ext.loot.ui.live.floor'):view.selected.location==='container'?t('ext.loot.ui.live.container'):view.selected.location==='equipped'?t('ext.loot.ui.live.equipped'):t('ext.loot.ui.live.pack') }}</p>
     <template v-if="view.selected.enhancement">
      <p>{{ t('ext.loot.ui.enhancement.level',{level:view.selected.enhancement.level,cap:view.selected.enhancement.cap}) }}</p>
-     <p>{{ view.selected.enhancement.level>=view.selected.enhancement.cap?t('ext.loot.ui.enhancement.refine'):t('ext.loot.ui.enhancement.next') }}</p>
+     <p v-if="view.selected.known?.sockets?.sequence.length">{{ t('ext.loot.ui.socket.enhance-blocked') }}</p>
+     <p v-else>{{ view.selected.enhancement.level>=view.selected.enhancement.cap?t('ext.loot.ui.enhancement.refine'):t('ext.loot.ui.enhancement.next') }}</p>
      <p v-if="!view.selected.enhancement.allowed">{{ t('ext.loot.ui.enhancement.full') }}</p>
      <p v-else-if="!view.selected.enhancement.scroll">{{ t('ext.loot.ui.enhancement.no-scroll') }}</p>
      <button :disabled="disabled||!view.selected.enhancement.allowed||!view.selected.enhancement.scroll" @click="emit('enchant')">{{ t('ext.loot.ui.enhancement.read') }}</button>
     </template>
+    <section v-if="view.selected.known?.sockets">
+     <p>{{ t('ext.loot.ui.socket.rules') }}</p>
+     <p v-if="!view.socketAvailable">{{ t('ext.loot.ui.socket.unavailable') }}</p>
+     <button v-for="rune in view.socketChoices" :key="rune.id" :disabled="disabled" @click="emit('socket',rune.id)">{{ t('ext.loot.ui.socket.action',{name:t(rune.name.nameKey),count:rune.quantity}) }}<span v-if="rune.word"> · {{ t('ext.loot.ui.socket.forms',{name:t(rune.word.nameKey)}) }}</span></button>
+     <p v-if="view.socketAvailable&&!view.socketChoices.length">{{ t('ext.loot.ui.socket.no-material') }}</p>
+     <details><summary>{{ t('ext.loot.ui.socket.recipes') }}</summary><section v-for="word in view.wordPreviews" :key="word.id"><h4>{{ t(word.name.nameKey) }}</h4><p>{{ t('ext.loot.ui.socket.recipe',{count:word.sockets,sequence:word.sequence.map(r=>t(r.nameKey)).join(' → ')}) }}</p><ul><LootAffixRow v-for="row in word.rows" :key="row.key" :row="row" /></ul></section></details>
+    </section>
     <LootItemCard v-if="view.card&&!comparing" :view="view.card" />
     <LootComparePanel v-if="view.compare&&comparing" :view="view.compare" @close="emit('compare',false)" />
     <p>{{ t('ext.loot.ui.live.unknown') }}</p><p>{{ t('ext.loot.ui.live.runic') }}</p>

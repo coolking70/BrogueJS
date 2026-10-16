@@ -30,7 +30,7 @@ export function createItemDropFixture(overrides: Partial<import('../../../itemSd
         const category=event.source==='floor'||event.source==='vault'?event.itemClass:'weapon';
         const kind=event.source==='vault'&&event.baseId?event.baseId:category==='weapon'?'dagger':category==='armor'?'leather_armor':'ring_of_regeneration';
         const power=context.randomInt(1,3);
-        return {v:1,converted:true,items:[{native:{kind,category,enchantment:0,runicType:null,isCursed:false,identified:false,familiarityRemaining:20},moduleData:{c6fixture:{v:1,known:false,power}}}],gold:event.source==='kill'||event.source==='encounter'?7:0,uniqueIds:[null]};
+        return {v:1,converted:true,items:[{kind:'native',native:{kind,category,enchantment:0,runicType:null,isCursed:false,identified:false,familiarityRemaining:20},moduleData:{c6fixture:{v:1,known:false,power}}}],gold:event.source==='kill'||event.source==='encounter'?7:0,uniqueIds:[null]};
       },
       settle(state,event){const s=state as Readonly<{settled:number;watermark:number}>;return {settled:s.settled+1,watermark:event.source==='encounter'?event.encounterOrdinal:s.watermark};},...overrides}
   };
@@ -99,7 +99,7 @@ const journeyRules={...commandRules,fingerprint:extensionDataFingerprint({defini
 export const journeyDescriptor:ModuleDescriptor={...completeDescriptor,rules:journeyRules,runConfiguration:{...completeDescriptor.runConfiguration!,identity:()=>journeyRules},create:()=>{
  const m=createItemCompleteFixture(),p=m.itemDrops!;
  return {...m,rules:journeyRules,itemDrops:{...p,roll(event,context){
-  if(event.source==='kill')return {v:1,converted:true,items:[['dagger','weapon'],['leather_armor','armor'],['ring_of_regeneration','ring'],['ring_of_regeneration','ring']].map(([kind,category],index)=>{context.beginItem(index);return {native:{kind:kind!,category:category as import('../../../itemSdk').ItemClass,enchantment:0,runicType:null,isCursed:false,identified:false,familiarityRemaining:20},moduleData:{c6fixture:{v:1,known:false,power:context.randomInt(1,1)}}};}),gold:0,uniqueIds:[null,null,null,null]};
-  const result=p.roll(event,context);if(event.source==='floor'&&stateOf(context.state).settled===0&&result.items.length){return {...result,items:result.items.map(i=>({...i,moduleData:{c6fixture:{...i.moduleData.c6fixture as Record<string,ReadonlyJson>,unique:true}}})),uniqueIds:['c6fixture.one']};}return result;
+  if(event.source==='kill')return {v:1,converted:true,items:[['dagger','weapon'],['leather_armor','armor'],['ring_of_regeneration','ring'],['ring_of_regeneration','ring']].map(([kind,category],index)=>{context.beginItem(index);return {kind:'native' as const,native:{kind:kind!,category:category as import('../../../itemSdk').ItemClass,enchantment:0,runicType:null,isCursed:false,identified:false,familiarityRemaining:20},moduleData:{c6fixture:{v:1,known:false,power:context.randomInt(1,1)}}};}),gold:0,uniqueIds:[null,null,null,null]};
+  const result=p.roll(event,context);if(event.source==='floor'&&stateOf(context.state).settled===0&&result.items.length){return {...result,items:result.items.map(i=>('native'in i?{...i,moduleData:{c6fixture:{...i.moduleData.c6fixture as Record<string,ReadonlyJson>,unique:true}}}:i)),uniqueIds:['c6fixture.one']};}return result;
  }}};
 }};

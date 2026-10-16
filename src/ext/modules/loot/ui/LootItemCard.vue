@@ -22,6 +22,7 @@ function keydown(event: KeyboardEvent) {
   <section class="loot-item-card" role="dialog" :aria-labelledby="titleId" @keydown="keydown">
     <h2 :id="titleId" class="loot-card-title"><LootItemChip :view="view.chip" /></h2>
     <div class="loot-card-subtitle"><span v-for="(item, index) in view.subtitle" :key="index">{{ t(item.nameKey, item.params) }}</span></div>
+    <p v-if="view.sockets">{{ t('ext.loot.ui.socket.sequence',{used:view.sockets.sequence.length,total:view.sockets.count,sequence:view.sockets.sequence.map(r=>t(r.nameKey,r.params)).join(' → ')||t('ext.loot.ui.socket.empty')}) }}</p>
     <dl class="loot-card-base-stats"><div v-for="stat in view.baseStats" :key="stat.key" class="loot-card-base-stat"><dt>{{ t(stat.label.nameKey, stat.label.params) }}</dt><dd>{{ stat.value }}<span v-if="stat.partial" class="loot-card-partial" :aria-label="t('ext.loot.ui.card.partial')"> ?</span></dd></div></dl>
     <ul class="loot-card-affixes"><LootAffixRow v-for="row in visibleRows" :key="row.key" :row="row" /></ul>
     <button v-if="view.rows.length > limit" type="button" class="loot-card-button loot-card-toggle" :aria-expanded="expanded" data-action="toggle-rows" @click="expanded = !expanded">{{ expanded ? t('ext.loot.ui.card.less') : t('ext.loot.ui.card.more', { count: view.rows.length - limit }) }}</button>

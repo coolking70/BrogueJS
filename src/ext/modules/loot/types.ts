@@ -64,7 +64,19 @@ export interface LootPreset {
   monsterScaling: { depth: number; hpBp: number; damageBp: number; accuracyBp: number }[];
 }
 export interface PresetsFile { schema: 1; presets: LootPreset[] }
+export interface RuneDefinition {
+  id: string; nameKey: string; descriptionKey: string; itemClasses: ('weapon'|'armor')[];
+  weight: number; minIlvl: number; rows: UniqueDefinition['rows'];
+}
+export interface RunewordDefinition {
+  id: string; nameKey: string; descriptionKey: string; baseClasses: ('weapon'|'armor')[];
+  sockets: number; sequence: string[]; rows: UniqueDefinition['rows'];
+}
 export interface LootPack {
+  runes: {schema:1; runes: RuneDefinition[]};
+  runewords: {schema:1; words: RunewordDefinition[]};
+  sockets: {schema:1; bases: {baseId:string; bands:{minIlvl:number;maxIlvl:number;weights:number[]}[]}[]};
+  runeDrops: {schema:1; rows:{id:string;presetId:string;source:'kill'|'encounter';chanceBp:number;count:[1,1];runeIds:string[]}[]};
   ilvl: { schema: 1; ilvlPerDepthBp: number; min: number; max: number; siteIlvl: number;
     sourceBonus: Record<LootSource | 'part' | 'craft', number>; classBonus: Record<MonsterClassId, number>; championBonus: number };
   tiers: { schema: 1; tiers: { tier: number; minIlvl: number; enabled: boolean }[];
@@ -104,8 +116,8 @@ export interface LootPack {
 export type LootRawFiles = { [K in keyof LootPack]: unknown };
 export interface LootAffixRoll { id: string; tier: number; values: number[]; known: boolean }
 export interface LootItemDataV1 {
-  v: 3; targetClass?: string; baseId: string; ilvl: number; rarity: RarityId; uniqueId: string | null; setId: string | null; pieceId: string | null; identityKnown: boolean;
-  affixes: LootAffixRoll[]; corrupted: boolean; enhancement: number; sockets: 0; socketed: [];
+  v: 4; targetClass?: string; baseId: string; ilvl: number; rarity: RarityId; uniqueId: string | null; setId: string | null; pieceId: string | null; identityKnown: boolean;
+  affixes: LootAffixRoll[]; corrupted: boolean; enhancement: number; sockets: number; socketed: string[];
   nameParts: [number, number] | null; origin: { source: LootSource; depth: number };
 }
 export interface LootNativeFacts {
@@ -120,7 +132,7 @@ export type LootRollRequest =
   | (LootRequestBase & { source: 'floor'; itemClass: ItemClass })
   | (LootRequestBase & { source: 'vault'; itemClass: ItemClass; baseId: string | null; highValue: boolean })
   | (LootRequestBase & { source: 'encounter'; formId: string | null });
-export interface LootRollResult { v: 1; converted: boolean; items: LootGeneratedItem[]; gold: number; newUniqueIds: string[]; draws: number }
+export interface LootRollResult { v: 1; converted: boolean; items: LootGeneratedItem[]; materials: {definitionId:string;quantity:number}[]; gold: number; newUniqueIds: string[]; draws: number }
 export interface LootModifierDraft {
   sourceId: string; stat: string; category: ModifierSpec['category']; slot: 'speed' | null;
   unit: ModifierSpec['unit']; value: number; conditions: ModifierSpec['conditions']; runicType: string | null; known: boolean;
@@ -136,6 +148,10 @@ export interface EffectiveLootCatalog {
   piecesById: Readonly<Record<string, { setId: string; piece: UniqueDefinition }>>;
   piecesByBase: Readonly<Record<string, readonly { setId: string; piece: UniqueDefinition }[]>>;
   pieceIds: readonly string[];
+  runesById: Readonly<Record<string,RuneDefinition>>;
+  socketRowsById: Readonly<Record<string,UniqueDefinition['rows'][number]>>;
+  wordsByKey: Readonly<Record<string,RunewordDefinition>>;
+  socketBands: Readonly<Record<string,LootPack['sockets']['bases'][number]['bands']>>;
   effectiveWeight: Record<string, Partial<Record<ItemClass, number>>>;
   bossUniqueBias: UniquesFile['bossUniqueBias']; fingerprint: string;
 }

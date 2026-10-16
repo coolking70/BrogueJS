@@ -131,7 +131,7 @@ export function rollLootWithTrace(catalog: EffectiveLootCatalog, request: LootRo
     const preset = validateRequest(catalog, request);
     if (!source || typeof source.randomInt !== 'function') invalid('random', 'Expected randomInt callback');
     const random = new CountedLootRandom(source);
-    const result: LootRollResult = { v: 1, converted: true, items: [], gold: 0, newUniqueIds: [], draws: 0 };
+    const result: LootRollResult = { v: 1, converted: true, items: [], materials: [], gold: 0, newUniqueIds: [], draws: 0 };
     const trace: LootRollTrace = { uniqueOpportunities: 0, itemDraws: [] };
     const finish = (): LootTracedResult => { result.draws = random.draws; return freezeLootValue({ result, trace }); };
     const { pack } = catalog;
@@ -195,7 +195,7 @@ export function rollLootWithTrace(catalog: EffectiveLootCatalog, request: LootRo
             if(!member)rarity='rare';
             else {occupied.add(member.piece.id);result.newUniqueIds.push(member.piece.id);}
         }
-        const data: LootItemDataV1 = { v: 3, baseId, ilvl, rarity, uniqueId: unique?.id ?? null, setId: member?.setId ?? null, pieceId: member?.piece.id ?? null, identityKnown: false,
+        const data: LootItemDataV1 = { v: 4, baseId, ilvl, rarity, uniqueId: unique?.id ?? null, setId: member?.setId ?? null, pieceId: member?.piece.id ?? null, identityKnown: false,
             affixes: [], corrupted: false, enhancement: 0, sockets: 0, socketed: [], nameParts: null,
             origin: { source: request.source, depth: request.depth } };
         if (rarity === 'magic' || rarity === 'rare') {
@@ -253,8 +253,26 @@ export function rollLootWithTrace(catalog: EffectiveLootCatalog, request: LootRo
             let draw=random.randomInt(0,targets.reduce((n,t)=>n+t.frequency,0)-1);
             for(const target of targets){if(draw<target.frequency){data.targetClass=target.name;break;}draw-=target.frequency;}
         }
+        if(rarity==='normal'&&itemClass!=='ring') {
+            const band=catalog.socketBands[baseId]!.find(b=>b.minIlvl<=ilvl&&ilvl<=b.maxIlvl)!;
+            // One terminal choice; a singleton positive candidate consumes no RNG.
+            data.sockets=weightedPick(band.weights.map((weight,count)=>({weight,count})),candidate=>candidate.weight,random)!.count;
+        }
         result.items.push({ data, native });
         trace.itemDraws.push(random.endItem());
+    }
+    if(request.source==='encounter'||request.source==='kill'&&!['none','fodder','splitter'].includes(monsterClass)) {
+        const table=pack.runeDrops.rows.find(r=>r.presetId===preset.id&&r.source===request.source);
+        if(table){
+            random.beginItem(result.items.length);
+            const ilvl=Math.max(pack.ilvl.min,Math.min(pack.ilvl.max,Math.floor(request.depth*pack.ilvl.ilvlPerDepthBp/10000)+pack.ilvl.sourceBonus[request.source]
+                +(request.source==='kill'?pack.ilvl.classBonus[monsterClass]+(request.monster.champion?pack.ilvl.championBonus:0):0)));
+            if(random.chance(table.chanceBp)){
+                const rune=weightedPick(table.runeIds.map(id=>catalog.runesById[id]!).filter(r=>r.minIlvl<=ilvl),r=>r.weight,random);
+                if(rune)result.materials.push({definitionId:rune.id,quantity:1});
+            }
+            random.endItem();
+        }
     }
     if (request.source === 'kill' || request.source === 'encounter') {
         random.beginGold();

@@ -1,0 +1,689 @@
+{
+  "schema": 1,
+  "bases": [
+    {
+      "baseId": "dagger",
+      "bands": [
+        {
+          "minIlvl": 1,
+          "maxIlvl": 11,
+          "weights": [
+            70,
+            20,
+            10,
+            0,
+            0
+          ]
+        },
+        {
+          "minIlvl": 12,
+          "maxIlvl": 26,
+          "weights": [
+            50,
+            20,
+            20,
+            10,
+            0
+          ]
+        },
+        {
+          "minIlvl": 27,
+          "maxIlvl": 99,
+          "weights": [
+            40,
+            15,
+            20,
+            15,
+            10
+          ]
+        }
+      ]
+    },
+    {
+      "baseId": "whip",
+      "bands": [
+        {
+          "minIlvl": 1,
+          "maxIlvl": 11,
+          "weights": [
+            70,
+            20,
+            10,
+            0,
+            0
+          ]
+        },
+        {
+          "minIlvl": 12,
+          "maxIlvl": 26,
+          "weights": [
+            50,
+            20,
+            20,
+            10,
+            0
+          ]
+        },
+        {
+          "minIlvl": 27,
+          "maxIlvl": 99,
+          "weights": [
+            40,
+            15,
+            20,
+            15,
+            10
+          ]
+        }
+      ]
+    },
+    {
+      "baseId": "spear",
+      "bands": [
+        {
+          "minIlvl": 1,
+          "maxIlvl": 11,
+          "weights": [
+            70,
+            20,
+            10,
+            0,
+            0
+          ]
+        },
+        {
+          "minIlvl": 12,
+          "maxIlvl": 26,
+          "weights": [
+            50,
+            20,
+            20,
+            10,
+            0
+          ]
+        },
+        {
+          "minIlvl": 27,
+          "maxIlvl": 99,
+          "weights": [
+            40,
+            15,
+            20,
+            15,
+            10
+          ]
+        }
+      ]
+    },
+    {
+      "baseId": "rapier",
+      "bands": [
+        {
+          "minIlvl": 1,
+          "maxIlvl": 11,
+          "weights": [
+            70,
+            20,
+            10,
+            0,
+            0
+          ]
+        },
+        {
+          "minIlvl": 12,
+          "maxIlvl": 26,
+          "weights": [
+            50,
+            20,
+            20,
+            10,
+            0
+          ]
+        },
+        {
+          "minIlvl": 27,
+          "maxIlvl": 99,
+          "weights": [
+            40,
+            15,
+            20,
+            15,
+            10
+          ]
+        }
+      ]
+    },
+    {
+      "baseId": "sword",
+      "bands": [
+        {
+          "minIlvl": 1,
+          "maxIlvl": 11,
+          "weights": [
+            70,
+            20,
+            10,
+            0,
+            0
+          ]
+        },
+        {
+          "minIlvl": 12,
+          "maxIlvl": 26,
+          "weights": [
+            50,
+            20,
+            20,
+            10,
+            0
+          ]
+        },
+        {
+          "minIlvl": 27,
+          "maxIlvl": 99,
+          "weights": [
+            40,
+            15,
+            20,
+            15,
+            10
+          ]
+        }
+      ]
+    },
+    {
+      "baseId": "mace",
+      "bands": [
+        {
+          "minIlvl": 1,
+          "maxIlvl": 11,
+          "weights": [
+            70,
+            20,
+            10,
+            0,
+            0
+          ]
+        },
+        {
+          "minIlvl": 12,
+          "maxIlvl": 26,
+          "weights": [
+            50,
+            20,
+            20,
+            10,
+            0
+          ]
+        },
+        {
+          "minIlvl": 27,
+          "maxIlvl": 99,
+          "weights": [
+            40,
+            15,
+            20,
+            15,
+            10
+          ]
+        }
+      ]
+    },
+    {
+      "baseId": "axe",
+      "bands": [
+        {
+          "minIlvl": 1,
+          "maxIlvl": 11,
+          "weights": [
+            70,
+            20,
+            10,
+            0,
+            0
+          ]
+        },
+        {
+          "minIlvl": 12,
+          "maxIlvl": 26,
+          "weights": [
+            50,
+            20,
+            20,
+            10,
+            0
+          ]
+        },
+        {
+          "minIlvl": 27,
+          "maxIlvl": 99,
+          "weights": [
+            40,
+            15,
+            20,
+            15,
+            10
+          ]
+        }
+      ]
+    },
+    {
+      "baseId": "flail",
+      "bands": [
+        {
+          "minIlvl": 1,
+          "maxIlvl": 11,
+          "weights": [
+            70,
+            20,
+            10,
+            0,
+            0
+          ]
+        },
+        {
+          "minIlvl": 12,
+          "maxIlvl": 26,
+          "weights": [
+            50,
+            20,
+            20,
+            10,
+            0
+          ]
+        },
+        {
+          "minIlvl": 27,
+          "maxIlvl": 99,
+          "weights": [
+            40,
+            15,
+            20,
+            15,
+            10
+          ]
+        }
+      ]
+    },
+    {
+      "baseId": "broadsword",
+      "bands": [
+        {
+          "minIlvl": 1,
+          "maxIlvl": 11,
+          "weights": [
+            70,
+            20,
+            10,
+            0,
+            0
+          ]
+        },
+        {
+          "minIlvl": 12,
+          "maxIlvl": 26,
+          "weights": [
+            50,
+            20,
+            20,
+            10,
+            0
+          ]
+        },
+        {
+          "minIlvl": 27,
+          "maxIlvl": 99,
+          "weights": [
+            40,
+            15,
+            20,
+            15,
+            10
+          ]
+        }
+      ]
+    },
+    {
+      "baseId": "war_pike",
+      "bands": [
+        {
+          "minIlvl": 1,
+          "maxIlvl": 11,
+          "weights": [
+            70,
+            20,
+            10,
+            0,
+            0
+          ]
+        },
+        {
+          "minIlvl": 12,
+          "maxIlvl": 26,
+          "weights": [
+            50,
+            20,
+            20,
+            10,
+            0
+          ]
+        },
+        {
+          "minIlvl": 27,
+          "maxIlvl": 99,
+          "weights": [
+            40,
+            15,
+            20,
+            15,
+            10
+          ]
+        }
+      ]
+    },
+    {
+      "baseId": "war_hammer",
+      "bands": [
+        {
+          "minIlvl": 1,
+          "maxIlvl": 11,
+          "weights": [
+            70,
+            20,
+            10,
+            0,
+            0
+          ]
+        },
+        {
+          "minIlvl": 12,
+          "maxIlvl": 26,
+          "weights": [
+            50,
+            20,
+            20,
+            10,
+            0
+          ]
+        },
+        {
+          "minIlvl": 27,
+          "maxIlvl": 99,
+          "weights": [
+            40,
+            15,
+            20,
+            15,
+            10
+          ]
+        }
+      ]
+    },
+    {
+      "baseId": "war_axe",
+      "bands": [
+        {
+          "minIlvl": 1,
+          "maxIlvl": 11,
+          "weights": [
+            70,
+            20,
+            10,
+            0,
+            0
+          ]
+        },
+        {
+          "minIlvl": 12,
+          "maxIlvl": 26,
+          "weights": [
+            50,
+            20,
+            20,
+            10,
+            0
+          ]
+        },
+        {
+          "minIlvl": 27,
+          "maxIlvl": 99,
+          "weights": [
+            40,
+            15,
+            20,
+            15,
+            10
+          ]
+        }
+      ]
+    },
+    {
+      "baseId": "leather_armor",
+      "bands": [
+        {
+          "minIlvl": 1,
+          "maxIlvl": 11,
+          "weights": [
+            70,
+            20,
+            10,
+            0,
+            0
+          ]
+        },
+        {
+          "minIlvl": 12,
+          "maxIlvl": 26,
+          "weights": [
+            50,
+            20,
+            20,
+            10,
+            0
+          ]
+        },
+        {
+          "minIlvl": 27,
+          "maxIlvl": 99,
+          "weights": [
+            40,
+            15,
+            20,
+            15,
+            10
+          ]
+        }
+      ]
+    },
+    {
+      "baseId": "scale_mail",
+      "bands": [
+        {
+          "minIlvl": 1,
+          "maxIlvl": 11,
+          "weights": [
+            70,
+            20,
+            10,
+            0,
+            0
+          ]
+        },
+        {
+          "minIlvl": 12,
+          "maxIlvl": 26,
+          "weights": [
+            50,
+            20,
+            20,
+            10,
+            0
+          ]
+        },
+        {
+          "minIlvl": 27,
+          "maxIlvl": 99,
+          "weights": [
+            40,
+            15,
+            20,
+            15,
+            10
+          ]
+        }
+      ]
+    },
+    {
+      "baseId": "chain_mail",
+      "bands": [
+        {
+          "minIlvl": 1,
+          "maxIlvl": 11,
+          "weights": [
+            70,
+            20,
+            10,
+            0,
+            0
+          ]
+        },
+        {
+          "minIlvl": 12,
+          "maxIlvl": 26,
+          "weights": [
+            50,
+            20,
+            20,
+            10,
+            0
+          ]
+        },
+        {
+          "minIlvl": 27,
+          "maxIlvl": 99,
+          "weights": [
+            40,
+            15,
+            20,
+            15,
+            10
+          ]
+        }
+      ]
+    },
+    {
+      "baseId": "banded_mail",
+      "bands": [
+        {
+          "minIlvl": 1,
+          "maxIlvl": 11,
+          "weights": [
+            70,
+            20,
+            10,
+            0,
+            0
+          ]
+        },
+        {
+          "minIlvl": 12,
+          "maxIlvl": 26,
+          "weights": [
+            50,
+            20,
+            20,
+            10,
+            0
+          ]
+        },
+        {
+          "minIlvl": 27,
+          "maxIlvl": 99,
+          "weights": [
+            40,
+            15,
+            20,
+            15,
+            10
+          ]
+        }
+      ]
+    },
+    {
+      "baseId": "splint_mail",
+      "bands": [
+        {
+          "minIlvl": 1,
+          "maxIlvl": 11,
+          "weights": [
+            70,
+            20,
+            10,
+            0,
+            0
+          ]
+        },
+        {
+          "minIlvl": 12,
+          "maxIlvl": 26,
+          "weights": [
+            50,
+            20,
+            20,
+            10,
+            0
+          ]
+        },
+        {
+          "minIlvl": 27,
+          "maxIlvl": 99,
+          "weights": [
+            40,
+            15,
+            20,
+            15,
+            10
+          ]
+        }
+      ]
+    },
+    {
+      "baseId": "plate_mail",
+      "bands": [
+        {
+          "minIlvl": 1,
+          "maxIlvl": 11,
+          "weights": [
+            70,
+            20,
+            10,
+            0,
+            0
+          ]
+        },
+        {
+          "minIlvl": 12,
+          "maxIlvl": 26,
+          "weights": [
+            50,
+            20,
+            20,
+            10,
+            0
+          ]
+        },
+        {
+          "minIlvl": 27,
+          "maxIlvl": 99,
+          "weights": [
+            40,
+            15,
+            20,
+            15,
+            10
+          ]
+        }
+      ]
+    }
+  ]
+}

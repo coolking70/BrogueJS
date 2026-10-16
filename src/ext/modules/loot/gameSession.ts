@@ -78,5 +78,5 @@ export function useLootUi(host:ModuleUiHost):ModuleUiSession {
   // The shared host tick / presentation-settled callback retries refresh.
   panel:computed(()=>opened.value?{component:Panel,props:{view:view.value,tab:tab.value,comparing:comparing.value,onCompare:(value:boolean)=>{comparing.value=value;},selectedIds:batch.value,submitting:submitting.value,feedback:feedback.value,readOnly:readOnly(),
    onClose:close,onBack:back,onTab:(value:string)=>{tab.value=value;selected.value=null;comparing.value=false;refresh();},onSelect:(id:number)=>{selected.value=id;refresh();},onBatch:(ids:number[])=>{batch.value=ids;refresh();},
-   onFilter:(draft:LootPickupFilterDraft)=>submit('set-filter',{...draft}),onSalvage:()=>submit('salvage',{itemIds:batch.value}),onIdentify:()=>submit('identify-shards',{itemId:selected.value}),onEnchant:enchant,onEquip:equip}}:null),refresh,close};
+   onFilter:(draft:LootPickupFilterDraft)=>submit('set-filter',{...draft}),onSalvage:()=>submit('salvage',{itemIds:batch.value}),onIdentify:()=>submit('identify-shards',{itemId:selected.value}),onEnchant:enchant,onSocket:(runeItemId:number)=>submit('socket',{itemId:selected.value,runeItemId}),onEquip:equip}}:null),refresh,close};
 }

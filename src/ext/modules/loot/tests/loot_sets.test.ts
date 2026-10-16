@@ -30,7 +30,7 @@ const noDraw={randomInt:()=>{throw Error('Unexpected random draw');}};
 const facts={v:1 as const,location:'pack' as const,ringKindKnown:true,magicPolarity:'unknown' as const,curseRevealed:false,hallucinating:false,familiarity:null};
 function piece(id:string,known=false):LootItemDataV1 {
  const {setId,piece:p}=c.piecesById[`loot.piece.${id}`]!;
- return {v:3,baseId:p.baseId,ilvl:20,rarity:'set',uniqueId:null,setId,pieceId:p.id,identityKnown:known,
+ return {v: 4,baseId:p.baseId,ilvl:20,rarity:'set',uniqueId:null,setId,pieceId:p.id,identityKnown:known,
   affixes:p.rows.map(r=>({id:r.rowId,tier:0,values:r.ranges.map(v=>v[0]),known})),corrupted:false,enhancement:0,sockets:0,socketed:[],nameParts:null,origin:{source:'floor',depth:14}};
 }
 const wanderer=['blade','coat','lamp','watch'].map(n=>`wanderer.${n}`);
@@ -166,22 +166,25 @@ it('natural set pickup/equip/identify/salvage preserves current save, full repla
   if(spare){if(!g.player.inventory.items.includes(spare)){await walk(spare.loc);g.executeCommand('pickup');}h.ext('loot','salvage',{v:1,revision:stateOf(g.extensionRuntime!.snapshot().modules.loot!).revision,itemIds:[spare.id]},[true]);continue;}
   const d=g.depth;await walk(g.levelSeeds[d-1]!.downStairsLoc);if(g.depth===d)g.executeCommand('stairs_down');
  }
- expect(target).toBeDefined();expect(target!.moduleData!.loot).toMatchObject({pieceId:'loot.piece.bastion.mail',origin:{source:'floor',depth:4}});const id=target!.id;
+ // C2 draws stretch seed110 funding to D7; funding below also uses natural melee drops. Original lifecycle and timeout stay fixed.
+ expect(target).toBeDefined();expect(target!.moduleData!.loot).toMatchObject({pieceId:'loot.piece.wanderer.lamp',origin:{source:'floor',depth:4}});const id=target!.id;
  if(!g.player.inventory.items.includes(target!)){await walk(target!.loc);g.executeCommand('pickup');}
  expect(g.player.inventory.items).toContain(target);
- const receipt=stateOf(g.extensionRuntime!.snapshot().modules.loot!).setMask;expect(BigInt('0x'+receipt)).toBeGreaterThan(0n);
+ const birthReceipt=stateOf(g.extensionRuntime!.snapshot().modules.loot!).setMask;expect(BigInt('0x'+birthReceipt)).toBeGreaterThan(0n);
  g.executeItemCommand('equip',target!);expect([g.player.equippedWeapon,g.player.equippedArmor,g.player.ringLeft,g.player.ringRight]).toContain(target);
  g.executeItemCommand('unequip',target!);
- // Finance the real command with naturally generated spare equipment.
+ // Finance with real floor/kill drops. C2 draws otherwise make the old floor-only fixture walk to D7.
  for(let n=0;n<20&&shards()<10;n++){
-  const spare=all().find(i=>i!==target&&i.moduleData?.loot&&![g.player.equippedWeapon,g.player.equippedArmor,g.player.ringLeft,g.player.ringRight].includes(i));if(!spare){expect(g.depth).toBeLessThan(10);const depth=g.depth;await walk(g.levelSeeds[depth-1]!.downStairsLoc);if(g.depth===depth)g.executeCommand('stairs_down');continue;}
+  const spare=all().find(i=>i!==target&&i.moduleData?.loot&&![g.player.equippedWeapon,g.player.equippedArmor,g.player.ringLeft,g.player.ringRight].includes(i));if(!spare){const victim=g.monsters.filter(m=>m.hp>0&&!m.isAlly&&!m.isClone&&['goblin','ogre'].includes(m.typeId)).sort((a,b)=>Math.abs(a.x-g.player.x)+Math.abs(a.y-g.player.y)-Math.abs(b.x-g.player.x)-Math.abs(b.y-g.player.y))[0];if(victim){await walk(victim.loc);continue;}expect(g.depth).toBeLessThan(10);const depth=g.depth;await walk(g.levelSeeds[depth-1]!.downStairsLoc);if(g.depth===depth)g.executeCommand('stairs_down');continue;}
   if(!g.player.inventory.items.includes(spare!)){await walk(spare!.loc);g.executeCommand('pickup');}
   h.ext('loot','salvage',{v:1,revision:stateOf(g.extensionRuntime!.snapshot().modules.loot!).revision,itemIds:[spare!.id]},[true]);
  }
+ // Natural funding can itself accept a second set; capture the ledger immediately before the operations that must preserve it.
+ const receipt=stateOf(g.extensionRuntime!.snapshot().modules.loot!).setMask;
  h.ext('loot','identify-shards',{v:1,revision:stateOf(g.extensionRuntime!.snapshot().modules.loot!).revision,itemId:id});expect(target!.isIdentified).toBe(true);
  const before=h.save();if(process.env.PHASE6C1_NATURAL_EXPORT)writeFileSync(process.env.PHASE6C1_NATURAL_EXPORT+'-save.json',before);h.load(before);target=g.player.inventory.items.find(i=>i.id===id)!;expect((target.moduleData!.loot as unknown as LootItemDataV1).identityKnown).toBe(true);
  h.ext('loot','salvage',{v:1,revision:stateOf(g.extensionRuntime!.snapshot().modules.loot!).revision,itemIds:[id]},[true]);expect(g.player.inventory.items.some(i=>i.id===id)).toBe(false);expect(stateOf(g.extensionRuntime!.snapshot().modules.loot!).setMask).toBe(receipt);
  const save=h.save(),recording=h.exportRecording(),digest=h.digest();h.load(save);expect(h.digest()).toBe(digest);expect(h.replay(recording)).toEqual({ok:true,firstMismatch:null});expect(h.digest()).toBe(digest);
  h.seek(recording,Math.floor(JSON.parse(recording).events.length/2));h.seek(recording,JSON.parse(recording).events.length);expect(h.digest()).toBe(digest);
- h.load(save);h.command('escape');const continued=h.exportRecording();expect(h.replay(continued).ok).toBe(true);if(process.env.PHASE6C1_NATURAL_EXPORT){writeFileSync(process.env.PHASE6C1_NATURAL_EXPORT+'-recording.json',continued);writeFileSync(process.env.PHASE6C1_NATURAL_EXPORT+'-witness.json',JSON.stringify({seed:110,preset:'bountiful',pieceId:'loot.piece.bastion.mail',birthDepth:4,endDepth:g.depth,events:JSON.parse(continued).events.length,receipt}));}
+ h.load(save);h.command('escape');const continued=h.exportRecording();expect(h.replay(continued).ok).toBe(true);if(process.env.PHASE6C1_NATURAL_EXPORT){writeFileSync(process.env.PHASE6C1_NATURAL_EXPORT+'-recording.json',continued);writeFileSync(process.env.PHASE6C1_NATURAL_EXPORT+'-witness.json',JSON.stringify({seed:110,preset:'bountiful',pieceId:'loot.piece.wanderer.lamp',birthDepth:4,endDepth:g.depth,events:JSON.parse(continued).events.length,receipt}));}
 },60000);

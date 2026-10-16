@@ -11,7 +11,7 @@ import { assertItemJson, copyItemValue, freezeItemValue, itemFacts } from '../It
 import { serializeItem } from './EntitySnapshot';
 import { additionalItemSlots, checkItemBudget, itemDefinition, previewItem, reservedInventorySlots } from './WorldWorkWorld';
 import { assembleWorldItem } from '../Items/WorldItems';
-import { markItemKnowledgeDirty } from '../Items/ItemStatInvalidation';
+import { markItemKnowledgeDirty, markItemStatsDirty } from '../Items/ItemStatInvalidation';
 import { markRecordingRoot } from '../../ext/recordingRevisions';
 import { timeSystem } from '../Systems/Time';
 import { worldText } from '../../ext/worldText';
@@ -38,6 +38,7 @@ function prepareUnchecked(g:Game,data:unknown):ItemCommandPlan|null {
    if(kind==='filter') {requireValid(keys(payload,'v,revision,minRarity,classes,autoPickupGold')&&typeof payload.minRarity==='string'&&typeof payload.autoPickupGold==='boolean'&&Array.isArray(payload.classes)&&payload.classes.every(c=>typeof c==='string'&&['weapon','armor','ring'].includes(c)));payload.classes=[...new Set(payload.classes)].sort();}
    if(kind==='salvage')requireValid(keys(payload,'v,revision,itemIds')&&Array.isArray(payload.itemIds)&&payload.itemIds.length>=1&&payload.itemIds.length<=26&&new Set(payload.itemIds).size===payload.itemIds.length&&payload.itemIds.every(positive));
    if(kind==='identify')requireValid(keys(payload,'v,revision,itemId')&&positive(payload.itemId));
+   if(kind==='socket')requireValid(keys(payload,'v,revision,itemId,runeItemId')&&positive(payload.itemId)&&positive(payload.runeItemId)&&payload.itemId!==payload.runeItemId);
   }
   const proposal=runtime.prepareItemCommand(owner,action,payload,inv.map(item=>({...itemFacts(item),canBeIdentified:ItemLoader.canIdentifyItem(item)})),ids);if(!proposal)return null;
   requireValid(keys(proposal,'v,revision,consume,updateOwnData,materials,nextState,chargedTicks,confirmation')&&proposal.v===1&&proposal.revision===revision&&Array.isArray(proposal.consume)&&Array.isArray(proposal.updateOwnData)&&Array.isArray(proposal.materials));
@@ -57,6 +58,18 @@ function prepareUnchecked(g:Game,data:unknown):ItemCommandPlan|null {
    const target=inv.find(i=>i.id===payload.itemId);requireValid(target?.moduleData?.[owner]&&ItemLoader.canIdentifyItem(target)&&updated.size===1&&updated.has(target.id)&&!outputs.length&&proposal.chargedTicks===100&&proposal.confirmation===null);
    requireValid(JSON.stringify(proposal.updateOwnData[0]!.data)===JSON.stringify(runtime.revealedItemData(owner,target,'command')));
    let count=0;for(const [id,n]of consumed){const item=inv.find(i=>i.id===id)!;requireValid(item.category===ItemCategory.MATERIAL&&item.worldItem?.definitionId===materialDefinitionId);count+=n;}requireValid(count===10);
+  }
+  if(kind==='socket'){
+   const target=inv.find(i=>i.id===payload.itemId),material=inv.find(i=>i.id===payload.runeItemId);
+   requireValid(target?.moduleData?.[owner]&&target.quantity===1&&!ids.includes(target.id)
+    &&material?.category===ItemCategory.MATERIAL&&material.worldItem&&material.quantity>=1);
+   const definition=itemDefinition(g,material.worldItem.definitionId);
+   requireValid(definition.owner===owner&&definition.category==='material'&&definition.tool===null&&definition.maxStack===99);
+   requireValid(consumed.size===1&&consumed.get(material.id)===1&&updated.size===1&&updated.has(target.id)
+    &&!outputs.length&&proposal.chargedTicks===100&&proposal.confirmation!==null);
+   // Socket updates have mechanical authority, never native-identification authority.
+   const candidate={...target,moduleData:{...copyItemValue(target.moduleData!),[owner]:copyItemValue(proposal.updateOwnData[0]!.data) as Json}};
+   requireValid(runtime.itemKnown(candidate)===target.identified);runtime.validateItemData(candidate,'update');
   }
   let confirmation:string|null=null;if(proposal.confirmation){const ref=proposal.confirmation;requireValid(keys(ref,'nameKey,params')&&ref.nameKey.startsWith(`ext.${owner}.`)&&ref.params&&Object.values(ref.params).every(v=>typeof v==='string'||typeof v==='number'));confirmation=worldText(ref.nameKey,ref.params);}
   const remaining=inv.filter(i=>consumed.get(i.id)!==i.quantity).map(i=>Object.assign(Object.create(Item.prototype),copyItemValue(i),{quantity:i.quantity-(consumed.get(i.id)??0)})) as Item[];
@@ -85,7 +98,7 @@ export function commitItemCommand(g:Game,plan:ItemCommandPlan):boolean {
    if(s.kind==='identify') {
     ItemLoader.identifyInstance(item,()=>s.runtime.revealItemKnowledge(item,'command'));
     requireValid(JSON.stringify(item.moduleData![s.owner])===JSON.stringify(row.data));
-   } else {item.moduleData={...copyItemValue(item.moduleData!),[s.owner]:copyItemValue(row.data) as Json};item.identified=s.runtime.itemKnown(item);item.canBeIdentified=!item.identified;}s.runtime.validateItemData(item,'update');markItemKnowledgeDirty(item);markRecordingRoot(item);}
+   } else {item.moduleData={...copyItemValue(item.moduleData!),[s.owner]:copyItemValue(row.data) as Json};if(s.kind!=='socket'){item.identified=s.runtime.itemKnown(item);item.canBeIdentified=!item.identified;}}s.runtime.validateItemData(item,'update');if(s.kind==='socket')markItemStatsDirty(item);else markItemKnowledgeDirty(item);markRecordingRoot(item);}
   for(const row of s.proposal.materials)for(let left=row.quantity;left>0;left-=99){const item=assembleWorldItem(itemDefinition(g,row.definitionId),Math.min(left,99));if(!g.player.inventory.addItem(item))throw new Error('C6_CAPACITY');}
   s.runtime.commitItemCommandState(s.owner,s.proposal.revision,s.proposal.nextState);
   s.runtime.stats.validateSources(g.player.id);

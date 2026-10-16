@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "rows": [
+    {
+      "id": "loot.rune-drop.scarce.kill",
+      "presetId": "scarce",
+      "source": "kill",
+      "chanceBp": 500,
+      "count": [
+        1,
+        1
+      ],
+      "runeIds": [
+        "loot.rune.ka",
+        "loot.rune.ren",
+        "loot.rune.tal",
+        "loot.rune.ul"
+      ]
+    },
+    {
+      "id": "loot.rune-drop.scarce.encounter",
+      "presetId": "scarce",
+      "source": "encounter",
+      "chanceBp": 2500,
+      "count": [
+        1,
+        1
+      ],
+      "runeIds": [
+        "loot.rune.ka",
+        "loot.rune.ren",
+        "loot.rune.tal",
+        "loot.rune.ul"
+      ]
+    },
+    {
+      "id": "loot.rune-drop.standard.kill",
+      "presetId": "standard",
+      "source": "kill",
+      "chanceBp": 1000,
+      "count": [
+        1,
+        1
+      ],
+      "runeIds": [
+        "loot.rune.ka",
+        "loot.rune.ren",
+        "loot.rune.tal",
+        "loot.rune.ul"
+      ]
+    },
+    {
+      "id": "loot.rune-drop.standard.encounter",
+      "presetId": "standard",
+      "source": "encounter",
+      "chanceBp": 5000,
+      "count": [
+        1,
+        1
+      ],
+      "runeIds": [
+        "loot.rune.ka",
+        "loot.rune.ren",
+        "loot.rune.tal",
+        "loot.rune.ul"
+      ]
+    },
+    {
+      "id": "loot.rune-drop.bountiful.kill",
+      "presetId": "bountiful",
+      "source": "kill",
+      "chanceBp": 1500,
+      "count": [
+        1,
+        1
+      ],
+      "runeIds": [
+        "loot.rune.ka",
+        "loot.rune.ren",
+        "loot.rune.tal",
+        "loot.rune.ul"
+      ]
+    },
+    {
+      "id": "loot.rune-drop.bountiful.encounter",
+      "presetId": "bountiful",
+      "source": "encounter",
+      "chanceBp": 7500,
+      "count": [
+        1,
+        1
+      ],
+      "runeIds": [
+        "loot.rune.ka",
+        "loot.rune.ren",
+        "loot.rune.tal",
+        "loot.rune.ul"
+      ]
+    }
+  ]
+}

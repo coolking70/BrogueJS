@@ -182,7 +182,8 @@ describe('loot chip and item views', () => {
 describe('loot comparisons and salvage', () => {
   it('compares weapon bases, beneficial lower strength and signed damage interval deltas', () => {
     const a = known('R07'), b = known('E-W');
-    const c = buildLootCompareView(a.item, [b.item], a.catalog, { ...options, playerStrength: 12 });
+    // Preserve the original spear (13 strength) comparison premise after first-hit recapture.
+    const c = buildLootCompareView({ ...a.item, baseId: 'spear' }, [b.item], a.catalog, { ...options, playerStrength: 12 });
     expect(c.columns).toHaveLength(1); expect(c.columns[0]!.rows.find(r => r.key === 'strength')).toMatchObject({ before: '19', after: '13', delta: '-6', tone: 'better' });
     expect(c.columns[0]!.rows.find(r => r.key === 'damage')!.delta).toMatch(/^[+-]?\d+–[+-]?\d+$/);
     expect(c.notices.map(n => n.nameKey)).toEqual(['ext.loot.ui.compare.strength-short', 'ext.loot.ui.compare.provisional']);

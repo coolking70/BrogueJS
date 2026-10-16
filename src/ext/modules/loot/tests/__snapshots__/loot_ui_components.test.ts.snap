@@ -843,37 +843,45 @@ exports[`loot UI complete state snapshots > card.growth-fallback 1`] = `
   <h2 class="loot-card-title" id="v-0">
     <span class="loot-item-chip">
       <span aria-hidden="true" class="loot-chip-glyph">
-        "="
+        ")"
       </span>
       <span aria-hidden="true" class="loot-chip-marker">
-        "◇"
+        "◆"
       </span>
       <span class="loot-chip-name">
-        "精擅之智慧戒指"
+        "深井之守 阔剑"
       </span>
       <span class="loot-chip-rarity">
-        "魔法"
+        "稀有"
       </span>
     </span>
   </h2>
   <div class="loot-card-subtitle">
     <span>
-      "魔法"
+      "稀有"
     </span>
     <span>
       "物等 25"
     </span>
     <span>
-      "戒指"
+      "武器"
     </span>
   </div>
   <dl class="loot-card-base-stats">
     <div class="loot-card-base-stat">
       <dt>
-        "戒指本体"
+        "伤害"
       </dt>
       <dd>
-        "2"
+        "14–22"
+      </dd>
+    </div>
+    <div class="loot-card-base-stat">
+      <dt>
+        "力量需求"
+      </dt>
+      <dd>
+        "19"
       </dd>
     </div>
   </dl>
@@ -893,6 +901,42 @@ exports[`loot UI complete state snapshots > card.growth-fallback 1`] = `
         </span>
         <span>
           "strength"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "精准之"
+        </span>
+        <span class="loot-affix-tier">
+          "4阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+27.59%"
+        </span>
+        <span>
+          "命中"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "汲血之"
+        </span>
+        <span class="loot-affix-tier">
+          "2阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+1"
+        </span>
+        <span>
+          "吸血"
         </span>
       </div>
     </li>
@@ -916,37 +960,45 @@ exports[`loot UI complete state snapshots > card.growth-labels 1`] = `
   <h2 class="loot-card-title" id="v-0">
     <span class="loot-item-chip">
       <span aria-hidden="true" class="loot-chip-glyph">
-        "="
+        ")"
       </span>
       <span aria-hidden="true" class="loot-chip-marker">
-        "◇"
+        "◆"
       </span>
       <span class="loot-chip-name">
-        "精擅之智慧戒指"
+        "深井之守 阔剑"
       </span>
       <span class="loot-chip-rarity">
-        "魔法"
+        "稀有"
       </span>
     </span>
   </h2>
   <div class="loot-card-subtitle">
     <span>
-      "魔法"
+      "稀有"
     </span>
     <span>
       "物等 25"
     </span>
     <span>
-      "戒指"
+      "武器"
     </span>
   </div>
   <dl class="loot-card-base-stats">
     <div class="loot-card-base-stat">
       <dt>
-        "戒指本体"
+        "伤害"
       </dt>
       <dd>
-        "2"
+        "14–22"
+      </dd>
+    </div>
+    <div class="loot-card-base-stat">
+      <dt>
+        "力量需求"
+      </dt>
+      <dd>
+        "19"
       </dd>
     </div>
   </dl>
@@ -966,6 +1018,42 @@ exports[`loot UI complete state snapshots > card.growth-labels 1`] = `
         </span>
         <span>
           "力量"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "精准之"
+        </span>
+        <span class="loot-affix-tier">
+          "4阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+27.59%"
+        </span>
+        <span>
+          "命中"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "汲血之"
+        </span>
+        <span class="loot-affix-tier">
+          "2阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+1"
+        </span>
+        <span>
+          "吸血"
         </span>
       </div>
     </li>
@@ -1202,7 +1290,7 @@ exports[`loot UI complete state snapshots > card.rare-brutal 1`] = `
         "◆"
       </span>
       <span class="loot-chip-name">
-        "霜枝之息 长矛"
+        "深井之守 阔剑"
       </span>
       <span class="loot-chip-rarity">
         "稀有"
@@ -1226,7 +1314,7 @@ exports[`loot UI complete state snapshots > card.rare-brutal 1`] = `
         "伤害"
       </dt>
       <dd>
-        "7–14"
+        "16–25"
       </dd>
     </div>
     <div class="loot-card-base-stat">
@@ -1234,7 +1322,7 @@ exports[`loot UI complete state snapshots > card.rare-brutal 1`] = `
         "力量需求"
       </dt>
       <dd>
-        "13"
+        "19"
       </dd>
     </div>
   </dl>
@@ -1245,22 +1333,22 @@ exports[`loot UI complete state snapshots > card.rare-brutal 1`] = `
           "凶暴的"
         </span>
         <span class="loot-affix-tier">
-          "4阶"
+          "2阶"
         </span>
       </div>
       <div class="loot-affix-line loot-affix-tone-good">
         <span class="loot-affix-value">
-          "+3–9"
+          "+2–3"
         </span>
         <span>
           "本地伤害"
         </span>
       </div>
     </li>
-    <li class="loot-affix-row" data-known=true data-position="prefix">
+    <li class="loot-affix-row" data-known=true data-position="suffix">
       <div class="loot-affix-heading">
         <span>
-          "淬炼的"
+          "收割之"
         </span>
         <span class="loot-affix-tier">
           "3阶"
@@ -1271,7 +1359,7 @@ exports[`loot UI complete state snapshots > card.rare-brutal 1`] = `
           "+2"
         </span>
         <span>
-          "武器附魔"
+          "收割"
         </span>
       </div>
     </li>
@@ -1281,12 +1369,12 @@ exports[`loot UI complete state snapshots > card.rare-brutal 1`] = `
           "巨力之"
         </span>
         <span class="loot-affix-tier">
-          "4阶"
+          "2阶"
         </span>
       </div>
       <div class="loot-affix-line loot-affix-tone-good">
         <span class="loot-affix-value">
-          "+2"
+          "+1"
         </span>
         <span>
           "力量"
@@ -2294,7 +2382,7 @@ exports[`loot UI complete state snapshots > chip.rare-identified 1`] = `
     "◆"
   </span>
   <span class="loot-chip-name">
-    "霜枝之息 长矛"
+    "深井之守 阔剑"
   </span>
   <span class="loot-chip-rarity">
     "稀有"
@@ -2311,7 +2399,7 @@ exports[`loot UI complete state snapshots > chip.rare-unknown 1`] = `
     "◆"
   </span>
   <span class="loot-chip-name">
-    "未鉴定的稀有长矛"
+    "未鉴定的稀有阔剑"
   </span>
   <span class="loot-chip-rarity">
     "稀有"
@@ -2351,7 +2439,7 @@ exports[`loot UI complete state snapshots > chip.selected 1`] = `
     "◆"
   </span>
   <span class="loot-chip-name">
-    "霜枝之息 长矛"
+    "深井之守 阔剑"
   </span>
   <span class="loot-chip-rarity">
     "稀有"
@@ -3075,7 +3163,7 @@ exports[`loot UI complete state snapshots > compare.strength-short 1`] = `
       "◆"
     </span>
     <span class="loot-chip-name">
-      "霜枝之息 长矛"
+      "深井之守 阔剑"
     </span>
     <span class="loot-chip-rarity">
       "稀有"
@@ -3115,7 +3203,7 @@ exports[`loot UI complete state snapshots > compare.strength-short 1`] = `
           </tr>
         </thead>
         <tbody>
-          <tr class="loot-compare-row loot-compare-worse">
+          <tr class="loot-compare-row loot-compare-better">
             <th>
               "伤害"
             </th>
@@ -3123,13 +3211,13 @@ exports[`loot UI complete state snapshots > compare.strength-short 1`] = `
               "14–22"
             </td>
             <td data-label="候选">
-              "7–14"
+              "16–25"
             </td>
             <td class="loot-compare-delta" data-label="差值">
-              "-7–-8"
+              "+2–+3"
             </td>
           </tr>
-          <tr class="loot-compare-row loot-compare-better">
+          <tr class="loot-compare-row loot-compare-same">
             <th>
               "力量需求"
             </th>
@@ -3137,10 +3225,10 @@ exports[`loot UI complete state snapshots > compare.strength-short 1`] = `
               "19"
             </td>
             <td data-label="候选">
-              "13"
+              "19"
             </td>
             <td class="loot-compare-delta" data-label="差值">
-              "-6"
+              "0"
             </td>
           </tr>
           <tr class="loot-compare-row loot-compare-better">
@@ -3151,24 +3239,10 @@ exports[`loot UI complete state snapshots > compare.strength-short 1`] = `
               "0"
             </td>
             <td data-label="候选">
-              "+12"
+              "+5"
             </td>
             <td class="loot-compare-delta" data-label="差值">
-              "+12"
-            </td>
-          </tr>
-          <tr class="loot-compare-row loot-compare-better">
-            <th>
-              "武器附魔"
-            </th>
-            <td data-label="当前">
-              "0"
-            </td>
-            <td data-label="候选">
-              "+2"
-            </td>
-            <td class="loot-compare-delta" data-label="差值">
-              "+2"
+              "+5"
             </td>
           </tr>
           <tr class="loot-compare-row loot-compare-worse">
@@ -3193,6 +3267,20 @@ exports[`loot UI complete state snapshots > compare.strength-short 1`] = `
               "0"
             </td>
             <td data-label="候选">
+              "+1"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "+1"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-better">
+            <th>
+              "收割"
+            </th>
+            <td data-label="当前">
+              "0"
+            </td>
+            <td data-label="候选">
               "+2"
             </td>
             <td class="loot-compare-delta" data-label="差值">
@@ -3205,7 +3293,7 @@ exports[`loot UI complete state snapshots > compare.strength-short 1`] = `
   </div>
   <ul class="loot-compare-notices">
     <li>
-      "力量还差 1 点"
+      "力量还差 7 点"
     </li>
     <li>
       "估算值，仅含已知效果"
@@ -3232,7 +3320,7 @@ exports[`loot UI complete state snapshots > compare.weapon 1`] = `
       "◆"
     </span>
     <span class="loot-chip-name">
-      "霜枝之息 长矛"
+      "深井之守 阔剑"
     </span>
     <span class="loot-chip-rarity">
       "稀有"
@@ -3272,7 +3360,7 @@ exports[`loot UI complete state snapshots > compare.weapon 1`] = `
           </tr>
         </thead>
         <tbody>
-          <tr class="loot-compare-row loot-compare-worse">
+          <tr class="loot-compare-row loot-compare-better">
             <th>
               "伤害"
             </th>
@@ -3280,13 +3368,13 @@ exports[`loot UI complete state snapshots > compare.weapon 1`] = `
               "14–22"
             </td>
             <td data-label="候选">
-              "7–14"
+              "16–25"
             </td>
             <td class="loot-compare-delta" data-label="差值">
-              "-7–-8"
+              "+2–+3"
             </td>
           </tr>
-          <tr class="loot-compare-row loot-compare-better">
+          <tr class="loot-compare-row loot-compare-same">
             <th>
               "力量需求"
             </th>
@@ -3294,10 +3382,10 @@ exports[`loot UI complete state snapshots > compare.weapon 1`] = `
               "19"
             </td>
             <td data-label="候选">
-              "13"
+              "19"
             </td>
             <td class="loot-compare-delta" data-label="差值">
-              "-6"
+              "0"
             </td>
           </tr>
           <tr class="loot-compare-row loot-compare-better">
@@ -3308,24 +3396,10 @@ exports[`loot UI complete state snapshots > compare.weapon 1`] = `
               "0"
             </td>
             <td data-label="候选">
-              "+12"
+              "+5"
             </td>
             <td class="loot-compare-delta" data-label="差值">
-              "+12"
-            </td>
-          </tr>
-          <tr class="loot-compare-row loot-compare-better">
-            <th>
-              "武器附魔"
-            </th>
-            <td data-label="当前">
-              "0"
-            </td>
-            <td data-label="候选">
-              "+2"
-            </td>
-            <td class="loot-compare-delta" data-label="差值">
-              "+2"
+              "+5"
             </td>
           </tr>
           <tr class="loot-compare-row loot-compare-worse">
@@ -3345,6 +3419,20 @@ exports[`loot UI complete state snapshots > compare.weapon 1`] = `
           <tr class="loot-compare-row loot-compare-better">
             <th>
               "力量"
+            </th>
+            <td data-label="当前">
+              "0"
+            </td>
+            <td data-label="候选">
+              "+1"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "+1"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-better">
+            <th>
+              "收割"
             </th>
             <td data-label="当前">
               "0"

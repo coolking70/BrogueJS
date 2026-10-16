@@ -23,6 +23,6 @@ function triggerRows(data:LootItemDataV1,catalog:EffectiveLootCatalog,fact:ItemT
 
 export function triggerLootKnowledge(data:LootItemDataV1,catalog:EffectiveLootCatalog,fact:ItemTriggerFact,nativeEnchantment?:number):Json {
  const next=triggerRows(data,catalog,fact,nativeEnchantment) as unknown as LootItemDataV1;
- if(next.rarity!=='set')next.identityKnown=next.affixes.every(a=>a.known);
+ if(!['set','normal','runeword'].includes(next.rarity))next.identityKnown=next.affixes.every(a=>a.known);
  return next as unknown as Json;
 }

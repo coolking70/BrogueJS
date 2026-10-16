@@ -169,5 +169,17 @@
   "ext.loot.piece.bastion.vigor.name": "坚韧之环",
   "ext.loot.piece.bastion.vigor.description": "坚韧之环套装的一部分。",
   "ext.loot.piece.bastion.guard.name": "护卫之环",
-  "ext.loot.piece.bastion.guard.description": "护卫之环套装的一部分。"
+  "ext.loot.piece.bastion.guard.description": "护卫之环套装的一部分。",
+  "ext.loot.rune.ka.name": "卡",
+  "ext.loot.rune.ka.description": "可嵌入未强化白色武器或护甲的符文。",
+  "ext.loot.rune.ul.name": "乌尔",
+  "ext.loot.rune.ul.description": "可嵌入未强化白色武器或护甲的符文。",
+  "ext.loot.rune.tal.name": "塔尔",
+  "ext.loot.rune.tal.description": "可嵌入未强化白色武器或护甲的符文。",
+  "ext.loot.rune.ren.name": "仁",
+  "ext.loot.rune.ren.description": "可嵌入未强化白色武器或护甲的符文。",
+  "ext.loot.word.ash.name": "余烬",
+  "ext.loot.word.ash.description": "完整序列成词后，词奖励替换所有单符文效果。",
+  "ext.loot.word.edge.name": "锋芒",
+  "ext.loot.word.edge.description": "完整序列成词后，词奖励替换所有单符文效果。"
 }

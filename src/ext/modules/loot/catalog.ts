@@ -71,6 +71,10 @@ export function buildEffectiveLootCatalog(pack: LootPack, availability: LootAvai
     const piecesById = Object.fromEntries(members.map(member => [member.piece.id, member]));
     const piecesByBase: Record<string, typeof members> = {};
     for (const member of members) (piecesByBase[member.piece.baseId] ??= []).push(member);
-    return freezeLootValue({ setsById, piecesById, piecesByBase, pieceIds: members.map(m => m.piece.id), pack, availability: normalized, affixes, effectiveWeight, bossUniqueBias,
+    const runesById = Object.fromEntries(pack.runes.runes.map(r => [r.id,r]));
+    const socketRowsById = Object.fromEntries([...pack.runes.runes,...pack.runewords.words].flatMap(d=>d.rows.map(r=>[r.rowId,r])));
+    const wordsByKey = Object.fromEntries(pack.runewords.words.flatMap(w => w.baseClasses.map(c => [JSON.stringify([c,w.sockets,w.sequence]),w])));
+    const socketBands = Object.fromEntries(pack.sockets.bases.map(b => [b.baseId,b.bands]));
+    return freezeLootValue({ socketRowsById, runesById, wordsByKey, socketBands, setsById, piecesById, piecesByBase, pieceIds: members.map(m => m.piece.id), pack, availability: normalized, affixes, effectiveWeight, bossUniqueBias,
         fingerprint: extensionDataFingerprint({ pack, targets:ITEM_RUNIC_TARGETS, availability: normalized }) });
 }

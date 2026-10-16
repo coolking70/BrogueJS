@@ -1,3 +1,4 @@
+import { matchRuneword, socketRows } from './sockets';
 import { ITEM_RUNIC_TARGETS } from '../../itemSdk';
 import { enhancementCap, ringImplicit } from './economy';
 import type { EffectiveLootCatalog, ItemClass, LootAffixRoll, LootItemDataV1, LootModifierDraft, LootNativeFacts, ModifierSpec } from './types';
@@ -34,16 +35,25 @@ function rollShape(value: unknown): value is LootAffixRoll {
     && typeof value.known === 'boolean' && denseArray(value.values) && value.values.every(v => Number.isSafeInteger(v));
 }
 
-/** Strict V3 trust boundary. Malformed data is rejected without mutation or RNG. */
+/** Strict V4 trust boundary. Malformed data is rejected without mutation or RNG. */
 export function validateLootItemData(value: unknown, catalog: EffectiveLootCatalog): value is LootItemDataV1 {
-  if (!object(value) || !exact(value, 'targetClass'in value?[...itemKeys,'targetClass']:itemKeys) || value.v !== 3 || typeof value.baseId !== 'string') return false;
+  if (!object(value) || !exact(value, 'targetClass'in value?[...itemKeys,'targetClass']:itemKeys) || value.v !== 4 || typeof value.baseId !== 'string') return false;
   const itemClass = lootItemClass(value.baseId, catalog);
-  if (!itemClass || !integer(value.ilvl, 1, 99) || !['normal', 'magic', 'rare', 'unique', 'set'].includes(value.rarity as string)) return false;
-  if (typeof value.corrupted !== 'boolean' || typeof value.identityKnown !== 'boolean' || value.sockets !== 0 || !denseArray(value.socketed) || value.socketed.length !== 0) return false;
+  if (!itemClass || !integer(value.ilvl, 1, 99) || !['normal', 'magic', 'rare', 'unique', 'set', 'runeword'].includes(value.rarity as string)) return false;
+  if (typeof value.corrupted !== 'boolean' || typeof value.identityKnown !== 'boolean' || !integer(value.sockets,0,4) || !denseArray(value.socketed) || value.socketed.length > value.sockets) return false;
   if (!denseArray(value.affixes) || !value.affixes.every(rollShape)) return false;
   if (!object(value.origin) || !exact(value.origin, ['source', 'depth']) || !['floor', 'kill', 'encounter', 'vault'].includes(value.origin.source as string) || !integer(value.origin.depth, 1, 99)) return false;
   const rarity = catalog.pack.rarities.rarities.find(r => r.id === value.rarity);
   if (!rarity || !integer(value.enhancement, 0, rarity.enhancementCap)) return false;
+  const socketBase=value.rarity==='normal'||value.rarity==='runeword';
+  if(!socketBase&&(value.sockets!==0||value.socketed.length!==0))return false;
+  if(itemClass==='ring'&&value.sockets!==0)return false;
+  if(value.socketed.some(id=>typeof id!=='string'||!Object.prototype.hasOwnProperty.call(catalog.runesById,id)||!catalog.runesById[id]!.itemClasses.includes(itemClass as 'weapon'|'armor')))return false;
+  if(value.socketed.length&&value.enhancement!==0)return false;
+  if(socketBase){
+    if(value.affixes.length||value.uniqueId!==null||value.setId!==null||value.pieceId!==null||value.nameParts!==null||value.corrupted||'targetClass'in value)return false;
+    return (value.rarity==='runeword')===!!matchRuneword(catalog,itemClass,value.sockets,value.socketed as string[]);
+  }
   if (value.rarity === 'rare') {
     if (!denseArray(value.nameParts) || value.nameParts.length !== 2 || !integer(value.nameParts[0], 0, catalog.pack.rareNames.first.length - 1) || !integer(value.nameParts[1], 0, catalog.pack.rareNames.second.length - 1)) return false;
   } else if (value.nameParts !== null) return false;
@@ -135,6 +145,7 @@ export function projectItemModifiers(data: LootItemDataV1, catalog: EffectiveLoo
   }
   const category = lootItemClass(data.baseId, catalog);
   if (!category) throw new RangeError('Unknown base');
+  for(const {row,sourceId} of socketRows(data,category,catalog))for(const m of row.modifiers)drafts.push({sourceId,stat:m.stat,category:m.category,slot:m.slot??null,unit:m.unit,value:row.ranges[m.valueIndex]![0],conditions:m.conditions,runicType:null,known:true});
   const add = (sourceId: string, stat: string, category: ModifierSpec['category'], unit: ModifierSpec['unit'], value: number) => drafts.push({ sourceId, stat, category, slot: null, unit, value, conditions: undefined, runicType: null, known: true });
   if (data.enhancement > 0) {
     const id = `${data.baseId}#enhancement`;

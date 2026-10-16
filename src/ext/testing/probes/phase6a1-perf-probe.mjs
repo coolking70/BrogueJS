@@ -10,7 +10,7 @@ function bench(fn,n=500,warm=50){for(let i=0;i<warm;i++)fn();const times=[];for(
 try{
  const {createItemHarness}=await load('/src/ext/testing/itemHarness.ts'),{completeDescriptor,createItemCompleteFixture}=await load('/src/ext/testing/fixtures/itemFixture/index.ts');
  const {assembleDropItem}=await load('/src/engine/Items/FixedItemAssembly.ts'),{Monster}=await load('/src/entities/Monster.ts'),{markCreatureBirth}=await load('/src/ext/birth.ts'),{default:monsters}=await load('/src/data/monsters.json');
- const spec=(kind='dagger',category='weapon')=>({native:{kind,category,enchantment:0,runicType:null,isCursed:false,identified:false,familiarityRemaining:20},moduleData:{c6fixture:{v:1,known:false,power:1}}});
+ const spec=(kind='dagger',category='weapon')=>({kind:'native',native:{kind,category,enchantment:0,runicType:null,isCursed:false,identified:false,familiarityRemaining:20},moduleData:{c6fixture:{v:1,known:false,power:1}}});
  let providerCollects=0;
  const h=createItemHarness({seed:42,mode:'easy'},[{...completeDescriptor,create:()=>{const m=createItemCompleteFixture();return {...m,statSources:{...m.statSources,collect(...args){providerCollects++;return m.statSources.collect(...args);}},itemDrops:{...m.itemDrops,sources:['kill'],roll:(_e,c)=>({v:1,converted:true,items:Array.from({length:8},(_,i)=>{c.beginItem(i);c.randomInt(1,3);return spec();}),gold:0,uniqueIds:Array(8).fill(null)})}};}}]),g=h.game();
  const items=[assembleDropItem(spec()),assembleDropItem(spec('leather_armor','armor')),assembleDropItem(spec('ring_of_regeneration','ring')),assembleDropItem(spec('ring_of_regeneration','ring')),assembleDropItem(spec())];

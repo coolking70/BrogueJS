@@ -17,7 +17,7 @@ import { markCreatureBirth } from '../ext/birth';
 import { auditFullObjectGraph } from './support/fullGenerationCheckpointOracle';
 import { forEachItemRoot } from '../engine/Core/WorldItemRoots';
 afterEach(()=>vi.restoreAllMocks());
-const spec=(kind='dagger',category:ItemClass='weapon'):DropItemSpec=>({native:{kind,category,enchantment:0,runicType:null,isCursed:false,identified:false,familiarityRemaining:20},moduleData:{c6fixture:{v:1,known:false,power:3}}});
+const spec=(kind='dagger',category:ItemClass='weapon'):Extract<DropItemSpec,{kind:'native'}>=>({kind:'native',native:{kind,category,enchantment:0,runicType:null,isCursed:false,identified:false,familiarityRemaining:20},moduleData:{c6fixture:{v:1,known:false,power:3}}});
 const input:DropInput={source:'kill',actorId:9,monster:{typeId:'rat',leader:false,champion:false,encounterSubject:false},at:{x:5,y:5},playerId:1,level:{kind:'dungeon',depth:1}};
 const harness=(overrides:Partial<DropProvider>={})=>createItemHarness({},[{...descriptor,create:()=>createItemDropFixture(overrides)}]);
 function victim(g:ReturnType<ReturnType<typeof createItemHarness>['game']>,reason:Parameters<typeof markCreatureBirth>[1]='natural'){

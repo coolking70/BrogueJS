@@ -398,7 +398,7 @@ export class ExtensionRuntime {
             if(m.itemKnowledge && ['known','unique','reveal'].some(k=>typeof (m.itemKnowledge as unknown as Record<string,unknown>)[k]!=='function'))throw new ItemDataError('C6_DATA');
             if(m.itemPresentation && ['project','name','appearance'].some(k=>typeof (m.itemPresentation as unknown as Record<string,unknown>)[k]!=='function'))throw new ItemDataError('C6_DATA');
             if(m.itemCommands)for(const [action,p] of Object.entries(m.itemCommands)){
-                if(!validId(action)||!p||!['create','filter','salvage','identify'].includes(p.kind)||typeof p.prepare!=='function'
+                if(!validId(action)||!p||!['create','filter','salvage','identify','socket'].includes(p.kind)||typeof p.prepare!=='function'
                   ||m.commands?.[action]||m.worldWorkCommands?.[action as import('./worldSdk').CraftingAction]
                   ||p.kind==='identify'&&(!p.materialDefinitionId||!m.worldDefinitions?.items.some(d=>d.id===p.materialDefinitionId&&d.owner===m.id&&d.category==='material'&&d.tool===null)))throw new ItemDataError('C6_DATA');
             }
@@ -1963,6 +1963,16 @@ export class ExtensionRuntime {
         const session=statSessions.get(this)!;session.pipeline.clear();session.moduleViews.clear();markRecordingRoot(this);
     }
     hasItemEnhancement():boolean {return this.modules.some(m=>m.itemEnhancement);}
+    itemEnhancementAllowed(item:Item):boolean {
+        for(const owner of this.modules.filter(m=>m.itemEnhancement&&item.moduleData?.[m.id]!==undefined)){
+            const allowed=owner.itemEnhancement!.allowed;
+            if(!allowed)continue;
+            const result=this.ediblePure(()=>allowed(itemFacts(item).moduleData![owner.id]!));
+            if(typeof result!=='boolean')throw new ItemDataError('C6_DATA');
+            if(!result)return false;
+        }
+        return true;
+    }
     itemEnhancementLimit(item:Item):number|null {
         const owners=this.modules.filter(m=>m.itemEnhancement&&item.moduleData?.[m.id]!==undefined);
         if(!owners.length)return null;
@@ -1974,7 +1984,7 @@ export class ExtensionRuntime {
     applyItemEnhancement(item:Item,amount:number):void {
         if(this.pureProviderPhase)throw new ItemDataError('C6_DATA');
         const limit=this.itemEnhancementLimit(item),owner=this.modules.find(m=>m.itemEnhancement&&item.moduleData?.[m.id]!==undefined);
-        if(!owner||limit===null||!Number.isSafeInteger(amount)||amount<0||amount>limit)throw new ItemDataError('C6_DATA');
+        if(!this.itemEnhancementAllowed(item)||!owner||limit===null||!Number.isSafeInteger(amount)||amount<0||amount>limit)throw new ItemDataError('C6_DATA');
         if(amount===0)return;
         let draws=0;
         const proposal=this.ediblePure(()=>owner.itemEnhancement!.apply(itemFacts(item).moduleData![owner.id]!,amount,Object.freeze({randomInt:(lo:number,hi:number)=>{

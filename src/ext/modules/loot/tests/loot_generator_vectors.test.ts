@@ -8,7 +8,7 @@ type Draw = [number, number, number];
 const unavailable: LootAvailability = { combat: null, growth: null, giants: null };
 const common = { v: 1 as const, depth: 1, presetId: 'standard', rarityFindBp: 0, claimedUniqueIds: [] };
 // Original non-rune literal tapes retain their exact semantic premise. Current enabled-family tapes are covered separately.
-const legacyPack=()=>{const p=structuredClone(loadLootPack());p.affixes.runeFamilyEnabled=false;for(const preset of p.presets.presets)preset.rarityWeights.set=0;return loadLootPack(p);};
+const legacyPack=()=>{const p=structuredClone(loadLootPack());p.affixes.runeFamilyEnabled=false;p.runeDrops.rows.forEach(r=>r.chanceBp=0);p.sockets.bases.forEach(b=>b.bands.forEach(b=>b.weights=[1,0,0,0,0]));for(const preset of p.presets.presets)preset.rarityWeights.set=0;return loadLootPack(p);};
 const catalog = (availability = unavailable) => buildEffectiveLootCatalog(legacyPack(), availability);
 const changed = (edit: (pack: LootPack) => void, availability = unavailable) => {
     const pack = structuredClone(legacyPack()); edit(pack); return buildEffectiveLootCatalog(loadLootPack(pack), availability);
@@ -38,8 +38,8 @@ describe('literal deterministic loot tapes', () => {
             [0, 1, 0], [1, 2100, 300], [1, 100, 60], [1, 2, 2], [3, 5, 4],
             [1, 10000, 9000], [0, 31, 5], [0, 31, 17], [1, 10000, 7000],
         ]);
-        expect(result).toEqual({ v: 1, converted: true, items: [{ data: {
-            v: 3, baseId: 'war_axe', ilvl: 16, rarity: 'rare', uniqueId: null, setId: null, pieceId: null, identityKnown: false,
+        expect(result).toEqual({ v: 1, converted: true, materials: [], items: [{ data: {
+            v: 4, baseId: 'war_axe', ilvl: 16, rarity: 'rare', uniqueId: null, setId: null, pieceId: null, identityKnown: false,
             affixes: [affix('keen', 3, [5200]), affix('precise', 2, [1500]), affix('brutal', 2, [2, 4])],
             corrupted: false, enhancement: 0, sockets: 0, socketed: [], nameParts: [5, 17], origin: { source: 'kill', depth: 10 },
         }, native: { kind: 'war_axe', category: 'weapon', enchantment: 0, runicType: null, runicStrength: null, isCursed: false, identified: false } }],
@@ -49,7 +49,7 @@ describe('literal deterministic loot tapes', () => {
         const { result } = tapeRoll({ ...common, source: 'floor', itemClass: 'ring' }, [
             [1, 80, 25], [1, 1004, 800], [1, 100, 20], [0, 1, 1], [1, 7750, 2000], [5, 9, 7], [1, 10000, 10000],
         ]);
-        expect(result.items[0]!.data).toEqual({ v: 3, baseId: 'ring_of_regeneration', ilvl: 1, rarity: 'magic', uniqueId: null, setId: null, pieceId: null, identityKnown: false,
+        expect(result.items[0]!.data).toEqual({ v: 4, baseId: 'ring_of_regeneration', ilvl: 1, rarity: 'magic', uniqueId: null, setId: null, pieceId: null, identityKnown: false,
             affixes: [affix('vital', 1, [7])], corrupted: false, enhancement: 0, sockets: 0, socketed: [], nameParts: null, origin: { source: 'floor', depth: 1 } });
         expect(result.items[0]!.native.enchantment).toBe(1);
         expect(result.converted).toBe(true); expect(result.gold).toBe(0);
@@ -140,7 +140,7 @@ describe('literal deterministic loot tapes', () => {
         // Temporary valid probability4000, first draw4001 fails; no class/base/rarity draws.
         const effective = changed(pack => { pack.presets.presets.find(preset => preset.id === 'standard')!.floorConversionBp = 4000; });
         expect(tapeRoll({ ...common, source: 'floor', itemClass: 'weapon' }, [[1, 10000, 4001]], effective).result)
-            .toEqual({ v: 1, converted: false, items: [], gold: 0, newUniqueIds: [], draws: 1 });
+            .toEqual({ v: 1, converted: false, materials: [], items: [], gold: 0, newUniqueIds: [], draws: 1 });
     });
     it('V14: ilvl40 rare uses high-ilvl count table and T4/T5/T6 window', () => {
         // Floor D27 =>ilvl40. Rarity700+352+140+20=1212; rareHigh count first45=>4 (ordinary table would give3).
@@ -183,7 +183,7 @@ describe('literal deterministic loot tapes', () => {
         // K0 suppression precedes K1 and G, independently of generous preset/champion flags.
         const request = kill(99, 'bountiful', typeId) as Extract<LootRollRequest, { source: 'kill' }>;
         request.monster.encounterSubject = subject; request.monster.leader = request.monster.champion = true;
-        expect(tapeRoll(request, []).result).toEqual({ v: 1, converted: true, items: [], gold: 0, newUniqueIds: [], draws: 0 });
+        expect(tapeRoll(request, []).result).toEqual({ v: 1, converted: true, materials: [], items: [], gold: 0, newUniqueIds: [], draws: 0 });
     });
     it('V20: excessive rarity find clamps before arithmetic and preserves exact totals', () => {
         // Standard cap20000: eff=floor(20000*25000/45000)=11111. D1 [700,470,149,21] =>1340.

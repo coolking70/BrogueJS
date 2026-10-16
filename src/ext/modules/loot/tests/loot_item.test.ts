@@ -7,7 +7,7 @@ import type { LootAffixRoll, LootItemDataV1 } from '../types';
 const catalog = () => buildEffectiveLootCatalog(loadLootPack(), { combat: null, growth: null, giants: null });
 const affix = (id: string, tier: number, values: number[], known = false): LootAffixRoll => ({ id: `loot.affix.${id}`, tier, values, known });
 function magic(): LootItemDataV1 {
-  return { v: 3, baseId: 'dagger', ilvl: 16, rarity: 'magic', uniqueId: null, setId: null, pieceId: null, identityKnown: false, affixes: [affix('keen', 3, [5000]), affix('precise', 2, [1500])], corrupted: false,
+  return { v: 4, baseId: 'dagger', ilvl: 16, rarity: 'magic', uniqueId: null, setId: null, pieceId: null, identityKnown: false, affixes: [affix('keen', 3, [5000]), affix('precise', 2, [1500])], corrupted: false,
     enhancement: 0, sockets: 0, socketed: [], nameParts: null, origin: { source: 'floor', depth: 10 } };
 }
 function unique(id = 'whisper'): LootItemDataV1 {

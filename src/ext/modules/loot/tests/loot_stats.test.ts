@@ -41,6 +41,7 @@ describe('real-generator statistics §10', () => {
     expect(first.summary.validationFailures).toBe(0);
     expect(first.summary.maxItemDraws).toBeLessThanOrEqual(64);
     expect(first.summary.maxEventDraws).toBeLessThanOrEqual(512);
+    expect(first.presets.some(p=>p.depthRows.some(layer=>layer.rarities.set>0))).toBe(true);
     for (const preset of first.presets) {
       expect(preset.depthRows).toHaveLength(26);
       expect(preset.checkpoints.map(c => c.depth)).toEqual([1, 5, 10, 15, 20, 26]);
@@ -52,6 +53,9 @@ describe('real-generator statistics §10', () => {
       expect(preset.unique.downgradeRate).toBeLessThanOrEqual(1);
       expect(preset.depthRows.reduce((n, layer) => n + layer.uniqueOpportunities, 0)).toBeCloseTo(preset.unique.opportunitiesPerRun, 12);
       for (const layer of preset.depthRows) {
+        expect(Object.keys(layer.rarities)).toEqual(['normal','magic','rare','unique','set','runeword']);
+        expect(Object.values(layer.rarities).every(Number.isFinite)).toBe(true);
+        expect(layer.rarities.runeword).toBe(0); // Words are made by socket commands, never generation.
         expect(Object.values(layer.sources).reduce((a, b) => a + b, 0)).toBeCloseTo(layer.items, 12);
         expect(Object.values(layer.rarities).reduce((a, b) => a + b, 0)).toBeCloseTo(layer.items, 12);
         expect(layer.uniqueDowngrades).toBeCloseTo(layer.uniqueOpportunities - layer.rarities.unique, 12);

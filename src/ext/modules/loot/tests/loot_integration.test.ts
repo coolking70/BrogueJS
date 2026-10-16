@@ -61,7 +61,7 @@ describe('6B1 integrated loot',()=>{
   let bucket=0;const random=(lo:number,hi:number)=>{draws.push([bucket,lo,hi]);return hi;};
   const proposal=p.roll(event,{owner:'loot',state,event,randomInt:random,beginItem:i=>{expect(i).toBeGreaterThan(bucket);bucket=i;calls.push(i);},stat:()=>0});
   const pure=rollLoot(fixture.catalog,{v:1,source:'encounter',depth:20,presetId:'standard',formId:'giants.abyssal-colossus',rarityFindBp:0,claimedUniqueIds:[]},{randomInt:(_lo,hi)=>hi});
-  expect(proposal.items.map(i=>i.moduleData.loot)).toEqual(pure.items.map(i=>i.data));expect(proposal.gold).toBe(pure.gold);expect(calls).toEqual([1,8]);expect(draws[draws.length-1]![0]).toBe(8);
+  expect(proposal.items.filter(i=>'native'in i).map(i=>i.moduleData.loot)).toEqual(pure.items.map(i=>i.data));expect(proposal.gold).toBe(pure.gold);expect(calls).toEqual([1,2,8]);expect(draws[draws.length-1]![0]).toBe(8);
   const accepted={v:1 as const,eventId:1,accepted:[{index:1,itemId:4}],skipped:[{index:0,reason:'capacity' as const}],acceptedGold:0,newUniqueIds:proposal.uniqueIds[1]?[proposal.uniqueIds[1]!]:[]};
   const next=stateOf(p.settle(state,event,accepted));expect(next.watermark).toBe(1);expect(next.uniqueMask).toBe(accepted.newUniqueIds.reduce((mask,id)=>mask|(1<<fixture.catalog.pack.uniques.uniques.findIndex(u=>u.id===id)),0));
   expect(p.roll({...event,source:'vault',itemClass:'weapon',baseId:null,highValue:true,qualifiers:[]},{owner:'loot',state,event,randomInt:()=>{throw Error('native fallback drew');},beginItem:()=>{},stat:()=>0}).converted).toBe(false);

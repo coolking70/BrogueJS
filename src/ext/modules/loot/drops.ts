@@ -22,11 +22,11 @@ export function lootDrops(catalog: () => EffectiveLootCatalog): DropProvider {
         : {...common,source:'vault',itemClass:event.itemClass,baseId:event.baseId,highValue:event.highValue};
       const result = rollLoot(catalog(),request,{randomInt:(lo,hi)=>context.randomInt(lo,hi),beginItem:index=>{if(index>0)context.beginItem(index);}});
       const preset = catalog().pack.presets.presets.find(p=>p.id===s.presetId)!;
-      return {v:1,converted:result.converted,gold:result.gold,uniqueIds:result.items.map(i=>i.data.uniqueId??i.data.pieceId),items:result.items.map(item=>{
+      return {v:1,converted:result.converted,gold:result.gold,uniqueIds:[...result.items.map(i=>i.data.uniqueId??i.data.pieceId),...result.materials.map(()=>null)],items:[...result.items.map(item=>{
         const f=familiarityThresholds(item.data,preset),n=item.native;
-        return {native:{...(item.data.targetClass?{targetClass:item.data.targetClass}:{}),kind:n.kind,category:n.category,enchantment:n.enchantment,runicType:n.runicType,isCursed:n.isCursed,identified:n.identified,
+        return {kind:'native' as const,native:{...(item.data.targetClass?{targetClass:item.data.targetClass}:{}),kind:n.kind,category:n.category,enchantment:n.enchantment,runicType:n.runicType,isCursed:n.isCursed,identified:n.identified,
           familiarityRemaining:n.category==='weapon'?f.weaponKills:n.category==='armor'?f.armorTurns:f.ringTurns},moduleData:{loot:JSON.parse(JSON.stringify(item.data))}};
-      })};
+      }),...result.materials.map(material=>({kind:'material' as const,...material}))]};
     },
     settle(state,event,accepted) {
       const s=stateOf(state),added=masks(accepted.newUniqueIds);

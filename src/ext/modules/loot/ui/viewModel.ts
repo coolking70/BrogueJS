@@ -1,3 +1,4 @@
+import { matchRuneword } from '../sockets';
 import { LOOT_TARGET_NAMES } from './targets';
 import weapons from '../../../../data/weapons.json';
 import armors from '../../../../data/armors.json';
@@ -69,6 +70,9 @@ export function buildLootChipView(item: LootKnownItem, catalog: EffectiveLootCat
         parts.first = ref(catalog.pack.rareNames.first[item.rareName[0]]!);
         parts.second = ref(catalog.pack.rareNames.second[item.rareName[1]]!);
       } else template = { nameKey: 'ext.loot.ui.name.rare-unidentified' };
+    } else if(item.rarity==='runeword'&&item.sockets){
+      const word=matchRuneword(catalog,item.itemClass,item.sockets.count,item.sockets.sequence)!;
+      template={nameKey:'ext.loot.ui.name.unique'};parts.unique=ref(word);
     } else if (item.rarity === 'set') {
       if(item.pieceId){template={nameKey:'ext.loot.ui.name.unique'};parts.unique=ref(catalog.piecesById[item.pieceId]!.piece);}
       else template={nameKey:'ext.loot.ui.name.set-unidentified'};
@@ -195,6 +199,7 @@ export function buildLootItemView(item: LootKnownItem, catalog: EffectiveLootCat
     : { nameKey: 'ext.loot.ui.notice.familiarity-turns', params: { remaining: item.familiarity.remaining } });
   const unique = item.uniqueId ? catalog.pack.uniques.uniques.find(u => u.id === item.uniqueId) : null;
   return freezeLootUi({ chip, subtitle, baseStats, rows, notices,
+    ...(item.sockets?{sockets:{count:item.sockets.count,sequence:item.sockets.sequence.map(id=>ref(catalog.runesById[id]!))}}:{}),
     ...(item.setId?{set:buildLootSetView(item.setId,catalog,options)}:{}),
     flavor: unique ? { nameKey: unique.descriptionKey, params: {} } : null });
 }
@@ -308,6 +313,7 @@ export function buildLootSalvageView(entries: readonly { readonly key: string; r
     }));
     const min = Math.min(...yields), max = Math.max(...yields);
     const warnings: LootTextRef[] = [];
+    if(item.sockets?.sequence.length)warnings.push({nameKey:'ext.loot.ui.socket.salvage-loss',params:{}});
     if (item.rarity === 'set') warnings.push({nameKey:'ext.loot.ui.salvage.warn-set',params:{}});
     if (item.rarity === 'unique') warnings.push({ nameKey: 'ext.loot.ui.salvage.warn-unique', params: {} });
     if (min !== max) warnings.push({ nameKey: item.ilvl === null ? 'ext.loot.ui.salvage.warn-ilvl-range' : 'ext.loot.ui.salvage.warn-range', params: {} });

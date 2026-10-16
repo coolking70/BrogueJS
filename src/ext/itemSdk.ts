@@ -1,7 +1,7 @@
 export { ITEM_RUNIC_TARGETS } from './itemTargets';
 /** C6-1 item capabilities. Candidate until the integration report freezes v1. */
 import type { ReadonlyJson } from './types';
-export const ITEM_SDK_VERSION = 2 as const;
+export const ITEM_SDK_VERSION = 3 as const;
 export type ItemModuleData = Readonly<Record<string, ReadonlyJson>>;
 export type ItemDataPhase = 'create' | 'update' | 'save' | 'load';
 export interface ItemFacts {
@@ -25,6 +25,8 @@ export interface ItemDataValidationContext {
 }
 export type ItemDataValidator = (value: ReadonlyJson, context: ItemDataValidationContext) => boolean;
 export interface ItemEnhancementProvider {
+  /** Hard eligibility veto, including redirected growth awards. Omitted means allowed. */
+  allowed?(data:ReadonlyJson):boolean;
   preview(data:ReadonlyJson):{data:ReadonlyJson;enchantmentDelta:number}|null;
   limit(data: ReadonlyJson): number;
   apply(data: ReadonlyJson, amount: number, random: Readonly<{randomInt(lo:number,hi:number):number}>): {data: ReadonlyJson; enchantmentDelta: number};
@@ -73,10 +75,17 @@ export interface NativeAssembly {
   readonly identified: boolean;
   readonly familiarityRemaining: number;
 }
-export interface DropItemSpec {
+export interface NativeDropItemSpec {
   readonly native: NativeAssembly;
   readonly moduleData: ItemModuleData;
 }
+/** Material drops are host-assembled C5 definitions, without module data. */
+export interface MaterialDropItemSpec {
+  readonly kind: 'material';
+  readonly definitionId:string;
+  readonly quantity:number;
+}
+export type DropItemSpec = (NativeDropItemSpec & {readonly kind:'native'}) | MaterialDropItemSpec;
 export interface DropRollContext {
   readonly owner: string;
   readonly state: ReadonlyJson;
@@ -135,6 +144,8 @@ export interface TextRef {
 }
 export interface ItemPresentationProvider {
   // Pure trusted projection, kept inside runtime; raw data never goes to Vue props.
+  // Floor whitelist: rarity plus optional sockets {count: 0..4, sequence: ID[]};
+  // sequence length <= count, IDs <= 128 chars, no nested metadata or secret rows.
   project(item: ItemFacts, knowledge: ReadonlyJson): ReadonlyJson;
   name(item: KnownItemFacts): TextRef | null;
   appearance(item: KnownItemFacts): Readonly<{ colorToken: string; marker: string }> | null;
@@ -163,7 +174,7 @@ export interface ItemCommandProposal {
   readonly confirmation: TextRef | null;
 }
 export interface ItemCommandProvider {
-  readonly kind: 'create' | 'filter' | 'salvage' | 'identify';
+  readonly kind: 'create' | 'filter' | 'salvage' | 'identify' | 'socket';
   /** Identify consumes ten units of this owner's existing C5 material definition. */
   readonly materialDefinitionId?: string;
   // Pure, detached preflight. Host owns confirmation, revalidation and commit.

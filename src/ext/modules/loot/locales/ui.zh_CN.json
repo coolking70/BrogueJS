@@ -229,5 +229,18 @@
   "ext.loot.ui.set.inactive": "未达到已知件数",
   "ext.loot.ui.set.compare-count": "{{name}} · 已知件数",
   "ext.loot.ui.set.compare-bonus": "{{name}} · {{count}} 件奖励（1=生效）",
-  "ext.loot.ui.stat.native-move-speed": "移动耗时"
+  "ext.loot.ui.stat.native-move-speed": "移动耗时",
+  "ext.loot.ui.socket.sequence": "孔位 {{used}}/{{total}}：{{sequence}}",
+  "ext.loot.ui.socket.empty": "空",
+  "ext.loot.ui.socket.rules": "按顺序消耗 1 枚符文与 100 tick。镶嵌后不能强化；本阶段无法拆卸或取回。",
+  "ext.loot.ui.socket.unavailable": "仅背包内未装备、未强化且有空孔的白装可镶嵌。",
+  "ext.loot.ui.socket.action": "镶嵌 {{name}}（持有 {{count}}）",
+  "ext.loot.ui.socket.forms": "将形成「{{name}}」",
+  "ext.loot.ui.socket.no-material": "背包中没有适用符文。",
+  "ext.loot.ui.socket.recipes": "符文之语预览",
+  "ext.loot.ui.socket.recipe": "恰好 {{count}} 孔，完整顺序：{{sequence}}。成词替换单符文收益。",
+  "ext.loot.ui.socket.confirm": "镶嵌「{{rune}}」后顺序为 {{sequence}}，结果：{{result}}。消耗 1 枚符文与 100 tick，不能强化，本阶段无法取回。确认？",
+  "ext.loot.ui.socket.salvage-loss": "分解将永久销毁装备和其中的全部符文，不返还符文。",
+  "ext.loot.ui.socket.no-word": "单符文效果（未成词）",
+  "ext.loot.ui.socket.enhance-blocked": "已镶嵌符文，不能强化或精炼。"
 }

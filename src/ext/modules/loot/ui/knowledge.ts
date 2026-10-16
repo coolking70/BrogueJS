@@ -1,3 +1,4 @@
+import { socketRows, matchRuneword } from '../sockets';
 import { LOOT_TARGET_NAMES } from './targets';
 import { lootItemClass, validateLootItemData } from '../item';
 import { ringImplicit } from '../economy';
@@ -45,10 +46,11 @@ export function projectLootKnowledge(data: LootItemDataV1, catalog: EffectiveLoo
     return row.known ? { known: true, id: row.id, position, polarity: ['unique','set'].includes(data.rarity) ? 1 : def!.polarity,
       ...(data.targetClass&&def?.rune&&['slaying','immunity'].includes(def.rune.runicType)?{targetClass:data.targetClass}:{}), tier: row.tier, values: [...row.values] } : { known: false, position };
   });
-  return freezeLootUi({ v: 1, location: facts.location, itemClass,
+  if(!floor)for(const {row} of socketRows(data,itemClass,catalog))affixes.push({known:true,id:row.rowId,position:'row',polarity:1,tier:0,values:row.ranges.map(r=>r[0])});
+  return freezeLootUi({ ...(['normal','runeword'].includes(data.rarity)&&itemClass!=='ring'&&!facts.hallucinating?{sockets:{count:data.sockets,sequence:[...data.socketed]}}:{}), v: 1, location: facts.location, itemClass,
     baseId: itemClass === 'ring' && !facts.ringKindKnown ? null : data.baseId,
     rarity: floor && facts.hallucinating ? null : data.rarity, ilvl: floor ? null : data.ilvl,
-    enhancement: data.enhancement, affixCount: floor ? null : data.affixes.length, affixes,
+    enhancement: data.enhancement, affixCount: floor ? null : affixes.length, affixes,
     setId: !floor && identified ? data.setId : null, pieceId: !floor && identified ? data.pieceId : null,
     uniqueId: !floor && data.rarity === 'unique' && identified ? data.uniqueId : null,
     rareName: !floor && data.rarity === 'rare' && identified ? [...data.nameParts!] as [number, number] : null,
@@ -59,7 +61,7 @@ export function projectLootKnowledge(data: LootItemDataV1, catalog: EffectiveLoo
 /** Resolve only an already disclosed row id; never infer an undisclosed unique identity. */
 export function knownAffixModifiers(row: Extract<LootKnownAffix, { known: true }>, catalog: EffectiveLootCatalog): readonly ModifierSpec[] {
   const result = row.position === 'row'
-    ? [...catalog.pack.uniques.uniques,...Object.values(catalog.piecesById).map(m=>m.piece)].flatMap(unique => unique.rows).find(def => def.rowId === row.id)?.modifiers
+    ? catalog.socketRowsById[row.id]?.modifiers ?? [...catalog.pack.uniques.uniques,...Object.values(catalog.piecesById).map(m=>m.piece)].flatMap(unique => unique.rows).find(def => def.rowId === row.id)?.modifiers
     : catalog.affixes.find(def => def.id === row.id)?.modifiers;
   if (!result) throw new LootUiError('UNKNOWN_AFFIX', 'item.affixes.id');
   return result;
@@ -67,7 +69,7 @@ export function knownAffixModifiers(row: Extract<LootKnownAffix, { known: true }
 
 /** Lightweight validation of the public, already redacted DTO; raw item data is not accepted. */
 export function assertLootKnownItem(value: unknown, catalog: EffectiveLootCatalog): asserts value is LootKnownItem {
-  const keys = ['v', 'location', 'itemClass', 'baseId', 'rarity', 'ilvl', 'enhancement', 'affixCount', 'affixes', 'setId', 'pieceId', 'uniqueId', 'rareName', 'corrupted', 'identified', 'polarity', 'familiarity'];
+  const keys = ['v', 'location', 'itemClass', 'baseId', 'rarity', 'ilvl', 'enhancement', 'affixCount', 'affixes', 'setId', 'pieceId', 'uniqueId', 'rareName', 'corrupted', 'identified', 'polarity', 'familiarity', ...(isPlainLootObject(value)&&value.sockets!==undefined?['sockets']:[])];
   if (!isPlainLootObject(value) || !exactLootKeys(value, keys) || value.v !== 1
     || !['floor', 'pack', 'equipped', 'container'].includes(value.location as string)
     || !['weapon', 'armor', 'ring'].includes(value.itemClass as string)
@@ -84,6 +86,14 @@ export function assertLootKnownItem(value: unknown, catalog: EffectiveLootCatalo
   } else if ((value.ilvl!==null&&!isLootInteger(value.ilvl, 1, 99) || value.identified&&value.ilvl===null) || value.rarity === null || value.affixCount !== value.affixes.length) {
     throw new LootUiError('INVALID_INPUT', 'item.ilvl');
   }
+  if(value.sockets!==undefined){
+    const s=value.sockets;
+    if(!isPlainLootObject(s)||!exactLootKeys(s,['count','sequence'])||!isLootInteger(s.count,0,4)||!Array.isArray(s.sequence)||s.sequence.length>s.count
+      ||!['normal','runeword'].includes(value.rarity as string)||value.itemClass==='ring'
+      ||s.sequence.some(id=>typeof id!=='string'||!Object.prototype.hasOwnProperty.call(catalog.runesById,id)||!catalog.runesById[id]!.itemClasses.includes(value.itemClass as 'weapon'|'armor'))
+      ||s.sequence.length>0&&value.enhancement!==0)throw new LootUiError('INVALID_INPUT','item.sockets');
+    if((value.rarity==='runeword')!==!!matchRuneword(catalog,value.itemClass as 'weapon'|'armor',s.count,s.sequence as string[]))throw new LootUiError('INVALID_INPUT','item.sockets');
+  }else if(value.rarity==='runeword')throw new LootUiError('INVALID_INPUT','item.sockets');
   if (value.rarity !== null && value.enhancement > catalog.pack.rarities.rarities.find(r => r.id === value.rarity)!.enhancementCap) throw new LootUiError('INVALID_INPUT', 'item.enhancement');
   for (let i = 0; i < value.affixes.length; i++) {
     const row = value.affixes[i];
@@ -101,7 +111,7 @@ export function assertLootKnownItem(value: unknown, catalog: EffectiveLootCatalo
   // Held DTOs retain every row, so identification must be proved by those rows.
   // Floor rows are deliberately redacted and cannot be used for this equivalence.
   if (value.location !== 'floor') {
-    if ((value.rarity!=='set'&&value.identified !== value.affixes.every(row => row.known)) || (value.identified&&!value.affixes.every(row=>row.known))) throw new LootUiError('INVALID_INPUT', 'item.identified');
+    if ((!['set','normal','runeword'].includes(value.rarity as string)&&value.identified !== value.affixes.every(row => row.known)) || (value.identified&&!value.affixes.every(row=>row.known))) throw new LootUiError('INVALID_INPUT', 'item.identified');
     if ((value.uniqueId !== null) !== (value.rarity === 'unique' && value.identified)) throw new LootUiError('INVALID_INPUT', 'item.uniqueId');
     if ((value.rareName !== null) !== (value.rarity === 'rare' && value.identified)) throw new LootUiError('INVALID_INPUT', 'item.rareName');
   }

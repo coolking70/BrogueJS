@@ -11,7 +11,7 @@ import { lootCommands, revealLoot } from './commands';
 import { lootStatSources } from './statSources';
 import { lootPresentation } from './presentation';
 import type { LootItemDataV1 } from './types';
-export const shardDefinitions:WorldDefinitionPack={schema:1,worldSdk:1,items:[{owner:'loot',id:'loot.shard',nameKey:'ext.loot.shard.name',descriptionKey:'ext.loot.ui.integration.shard-description',category:'material',glyph:'*',color:'#aaaaaa',maxStack:99,nativeTemplate:null,tags:[],tool:null}],resourceNodes:[],stations:[],recipes:[],startupItems:null};
+export const shardDefinitions:WorldDefinitionPack={schema:1,worldSdk:1,items:[...loadLootPack().runes.runes.map(r=>({owner:'loot',id:r.id,nameKey:r.nameKey,descriptionKey:r.descriptionKey,category:'material' as const,glyph:'*',color:'#aaaaaa',maxStack:99,nativeTemplate:null,tags:[],tool:null})),{owner:'loot',id:'loot.shard',nameKey:'ext.loot.shard.name',descriptionKey:'ext.loot.ui.integration.shard-description',category:'material',glyph:'*',color:'#aaaaaa',maxStack:99,nativeTemplate:null,tags:[],tool:null}],resourceNodes:[],stations:[],recipes:[],startupItems:null};
 export function createLootModule(configuration:Json=DEFAULT_CONFIGURATION):ExtensionModule {
  if(!validConfiguration(configuration))throw new Error('Invalid loot configuration');
  const presetId=(configuration as {presetId:string}).presetId;
@@ -39,6 +39,6 @@ export function createLootModule(configuration:Json=DEFAULT_CONFIGURATION):Exten
   itemKnowledge:{trigger:(data,{fact,item})=>triggerLootKnowledge(data as unknown as LootItemDataV1,catalog,fact,item.enchantment),known:data=>(data as unknown as LootItemDataV1).identityKnown,unique:data=>(data as unknown as LootItemDataV1).uniqueId!==null||(data as unknown as LootItemDataV1).pieceId!==null,reveal:data=>revealLoot(data as unknown as LootItemDataV1)},
   itemPickup:(item,state)=>{const f=stateOf(state).filter;if(item.category===5)return f.autoPickupGold;
    const data=item.moduleData?.loot as unknown as LootItemDataV1|undefined;if(!data)return true;
-   return f.classes.includes(lootItemClass(data.baseId,catalog)!)&&['normal','magic','rare','unique','set'].indexOf(data.rarity)>=['normal','magic','rare','unique','set'].indexOf(f.minRarity);}
+   return f.classes.includes(lootItemClass(data.baseId,catalog)!)&&['normal','magic','rare','unique','set','runeword'].indexOf(data.rarity)>=['normal','magic','rare','unique','set'].indexOf(f.minRarity);}
  };
 }

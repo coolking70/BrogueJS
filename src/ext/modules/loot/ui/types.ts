@@ -26,6 +26,7 @@ export interface LootKnownItem {
   readonly enhancement: number;               // 玩家亲手强化，恒已知
   readonly affixCount: number | null;         // null ⇔ 地面
   readonly affixes: readonly LootKnownAffix[];  // 地面为 []；否则与 data.affixes 同序同长
+  readonly sockets?: {readonly count:number;readonly sequence:readonly string[]};
   readonly setId: string | null;
   readonly pieceId: string | null;
   readonly uniqueId: string | null;           // 仅“唯一且已鉴定”非空
@@ -82,6 +83,7 @@ export interface LootSetView {
   readonly bonuses: readonly {count:number;active:boolean;rows:readonly LootAffixRowView[]}[];
 }
 export interface LootItemView {
+  readonly sockets?: {readonly count:number;readonly sequence:readonly LootTextRef[]};
   readonly set?: LootSetView;
   readonly chip: LootChipView;
   readonly subtitle: readonly LootTextRef[];  // 稀有度、物等、类别

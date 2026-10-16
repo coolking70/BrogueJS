@@ -1,12 +1,21 @@
 import type { ReadonlyJson } from '../../ext/types';
 import type { ItemLocation } from './ItemExtensionBindings';
 /** Defense in depth after the owner's trusted projection. Floor facts contain
- * only the public rarity; unknown rows cannot smuggle their mechanical identity. */
+ * only public rarity and bounded socket count/sequence; base secrets stay hidden. */
 export function redactItemProjection(value:ReadonlyJson,location:ItemLocation,known:boolean,unknownRing:boolean):ReadonlyJson {
   if(location==='floor'){
     if(!value||typeof value!=='object'||Array.isArray(value))return {};
-    const rarity=(value as Readonly<Record<string,ReadonlyJson>>).rarity;
-    return typeof rarity==='string'||typeof rarity==='number'?{rarity}:{};
+    const record=value as Readonly<Record<string,ReadonlyJson>>,rarity=record.rarity;
+    const result:Record<string,ReadonlyJson>=typeof rarity==='string'||typeof rarity==='number'?{rarity}:{};
+    const sockets=record.sockets;
+    if(sockets&&typeof sockets==='object'&&!Array.isArray(sockets)){
+      const {count,sequence}=sockets as Readonly<Record<string,ReadonlyJson>>;
+      if(typeof count==='number'&&Number.isSafeInteger(count)&&count>=0&&count<=4
+        &&Array.isArray(sequence)&&sequence.length<=count
+        &&sequence.every(id=>typeof id==='string'&&id.length<=128&&/^[a-z][a-z0-9_.-]*$/.test(id)))
+        result.sockets={count,sequence:[...sequence]};
+    }
+    return result;
   }
   const visit=(v:ReadonlyJson,revealed:boolean):ReadonlyJson=>{
     if(!v||typeof v!=='object')return v;

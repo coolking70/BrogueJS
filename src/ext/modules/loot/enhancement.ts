@@ -17,6 +17,7 @@ export function refinementRows(data: LootItemDataV1, catalog: EffectiveLootCatal
  });
 }
 export function lootEnhancementLimit(data:LootItemDataV1,catalog:EffectiveLootCatalog):number {
+ if(data.socketed.length||data.rarity==='runeword')return 0;
  const remaining=enhancementCap(data,catalog.pack)-data.enhancement;
  if(remaining>0)return remaining;
  return refinementRows(data,catalog).some(r=>r.ranges.some((range,i)=>data.affixes[r.index]!.values[i]!<range[1]))?1:0;
@@ -35,7 +36,8 @@ export function enhanceLoot(data:LootItemDataV1,catalog:EffectiveLootCatalog,amo
 }
 export function lootEnhancement(catalog:()=>EffectiveLootCatalog):ItemEnhancementProvider {
  return {
-  preview(data){const item=data as unknown as LootItemDataV1,c=catalog();if(item.enhancement>=enhancementCap(item,c.pack))return null;
+  allowed(data){const d=data as unknown as LootItemDataV1;return d.socketed.length===0&&d.rarity!=='runeword';},
+  preview(data){const item=data as unknown as LootItemDataV1,c=catalog();if(!lootEnhancementLimit(item,c)||item.enhancement>=enhancementCap(item,c.pack))return null;
    const next=enhanceLoot(item,c,1,{randomInt:()=>{throw new Error('Preview cannot draw');}});return {data:next as unknown as Json,enchantmentDelta:deriveNativeFacts(next,c).enchantment-deriveNativeFacts(item,c).enchantment};},
   limit(data){return lootEnhancementLimit(data as unknown as LootItemDataV1,catalog());},
   apply(data,amount,random){const next=enhanceLoot(data as unknown as LootItemDataV1,catalog(),amount,random);return {data:next as unknown as Json,enchantmentDelta:deriveNativeFacts(next,catalog()).enchantment-deriveNativeFacts(data as unknown as LootItemDataV1,catalog()).enchantment};},

@@ -1,0 +1,125 @@
+{
+  "schema": 1,
+  "runes": [
+    {
+      "id": "loot.rune.ka",
+      "nameKey": "ext.loot.rune.ka.name",
+      "descriptionKey": "ext.loot.rune.ka.description",
+      "itemClasses": [
+        "weapon",
+        "armor"
+      ],
+      "weight": 100,
+      "minIlvl": 1,
+      "rows": [
+        {
+          "rowId": "loot.rune.ka.r0",
+          "ranges": [
+            [
+              500,
+              500
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.resist.fire",
+              "category": "flat",
+              "unit": "bp",
+              "valueIndex": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "loot.rune.ul",
+      "nameKey": "ext.loot.rune.ul.name",
+      "descriptionKey": "ext.loot.rune.ul.description",
+      "itemClasses": [
+        "weapon",
+        "armor"
+      ],
+      "weight": 100,
+      "minIlvl": 1,
+      "rows": [
+        {
+          "rowId": "loot.rune.ul.r0",
+          "ranges": [
+            [
+              5,
+              5
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.max-hp",
+              "category": "flat",
+              "unit": "int",
+              "valueIndex": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "loot.rune.tal",
+      "nameKey": "ext.loot.rune.tal.name",
+      "descriptionKey": "ext.loot.rune.tal.description",
+      "itemClasses": [
+        "weapon",
+        "armor"
+      ],
+      "weight": 100,
+      "minIlvl": 1,
+      "rows": [
+        {
+          "rowId": "loot.rune.tal.r0",
+          "ranges": [
+            [
+              500,
+              500
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.accuracy",
+              "category": "increased",
+              "unit": "bp",
+              "valueIndex": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "loot.rune.ren",
+      "nameKey": "ext.loot.rune.ren.name",
+      "descriptionKey": "ext.loot.rune.ren.description",
+      "itemClasses": [
+        "weapon",
+        "armor"
+      ],
+      "weight": 100,
+      "minIlvl": 1,
+      "rows": [
+        {
+          "rowId": "loot.rune.ren.r0",
+          "ranges": [
+            [
+              500,
+              500
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.physical-damage-dealt",
+              "category": "increased",
+              "unit": "bp",
+              "valueIndex": 0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

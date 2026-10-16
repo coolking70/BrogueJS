@@ -7,11 +7,12 @@ import { enhancementCap } from '../economy';
 import { rollLootWithTrace } from '../generator';
 import { lootItemClass, projectItemModifiers, validateLootItemData } from '../item';
 import { computeRarityWeights } from '../rarity';
-import type { EffectiveLootCatalog, ItemClass, LootItemDataV1, LootModifierDraft, LootRandom, LootRollRequest, LootSource } from '../types';
+import type { EffectiveLootCatalog, ItemClass, LootItemDataV1, LootModifierDraft, LootRandom, LootRollRequest, LootSource, RarityId } from '../types';
 import { CHECKPOINT_DEPTHS, FIRST_TIER_TARGETS, LAYER_TARGETS, POWER_TARGETS, PRESET_IDS, RARITY_IDS, RARITY_TARGETS, UNIQUE_OPPORTUNITY_TARGETS } from './doc-targets';
 import type { StatsPresetId } from './doc-targets';
 
 type RarityCounts = Record<typeof RARITY_IDS[number], number>;
+type GeneratedRarityCounts = Record<RarityId, number>;
 type SourceCounts = Record<LootSource, number>;
 type EventRequest = LootRollRequest extends infer T ? T extends LootRollRequest ? Omit<T, 'v' | 'depth' | 'presetId' | 'rarityFindBp' | 'claimedUniqueIds'> : never : never;
 type Power = { weapon: number; hp: number; armor: number; mitigation: number };
@@ -25,7 +26,7 @@ export interface RarityComparison {
   tolerancePp: RarityCounts | null;
 }
 export interface LayerStats {
-  depth: number; items: number; sources: SourceCounts; rarities: RarityCounts; cumulative: number; killGold: number;
+  depth: number; items: number; sources: SourceCounts; rarities: GeneratedRarityCounts; cumulative: number; killGold: number;
   uniqueOpportunities: number; uniqueDowngrades: number; netRare: number;
   tierShares: Record<string, number>; tierCounts: Record<string, number>; corruptedRate: number; eligibleCorruptedRate: number; averageAffixes: number;
 }
@@ -56,7 +57,7 @@ export function mulberry32(seed: number): LootRandom {
     return lo + Math.floor(fraction * (hi - lo + 1));
   } };
 }
-const emptyRarities = (): RarityCounts => ({ normal: 0, magic: 0, rare: 0, unique: 0 });
+const emptyRarities = (): GeneratedRarityCounts => ({ normal: 0, magic: 0, rare: 0, unique: 0, set: 0, runeword: 0 });
 const emptySources = (): SourceCounts => ({ kill: 0, floor: 0, vault: 0, encounter: 0 });
 const emptyTiers = (): Record<string, number> => Object.fromEntries([1, 2, 3, 4, 5, 6].map(t => [t, 0]));
 const chance = (random: LootRandom, bp: number): boolean => bp >= 10000 || (bp > 0 && random.randomInt(1, 10000) <= bp);
@@ -72,7 +73,7 @@ function category(random: LootRandom, other: boolean): ItemClass | null {
   return roll <= 10 ? 'weapon' : roll <= 18 ? 'armor' : roll <= 21 ? 'ring' : null;
 }
 function startingItem(baseId: string): LootItemDataV1 {
-  return { v: 3, pieceId: null, identityKnown: true, baseId, ilvl: 1, rarity: 'normal', uniqueId: null, setId: null, affixes: [], corrupted: false, enhancement: 0, sockets: 0, socketed: [], nameParts: null, origin: { source: 'floor', depth: 1 } };
+  return { v: 4, pieceId: null, identityKnown: true, baseId, ilvl: 1, rarity: 'normal', uniqueId: null, setId: null, affixes: [], corrupted: false, enhancement: 0, sockets: 0, socketed: [], nameParts: null, origin: { source: 'floor', depth: 1 } };
 }
 interface HeldItem { data: LootItemDataV1; category: ItemClass; modifiers: LootModifierDraft[] }
 function held(data: LootItemDataV1, catalog: EffectiveLootCatalog): HeldItem {
@@ -221,7 +222,7 @@ export function computeLootStats(options: LootStatsOptions = {}): LootStatsRepor
             inventory.push(item);
             layer.items++; cumulative++; totals.items++;
             layer.sources[request.source]++;
-            layer.rarities[data.rarity as keyof RarityCounts]++;
+            layer.rarities[data.rarity]++;
             layer.rawAffixes += data.affixes.length; totals.averageAffixes += data.affixes.length;
             if (data.corrupted) { layer.rawCorrupted++; totals.corrupted++; }
             if (data.rarity === 'magic' || data.rarity === 'rare') { layer.rawEligible++; totals.eligible++; }
@@ -263,7 +264,7 @@ export function computeLootStats(options: LootStatsOptions = {}): LootStatsRepor
     const outputLayers: LayerStats[] = depthRows.map(layer => {
       const affixes = sum(Object.values(layer.tierCounts));
       return { depth: layer.depth, items: layer.items / runs, sources: Object.fromEntries(Object.entries(layer.sources).map(([k, v]) => [k, v / runs])) as SourceCounts,
-        rarities: Object.fromEntries(Object.entries(layer.rarities).map(([k, v]) => [k, v / runs])) as RarityCounts, cumulative: layer.cumulative / runs, killGold: layer.killGold / runs,
+        rarities: Object.fromEntries(Object.entries(layer.rarities).map(([k, v]) => [k, v / runs])) as GeneratedRarityCounts, cumulative: layer.cumulative / runs, killGold: layer.killGold / runs,
         uniqueOpportunities: layer.uniqueOpportunities / runs, uniqueDowngrades: (layer.uniqueOpportunities - layer.rarities.unique) / runs,
         netRare: (layer.rarities.rare - (layer.uniqueOpportunities - layer.rarities.unique)) / runs,
         tierCounts: layer.tierCounts, tierShares: Object.fromEntries(Object.entries(layer.tierCounts).map(([k, v]) => [k, ratio(v, affixes)])),
@@ -294,7 +295,9 @@ export function computeLootStats(options: LootStatsOptions = {}): LootStatsRepor
       if (defense) comparisons.push(compare(id, defense.depth, 'consistentDefense.mitigation', defense.mitigation, target.mitigation));
     }
     for (const target of RARITY_TARGETS[id]) for (const monsterClass of ['ordinary', 'elite'] as const) {
-      const weights = computeRarityWeights(preset, target.ilvl, monsterClass === 'elite' ? 5000 : 0, 10000, 0, null);
+      // Published 6B1 table predates sets: audit its four-category model only.
+      // Live simulations above still use the complete, unchanged production preset.
+      const weights = computeRarityWeights({...preset,rarityWeights:{...preset.rarityWeights,set:0}}, target.ilvl, monsterClass === 'elite' ? 5000 : 0, 10000, 0, null);
       const total = sum(Object.values(weights));
       const actual = Object.fromEntries(RARITY_IDS.map(r => [r, weights[r] / total * 100])) as RarityCounts;
       const source = target[monsterClass];
@@ -324,6 +327,7 @@ export function computeLootStats(options: LootStatsOptions = {}): LootStatsRepor
       '强度每层假设E=floor(0.6d)张卷轴分配给被评估武器/护甲并分别截顶；各指标允许独立最优装备与两戒指，负收益可不装备。',
       '一致减伤代理精确枚举1甲+至多2件不同戒指（允许空槽），按EHP=HP/(1−减伤)选同一套装备；仅对已完成戒指对作Pareto去重，不截候选。生命/卷轴假设沿用乐观代理；不计护甲命中效应、力量、成长或鉴定，不代替真实生存倍率。',
       '阶分布计所有非唯一词缀（含腐化负面/补偿）；首次观察另列未腐化样本；理论首次层数不受该层事件概率为零影响。',
+      '稀有度理论表只核对6B1四类模型（set权重置0）；逐层实际生成仍使用完整生产目录，另列套装与符文之语计数，不虚构新家族历史目标。',
       '数值表v1.1：ilvl15/30的elite目标未刊，记null；稀有度容差为打印精度半单位：整数格±0.5百分点、一位小数格±0.05百分点（保留1.0等尾零），原19个整数打印超差消失。',
       '偏差阈值：绝对差>0.02且相对差>20%；目标为0时非零且绝对差>0.02标记，相对偏差记null。',
     ], presets, rarity, comparisons, firstTier,
@@ -337,7 +341,7 @@ export function renderLootStatsMarkdown(report: LootStatsReport): string {
     `数据指纹：${report.packFingerprint}；有效目录：${report.catalogFingerprint}`, '', ...report.model.map(s => `- ${s}`), '',
     `汇总：>±20% 标记 ${report.summary.flaggedComparisons} 项；稀有度超打印精度半单位 ${report.summary.rarityMismatchedCells} 格；生成物校验失败 ${report.summary.validationFailures}；单件/事件最大抽取 ${report.summary.maxItemDraws}/${report.summary.maxEventDraws}`, ''];
   for (const preset of report.presets) {
-    lines.push(`## ${preset.id} 每层明细`, '', '| 深度 | 件数 | 击杀/楼层/宝库/Boss | 产出普/魔/稀/唯 | 唯一机会/降级/净稀有 | 累计 | 击杀金币 | T1/T2/T3/T4/T5/T6 % | 腐化/合资格 % | 平均词缀 |', '|---|---|---|---|---|---|---|---|---|---|');
+    lines.push(`## ${preset.id} 每层明细`, '', '| 深度 | 件数 | 击杀/楼层/宝库/Boss | 产出普/魔/稀/唯/套/词 | 唯一机会/降级/净稀有 | 累计 | 击杀金币 | T1/T2/T3/T4/T5/T6 % | 腐化/合资格 % | 平均词缀 |', '|---|---|---|---|---|---|---|---|---|---|');
     for (const l of preset.depthRows) lines.push(`| ${l.depth} | ${format(l.items)} | ${Object.values(l.sources).map(v => format(v)).join('/')} | ${Object.values(l.rarities).map(v => format(v)).join('/')} | ${[l.uniqueOpportunities, l.uniqueDowngrades, l.netRare].map(v => format(v)).join('/')} | ${format(l.cumulative)} | ${format(l.killGold)} | ${Object.values(l.tierShares).map(v => format(v * 100, 2)).join('/')} | ${format(l.corruptedRate * 100)}/${format(l.eligibleCorruptedRate * 100)} | ${format(l.averageAffixes)} |`);
     lines.push('', `唯一机会/局 ${format(preset.unique.opportunitiesPerRun)}；实际唯一/局 ${format(preset.unique.itemsPerRun)}；降级 ${format(preset.unique.downgradeRate * 100)}%；全部物品腐化率 ${format(preset.totals.corruptedRate * 100)}%；合资格物品腐化率 ${format(preset.totals.eligibleCorruptedRate * 100)}%；平均词缀 ${format(preset.totals.averageAffixes)}`, '', '| 唯一ID | 件/局 |', '|---|---|');
     for (const [id, count] of Object.entries(preset.unique.distribution)) lines.push(`| ${id} | ${format(count)} |`);

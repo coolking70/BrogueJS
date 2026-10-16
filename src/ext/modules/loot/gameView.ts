@@ -1,3 +1,5 @@
+import { lootItemClass } from './item';
+import { matchRuneword } from './sockets';
 import { enhancementCap } from './economy';
 import type { LootItemDataV1 } from './types';
 import i18next from 'i18next';
@@ -36,8 +38,9 @@ export function readLootGameView(game:Game,selectedId:number|null,selectedIds:re
  function known(item:Item,location:LootUiLocation):LootKnownItem|null {
   if(!item.moduleData?.loot||game.player.hasStatus('hallucinating'))return null;
   if(item.moduleData?.loot&&location!=='floor'&&!game.player.hasStatus('hallucinating')) return runtime.projectKnownItem(item,'loot',location).data as unknown as LootKnownItem;
-  const rarity=item.moduleData?.loot&&location==='floor'?(runtime.projectKnownItem(item,'loot',location).data as {rarity?:LootKnownItem['rarity']}).rarity??null:null;
-  return {v:1,location,itemClass:item.category===0?'weapon':item.category===1?'armor':'ring',baseId:item.category===8&&!ItemLoader.identifiedItems.has(item.identityId??'')?null:item.identityId??null,rarity,ilvl:null,enhancement:0,affixCount:location==='floor'?null:0,affixes:[],setId:null,pieceId:null,uniqueId:null,rareName:null,corrupted:null,identified:!item.moduleData?.loot&&item.isIdentified,polarity:'unknown',familiarity:null};
+  const socketProjection=item.moduleData?.loot&&location==='floor'?runtime.projectKnownItem(item,'loot',location).data as unknown as LootKnownItem:null;
+  const rarity=socketProjection?.rarity??null;
+  return {...(socketProjection?.sockets?{sockets:socketProjection.sockets}:{}),v:1,location,itemClass:item.category===0?'weapon':item.category===1?'armor':'ring',baseId:item.category===8&&!ItemLoader.identifiedItems.has(item.identityId??'')?null:item.identityId??null,rarity,ilvl:null,enhancement:0,affixCount:location==='floor'?null:0,affixes:[],setId:null,pieceId:null,uniqueId:null,rareName:null,corrupted:null,identified:!item.moduleData?.loot&&item.isIdentified,polarity:'unknown',familiarity:null};
  }
  Object.assign(options,{equippedKnown:equipment.filter((i):i is Item=>!!i).map(i=>({id:i.id,known:known(i,'equipped')}))});
  const sourceSets=[...new Set(options.equippedKnown!.flatMap(i=>i.known?.setId?[i.known.setId]:[]))].sort().map(id=>buildLootSetView(id,catalog,options));
@@ -46,6 +49,17 @@ export function readLootGameView(game:Game,selectedId:number|null,selectedIds:re
   enhancement:item.moduleData?.loot&&['pack','equipped'].includes(location)?{level:(item.moduleData.loot as unknown as LootItemDataV1).enhancement,cap:enhancementCap(item.moduleData.loot as unknown as LootItemDataV1,catalog.pack),allowed:game.canEnchantTarget(item),scroll:game.player.inventory.items.some(i=>i.consumableId==='scroll_of_enchantment')}:null,
   canEquip:location==='pack',canUnequip:location==='equipped',
   ringEquipSlots:item.category===ItemCategory.RING&&location==='pack'?lootRingEquipSlots(item.id,equipment.slice(2).map(i=>i?.id??null)).map(index=>({slot:index===0?'left' as const:'right' as const,replace:!!equipment[index+2]})):[]}));
+ const selectedRaw=reachable.find(r=>r.item.id===selectedId);
+ const socketData=selectedRaw?.item.moduleData?.loot as unknown as LootItemDataV1|undefined;
+ const socketAvailable=!!socketData&&selectedRaw?.location==='pack'&&socketData.rarity==='normal'&&socketData.enhancement===0&&socketData.socketed.length<socketData.sockets&&!game.player.hasStatus('hallucinating');
+ const socketChoices=socketAvailable?game.player.inventory.items.flatMap(item=>{
+  const rune=item.worldItem?catalog.runesById[item.worldItem.definitionId]:undefined,cls=lootItemClass(socketData!.baseId,catalog)!;
+  if(!rune||!rune.itemClasses.includes(cls as 'weapon'|'armor'))return [];
+  const word=matchRuneword(catalog,cls,socketData!.sockets,[...socketData!.socketed,rune.id]);
+  return [{id:item.id,name:text(rune.nameKey),quantity:item.quantity,word:word?text(word.nameKey):null}];
+ }):[];
+ const wordPreviews=selectedRaw&&!game.player.hasStatus('hallucinating')?catalog.pack.runewords.words.filter(w=>w.baseClasses.includes(selectedRaw.item.category===0?'weapon':'armor')&&selectedRaw.item.category!==8).map(w=>({id:w.id,name:text(w.nameKey),sequence:w.sequence.map(id=>text(catalog.runesById[id]!.nameKey)),sockets:w.sockets,
+  rows:buildLootItemView({v:1,location:'pack',itemClass:selectedRaw.item.category===0?'weapon':'armor',baseId:selectedRaw.item.identityId!,rarity:'runeword',ilvl:1,enhancement:0,affixCount:w.rows.length,affixes:w.rows.map(r=>({known:true,id:r.rowId,position:'row',polarity:1,tier:0,values:r.ranges.map(v=>v[0])})),sockets:{count:w.sockets,sequence:w.sequence},setId:null,pieceId:null,uniqueId:null,rareName:null,corrupted:false,identified:true,polarity:'benign',familiarity:null},catalog,options).rows})):[];
  const liveRows=(id:number,rows:readonly LootAffixRowView[]):readonly LootAffixRowView[]=>reachable.find(r=>r.item.id===id)?.item.runicType?rows:rows.map(row=>({...row,lines:row.lines.map(line=>line.runic?{...line,value:i18next.t('ext.loot.ui.runic.inactive',{value:line.value}),tone:'neutral' as const}:line)}));
  const selected=entries.find(e=>e.id===selectedId)??null;
  let card=null,compare=null;
@@ -68,7 +82,7 @@ export function readLootGameView(game:Game,selectedId:number|null,selectedIds:re
    return {label:s.label,name:source?.name??'',value:row.category==='increased'||row.category==='more'?`${lootSigned(row.value/100)}%`:lootSigned(row.value/(s.divisor??1)),category:row.category};
   }).filter(row=>row.name);
  });
- return {revision:state.revision,presetId:state.presetId,filter:structuredClone(state.filter),defaults:defaultLootPickupFilter(state.presetId),
+ return {socketAvailable,socketChoices,wordPreviews,revision:state.revision,presetId:state.presetId,filter:structuredClone(state.filter),defaults:defaultLootPickupFilter(state.presetId),
   presetName:text(catalog.pack.presets.presets.find(p=>p.id===state.presetId)!.nameKey),entries,selected,card,compare,salvage,sources,sourceItems,sourceSets,
   shards:game.player.inventory.items.filter(i=>i.worldItem?.definitionId==='loot.shard').reduce((n,i)=>n+i.quantity,0)};
 }

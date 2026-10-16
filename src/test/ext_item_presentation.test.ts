@@ -8,6 +8,14 @@ import { ItemLoader } from '../engine/Items/ItemLoader';
 import { rng } from '../engine/Random';
 import { auditFullObjectGraph } from './support/fullGenerationCheckpointOracle';
 import type { KnownItemFacts } from '../ext/itemSdk';
+import { redactItemProjection } from '../engine/Items/ItemPresentation';
+it('floor whitelist retains bounded public sockets and strips nested secrets',()=>{
+ const sockets={count:2,sequence:['fixture.ka','fixture.ul'],values:[999],isCursed:true,sourceId:'secret'};
+ expect(redactItemProjection({rarity:'runeword',sockets,ilvl:99,baseId:'secret',affixes:[{known:true,values:[999]}]},'floor',true,false))
+  .toEqual({rarity:'runeword',sockets:{count:2,sequence:['fixture.ka','fixture.ul']}});
+ for(const invalid of [{count:5,sequence:[]},{count:1,sequence:['a','b']},{count:1,sequence:[{id:'secret'}]},{count:1,sequence:['x'.repeat(129)]},{count:-1,sequence:[]}])
+  expect(redactItemProjection({rarity:'normal',sockets:invalid},'floor',false,false)).toEqual({rarity:'normal'});
+});
 it('passes only location-safe known facts to formatters; inscription stays outermost and reads are pure',()=>{
  const seen:KnownItemFacts[]=[],m=createItemCompleteFixture(),project=vi.fn(m.itemPresentation!.project);
  const h=createItemHarness({},[{...completeDescriptor,create:()=>({...m,itemPresentation:{...m.itemPresentation!,project,name(f){seen.push(f);return m.itemPresentation!.name(f);}}})}]),g=h.game();

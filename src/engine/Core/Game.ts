@@ -1,3 +1,5 @@
+import { checkItemBudget, itemDefinition } from './WorldWorkWorld';
+import { assembleWorldItem } from '../Items/WorldItems';
 import { nativeProjectileRunic } from '../Stats/NativeStatSources';
 import { prepareItemCommand, commitItemCommand } from './ItemCommands';
 import type { DropInput } from '../../ext/itemDrops';
@@ -1332,15 +1334,23 @@ export class Game {
         this.extensionRuntime!.resolveItemDrop(input,(proposal:DropProposal,event:DropEvent):DropAcceptance=>{
             converted=proposal.converted;
             const accepted: {index:number;itemId:number}[]=[],skipped:DropAcceptance['skipped'][number][]=[],newUniqueIds:string[]=[];
-            for(const spec of proposal.items)this.extensionRuntime!.validateItemData({id:getNextEntityId(),category:ItemCategory[spec.native.category.toUpperCase() as 'WEAPON'|'ARMOR'|'RING'],identityId:spec.native.kind,
+            for(const spec of proposal.items)if(spec.kind==='native')this.extensionRuntime!.validateItemData({id:getNextEntityId(),category:ItemCategory[spec.native.category.toUpperCase() as 'WEAPON'|'ARMOR'|'RING'],identityId:spec.native.kind,
                 quantity:1,identified:spec.native.identified,enchantment:spec.native.enchantment,isCursed:spec.native.isCursed,runicType:spec.native.runicType,vorpalEnemy:spec.native.targetClass??null,moduleData:spec.moduleData},'create');
             const ids=new Set<number>();forEachItemRoot(this,item=>ids.add(item.id));let roots=ids.size;
             const outer=event.source==='floor'||event.source==='vault';
             const destination=()=>{if(outer)return {...event.at};const candidates=captiveItemDropCandidates(this,event.at,this.items);return candidates.length?{...candidates[rng.randRange(0,candidates.length-1)]!}:null;};
             proposal.items.forEach((spec,index)=>{
                 if(roots>=8192){skipped.push({index,reason:'capacity'});return;}
+                if(spec.kind==='material'){
+                    // C5 materials share the world-root budget with outstanding work outputs.
+                    // Capacity is normal rejection, before placement RNG or entity allocation.
+                    try{checkItemBudget(this,1);}catch(error){
+                        if(!(error instanceof World5Error)||error.code!=='C5_BUDGET')throw error;
+                        skipped.push({index,reason:'capacity'});return;
+                    }
+                }
                 const at=destination();if(!at){skipped.push({index,reason:'placement'});return;}
-                const item=assembleDropItem(spec);this.extensionRuntime!.validateItemData(item,'create');this.extensionRuntime!.bindItemData(item);item.loc=at;roots++;
+                const item=spec.kind==='material'?assembleWorldItem(itemDefinition(this,spec.definitionId),spec.quantity):assembleDropItem(spec);this.extensionRuntime!.validateItemData(item,'create');this.extensionRuntime!.bindItemData(item);item.loc=at;roots++;
                 if(outer)resultItem=item;else{this.items.push(item);promoteOnItemPlaced(this.grid,at.x,at.y);}
                 accepted.push({index,itemId:item.id});const uid=proposal.uniqueIds[index];if(uid!==null&&uid!==undefined)newUniqueIds.push(uid);
             });
@@ -8071,7 +8081,7 @@ export class Game {
 
     /** CE Items.c:7819-7836 accepts every eligible item in the pack. */
     public canEnchantTarget(item: Item): boolean {
-        return canEnchantChosenItem(this.player, item)&&((this.extensionRuntime?.itemEnhancementLimit(item)??1)>0
+        return this.extensionRuntime?.itemEnhancementAllowed(item)!==false&&canEnchantChosenItem(this.player, item)&&((this.extensionRuntime?.itemEnhancementLimit(item)??1)>0
             ||this.extensionRuntime?.itemGrowthRedirects('scroll_of_enchantment','enchantment')===true);
     }
 
@@ -8131,7 +8141,7 @@ export class Game {
     // Retain the old private entry for existing direct callers; selection always
     // supplies its live pack object. Both entries share the CE mutation path.
     private enchantEquippedItem(target: Item | null = this.player.equippedWeapon ?? this.player.equippedArmor): boolean {
-        if (!target) return false;
+        if (!target || this.extensionRuntime?.itemEnhancementAllowed(target)===false) return false;
         const ports: EnchantmentPorts = {
             updateVision: () => this.updateVision(),
             logEnchanted: item => logger.log(i18next.t('item.arcana_enchanted', { name: item.displayName,

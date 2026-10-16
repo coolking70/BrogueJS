@@ -5,7 +5,7 @@ import { ItemLoader } from './ItemLoader';
 import weapons from '../../data/weapons.json';
 import armors from '../../data/armors.json';
 import arcana from '../../data/arcana.json';
-import type { NativeAssembly, DropItemSpec } from '../../ext/itemSdk';
+import type { NativeAssembly, NativeDropItemSpec } from '../../ext/itemSdk';
 import { assertItemJson, copyItemValue, ItemDataError } from './ItemData';
 export const FIXED_EQUIPMENT_BASES = Object.freeze({
   weapon: Object.freeze(weapons.filter(w => !['dart', 'incendiary_dart', 'javelin', 'halberd'].includes(w.id)).map(w => w.id)),
@@ -37,7 +37,7 @@ export function validateNativeAssembly(native: NativeAssembly): void {
       || native.runicType !== null && !(native.category === 'weapon' ? ItemLoader.WEAPON_RUNIC_BY_CE_INDEX : native.category === 'armor' ? ItemLoader.ARMOR_RUNIC_BY_CE_INDEX : []).includes(native.runicType))
     throw new ItemDataError('C6_DATA');
 }
-export function assembleDropItem(spec: DropItemSpec): Item {
+export function assembleDropItem(spec: NativeDropItemSpec): Item {
   validateNativeAssembly(spec.native);
   const n = spec.native, item = assembleNativeTemplate(n.kind);
   if(n.targetClass)item.vorpalEnemy=n.targetClass;

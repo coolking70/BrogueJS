@@ -17,7 +17,7 @@ describe('loot locale closed reference set',()=>{
     };
     visit(loadLootPack());refs.add(descriptor.labelKey);refs.add(descriptor.descriptionKey!);
     expect(Object.keys(locale).sort()).toEqual([...refs].sort());
-    expect(refs.size).toBe(171);
+    expect(refs.size).toBe(183);
   });
   it('uses nonempty Chinese original text with no placeholder',()=>{
     for(const [key,value]of Object.entries(locale)){

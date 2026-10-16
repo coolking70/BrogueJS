@@ -33,7 +33,9 @@
     "tests/loot_b4_growth.test.ts",
     "tests/loot_b4_vectors.test.ts",
     "tests/loot_sets.test.ts",
-    "tests/loot_sets_growth.test.ts"
+    "tests/loot_sets_growth.test.ts",
+    "tests/loot_sockets.test.ts",
+    "tests/loot_socket_journey.test.ts"
   ],
   "drift": []
 }

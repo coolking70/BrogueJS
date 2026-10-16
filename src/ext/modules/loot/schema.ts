@@ -8,7 +8,7 @@ import { computeRarityWeights } from './rarity';
 import type { LootDataErrorCode } from './errors';
 import type { ItemClass, LootPack, ModifierSpec, RarityId } from './types';
 
-export const LOOT_FILE_NAMES = ['ilvl','tiers','bases','rarities','affixes','uniques','sets','monsterClasses','dropTables','gold','presets','enhancement','identify','corruption','salvage','caps','rareNames'] as const;
+export const LOOT_FILE_NAMES = ['ilvl','tiers','bases','rarities','affixes','uniques','sets','runes','runewords','sockets','runeDrops','monsterClasses','dropTables','gold','presets','enhancement','identify','corruption','salvage','caps','rareNames'] as const;
 const CLASSES = ['weapon', 'armor', 'ring'] as const;
 const RARITIES = ['normal', 'magic', 'rare', 'unique', 'set', 'runeword'] as const;
 const MONSTER_CLASSES = ['none', 'fodder', 'splitter', 'standard', 'elite'] as const;
@@ -116,6 +116,10 @@ const schemas: Record<keyof LootPack,Check> = {
   sets:file({sets:array(object({id,nameKey:key,descriptionKey:key,
     pieces:array(object({id,nameKey:key,descriptionKey:key,baseId:nativeId,minIlvl:integer(1,99),weight,rows:fixedRows(8)}),1,4),
     bonuses:array(object({count:integer(2,4),rows:fixedRows(4)}),0,3)}),0,32)}),
+  runes:file({runes:array(object({id,nameKey:key,descriptionKey:key,itemClasses:array(enumeration(['weapon','armor']),1,2),weight,minIlvl:integer(1,99),rows:fixedRows(4)}),1,33)}),
+  runewords:file({words:array(object({id,nameKey:key,descriptionKey:key,baseClasses:array(enumeration(['weapon','armor']),1,2),sockets:integer(1,4),sequence:array(id,1,4),rows:fixedRows(8)}),0,64)}),
+  sockets:file({bases:array(object({baseId:nativeId,bands:array(object({minIlvl:integer(1,99),maxIlvl:integer(1,99),weights:array(weight,5,5)}),1,99)}),1,512)}),
+  runeDrops:file({rows:array(object({id,presetId:id,source:enumeration(['kill','encounter']),chanceBp:bp,count:array(literal(1),2,2),runeIds:array(id,1,33)}),0,16)}),
   monsterClasses:file({defaultClass:enumeration(MONSTER_CLASSES),classes:array(enumeration(MONSTER_CLASSES),5,5),
     members:array(object({typeId:nativeId,class:enumeration(MONSTER_CLASSES)}),0,4096),
     modifiers:object({leader:object({chanceBonusBp:bp}),champion:object({chanceBonusBp:bp,rarityBonusBp:nonnegative})})}),
@@ -196,8 +200,8 @@ export function computeStaticDrawBudget(pack: LootPack): { perItem: number; perE
   const uniqueValues = Math.max(0,...[...pack.uniques.uniques,...pack.sets.sets.flatMap(s=>s.pieces)].map(u=>u.rows.reduce((n,r)=>n+r.ranges.filter(([l,h])=>l!==h).length,0)));
   const affixPath = 1 + slots*(3+maxValues) + (4+maxNegativeValues+maxValues) + 2;
   const uniquePath = 1 + uniqueValues;
-  const perItem = 3 + affixPath + uniquePath;
-  return { perItem, perEvent: 2+8*perItem+2 };
+  const perItem = 3 + affixPath + uniquePath + 1; // terminal normal socket draw
+  return { perItem, perEvent: 2+8*perItem+2+2 }; // conservative equipment bound + material probability/choice + gold
 }
 
 export function collectLootLocaleKeys(value: unknown, output = new Set<string>()): Set<string> {
@@ -359,6 +363,56 @@ export function assertLootPack(value: unknown, locale: unknown = zhCN): asserts 
     if(set.pieces.some(piece=>expanded(piece.rows)+rewards
       +(p.enhancement.caps.set>0?enhancementRows[baseClass.get(piece.baseId)!]:0)>24))fail('BUDGET',path);
   });
+  // C2 finite catalogs: validate once, then use immutable indexed lookup.
+  unique(p.runes.runes.map(r=>r.id),'runes.runes');
+  unique(p.runewords.words.map(w=>w.id),'runewords.words');
+  unique(p.sockets.bases.map(b=>b.baseId),'sockets.bases');
+  const runeMap=new Map(p.runes.runes.map(r=>[r.id,r]));
+  const expandedRows=(rows:typeof p.runes.runes[number]['rows'])=>rows.reduce((n,r)=>n+r.modifiers.reduce((n,m)=>n+(m.stat==='loot.local.damage'&&m.category==='local-increased'?2:1),0),0);
+  const socketRows=(rows:typeof p.runes.runes[number]['rows'],prefix:string,classes:ItemClass[])=>{
+    rows.forEach((r,j)=>{
+      if(rowIds.has(r.rowId))fail('DUPLICATE_ID',prefix);rowIds.add(r.rowId);
+      if(r.rowId!==`${prefix}.r${j}`)fail('INVALID_REFERENCE',prefix);
+      validateModifiers(r.modifiers,r.ranges,prefix,classes);
+      if(r.ranges.some(([lo,hi])=>lo!==hi))fail('INVALID_RANGE',prefix);
+      if(r.modifiers.some(m=>m.runicType||m.stat.startsWith('growth.')||m.stat.startsWith('combat.')||m.stat==='loot.ring-implicit'))fail('INVALID_COMBINATION',prefix);
+    });
+  };
+  for(const rune of p.runes.runes){
+    if(!rune.id.startsWith('loot.rune.'))fail('INVALID_VALUE',rune.id);
+    unique(rune.itemClasses,rune.id);socketRows(rune.rows,rune.id,rune.itemClasses);
+    if(expandedRows(rune.rows)*4>24)fail('BUDGET',rune.id);
+  }
+  const wordKeys=new Set<string>();
+  for(const word of p.runewords.words){
+    if(!word.id.startsWith('loot.word.'))fail('INVALID_VALUE',word.id);
+    unique(word.baseClasses,word.id);
+    if(word.sequence.length!==word.sockets)fail('INVALID_COMBINATION',word.id);
+    if(word.sequence.some(id=>!runeMap.has(id)||word.baseClasses.some(c=>!runeMap.get(id)!.itemClasses.includes(c))))fail('INVALID_REFERENCE',word.id);
+    for(const cls of word.baseClasses){const key=JSON.stringify([cls,word.sockets,word.sequence]);if(wordKeys.has(key))fail('INVALID_COMBINATION',word.id);wordKeys.add(key);}
+    socketRows(word.rows,word.id,word.baseClasses);
+    if(expandedRows(word.rows)>24)fail('BUDGET',word.id);
+  }
+  if(p.enhancement.caps.runeword!==0)fail('INVALID_COMBINATION','enhancement.caps.runeword');
+  const socketBases=[...baseClass].filter(([,c])=>c!=='ring').map(([id])=>id);
+  if(socketBases.length!==p.sockets.bases.length)fail('INVALID_REFERENCE','sockets.bases');
+  for(const base of p.sockets.bases){
+    if(!socketBases.includes(base.baseId))fail('INVALID_REFERENCE','sockets.bases');
+    base.bands.forEach((b,i)=>{if(b.minIlvl!==(i===0?1:base.bands[i-1]!.maxIlvl+1)||b.maxIlvl<b.minIlvl||!b.weights.some(w=>w>0))fail('INVALID_RANGE',base.baseId);});
+    if(base.bands[base.bands.length-1]!.maxIlvl!==99)fail('INVALID_RANGE',base.baseId);
+  }
+  unique(p.runeDrops.rows.map(r=>r.id),'runeDrops.rows');
+  unique(p.runeDrops.rows.map(r=>`${r.presetId}/${r.source}`),'runeDrops.match');
+  for(const row of p.runeDrops.rows){
+    if(!p.presets.presets.some(p=>p.id===row.presetId)||row.runeIds.some(id=>!runeMap.has(id)))fail('INVALID_REFERENCE',row.id);
+    unique(row.runeIds,row.id);
+    if(row.runeIds.some((id,i)=>i>0&&id<=row.runeIds[i-1]!))fail('INVALID_COMBINATION',row.id);
+    if(!row.runeIds.some(id=>runeMap.get(id)!.weight>0&&runeMap.get(id)!.minIlvl<=p.ilvl.min))fail('MISSING_CANDIDATE',row.id);
+  }
+  for(const preset of p.presets.presets){
+    const material=(source:string)=>p.runeDrops.rows.some(r=>r.presetId===preset.id&&r.source===source&&r.chanceBp>0)?1:0;
+    if(preset.encounter.count+material('encounter')>8||preset.maxPerKill+material('kill')>8)fail('BUDGET','runeDrops.proposals');
+  }
   p.uniques.bossUniqueBias.forEach((b,i)=>{if(!p.uniques.uniques.some(u=>u.id===b.uniqueId))fail('INVALID_REFERENCE',`uniques.bossUniqueBias[${i}].uniqueId`);});
   unique(p.monsterClasses.classes,'monsterClasses.classes');
   unique(p.monsterClasses.members.map(m=>m.typeId),'monsterClasses.members','.typeId');

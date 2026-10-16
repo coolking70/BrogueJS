@@ -1,0 +1,103 @@
+{
+  "schema": 1,
+  "words": [
+    {
+      "id": "loot.word.ash",
+      "nameKey": "ext.loot.word.ash.name",
+      "descriptionKey": "ext.loot.word.ash.description",
+      "baseClasses": [
+        "armor"
+      ],
+      "sockets": 2,
+      "sequence": [
+        "loot.rune.ka",
+        "loot.rune.ul"
+      ],
+      "rows": [
+        {
+          "rowId": "loot.word.ash.r0",
+          "ranges": [
+            [
+              2000,
+              2000
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.resist.fire",
+              "category": "flat",
+              "unit": "bp",
+              "valueIndex": 0
+            }
+          ]
+        },
+        {
+          "rowId": "loot.word.ash.r1",
+          "ranges": [
+            [
+              20,
+              20
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.max-hp",
+              "category": "flat",
+              "unit": "int",
+              "valueIndex": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "loot.word.edge",
+      "nameKey": "ext.loot.word.edge.name",
+      "descriptionKey": "ext.loot.word.edge.description",
+      "baseClasses": [
+        "weapon"
+      ],
+      "sockets": 2,
+      "sequence": [
+        "loot.rune.tal",
+        "loot.rune.ren"
+      ],
+      "rows": [
+        {
+          "rowId": "loot.word.edge.r0",
+          "ranges": [
+            [
+              1500,
+              1500
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.accuracy",
+              "category": "increased",
+              "unit": "bp",
+              "valueIndex": 0
+            }
+          ]
+        },
+        {
+          "rowId": "loot.word.edge.r1",
+          "ranges": [
+            [
+              1500,
+              1500
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.physical-damage-dealt",
+              "category": "increased",
+              "unit": "bp",
+              "valueIndex": 0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
