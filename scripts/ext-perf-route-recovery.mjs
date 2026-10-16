@@ -60,3 +60,26 @@ export function nextRouteStep(context,avoid=true,loot=!context.recovery.stairsOn
   if(safe)return nextStep(true,false,false);
   throw Object.assign(Error(`No stairs path D${g.depth} at ${g.player.x},${g.player.y}`),{routeBlocked:true});
  }
+
+/** Frozen classic BFS from feb33b0. Preserve its loot/monster/web decisions;
+ * extension recovery must not change the classic benchmark input. */
+export function nextClassicRouteStep(context,avoid=true,loot=true) {
+ const {g,score,TerrainType,cellTerrainFlags,flags}=context;
+ const nextStep=(...args)=>nextClassicRouteStep(context,...args);
+  const upgrade=loot&&!g.player.equippedWeapon?.isCursed?g.items.filter(i=>i.category===0&&i.identityId!=='dart'&&!i.isCursed&&(i.strengthRequired??0)<=g.player.strength&&score(i)>score(g.player.equippedWeapon)).sort((a,b)=>Math.max(Math.abs(a.loc.x-g.player.x),Math.abs(a.loc.y-g.player.y))-Math.max(Math.abs(b.loc.x-g.player.x),Math.abs(b.loc.y-g.player.y)))[0]:null;
+  const w=g.grid.width,h=g.grid.height,key=(x,y)=>x*h+y;
+  const start=key(g.player.x,g.player.y), queue=[start], parent=new Map([[start,-1]]);
+  const dirs=[[0,-1],[1,0],[0,1],[-1,0],[1,-1],[1,1],[-1,1],[-1,-1]];
+  for(let i=0;i<queue.length;i++) {
+   const k=queue[i],x=Math.floor(k/h),y=k%h,c=g.grid.getCell(x,y);
+   if(upgrade?x===upgrade.loc.x&&y===upgrade.loc.y:c.layers.includes(TerrainType.STAIRS_DOWN)) { let n=k; if(n===start)return upgrade?'pickup':null; while(parent.get(n)!==start)n=parent.get(n); return {x:Math.floor(n/h)-g.player.x,y:n%h-g.player.y}; }
+   for(const [dx,dy]of dirs) {const nx=x+dx,ny=y+dy,n=key(nx,ny),cell=g.grid.getCell(nx,ny); if(!cell||parent.has(n)||(avoid&&g.getMonsterAt(nx,ny)))continue;
+    const f=cellTerrainFlags(g.grid,nx,ny); if((!cell.isPassable&&!cell.layers.includes(TerrainType.SECRET_DOOR))||(f&(flags.T_LAVA_INSTA_DEATH|flags.T_AUTO_DESCENT)))continue;
+    if(dx&&dy&&(!g.grid.getCell(x+dx,y)?.isPassable||!g.grid.getCell(x,y+dy)?.isPassable))continue;
+    parent.set(n,k);queue.push(n);
+   }
+  }
+  if(avoid)return nextStep(false,loot);
+  if(upgrade)return nextStep(true,false);
+  throw Error(`No stairs path D${g.depth} at ${g.player.x},${g.player.y}`);
+ }

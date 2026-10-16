@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {boot,drain,write,hash} from './ext-perf-common.mjs';
-import {RouteRecovery,nextRouteStep,retryEntryDelay} from './ext-perf-route-recovery.mjs';
+import {RouteRecovery,nextRouteStep,nextClassicRouteStep,retryEntryDelay} from './ext-perf-route-recovery.mjs';
 const [out,combination,seed='438491256',waits='500']=process.argv.slice(2);
 assert.ok(out && ['classic','all'].includes(combination));
 Date.now=()=>1792022400000; // Freeze metadata timestamps, never simulation clocks/RNG.
@@ -19,6 +19,7 @@ try {
  // with one extra recorded wait on entry to that depth. This changes enemy
  // approach deterministically, without editing/restoring game state or RNG.
  // Failed attempts are diagnostic only; the output is one fresh complete run.
+ const recover=combination==='all';
  const entryDelays=new Map(),attempts=[];
  for(let attempt=0;;attempt++) {
  const g=new Game(); g.animationEnabled=true; g.onRenderRequested=()=>{}; g.onConfirmRequest=()=>true;
@@ -29,7 +30,7 @@ try {
  async function command(action,data) { const prior=g.recordedInputEvents.length; g.executeCommand(action,data); drain(g); while(g.pendingCommandConfirmation){g.resolveCommandDecision(g.pendingCommandConfirmation.token,true);drain(g);} await g.flushRecording(); while(logger.pendingAcknowledgment)logger.acknowledgeNext(); assert.equal(g.isGameOver,false,'Route died'); assert.equal(g.recordedInputEvents.length,prior+1,JSON.stringify({action,locked:g.isInputLocked(),blocked:g.recordingInputBlocked,pending:g.pendingCommandConfirmation,inventory:g.isInventoryOpen,depth:g.depth})); commands++; if(commands%100===0)console.log(JSON.stringify({commands,depth:g.depth,attempt})); }
   const score=i=>i?.damage?Number(i.damage.match(/d(\d+)/)?.[1]??0)+(i.enchantment??0)*2:0;
  const recovery=new RouteRecovery();
- const nextStep=()=>nextRouteStep({g,recovery,score,TerrainType,cellTerrainFlags,flags});
+ const nextStep=()=>(recover?nextRouteStep:nextClassicRouteStep)({g,recovery,score,TerrainType,cellTerrainFlags,flags});
  let stalled=0,old='',enteredDepth=null;
  try {
  while(g.depth<=targetDepth) {
@@ -38,7 +39,7 @@ try {
    enteredDepth=d;
    for(let i=0;i<(entryDelays.get(d)??0);i++)await command('wait');
   }
-  recovery.observe(d,g.player.x,g.player.y);
+  if(recover)recovery.observe(d,g.player.x,g.player.y);
 
   const weapon=g.player.inventory.items.filter(i=>i.category===0&&i.identityId!=='dart'&&!i.isCursed&&(i.strengthRequired??0)<=g.player.strength).sort((a,b)=>score(b)-score(a))[0];
   if(weapon&&!g.player.equippedWeapon?.isCursed&&score(weapon)>score(g.player.equippedWeapon)){g.executeItemCommand('equip',weapon);drain(g);await g.flushRecording();}
@@ -48,16 +49,16 @@ try {
    coverage[d]={settled,maxMonsters,maxTerrainLights:maxLights};console.log(JSON.stringify({depth:d,commands,coverage:coverage[d]}));
    if(d===targetDepth)break;
   }
-  if(commands>=16000||recovery.steps>=1024)throw Object.assign(Error('Route command budget'),{routeBlocked:true});
+  if(commands>=16000||(recover&&recovery.steps>=1024))throw Object.assign(Error('Route command budget'),{routeBlocked:true});
   const loc=`${g.depth}:${g.player.x},${g.player.y}`;stalled=loc===old?stalled+1:0;old=loc;
   if(stalled>=600)throw Object.assign(Error(`Stuck ${loc}`),{routeBlocked:true});
   const seizer=g.player.seized?g.findLiveSeizer():null;
   if(seizer)await command('move',{x:Math.sign(seizer.x-g.player.x),y:Math.sign(seizer.y-g.player.y)});
-  else if(stalled>0&&stalled%8===0)await command('search');else {const step=nextStep();recovery.attempted(step);await command(step==='pickup'?'pickup':step?'move':'stairs_down',typeof step==='object'?step:undefined);}
+  else if(stalled>0&&stalled%8===0)await command('search');else {const step=nextStep();if(recover)recovery.attempted(step);await command(step==='pickup'?'pickup':step?'move':'stairs_down',typeof step==='object'?step:undefined);}
   if(g.depth!==d)console.log(JSON.stringify({depth:g.depth,commands}));
  }
  } catch(error) {
-  if(!error.routeBlocked)throw error;
+  if(!recover||!error.routeBlocked)throw error;
   write(`${out}/attempt-${attempt}-failure.json`,{depth:g.depth,x:g.player.x,y:g.player.y,error:error.message,recovery:recovery.events,blocked:[...recovery.blocked]});
   const delay=retryEntryDelay(entryDelays,g.depth,attempt,error);
   attempts.push({attempt,depth:g.depth,commands,error:error.message,nextEntryWaits:delay});
@@ -71,7 +72,7 @@ try {
  write(path+'.recovery.json',{attempts,entryDelays:Object.fromEntries(entryDelays),events:recovery.events});
  write(path+'.recording.json',recording);
  write(path+'.route.json',{seed:recording.seed,mode:recording.mode,recordedAt:recording.recordedAt,extensions:recording.extensions??null,recordingHash:hash(recording),commands:recording.events.map(({action,data,decisions})=>({action,data,decisions}))});
- write(path+'.source.json',{kind:'wizard-command-route',planner:'omniscient BFS; bounded deterministic recovery v1; no world edits',source:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),node:process.version,seed,mode:recording.mode,recordedAt:recording.recordedAt,recordingVersion:recording.version,codec:recording.codec,extensions:recording.extensions,modules,coverage,events:recording.events.length,recordingHash:hash(recording)});
+ write(path+'.source.json',{kind:'wizard-command-route',planner:recover?'omniscient BFS; bounded deterministic recovery v1; no world edits':'omniscient BFS; no world edits',source:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),node:process.version,seed,mode:recording.mode,recordedAt:recording.recordedAt,recordingVersion:recording.version,codec:recording.codec,extensions:recording.extensions,modules,coverage,events:recording.events.length,recordingHash:hash(recording)});
  console.log(path);break;
  }
 } finally {await server.close();}

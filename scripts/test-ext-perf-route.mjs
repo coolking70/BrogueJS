@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {RouteRecovery,nextRouteStep,retryEntryDelay} from './ext-perf-route-recovery.mjs';
+import {RouteRecovery,nextRouteStep,nextClassicRouteStep,retryEntryDelay} from './ext-perf-route-recovery.mjs';
 
 // An indefinitely healing blocker must not cause indefinitely repeated attacks.
 const r=new RouteRecovery();
@@ -29,17 +29,23 @@ function scene() {
 }
 const s=scene();
 s.g.items=[{category:0,damage:'1d9',loc:{x:0,y:1}}];s.monsters.add('1,1');
+assert.deepEqual(nextClassicRouteStep(s),{x:-1,y:0},'Frozen classic still approaches loot through a monster');
 assert.deepEqual(nextRouteStep(s),{x:1,y:0},'Skip loot behind a monster; take reachable stairs');
 s.monsters.clear();s.cells[1][1].isPassable=false;
 assert.deepEqual(nextRouteStep(s),{x:1,y:0},'Unreachable optional target cannot prevent descent');
 s.g.items=[];s.cells[3][1].flags=4;
 assert.deepEqual(nextRouteStep(s),{x:1,y:0},'Allow web crossing only if no safer path exists');
 s.cells[3][0].isPassable=s.cells[2][0].isPassable=s.cells[4][0].isPassable=true;
+assert.deepEqual(nextClassicRouteStep(s),{x:1,y:0},'Frozen classic keeps its shortest web crossing');
 assert.deepEqual(nextRouteStep(s),{x:1,y:-1},'Prefer a dry detour over a web chokepoint');
 s.cells[3][1].flags=1;s.cells[3][0].isPassable=false;
 assert.throws(()=>nextRouteStep(s),e=>e.routeBlocked===true,'Never route through lethal lava');
 const blocked=scene();blocked.cells[3][1].isPassable=false;
+assert.throws(()=>nextClassicRouteStep(blocked),e=>!e.routeBlocked&&/No stairs path/.test(e.message),'Classic cannot request extension entry-wait recovery');
 assert.throws(()=>nextRouteStep(blocked),e=>e.routeBlocked===true,'No path requests a bounded fresh-route retry');
+const classic=scene();
+classic.recovery=new Proxy({}, {get(){throw Error('Classic must not read recovery state');}});
+assert.deepEqual(nextClassicRouteStep(classic),{x:1,y:0});
 assert.deepEqual(nextRouteStep(scene()),nextRouteStep(scene()),'Stable BFS direction order');
 const delays=new Map(),noPath=Object.assign(Error('no path'),{routeBlocked:true});
 assert.equal(retryEntryDelay(delays,6,0,noPath),1);

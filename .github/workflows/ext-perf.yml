@@ -19,7 +19,7 @@ on:
         default: 6c1
         options: [p0, 6b4, 6c1]
       head_identity:
-        description: B benchmark (6c1/6c2 capture fresh complete routes on this runner)
+        description: B benchmark (fresh classic with frozen BFS; all with bounded recovery)
         type: choice
         default: 6c2
         options: [6b4, 6c1, 6c2]
@@ -93,7 +93,7 @@ jobs:
           npm ci --prefix control
           npm ci --prefix base
           npm ci --prefix head
-      - name: Stage dispatched route planner on both historical checkouts
+      - name: Stage frozen classic planner and all-only recovery on both historical checkouts
         run: |
           node --input-type=module <<'JS'
           import {copyFileSync} from 'node:fs';

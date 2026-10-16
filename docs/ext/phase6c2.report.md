@@ -244,3 +244,103 @@ node scripts/profile-ext-perf.mjs \
 ```
 
 `replay.summary.json` 的 recordingHash 与上述一致，stateHash=`65480287d7135b64d16f39487be805843f6fd526c135fa947b9318e5cfdc7d77`，rowsHash=`7d0ecbf759d7e983b721122c468d3b058fb2be4694591c20972141f9d7b35ca1`。完整 observer 的双流、检查点与最终状态校验保持；`verification.json` 最终 status=pass。生成/回放曾并行运行，本机时间只作诊断，不能拿来判断云端性能。最终 `git diff --check` 通过，改动文件均 LF 且小于 1 MiB，游戏源码未改；未 commit/push。
+
+
+## 第二次云端生成失败：classic 规划器隔离修复（2026-10-17）
+
+本节覆盖上节关于 classic 也使用恢复规划器的实现。开工 `ext/phase6` / HEAD `0ed9dda9fbe3b9c6ec89ea35bd38c40f8e6d1e2d`；固定引擎 A=`e27648489953069b9aca4c9cf2b8a5ed5162a372`、B=`feb33b030f74949a2e0af001362b53f2f6e0eea3`。本次只改脚本、工作流说明及本报告，不修改游戏代码、冻结路线/预算、observer、捕获器或 D6 判定规则，不 commit/push、不触发云端任务。
+
+### 根因与 classic 行为判断
+
+失败证据：[run 38954039307](https://github.com/coolking70/BrogueJS/actions/runs/38954039307)，本地 `/private/tmp/perfci-38954039307/ext-perf-38954039307-1/`。三个实际执行步骤均 exit0：B classic 生成、A classic 捕获、B classic 捕获；随后命令数组断言 `Classic route changed` 失败，尚未执行 all 或任何性能回放。
+
+- A 使用 control 中已冻结的 C1 classic 路线（2208 事件），B 使用 `0ed9dda` 新规划器（2243 事件）。两份输入各自都精确匹配其 source/hash，因此并非捕获器漂移或身份选错。实际 A/B/control 提交号分别与上文一致，生产源码 clean，observer hash=`6e23847b7d9d97a01ee42c77388bf012be62fb45f9ac4895e69434432879bef3`。
+- `0ed9dda` 的避蛛网、阻路可选拾取放弃、封边及入口等待策略未按 classic/all 隔离，改变了 classic 的玩家输入。首个命令差异为第 **713** 条（D10）：冻结路线 `move(-1,0)`，新路线 `move(-1,-1)`；新路线后来在 D18 失败六次，最终添加六次入口等待。A 没有重新规划，仍按冻结命令执行。即使两侧脚本字节相同，也不代表“一侧读旧冻结输入、另一侧运行新规划器”所得输入相同。
+- 独立诊断在 B 上用原 `regenerate-ext-perf.mjs` 执行 A 的完整冻结 classic 命令。该命令按预期以 **exit1** 保留 `.mismatch.json`：跨 foundation 版本的完整录像 hash 不相等，不能直接拿 A hash 当 B hash。逐叶差分仅有 `codec.foundation` **17→18**、`initialDigest.root`、2208 个 `events[*].chainDigest`、9 个 `events[*].fullCheckpoint.root`；其余全部字段相等，包括所有事件输入/结果、双 RNG、初始及完整检查点的全部域摘要。
+- 根摘要包含 `RecordingDigest.ts` 的 `codecIdentity`，链摘要由含 codec 的录制 header/initialDigest 起算；上述差异是版本身份变化的确定结果。另对初始与9个完整检查点共10对根摘要按原公式离线重算，仅替换 codec 中的17/18就精确复现两侧根（`codec-root-attribution.json`）。没有改写录像 header、摘要或检查点来绕过验证。B 的原生重新生成录像继续使用 foundation18 并由其自己的 hash 校验。
+
+**判断：本次 classic 断言失败来自采集规划策略不一致，不是已发现的 6C2 classic 游戏行为/RNG 缺陷。** 固定 B 引擎，仅恢复 classic 规划算法后，完整输入恢复冻结的2208条；同输入两侧的状态域和双 RNG 证据相等。此结论针对本次完整 D1–D20 基准路径；不冒称穷尽所有 classic 玩法。宿主差异审阅亦未发现本次路径绕过 classic/extension 分支进入 loot 的执行点。
+
+### 修复
+
+`ext-perf-route-recovery.mjs` 增加独立的 `nextClassicRouteStep`，从 `feb33b0` 的原生成器提取原 BFS，保留方向顺序、可选装备目标、穿怪回退与蛛网最短路径选择。`generate-ext-perf.mjs` 仅在 `combination=all` 时启用恢复状态、每层预算、失败重建及入口等待；classic 保留原全局16000命令/原地600次上限，失败立即报告，不进入 extension 重试。source 的 planner 描述也按实际策略区分。工作流继续把同一份 control 工具复制到 A/B，明确标示 frozen classic BFS / all-only recovery。
+
+原 `Classic route changed` 命令数组断言、每份录像 hash、完整 D20/500结算覆盖、回放 OOS、语义/双 RNG、17项计数与预算判定全部保留。未把 classic 改成短前缀或 report-only，也未重录冻结 classic 文件。新增脚本回归覆盖 classic 穿怪拾取/蛛网直路、完全不读取 recovery 状态、无路不申请入口等待，并补 classic 语义/RNG/工作量漂移仍硬失败及 rounds=1 不得冻结预算的负例。
+
+### 本地完整流程冒烟
+
+证据目录 `/private/tmp/phase6c2-classic-fix/`；独立检出目录为同名前缀加 `-A` / `-B`，两个引擎均固定到上述提交且 `src` clean。Node **v24.19.0**，每子进程 heap3072 MiB，复用本地相同依赖（A/B/control lock hash一致），工具按工作流 staging。云端失败运行用 v24.21.0；本次本地结果只验证流程及确定性，不作跨机器性能结论。
+
+实际运行完整云端 orchestrator（无 `--limit`，非只测生成器）：
+
+```sh
+node scripts/run-ext-perf-ab.mjs \
+  --base /private/tmp/phase6c2-classic-fix-A \
+  --head /private/tmp/phase6c2-classic-fix-B \
+  --out /private/tmp/phase6c2-classic-fix/smoke \
+  --base-identity 6c1 --head-identity 6c2 --rounds 1
+```
+
+A 的 classic/all 按工作流通过原 `regenerate-ext-perf.mjs` 从新局执行冻结命令生成完整录像；B 的 classic/all 先从新局规划生成路线，再独立从新局重建并核对完整录像 hash。两侧每条完整路线各实际回放一次，all 另有各一次动态可比前缀回放；原预算检查和 C1 bounded supplement 仍执行。A 不用新 all 规划器替换冻结基准，避免把规划策略变化混进原预算身份。
+
+
+classic 实际完整回放补证：A/B 都为2208事件、OOS=0、2431客观块/rounds、241350 ticks；17项调用计数完全相同。末态 `stateHash` 同为 `b099974554cdb317a829b00c8b3dd9cc53f82903d6a1611360be5bd8f5aacd70`，`eventDomainsHash` 同为 `3ae0c021ab4e915078c20582b5afe24f5c6ef5043bce91f5febe294e87cb372c`，`rowsHash` 同为 `e5d9b7e22d222a54659cf7b4ae088e6f6bbf68e0a62823f2154372b75c287bef`。最终实质/装饰流调用数分别5595527/556且两流完整状态相同。`verifiedFullDomainsHash` 是唯一不同的 observer semantic 汇总项，因为其输入保留了上述版本相关的 fullCheckpoint.root；所有 checkpoint 域本身相同。
+
+B classic 原生录像 hash=`fd4fe3cc3d5051cdf5090358d64a52054fc6e6fad7c3d3083d51771e1f0a5128`，恢复记录为空；A classic 原冻结 hash=`651a38e00d142d91ba18b8d4fe86d4dab976750a2057815f217b8bec56917bca`。B all 为2423事件、D20结算500、最大28怪/188地形光源，仍仅D6入口1次等待，录像与上轮 `final-1` 逐字节相同，hash仍为 `cdcb13635af4c1a29bc4bb529bf662d34e6f5e420d07f2dc9f2c4044834475c9`。
+
+### 最终限定验收结果
+
+完整命令 **exit0**，16个步骤全部 exit0，`hard=pass`；因 `rounds=1`，总状态按原规则为 **`incomplete`**，不是正式性能 pass，未调用 freezer、未生成 suggested manifest。生成/命令一致性断言、四份完整录像及两份前缀回放、原 C1 预算硬检查和 C1 bounded supplement 均实际完成。`smoke/result.json`、`smoke/summary.md` 保留全部结果，`verification.json` 为额外离线核对汇总（status=pass）。
+
+| 侧 / 场景 / 输入 | 事件 | OOS | 客观块 / rounds | roundTicks |
+| --- | --- | --- | --- | --- |
+| A / classic / full | 2208 | 0 | 2431 / 2431 | 241350 |
+| B / classic / full | 2208 | 0 | 2431 / 2431 | 241350 |
+| A / all / full | 2528 | 0 | 2391 / 2391 | 237584 |
+| A / all / prefix | 47 | 0 | 45 / 45 | 4500 |
+| B / all / full | 2423 | 0 | 2549 / 2549 | 253375 |
+| B / all / prefix | 47 | 0 | 45 / 45 | 4500 |
+
+classic/full 与 all/prefix 均通过语义/RNG/工作量硬检查，单轮相对计时状态为 incomplete；all/full 因两侧工作量不同按原政策 report-only。47条前缀是本次生产捕获动态求得，不能替代 D20 性能证据。A 的 `original-budget-1` 对 classic/all 的 hash、完整语义及17项计数检查均 hard pass。原 supplement 仍是 C1 套装专场，不能冒充 C2 插槽专场。
+
+| 限定检查 | 结果 / 证据 |
+| --- | --- |
+| `node scripts/test-ext-perf-route.mjs` | exit0；`test-route-final.log`，新增 classic 规划隔离负例 |
+| `node scripts/test-ext-perf-selection.mjs` | exit0；`test-selection-final.log` |
+| `node scripts/test-ext-perf-ab.mjs` | exit0；`test-ab-final.log`，classic 漂移仍拒绝、单轮不得冻结 |
+| `npm run check:test-dependencies`（另以 Node24 直接复核底层脚本） | exit0、errors=[]；`dependencies.log` / `dependencies-final.log` |
+| 完整 rounds=1 orchestrator | exit0；`smoke.log`，16步骤及6次回放全部完成 |
+| 离线完整结果、classic全部差分/计数及工具身份核对 | exit0；`verify-smoke.mjs` / `verification.json` |
+| 仓库差异检查 | `git diff --check` 通过；仅6个工具/测试/工作流/报告文件变更，全部 LF、小于1 MiB，A/B及主工作树的游戏源码未改 |
+
+没有运行全量 npm/ext/drift、CE/full/gen、build 或浏览器测试。所有既有断言保留，仅新增回归；没有旧测试前提改写。引擎和工具相关原始证据均留仓外，不提交大文件。Vite 既有 HMR `listen EPERM :24678` 日志仍保留，未改 observer/common 隐藏提示。
+
+本次实际执行的生成工具 SHA256 与最终文件一致：
+
+| 文件 | SHA256 |
+| --- | --- |
+| `generate-ext-perf.mjs` | `a251310efe43cd406fd41c4b2c3f503e0368cd6f97a8e895f70f960c23297750` |
+| `ext-perf-route-recovery.mjs` | `fe4c6afeeefe6c27a493bf4a6cd712e259a5c0238d130879bffaf60665ce2903` |
+
+全部 orchestrator 已登记工具 hash 在结束后逐一复核一致；workflow 本次仅更新策略描述及步骤名称，staging/参数/执行路径未改。原失败 artifact、跨版本诊断的预期 exit1 与完整冒烟 exit0 分开保留，不把前者隐去。未 commit、未 push、未触发新云端 run。
+
+### 重新触发参数（本次修复版本）
+
+维护者后续提交并推送工具修复后，以包含本次修改的 workflow ref dispatch。**不要再次用旧 `0ed9dda` 或 `feb33b0` 作为 workflow ref**；引擎 A/B 仍固定下表提交，不随工具提交漂移。
+
+| 参数 | 值 |
+| --- | --- |
+| workflow ref | 含本次 classic 隔离修复的 `ext/phase6` |
+| base_ref | `e27648489953069b9aca4c9cf2b8a5ed5162a372` |
+| head_ref | `feb33b030f74949a2e0af001362b53f2f6e0eea3` |
+| base_identity / head_identity | `6c1` / `6c2` |
+| rounds | 正式 `3`；如先做云端诊断则 `1`，不得冻结 |
+
+```sh
+gh workflow run ext-perf.yml --ref ext/phase6 \
+  -f base_ref=e27648489953069b9aca4c9cf2b8a5ed5162a372 \
+  -f head_ref=feb33b030f74949a2e0af001362b53f2f6e0eea3 \
+  -f base_identity=6c1 -f head_identity=6c2 -f rounds=3
+```
+
+本地冒烟能证明固定 A/B 在修复工具下通过完整生成、原生捕获、回放与硬判定路径；正式云端三轮时延、独立第四次冻结后验证及 C2 专场仍按原范围待验，不据本机计时预判 D6。

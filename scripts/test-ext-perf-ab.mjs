@@ -72,6 +72,14 @@ const equalWork=runSet();for(const r of equalWork.filter(r=>r.id==='all'&&r.kind
 assert.equal(overallStatus(evaluate(equalWork)),'regression','Equal-work full route is still gating');
 const drift=runSet();drift.find(r=>r.kind==='prefix'&&r.side==='B').summary.semantic.rng=[2];
 assert.throws(()=>evaluate(drift),/Comparable load drift/);
+for(const field of ['rng','rowsHash','blocks','rounds','roundTicks']){
+ const classicDrift=runSet(),s=classicDrift.find(r=>r.id==='classic'&&r.side==='B').summary;
+ s.semantic[field]=field==='rng'?[2]:field==='rowsHash'?'changed':s.semantic[field]+1;
+ assert.throws(()=>evaluate(classicDrift),/Comparable (load|workload counts) drift/,'Classic behavior drift must still fail');
+}
+const diagnostic={options:{...ready.options,rounds:1},hard:'pass'};
+diagnostic.gates=evaluateGates(runSet().filter(r=>r.round===1),diagnostic.options);
+assert.equal(overallStatus(diagnostic),'incomplete');assert.equal(canFreeze(diagnostic),false);
 const missing=runSet().filter(r=>r.round!==3);assert.equal(overallStatus(evaluate(missing)),'incomplete');
 assert.throws(()=>evaluate([...runSet(),runSet()[0]]),/Duplicate/);
 assert.equal(overallStatus({...evaluate(runSet()),hard:'failed'}),'failed');
