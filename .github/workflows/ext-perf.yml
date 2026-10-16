@@ -1,0 +1,115 @@
+name: ext 6B4 performance A/B
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_ref:
+        description: A revision (before 6B4)
+        required: true
+        default: '43f115b'
+        type: string
+      head_ref:
+        description: B revision (6B4 candidate)
+        required: true
+        default: ext/phase6
+        type: string
+      rounds:
+        description: 'Paired rounds: 1/2 are diagnostic only; 3 required for D6/freeze'
+        required: true
+        default: '3'
+        type: choice
+        options: ['3', '2', '1']
+
+permissions:
+  contents: read
+
+jobs:
+  ab:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      NODE_OPTIONS: --max-old-space-size=3072
+    steps:
+      - name: Checkout measurement tools at dispatched revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          path: control
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Resolve branch, tag or abbreviated commit to immutable SHAs
+        id: refs
+        env:
+          PERF_BASE: ${{ inputs.base_ref }}
+          PERF_HEAD: ${{ inputs.head_ref }}
+        run: |
+          node --input-type=module <<'JS'
+          import {execFileSync} from 'node:child_process';
+          import {appendFileSync} from 'node:fs';
+          for (const [name, ref] of [['base', process.env.PERF_BASE], ['head', process.env.PERF_HEAD]]) {
+            let sha;
+            for (const candidate of [ref, `refs/remotes/origin/${ref}`]) {
+              try {
+                sha = execFileSync('git', ['rev-parse', '--verify', '--end-of-options', `${candidate}^{commit}`], {cwd: 'control', encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe']}).trim();
+                break;
+              } catch {}
+            }
+            if (!sha || !/^[a-f0-9]{40}$/.test(sha)) throw Error(`Cannot resolve ${name} ref`);
+            appendFileSync(process.env.GITHUB_OUTPUT, `${name}=${sha}\n`);
+          }
+          JS
+      - name: Checkout A
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ steps.refs.outputs.base }}
+          path: base
+          persist-credentials: false
+      - name: Checkout B
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ steps.refs.outputs.head }}
+          path: head
+          persist-credentials: false
+      - name: Set up Node 24 and npm download cache
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            control/package-lock.json
+            base/package-lock.json
+            head/package-lock.json
+      - name: Install tools and both revisions
+        run: |
+          npm ci --prefix control
+          npm ci --prefix base
+          npm ci --prefix head
+      - name: Interleaved A/B and B calibration
+        timeout-minutes: 330
+        env:
+          PERF_ROUNDS: ${{ inputs.rounds }}
+        run: >-
+          node control/scripts/run-ext-perf-ab.mjs
+          --base "$GITHUB_WORKSPACE/base"
+          --head "$GITHUB_WORKSPACE/head"
+          --out "$RUNNER_TEMP/ext-perf"
+          --rounds "$PERF_ROUNDS"
+      - name: Publish summary (including failures or partial runs)
+        if: always()
+        run: |
+          if test -f "$RUNNER_TEMP/ext-perf/summary.md"; then
+            cat "$RUNNER_TEMP/ext-perf/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          else
+            mkdir -p "$RUNNER_TEMP/ext-perf"
+            printf '%s\n' '{"status":"failed","error":"No measurement report; inspect setup logs"}' > "$RUNNER_TEMP/ext-perf/result.json"
+            printf '%s\n' 'Measurement did not start; inspect setup logs. No performance verdict or manifest.' > "$RUNNER_TEMP/ext-perf/summary.md"
+            cat "$RUNNER_TEMP/ext-perf/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload JSON, Markdown and raw evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ext-perf-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ext-perf/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 6

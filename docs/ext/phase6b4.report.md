@@ -1,6 +1,6 @@
 # 6B4 主笔报告
 
-2026-10-16；分支 `ext/phase6`，起点 `8d7c799`。**R1 三项重要问题均已复现并修复，含存读档的新回归及 14 文件 / 487 项限定测试通过；boundary、依赖检查、vue-tsc、build 通过。B4-5 仍未收口，6B4 P0 待验。** 本轮原版对照再次遇到确证 Sleep/DarkWake，首轮作废；尚未取得有效的原版配对及三轮候选计时，未冻结预算，不能给出 D6 性能通过或代码回退已排除的结论。详见文末“第 1 轮独立审查发现处理”和“R1 B4-5 重测记录”。下文保留首轮实施及失败历史。未 commit/push、未调数值、未进入 6C；D1–D7 全部 A，D7 浏览器仍待维护者。
+2026-10-16；分支 `ext/phase6`，起点 `8d7c799`，6B4 功能及 R1 修复现已提交为 `c5863ab`。**R1 三项重要问题均已复现并修复，含存读档的新回归及 14 文件 / 487 项限定测试通过；boundary、依赖检查、vue-tsc、build 通过。B4-5 仍未收口，6B4 P0 待验。** 本地原版对照再次遇到确证 Sleep/DarkWake，首轮作废；尚未取得有效的原版配对及三轮候选计时，未冻结预算。维护者已批准改用 GitHub Actions 同 runner 交错 A/B，入口及本次工具验收见文末“B4-5 云端 A/B 测量”。本次只交付工作流与脚本，未实际触发云端测量，不能给出 D6 性能通过或代码回退已排除的结论。下文保留首轮实施及失败历史；其中“未 commit/push”描述对应历史轮次。本次工具改动未 commit/push、未调数值、未进入 6C；D1–D7 全部 A，D7 浏览器仍待维护者。
 
 ## 交付差量
 
@@ -9,7 +9,7 @@
 - B4-2：四条唯一符文拥有本件L0；武器、护甲、反射、投掷及原生详情统一使用对应管线。整当量×4只转换一次；未知仍生效、knownOnly不泄露；不叠原生净附魔。否定的原生开关不被数据绑定复活。
 - B4-3：开启已有21条随机符文族；slaying/immunity使用稳定15类目录、末尾一次目标骰及实例v2持久化。21条实际生成字面骰带覆盖合法可达、≤64骰和目标条件。原数值、T7关闭、词缀阶数/腐化约束不变。首次知识绑定actor/item/type/target与实际效果，只揭示匹配行；失败、无实际变化和重复事实不发布。
 - B4-4：游戏面板强化按钮进入原生目标选择；详情、已知比较、目标类名称、满级精炼和无收益文案走i18n。重复点击仅一次提交。三档真实浏览器由维护者执行，[逐项清单](phase6b4.manual-checklist.md)目前全部待验，不以SSR/SFC替代。
-- B4-5：限定门禁与唯一全删通过；原P0通过，新版本三轮完整回放零OOS且计数稳定；D6计时阻断，接受基准及最终门禁待验，详见下文。
+- B4-5：限定门禁与唯一全删通过；原P0通过，新版本历史三轮完整回放零OOS且计数稳定；受休眠污染的计时不采纳。现改为云端交错 A/B，接受基准及最终门禁仍待实际云端结果，详见文末。
 
 ## 版本与范围
 
@@ -251,3 +251,53 @@ node scripts/check-ext-perf.mjs /private/tmp/phase6b4-clean-input /private/tmp/p
 恢复后先执行仓外驱动 `python3 /private/tmp/p6b4-r1-perf-runner.py original`，再执行同一驱动 `candidate`；自动从新 attempt 编号开始，不覆盖旧失败。每轮的起止时刻、Sleep/Wake 审计和完整原始回放输出均落盘；接受三个干净完整候选后，仍须先按 D6 对照原版（含可比前 1714 事件负载）归因，再用原 freeze 工具创建新预算及执行完整 `check-ext-perf --phase6b4`。这些后续步骤本轮未完成，不作为已通过项目列报。
 
 本轮最终静态核对：源码和 dist 与正式计时前冻结身份一致，HEAD `8d7c799`、暂存文件 0，diff-check 通过；变更文件 LF、Markdown 围栏配对，新证据小于 1 MiB。未 commit。R1 修复可供复审，B4-5 仍需上述环境恢复后验收。
+
+### B4-5 云端 A/B 测量（2026-10-16，工具交付，正式测量待触发）
+
+维护者批准在公开仓库的 GitHub Actions 测量，替代上述需要持续开盖的本地恢复流程；原 Sleep/DarkWake 失败证据继续保留。新增 `.github/workflows/ext-perf.yml` 仅有 `workflow_dispatch`，不监听 push，不修改 `pages.yml`，权限仅 `contents: read`，不提交预算或推送代码。
+
+工作流在单个 `ubuntu-24.04` runner 上检出测量工具、A、B 三个目录；先拉完整历史，将短 SHA/分支/tag 解析成不可变完整提交号再检出 A/B。使用 Node 24、三份 lockfile 的 npm 下载缓存、分别 `npm ci`。测量子进程统一 3072 MiB 堆，串行运行，避免同时驻留多个引擎。job 上限 360 分钟，测量 step 上限 330 分钟，为报告和 artifact 上传留余量；单个捕获/回放子进程超过 90 分钟失败。每步开始和结束持久化 JSON/Markdown，失败或超时保留已落盘原始数据和日志；未完成报告的 running/pending 状态不代表通过，超时任务不能冻结。
+
+`run-ext-perf-ab.mjs` 通过子进程 cwd 选择引擎 checkout，并传绝对输入/输出路径。原 `profile-ext-perf.mjs`、common、重录器、比较器、freezer/checker **均未改动**；执行前核对两版与控制目录的这些文件字节，核对原 instrumentationHash，拒绝脏引擎源码。结果另存 A/B 完整 commit、src tree、lockfile、实际工具文件 hash、Node/CPU/内存、run ID/attempt，补足原 observer 仅记录 `git diff HEAD -- src` 哈希的身份局限。
+
+配对口径遵守 D5，不能把旧版本录像直接塞给新引擎，也不能把不同路线称为同输入：
+
+- **classic**：原 P0 的 2208 条命令与 6B4 完整路线逐条相同。分别从生产导出各自版本录像，原重录器核对完整冻结 hash，再完整回放配对；保留全部 full checkpoint。
+- **all 完整路线**：A 原 P0 2516 条、B 6B4 2528 条分别按各自冻结路线重建并回放。报告原始全程、D20 命令/客观回合 P50/P95/max、墙钟、收集/事务次数、客观块/ticks、RSS/heap 抽样峰值；两条路线的工作量不同，不自动豁免越线。
+- **all 同输入补充**：按已有归因，实质 RNG 首次分歧为 1715。新增通用 `capture-ext-perf-prefix.mjs` 在两版从真实新局执行原 P0 前 1714 条命令，经生产导出再完整回放这份独立前缀录像；不截改录像、版本头、检查点或预算。不替代 D20 完整测量或新预算输入。跨 A/B 检查非计时 rowsHash、双流、块数、回合与 ticks 相等；失配立即失败，不能继续冒称可比。前缀没有 D20 样本时不计算 D20 指标。
+
+每轮先 classic A/B，再 all A/B；all 的每侧包含完整路线和上述额外前缀。因此每个组合/输入序列严格为 A1,B1,A2,B2,A3,B3，不并行计时、不挑最好轮。所有流每次检查完整事件数、原始录像 hash、wall 模式、零 OOS；第二、三次与第一次逐域/完整终态递归比较，并要求全部 17 项调用计数、语义、双流、调度、属性诊断精确稳定。A 两条完整路线每轮另过原冻结预算硬检查，缺组合、hash 漂移、语义差异或计数增长都失败。
+
+D6 使用**本 runner 每轮对应 A/B**，不与旧笔记本绝对毫秒相比。命令与客观回合的全程/D20 P95 +10%、max +25%，以及完整回放墙钟 +10%；前缀使用其全程命令/客观回合与墙钟。统一判式 `B > A + max(1ms, A × 比例)`，恰好等于不越线。任一指标越线算该轮越线，同一对比三轮至少两轮越线即 `regression`、非零退出，要求回退/修复复验，不自动改 git。单轮失败不删样本；不同指标在不同轮越线也算两轮。原 30/40ms 目标仍仅报告。
+
+只有两组合完整三轮、三组相对比较（classic/full、all/full、all/prefix）全部通过且硬检查通过，才用**原 freeze 工具**生成 artifact 内的 candidate manifest；再独立回放 B 两条完整录像，与首次结果逐域/计数比较并执行原预算 check。最终通过才复制为 `ext-perf-6b4-budget.suggested.json`。候选或建议文件均不写回仓库，失败的 candidate 不称为可接受预算。维护者审阅实际云端归因和结果后才可采用建议；现有 `scripts/ext-perf-budget.json` 不改，当前仍无正式 `scripts/ext-perf-6b4-budget.json`。新 manifest 保留原绝对时间 report-only 策略；D6 相对时间由新驱动单独执行硬拦。
+
+触发前，维护者需自行提交/推送本次工具到待运行分支；GitHub 要求默认分支也存在 `workflow_dispatch` 工作流，随后可选择运行分支，见 [GitHub 手动运行说明](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow)。本次不代为提交、合并默认分支或触发运行。Actions → **ext 6B4 performance A/B** → **Run workflow**，选择含本次工具的 `ext/phase6`，输入默认 `base_ref=43f115b`、`head_ref=ext/phase6`、`rounds=3`；等价 CLI：
+
+```sh
+gh workflow run ext-perf.yml --ref ext/phase6 \
+  -f base_ref=43f115b -f head_ref=ext/phase6 -f rounds=3
+gh run watch
+```
+
+`rounds=1/2` 仅诊断，报告为 incomplete（已达两次越线则 regression），不冻结。Actions Summary 展示时间、相对差、硬检查与裁决；artifact `ext-perf-<run_id>-<attempt>` 保留 7 天，含 `result.json`、`summary.md`、原始录像/逐命令与完整域/终态、比较结果及逐步日志；符合条件时另有建议 manifest。需长期保留时下载 artifact，不提交 >1 MiB 原始证据。
+
+本地工具验证使用 Node 24.19.0、独立临时 clone A=`43f115b` / B=`c5863ab`，复用本机已有依赖；没有声称本地执行了 Actions 的 npm 缓存/安装或完整云端性能测量。缩短模式示例（输出必须是新的仓外目录，避免覆盖失败）：
+
+```sh
+node scripts/run-ext-perf-ab.mjs --base /path/to/base --head /path/to/head \
+  --out /private/tmp/ext-perf-smoke-new --case classic --rounds 1 --limit 32
+node scripts/test-ext-perf-ab.mjs
+node scripts/test-ext-perf-selection.mjs
+npm run check:test-dependencies
+```
+
+实际验收（均 exit 0，短跑不代表原 P0/新 P0 或 D6 通过）：
+
+- 最终 classic 32 命令一轮 A/B：2 次生产回放零 OOS，可比 rowsHash、双流与调度相等，报告 `incomplete`、未输出 manifest。
+- all 32 命令三轮：完整流诊断/前缀流诊断共 12 次生产回放零 OOS；8 次与首轮的逐域/终态比较通过，全部计数与属性诊断稳定，跨 A/B 可比负载检查通过；报告仍为 `incomplete`、未输出 manifest。此处“完整流诊断”也被显式 `--limit 32` 缩短，不能冒称完整原/新路线。
+- `test-ext-perf-ab.mjs`：参数拒绝、非零 OOS/hash/事件数/计数/语义/机器漂移、缺失/非有限计时、1ms 边界、三轮两次越线（含不同指标）、不足轮数/缺组合/截短禁止冻结、失败 JSON/Markdown 持久化通过；临时合成制品调用原 freeze/check、拒绝覆盖和零值计数增长负例通过，不作为真实基准校准。
+- `test-ext-perf-selection.mjs` 原两身份及 8 个拒绝用例通过。相关 Vitest `repo_hygiene`、`test_suite_membership`、`ext_test_dependencies` 三文件 **22 项通过**；测试依赖检查 `errors=[]`。
+- 工作流 YAML 解析、仅 dispatch/360 分钟配置核对、内嵌 ref 解析脚本实跑通过：默认参数解析到 `43f115b28a63922086fe9734f431f9b77d3bf1c7` / `c5863abd6abe3ffe33b15bf81288af33735ccb80`，非法 shell 文本作为普通 ref 被拒。`git diff --check`、LF 与变更范围核对通过；`pages.yml`、原性能工具/预算/路线和生产代码均未修改。
+
+原始短跑证据在 `/private/tmp/ext-perf-ab-smoke-n0_t1azu/`，最终 classic 为 `classic-32-final/`，all 为 `all-32-three/`，首次 classic 另存 `classic-32/`；相关测试日志 `/private/tmp/ext-perf-ab-related.log`，最终依赖报告 `/private/tmp/ext-perf-ab-dependencies-final.json`。本地复用已有 node_modules，未实际跑 GitHub、npm ci/缓存或完整两组合三轮测量；未跑全项目测试、构建、CE 或删除矩阵，未 commit。
