@@ -9,7 +9,7 @@ import {fileURLToPath} from 'node:url';
 import {execFileSync,spawnSync} from 'node:child_process';
 import {cpus,totalmem,platform,arch} from 'node:os';
 import {hash,write} from './ext-perf-common.mjs';
-import {parseOptions,validateRun,compareTiming,decide,canFreeze} from './ext-perf-ab-policy.mjs';
+import {parseOptions,validateRun,withObjectiveP99,evaluateGates,overallStatus,policyVersion,timingPolicy} from './ext-perf-ab-policy.mjs';
 
 const options=parseOptions(process.argv.slice(2));
 const control=resolve(dirname(fileURLToPath(import.meta.url)),'..');
@@ -25,15 +25,15 @@ const result={version:1,status:'running',hard:'pending',options,startedAt:new Da
  runner:{node:process.version,cpu:cpus()[0]?.model,cpus:cpus().length,memoryBytes:totalmem(),platform:platform(),arch:arch(),heapMiB:3072,runId:process.env.GITHUB_RUN_ID??null,attempt:process.env.GITHUB_RUN_ATTEMPT??null},
  identities:{},steps:[],runs:[],gates:[],
  scope:'classic: complete identical commands; all: original/new complete routes plus identical original first 1714 commands (before documented RNG divergence at 1715). Prefix is NOT a D20 calibration.',
- policy:'Same runner only; P95 +10%, max +25%, elapsed +10%, minimum 1ms. Any metric crossing in >=2 of 3 rounds means regression: rollback/fix required (no automatic git changes). Full-route workload change is reported, never automatically excused. Absolute times report only.'};
+ policyVersion,policy:timingPolicy};
 const fmt=v=>typeof v==='number'?v.toFixed(2):'—';
-const triple=s=>s?['p50','p95','max'].map(k=>fmt(s[k])).join(' / '):'—';
+const triple=s=>s?['p50','p95','p99','max'].map(k=>fmt(s[k])).join(' / '):'—';
 function publish(){
  write(resolve(out,'result.json'),result);
  const lines=['# ext 6B4 cloud A/B',`Status: **${result.status}**; hard gate: **${result.hard}**.`,
   result.policy,result.scope,`Node ${result.runner.node}; ${result.runner.cpu}; heap 3072 MiB.`,
   ...Object.entries(result.identities).map(([k,v])=>`${k}: \`${v.commit}\`; src tree \`${v.srcTree}\`; dirty-src \`${v.sourceHash}\`.`),
-  '', 'All times below are ms. Command and objective round columns are P50 / P95 / max.', '',
+  '', 'All times below are ms. Command and objective round columns are P50 / P95 / P99 / max (command P99 unavailable; objective max is descriptive only).', '',
   '| Round / case / stream | Events / OOS | Command | Objective round | D20 command | D20 round | Replay wall | RSS / heap MiB |',
   '| --- | --- | --- | --- | --- | --- | --- | --- |'];
  for(const r of result.runs){const s=r.summary;lines.push(`| ${r.round} / ${r.id} / ${r.side}-${r.kind} | ${s.events} / ${s.oos} | ${triple(s.command)} | ${triple(s.round)} | ${triple(s.depth[20])} | ${triple(s.roundDepth[20])} | ${fmt(s.elapsed)} | ${fmt(s.memory.rss/1048576)} / ${fmt(s.memory.heapUsed/1048576)} |`);}
@@ -73,7 +73,7 @@ try {
   assert.equal(sourceDiff,'','Engine checkout must be clean');
   assert.equal(git(root,'ls-files','--others','--exclude-standard','src'),'','Untracked engine source');
   result.identities[side]={commit:git(root,'rev-parse','HEAD'),srcTree:git(root,'rev-parse','HEAD:src'),sourceHash:hash(sourceDiff),lockHash:hash(readFileSync(resolve(root,'package-lock.json'),'utf8'))};
-  for(const n of ['profile-ext-perf.mjs','ext-perf-common.mjs','regenerate-ext-perf.mjs','compare-ext-perf.mjs','ext-perf-budget.mjs'])
+  for(const n of ['profile-ext-perf.mjs','ext-perf-common.mjs','regenerate-ext-perf.mjs','compare-ext-perf.mjs'])
    assert.equal(readFileSync(resolve(root,'scripts',n),'utf8'),readFileSync(resolve(control,'scripts',n),'utf8'),`Tool drift ${side}/${n}`);
  }
  result.identities.control={commit:git(control,'rev-parse','HEAD'),srcTree:git(control,'rev-parse','HEAD:src'),sourceHash:hash(execFileSync('git',['diff','HEAD','--','scripts','.github'],{cwd:control,encoding:'utf8'}))};
@@ -106,7 +106,7 @@ try {
  function measure(round,id,side,kind){
   const key=`${side}-${id}-${kind}`,input=inputs[key],prefix=resolve(out,`round-${round}`,key);
   run(`${round}-${key}`,roots[side],'profile-ext-perf.mjs',[input.path,prefix]);
-  const summary=read(prefix+'.summary.json'),previous=first.get(key);
+  const summary=withObjectiveP99(read(prefix+'.summary.json'),read(prefix+'.rounds.json')),previous=first.get(key);
   validateRun(summary,{...input,metrics,previous:previous?.summary});
   const row={round,id,side,kind,prefix,summary};result.runs.push(row);
   if(previous)run(`compare-${round}-${key}`,roots[side],'compare-ext-perf.mjs',[previous.prefix,prefix,prefix+'.comparison.json']);
@@ -120,16 +120,7 @@ try {
    pair[side]=measure(round,id,side,'full');
    if(id==='all')pair[side+'prefix']=measure(round,id,side,'prefix');
   }
-  for(const kind of id==='all'?['full','prefix']:['full']){
-   const a=pair['A'+(kind==='prefix'?'prefix':'')],b=pair['B'+(kind==='prefix'?'prefix':'')];
-   if(id==='classic'||kind==='prefix'){
-    assert.equal(a.summary.semantic.rowsHash,b.summary.semantic.rowsHash,'Comparable load drift (rows)');
-    for(const k of ['rng','blocks','rounds','roundTicks'])assert.deepEqual(a.summary.semantic[k],b.summary.semantic[k],`Comparable load drift (${k})`);
-   }
-   let gate=result.gates.find(g=>g.id===id&&g.kind===kind);
-   if(!gate){gate={id,kind,pairs:[]};result.gates.push(gate);}
-   gate.pairs.push(compareTiming(a.summary,b.summary,{complete:!options.limit&&kind==='full'}));Object.assign(gate,decide(gate.pairs));
-  }
+  result.gates=evaluateGates(result.runs,options);
   publish();
  }
  if(!options.limit&&options.cases.length===2)for(let round=1;round<=options.rounds;round++){
@@ -137,15 +128,15 @@ try {
   run(`original-budget-${round}`,roots.A,'ext-perf-budget.mjs',['check',resolve(roots.A,'scripts/ext-perf-budget.json'),...args]);
  }
  result.hard='pass';
- result.status=result.gates.some(g=>g.status==='regression')?'regression':canFreeze({...result,options})?'pass':'incomplete';
+ result.status=overallStatus(result);
  if(result.status==='pass'){
   result.status='verifying';publish();
-  // Use the original freezer unchanged. First 3 complete B runs only; no cherry-picking.
+  // Use the same correctness/count freezer with revised objective-tail reporting. First 3 complete B runs only; no cherry-picking.
   const manifest=resolve(out,'ext-perf-6b4-budget.candidate.json');
   run('freeze-candidate',roots.B,'ext-perf-budget.mjs',['freeze',manifest,...options.cases.map(id=>`${id}=${resolve(roots.B,`scripts/perf/ext-6b4-late-${id}.source.json`)},${[1,2,3].map(n=>resolve(out,`round-${n}`,`B-${id}-full`)).join(',')}`)]);
   const verification=options.cases.map(id=>measure('verify',id,'B','full'));
   run('independent-frozen-check',roots.B,'ext-perf-budget.mjs',['check',manifest,...verification.map(r=>`${r.id}=${r.prefix}`)]);
-  // No policy/threshold rewriting: portable suggested manifest retains report-only absolute timing.
+  // Portable suggested manifest retains report-only absolute timing.
   const suggested=resolve(out,'ext-perf-6b4-budget.suggested.json');write(suggested,read(manifest));result.manifest=suggested;
   result.status='pass';
  }

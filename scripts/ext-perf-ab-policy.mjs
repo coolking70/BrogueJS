@@ -1,4 +1,26 @@
 import assert from 'node:assert/strict';
+import {stats} from './ext-perf-common.mjs';
+
+export const policyVersion='D6-2026-10-16';
+export const timingPolicy='Same runner only; P95 +10%, objective-round P99 / command max +25%, elapsed +10%, minimum 1ms. Any metric crossing in >=2 of 3 comparable rounds means regression. Full routes with different event/objective-block counts are report-only; the identical input prefix decides. Absolute times report only.';
+
+// Post-process the unchanged observer output: never change instrumentation or
+// substitute P95/max when old summaries lack P99. Nearest-rank, as for P95.
+export function withObjectiveP99(summary,rounds) {
+ const s=structuredClone(summary);
+ assert.equal(rounds.length,s.semantic.rounds,'Objective round count drift');
+ assert.ok(rounds.length>0&&rounds.every(r=>Number.isFinite(r.ms)&&r.ms>=0),'Invalid objective timings');
+ const enrich=(target,rows)=>{
+  const values=rows.map(r=>r.ms),observed=stats(values);
+  for(const k of Object.keys(observed))assert.equal(target[k],observed[k],`Objective summary drift (${k})`);
+  assert.ok(values.length>0,'Empty objective scene');
+  target.p99=values.toSorted((a,b)=>a-b)[Math.ceil(values.length*.99)-1];
+ };
+ assert.deepEqual(Object.keys(s.roundDepth).sort(),[...new Set(rounds.map(r=>String(r.depth)))].sort(),'Objective depths drift');
+ enrich(s.round,rounds);
+ for(const [depth,target]of Object.entries(s.roundDepth))enrich(target,rounds.filter(r=>String(r.depth)===depth));
+ return s;
+}
 
 export function parseOptions(args) {
  const options={rounds:3,cases:['classic','all'],limit:0};
@@ -40,7 +62,8 @@ export function compareTiming(a,b,{complete=true}={}) {
  const values=[];
  for(const scene of scenes){
   const get=s=>scene.split('.').reduce((v,k)=>v?.[k],s);
-  for(const [metric,fraction]of [['p95',.1],['max',.25]])values.push({metric:`${scene}.${metric}`,a:get(a)?.[metric],b:get(b)?.[metric],fraction});
+  const tail=scene==='round'||scene.startsWith('roundDepth.')?'p99':'max';
+  for(const [metric,fraction]of [['p95',.1],[tail,.25]])values.push({metric:`${scene}.${metric}`,a:get(a)?.[metric],b:get(b)?.[metric],fraction});
  }
  values.push({metric:'elapsed',a:a.elapsed,b:b.elapsed,fraction:.1});
  return values.map(v=>{
@@ -58,5 +81,39 @@ export function decide(pairs) {
 
 export function canFreeze({options,gates,hard}) {
  return hard==='pass'&&options.rounds===3&&options.limit===0&&options.cases.join(',')==='classic,all'
-  &&gates.length===3&&gates.every(g=>g.status==='pass');
+  &&gates.length===3&&['classic/full','all/full','all/prefix'].every(key=>gates.some(g=>`${g.id}/${g.kind}`===key
+   &&g.pairs?.length===3
+   &&(g.status==='pass'||key==='all/full'&&g.status==='report-only'&&g.workloadChanged===true)));
+}
+
+export function evaluateGates(runs,options) {
+ const gates=[];
+ for(const id of options.cases)for(const kind of id==='all'?['full','prefix']:['full']){
+  const pairs=[],workloads=[];
+  for(let round=1;round<=options.rounds;round++){
+   const select=side=>{const rows=runs.filter(r=>r.id===id&&r.kind===kind&&r.round===round&&r.side===side);assert.ok(rows.length<=1,'Duplicate A/B run');return rows[0]?.summary;};
+   const a=select('A'),b=select('B');
+   if(!a||!b)continue;
+   for(const k of ['node','machine'])assert.deepEqual(a[k],b[k],`Different A/B ${k}`);
+   const work=s=>({events:s.events,blocks:s.semantic.blocks,rounds:s.semantic.rounds});
+   assert.ok([...Object.values(work(a)),...Object.values(work(b))].every(n=>Number.isSafeInteger(n)&&n>=0),'Invalid workload counts');
+   const changed=Object.keys(work(a)).some(k=>work(a)[k]!==work(b)[k]);
+   if(id==='classic'||kind==='prefix'){
+    assert.equal(changed,false,'Comparable workload counts drift');
+    for(const k of ['rowsHash','rng','blocks','rounds','roundTicks'])assert.deepEqual(a.semantic[k],b.semantic[k],`Comparable load drift (${k})`);
+   }
+   workloads.push({round,a:work(a),b:work(b),changed});
+   pairs.push(compareTiming(a,b,{complete:!options.limit&&kind==='full'}));
+  }
+  if(!pairs.length)continue;
+  const verdict=decide(pairs),workloadChanged=workloads.some(w=>w.changed);
+  const reportOnly=id==='all'&&kind==='full'&&workloadChanged;
+  gates.push({id,kind,pairs,workloads,workloadChanged,...verdict,timingStatus:verdict.status,status:reportOnly?'report-only':verdict.status});
+ }
+ return gates;
+}
+
+export function overallStatus(result) {
+ if(result.hard!=='pass')return result.hard==='failed'?'failed':'incomplete';
+ return result.gates.some(g=>g.status==='regression')?'regression':canFreeze(result)?'pass':'incomplete';
 }

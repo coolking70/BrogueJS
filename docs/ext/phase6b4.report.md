@@ -1,6 +1,6 @@
 # 6B4 主笔报告
 
-2026-10-16；分支 `ext/phase6`，起点 `8d7c799`，6B4 功能及 R1 修复现已提交为 `c5863ab`。**R1 三项重要问题均已复现并修复，含存读档的新回归及 14 文件 / 487 项限定测试通过；boundary、依赖检查、vue-tsc、build 通过。B4-5 仍未收口，6B4 P0 待验。** 本地原版对照再次遇到确证 Sleep/DarkWake，首轮作废；尚未取得有效的原版配对及三轮候选计时，未冻结预算。维护者已批准改用 GitHub Actions 同 runner 交错 A/B，入口及本次工具验收见文末“B4-5 云端 A/B 测量”。本次只交付工作流与脚本，未实际触发云端测量，不能给出 D6 性能通过或代码回退已排除的结论。下文保留首轮实施及失败历史；其中“未 commit/push”描述对应历史轮次。本次工具改动未 commit/push、未调数值、未进入 6C；D1–D7 全部 A，D7 浏览器仍待维护者。
+2026-10-16；分支 `ext/phase6`，本次开工 HEAD `73b5199`。**维护者认可6B4性能合格，B4-5已关闭。** 云端 [run 38860207834](https://github.com/coolking70/BrogueJS/actions/runs/38860207834) 硬门禁全过；按本日修订D6离线重算 **pass**，并用云端前三轮B完整数据冻结6B4预算。冻结后仅复查原校准数据，未执行第4次独立回放，详见文末裁定及限制。R1三项修复与原14文件/487项限定测试证据保持；D7浏览器仍待维护者，数值平衡延期。本次只改性能工具、预算及文档，未修改生产源码、未commit/push、未进入6C。下文截至“B4-5云端A/B测量”的待验/未冻结/未触发说明是对应历史轮次，由文末本次裁定覆盖，原失败证据不删除。
 
 ## 交付差量
 
@@ -301,3 +301,40 @@ npm run check:test-dependencies
 - 工作流 YAML 解析、仅 dispatch/360 分钟配置核对、内嵌 ref 解析脚本实跑通过：默认参数解析到 `43f115b28a63922086fe9734f431f9b77d3bf1c7` / `c5863abd6abe3ffe33b15bf81288af33735ccb80`，非法 shell 文本作为普通 ref 被拒。`git diff --check`、LF 与变更范围核对通过；`pages.yml`、原性能工具/预算/路线和生产代码均未修改。
 
 原始短跑证据在 `/private/tmp/ext-perf-ab-smoke-n0_t1azu/`，最终 classic 为 `classic-32-final/`，all 为 `all-32-three/`，首次 classic 另存 `classic-32/`；相关测试日志 `/private/tmp/ext-perf-ab-related.log`，最终依赖报告 `/private/tmp/ext-perf-ab-dependencies-final.json`。本地复用已有 node_modules，未实际跑 GitHub、npm ci/缓存或完整两组合三轮测量；未跑全项目测试、构建、CE 或删除矩阵，未 commit。
+
+
+## B4-5 维护者裁定关闭（2026-10-16）
+
+**B4-5关闭，6B4性能合格。** 本次依维护者明确裁定修改D6规格和脚本测试，不是因旧断言失败而放宽正确性守卫，也未重新测量或挑选样本。原云端结论 `regression` 保留；修订判定来自同一批原始观测数据。
+
+- 来源：[Actions run 38860207834，attempt 1](https://github.com/coolking70/BrogueJS/actions/runs/38860207834)，下载原件 `/private/tmp/perfci-run1/`；原 `result.json` SHA256 `c3cbb2c44a6d1b29fda7e873b8c3d2483a37f9c588d84714df0f9fa8cafd146f`。
+- A=`43f115b28a63922086fe9734f431f9b77d3bf1c7`，B=`252712b204cf1b450f7ff7be4b71a05a69be1fc8`；B与本次HEAD的src树均为 `55146f6e45b4a02f4c0f01b1e528a78f32416b1a`，生产源码无差量。控制脚本/原观测器hash、输入hash及各轮摘要/逐块hash见[冻结manifest](../../scripts/ext-perf-6b4-budget.json) provenance。
+- 同runner：Node v24.21.0、Linux x64、Intel Xeon Platinum 8370C @2.80GHz、4 CPU、3072MiB堆；硬门禁全部通过，18条三轮测量零OOS、重复逐域/终态/双流/调度及17计数稳定，A三轮原预算检查通过。这里引用原运行，不冒称本机重新执行引擎。
+
+D6改为：全程/D20命令与客观块P95 +10%，命令max及客观块P99 +25%，墙钟 +10%；保持至少1ms、严格大于及三轮中两轮任一指标越线规则。`round.max`/`roundDepth.*.max`单样本极值仅描述。P99由原 `.rounds.json` 最近秩 `ceil(n×0.99)` 精确补算，先核对n/P50/P95/max/total与原摘要一致，观测器字节/hash保持。A/B预检继续锁定观测器、捕获器和逐域比较器；预算脚本因本次D6修订由control提供并登记hash，不再要求旧A/B检出的预算脚本与新版逐字相同，原manifest硬检查继续执行。跨版本完整路线事件数/客观块数不同仅报告，以相同输入前缀判定；前缀可比性与完整路线硬门禁保持。
+
+| 对比 | 事件数 A / B | 客观块 A / B | 新口径越线轮数 | 最终用途 |
+| --- | ---: | ---: | ---: | --- |
+| classic/full | 2208 / 2208 | 2431 / 2431 | 0/3 | pass，参与判定 |
+| all/full | 2516 / 2528 | 2326 / 2391 | 3/3 | report-only，完整路线/D20参考与各自正确性；不掩盖越线 |
+| all/prefix | 1714 / 1714 | 1563 / 1563 | 0/3 | pass，参与判定；rowsHash/双流/块数/回合/ticks相等 |
+
+classic客观块P99三轮 A→B 为35.648790→35.182718、35.344854→36.856511、37.239366→34.975087ms；D20为27.321193→26.832122、26.458786→29.302919、27.423671→26.525900ms，均未越线。原classic单样本max越线原样保留在artifact。all完整路线由6B4已归因的1715处RNG走向变化导致B多12命令、65客观块，不是同工作量；1714前缀不作为D20跨版本性能证明。
+
+### 预算、复现与限制
+
+已采用 `scripts/ext-perf-6b4-budget.json`：严格使用原云端B第1/2/3轮的classic/all完整数据，不丢慢样本；原 `ext-perf-budget.json` 保持不变。保留完整语义/RNG/调度、17项调用上限、D20≥500及各轮统计；客观块timingBaseline采用P95/P99，命令保留P95/max，绝对毫秒仍report-only。provenance记录run id、A/B源码、原工具/本次重算工具hash、原result和六条校准摘要/逐块hash。
+
+复现命令（输出目录须不存在）：
+
+```sh
+node scripts/recalculate-ext-perf-ab.mjs /private/tmp/perfci-run1/result.json /private/tmp/perfci-run1-d6-final --freeze
+```
+
+新结果/逐指标Markdown/三轮预算检查日志留 `/private/tmp/perfci-run1-d6-final/`，仓内仅留[小型重算汇总](phase6b4.perf-cloud.json)和冻结manifest。重算器拒绝不完整或失败的硬证据、缺轮/重复轮、输入或摘要漂移、缺逐块文件与观测器漂移；不信旧gates，使用当前策略重新计算。离线freeze授权绑定本次run；未来云端驱动仍按正常流程执行冻结后独立回放。
+
+**限制**：原run在旧D6判为regression后未进入独立回放阶段。本次冻结后对原三轮B数据执行3次预算check均通过，属于校准数据复查，**没有第4次独立回放或新一次 `check-ext-perf --phase6b4` 生产测量**；manifest明确 `independentPostFreezeReplay: false`。B4-5关闭依据维护者本次裁定，不将复查包装成独立验收。未测浏览器/移动端、D22+、满居民/结构压力；不称性能全场景或6B4整体发布验收完成。
+
+### 本次限定验证
+
+`node scripts/test-ext-perf-ab.mjs`、`node scripts/test-ext-perf-selection.mjs`、`npm run check:test-dependencies`通过。脚本测试覆盖P99最近秩与缺数据拒绝、客观块孤立max不判退、P99/命令max边界、同工作量完整路线继续阻断、不同工作量仅报告但缺/失败前缀或不足三轮不能冻结、硬失败/摘要漂移、freeze拒绝覆盖和预算计数增长。原预算兼容检查保持；本次只运行相关脚本测试及测试依赖检查，未跑全量、构建、CE、浏览器、性能重测或删除矩阵，无commit。
