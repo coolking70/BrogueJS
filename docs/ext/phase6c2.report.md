@@ -149,3 +149,98 @@
 | itemSdk（仅补公开floor投影说明） | `ba0b8a4d7401da0972ebb9ecc2f260993cbe9910d2908f5b5c6044289add69f6` |
 
 pack/catalog/rules、worldSdk/edibleSdk/stats核心与性能预算指纹仍与首轮送审表相同。云端A/B仍交维护者以 `base=e276484 head=ext/phase6` 绑定后续实际提交；浏览器三档待验，并增加「实际成词→drop→选中地面词装→存读后再选中」共同检查项。R1自验完成，等待独立复核；未commit、未push，停在C2。
+
+
+## 基准路线修复与云端重跑准备（2026-10-17）
+
+本节覆盖前文“工具只登记到 6c1 / accepted=false”的历史状态。工作分支 `ext/phase6`，引擎 B 固定为 `feb33b030f74949a2e0af001362b53f2f6e0eea3`，`src` tree `5c588225980a69b5a12a0d2572a1a3aee899beca`；本次只改性能脚本、工作流和文档/冻结制品，没有修改游戏代码，没有 commit/push。
+
+### 原失败与回退策略
+
+[run 38937707099](https://github.com/coolking70/BrogueJS/actions/runs/38937707099) 在 `004-generate-B-all.log` 报 `Stuck 6:31,21`，尚未进入三轮性能计时，不能解释为性能 regression。`candidate-artifacts/all/route-failure.json` 显示阻路吸血蝙蝠 HP=1555/maxHp=23，玩家持初始匕首、被蛛网缠住；原 BFS 避怪失败后直接穿怪寻路，原地不断攻击，定期 search 不能结束这一局面。
+
+修复位于 `generate-ext-perf.mjs` 和独立可测的 `ext-perf-route-recovery.mjs`：
+
+- 固定 BFS 方向及稳定目标次序；优先避开蛛网，必要时才允许穿越。可选升级武器避怪不可达时转向楼梯。
+- 每层累计同格访问/原地不动达到 24 次，或可选绕行达到 512 步，放弃该层可选拾取；继续受阻则封锁失败的有向边并重新规划。楼层变化清空这些规划状态。
+- 局部无路、原地 600 次或每层 1024 步/全局 16000 命令上限触发同种子重建：只在失败楼层入口多提交一次真实 `wait`，保留之前楼层的入口等待策略，最多 16 次完整尝试。所有等待、移动、搜索、上下楼/装备仍经过正式命令入口。计数与重试不读墙钟、不取 RNG、不编辑怪物、地图或存档；不换种子。
+- 每次失败保留独立诊断和累计尝试记录；最终只导出最后一次从新局起完整录制的成功路线。引擎错误、录制错误、死亡、覆盖失败不会被当作可恢复路线错误吞掉；重试耗尽仍硬失败。
+- D20 原定 500 次等待保留，增加结算数和多怪/多地形光源检查。它是有界的确定性采集策略，不承诺所有未来规则/种子都必然可通关。
+
+初次“只封边/换目标”探针仍在 D6 失败；避蛛网单独亦不足。失败证据保留在 `/private/tmp/phase6-route-fix/{gen-1,probe,gen-2,gen-3}` 及同名日志。最终策略在第一次尝试 D6 无路后，第二次仅以 D6 入口 1 次等待越过瓶颈；未调整游戏规则或硬门禁。
+
+### 云端工具衔接
+
+采用 6C1 云端预算、路线及 source，来源与限制见 [6C1 报告](phase6c1.report.md#云端性能验收与预算采用2026-10-17)。`6c1` 成为可用 A 身份，新增未校准 `6c2` 作为 B；缺 6C2 manifest 的普通预算检查仍必须失败，不会把 C1 预算冒充 C2。
+
+冻结输入从 dispatch 的 control checkout 读取，因为历史 A=e276484 提交早于云端预算采用；A 仍用自己的生产代码原捕获，每个 recordingHash、事件数都必须匹配冻结输入。工作流仅将 control 的两个路线规划脚本复制到历史 A/B 临时检出目录；原生成器/捕获器/观察器/比较器字节一致性检查保留，并加上新 helper。引擎必须 clean，原 observer、OOS、语义/双 RNG、17 项计数、D6 阈值及 freezer 均未修改。报告继续保留实际 A/B/control 身份和所有工具 hash。
+
+`profile-ext-6c1.mjs` 的原 C1 套装小场景仍执行，明确不是新的 C2 插槽专场。其 v3 手造实例在当前 C2 `loot=0.7.0` 上实测 `INVALID_ITEM`；只将 fixture 版本按 `0.6.0→3 / 0.7.0→4` 有限映射，未知版本拒绝，其余布景/纯读对象图、ID、事务、重复计数断言原样保留。修正后当前源码小场景 pass；日志 `c1-scene-old.log`（失败）与 `c1-scene-fixed.log`、结果 `c1-scene-fixed.json`（通过）。该功能验证不作为本地性能 A/B 结论，C2 孔数/匹配专场仍属此前报告的未验范围。
+
+### 重新触发 6C2 云端 A/B
+
+维护者提交并推送本次**工具及冻结制品**后，选择包含本次修复的 workflow revision（例如届时的 `ext/phase6`）dispatch `.github/workflows/ext-perf.yml`。本次不代为提交或触发。
+
+| 参数 | 值 |
+| --- | --- |
+| workflow ref | 包含本次修复及冻结文件的 `ext/phase6`（不能用旧 feb33b0 作为 workflow ref） |
+| base_ref | `e27648489953069b9aca4c9cf2b8a5ed5162a372` |
+| head_ref | `feb33b030f74949a2e0af001362b53f2f6e0eea3` |
+| base_identity | `6c1` |
+| head_identity | `6c2` |
+| rounds | `3` |
+
+```sh
+gh workflow run ext-perf.yml --ref ext/phase6 \
+  -f base_ref=e27648489953069b9aca4c9cf2b8a5ed5162a372 \
+  -f head_ref=feb33b030f74949a2e0af001362b53f2f6e0eea3 \
+  -f base_identity=6c1 -f head_identity=6c2 -f rounds=3
+```
+
+B classic/all 仍从新局生成并捕获完整 D20 输入，all 可比前缀重新从生产结果求得，不使用任何历史常数。完整工作量不同的时延按原政策只报告，可比前缀决定相对裁决；完整路线的 OOS/语义/工作量硬验证不跳过。通过三轮与独立冻结后第四次检查才生成 `ext-perf-6c2-budget.suggested.json`；本次未冻结 C2 预算、未宣称 C2 云端或整个阶段验收通过。
+
+
+### 限定脚本验收记录
+
+证据根目录 `/private/tmp/phase6-route-fix/`，所有 >1 MB 录像/观察器原始数据留在该目录。按用户范围没有跑完整 npm/ext/drift、CE/full/gen、build、浏览器或完整三轮本地 A/B。
+
+| 检查 | 结果 |
+| --- | --- |
+| `node scripts/test-ext-perf-route.mjs` | exit0；阻路攻击、往返/长绕行、楼层重置、不可达拾取、蛛网/熔岩、重试上限及非路线错误不吞掉 |
+| `node scripts/test-ext-perf-selection.mjs` | exit0；已冻结 C1 完整制品、未校准 C2 拒绝、缺文件/hash 漂移/未知身份/冲突参数/自动前缀 |
+| `node scripts/test-ext-perf-ab.mjs` | exit0；新 C1→C2 参数与原 OOS/计数/1ms/2-of-3/P99/冻结负例 |
+| `npm run check:test-dependencies` | exit0，`errors=[]`；`dependencies-final.log` |
+| C1 冻结后独立回放数据的离线预算检查 | exit0，classic/all hard pass；`c1-frozen-check.log` |
+| C1 小场景在 C2 的夹具兼容验证 | exit0，`c1-scene-fixed.json` status pass；不作为性能结论 |
+| 历史 A/B 捕获器、observer、common、comparator 字节核对 | 与 control 相同；原预算与云端建议除 provenance 外深比较相等 |
+
+旧脚本测试前提变化：开工未修改文件时，原 `test-ext-perf-selection.mjs` 与 `test-ext-perf-ab.mjs` 均 exit0。本次明确采用 C1、新增 C2 后，将“C1 未校准/不能作为 A”前提转到仍未校准的 C2，将未知身份负例转到 C3；未知/未校准拒绝语义及全部性能断言未放宽。新路线测试早期两次失败来自测试布景未初始化每层规划状态、以及期望未考虑合法对角最短路，分别修正测试初始化和预期首步；未修改游戏代码或原守卫。
+
+本地 Vite SSR 仍输出既有 HMR `listen EPERM :24678` 提示；引擎脚本继续正常完成，日志保留，不改 observer/common 来隐藏该提示。
+
+
+### 当前 B 的确定性生成（最终源码）
+
+Node v24.19.0、heap 3072 MiB，固定 seed `438491256`、全部 8 模块、wizard；`final-1` / `final-2` 两次独立进程均 exit0，完整到 D20、500 次结算行动、最大 28 怪 / 188 地形光源，**2423 条录制事件**。两次都仅经历一次 D6 无路重试，采用 D6 入口 1 次等待；所有失败与回退记录也相同。
+
+两次的 `.recording.json`、`.route.json`、`.source.json`、`.recovery.json` **逐字节一致**；生成开始/结束的工具 hash 一致，`git diff HEAD -- src` 为空。录像完整对象 SHA256（原工具 `sha256(JSON.stringify(value))`）为 `cdcb13635af4c1a29bc4bb529bf662d34e6f5e420d07f2dc9f2c4044834475c9`；带缩进/末尾换行的原始录像文件 SHA256 为 `f86cafc89419617d5ef0bfd49cf9746b20585f558ca8bccae522a7d26b7182e5`，紧凑路线文件 SHA256 为 `037cd4197249316b215fc4607cbb9813e6f13c4a6d025f8c59e36367132aa6eb`。汇总在 `verification.json`，源码/工具身份在 `final-source.json`。
+
+生成器 SHA256：`08db39c98b875c79cd8fdde4c4c5b622df0cddfe057e1cdb0eaf83e3afff93f3`；规划 helper SHA256：`de82f77593f525996a194b3cefa8d6dc6faf65ecc49fba876a607abe7e7cb44d`。重现命令（本机使用上述 Node 24 二进制）：
+
+```sh
+node scripts/generate-ext-perf.mjs /private/tmp/phase6-route-fix/final-1 all 438491256 500
+node scripts/generate-ext-perf.mjs /private/tmp/phase6-route-fix/final-2 all 438491256 500
+```
+
+当前 B 与 6C1 云端原录制内容经原 `comparablePrefix` 求得 **47 条**相同输入/结果前缀。云端仍须重新捕获并由 observer 验证，不能把此短前缀当 D20 相对时延证据；完整 D20 负载及其正确性仍独立保留。自然怪物/光源数与旧路线不同，不以改世界或减少等待得到结果。
+
+
+完整回放核对：原 `profile-ext-perf.mjs` 在未修改的当前 B 引擎上处理 **2423/2423 事件，exit0，OOS=0，末层 D20**；客观块/rounds=2549、roundTicks=253375。回放输入为预验证 `gen-4/all-438491256.recording.json`，已与最终 `final-1/final-2` 的完整录像逐字节比对相等；因此是同一最终输入的一次完整回放，没有再做三轮计时。运行命令：
+
+```sh
+node scripts/profile-ext-perf.mjs \
+  /private/tmp/phase6-route-fix/gen-4/all-438491256.recording.json \
+  /private/tmp/phase6-route-fix/replay
+```
+
+`replay.summary.json` 的 recordingHash 与上述一致，stateHash=`65480287d7135b64d16f39487be805843f6fd526c135fa947b9318e5cfdc7d77`，rowsHash=`7d0ecbf759d7e983b721122c468d3b058fb2be4694591c20972141f9d7b35ca1`。完整 observer 的双流、检查点与最终状态校验保持；`verification.json` 最终 status=pass。生成/回放曾并行运行，本机时间只作诊断，不能拿来判断云端性能。最终 `git diff --check` 通过，改动文件均 LF 且小于 1 MiB，游戏源码未改；未 commit/push。

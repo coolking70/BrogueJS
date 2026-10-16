@@ -1,5 +1,7 @@
 # 6C1 套装闭环报告
 
+**2026-10-17 更新：云端 run 38920592958 性能 pass，硬门禁 pass；6C1 预算已采用，详见文末。下文“性能待云端”是首交付历史，不覆盖本次结果。**
+
 2026-10-16，`ext/phase6`，开工 HEAD `9abb255`。按维护者已冻结的 [C0 合同](phase6c0-contract.md) 实施，冻结数值未调整；未 commit、未进入 C2。性能与浏览器交维护者侧执行，本报告不据本地功能结果宣称 A10 或三档浏览器通过。
 
 ## 实现与边界
@@ -173,3 +175,20 @@ node node_modules/vitest/vitest.mjs run \
 | loot/data（17 文件） | `25dfed94678c3f68dfa4e73a00e97ff2cdba497f282499cf3e085e25a3d112de`（与首交付相同） |
 
 本轮未重跑自然路线、一行全移除、性能或浏览器；前轮自然链超时及复核记录保留，不计入本轮通过数。云端 A/B 参数仍为 base=`9abb255`、head=`ext/phase6`（完整 workflow 参数见前文），三档浏览器清单仍交维护者。未 commit/push，停在 C1。
+
+
+## 云端性能验收与预算采用（2026-10-17）
+
+[run 38920592958 / attempt 1](https://github.com/coolking70/BrogueJS/actions/runs/38920592958)：`status=pass`、`hard=pass`。原始 artifact 位于 `/private/tmp/perfci-38920592958/ext-perf-38920592958-1/`，依据 `result.json`、`summary.md`、`round-1/2/3` 和 `round-verify`，不是本地重计时结果。
+
+- A：`9abb255ec00bd09692646d289f9f2ab3f698dc09`（6B4）；B/control：`e27648489953069b9aca4c9cf2b8a5ed5162a372`（6C1）。Node v24.21.0，AMD EPYC 9V45，heap 3072 MiB，A/B 的 src 均 clean。
+- 三轮 classic/full 2208 事件、all/full 2528 事件，全部零 OOS；17 项入口计数、语义/hash/双流稳定。自动推导 all 同输入/结果前缀为 2528 事件，不沿用历史 1714。
+- 修订 D6：classic/full **0/3** 越线，all/full **1/3**，all/prefix **1/3**，均 pass。all/full 第一轮 D20 command max +27.50%、all/prefix 第三轮 objective P99 +32.93% 的单轮越线保留，没有删除样本或调整阈值。
+- B 的 classic 与 all 均到 D20、500 次结算行动；all 最大 34 怪、212 地形光源。`C1-bounded-supplement` pass。
+- 原 freezer 用 B 前三轮完整数据生成建议预算，随后**独立第四次** B classic/all 完整回放零 OOS，`independent-frozen-check` pass。这一点强于 6B4 只复用校准数据离线检查的限制。
+
+采用 `ext-perf-6c1-budget.suggested.json` 到 [scripts/ext-perf-6c1-budget.json](../../scripts/ext-perf-6c1-budget.json)，全部测量、预算、断言值保持原样，仅附加 `provenance` 记录 run、源码、工具 hash 和限制。建议文件原始 SHA256：`7dd2f1a4940dec92d7cd877b83ac69596e6c98ebed3ede57004764ff401583e7`；落盘含来源版 SHA256：`d2734c8d7c2930d3db0549289e9eb165ff89505c2e95c5db43035b343fb53ab3`。对应 `candidate-artifacts` 的 classic/all `.route.json` 和 `.source.json` 按原字节冻结为 `scripts/perf/ext-6c1-late-{classic,all}.{route,source}.json`，完整录像大于 1 MB，留在外部 artifact。身份注册 `6c1.accepted=true`，缺制品/hash 漂移仍拒绝。
+
+本地用已采用预算对云端 `round-verify/B-{classic,all}-full` 离线复核 exit0，日志 `/private/tmp/phase6-route-fix/c1-frozen-check.log`；这是检查既有独立验证数据，不冒称新的第五次回放。
+
+限制：绝对毫秒值只适用于该云端机器；wizard 全知脚本路线不代表人类游玩或浏览器/移动端；覆盖到 D20，不声称 D22+、居民/结构最大负载或数值平衡。此预算只证明 6C1，不是 6C2 结论。6C2 原失败 run 与修复后的重跑参数见 [6C2 报告](phase6c2.report.md)。

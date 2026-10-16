@@ -8,6 +8,9 @@ const {server,load}=await boot();
 try {
  const {getInstalledModuleDescriptors}=await load('ext/catalog.ts');
  const descriptor=getInstalledModuleDescriptors().find(d=>d.id==='loot');assert.ok(descriptor);
+ // The same C1 scene runs on C1 or C2 sources; only its native data version
+ // changes. Unknown schemas fail closed instead of weakening item validation.
+ const itemVersion={'0.6.0':3,'0.7.0':4}[descriptor.version];assert.ok(itemVersion,'Unsupported loot fixture version');
  const {createWorldHarness,worldHarnessGame}=await load('ext/testing/worldHarness.ts');
  const {loadLootPack}=await load('ext/modules/loot/definitions.ts');
  const {buildEffectiveLootCatalog}=await load('ext/modules/loot/catalog.ts');
@@ -22,7 +25,7 @@ try {
   let collections=0,rows=0;
   const measured={...descriptor,create:()=>{const module=descriptor.create(),provider=module.statSources;return {...module,statSources:{...provider,collect:(...args)=>{collections++;const result=provider.collect(...args);rows+=result.length;return result;}}};}};
   const h=createWorldHarness({seed:42,mode:'easy',modules:['loot']},[measured]),g=worldHarnessGame(h),runtime=g.extensionRuntime;
-  const add=id=>{const {setId,piece:p}=catalog.piecesById['loot.piece.'+id],data={v:3,baseId:p.baseId,ilvl:20,rarity:'set',uniqueId:null,setId,pieceId:p.id,identityKnown:true,affixes:p.rows.map(r=>({id:r.rowId,tier:0,values:r.ranges.map(v=>v[0]),known:true})),corrupted:false,enhancement:0,sockets:0,socketed:[],nameParts:null,origin:{source:'floor',depth:14}},n=deriveNativeFacts(data,catalog);
+  const add=id=>{const {setId,piece:p}=catalog.piecesById['loot.piece.'+id],data={v:itemVersion,baseId:p.baseId,ilvl:20,rarity:'set',uniqueId:null,setId,pieceId:p.id,identityKnown:true,affixes:p.rows.map(r=>({id:r.rowId,tier:0,values:r.ranges.map(v=>v[0]),known:true})),corrupted:false,enhancement:0,sockets:0,socketed:[],nameParts:null,origin:{source:'floor',depth:14}},n=deriveNativeFacts(data,catalog);
    const item=assembleDropItem({native:{kind:n.kind,category:n.category,enchantment:n.enchantment,runicType:n.runicType,isCursed:n.isCursed,identified:n.identified,familiarityRemaining:1000},moduleData:{loot:data}});assert.ok(g.player.inventory.addItem(item));runtime.bindItemData(item);return item;};
   const items=['wanderer.blade','wanderer.coat','wanderer.lamp','wanderer.watch'].map(add),mixed=add('bastion.guard');
   let transactions=0;const original=runtime.transaction;runtime.transaction=function(...args){transactions++;return original.apply(this,args);};

@@ -6,23 +6,23 @@ on:
       base_ref:
         description: A revision (latest reviewed candidate)
         required: true
-        default: '9abb255'
+        default: 'e27648489953069b9aca4c9cf2b8a5ed5162a372'
         type: string
       head_ref:
-        description: B revision (6C1 candidate)
+        description: B revision (6C2 candidate)
         required: true
-        default: ext/phase6
+        default: 'feb33b030f74949a2e0af001362b53f2f6e0eea3'
         type: string
       base_identity:
         description: Reviewed A benchmark
         type: choice
-        default: 6b4
-        options: [p0, 6b4]
-      head_identity:
-        description: B benchmark (6c1 captures fresh complete routes on this runner)
-        type: choice
         default: 6c1
-        options: [6b4, 6c1]
+        options: [p0, 6b4, 6c1]
+      head_identity:
+        description: B benchmark (6c1/6c2 capture fresh complete routes on this runner)
+        type: choice
+        default: 6c2
+        options: [6b4, 6c1, 6c2]
       rounds:
         description: 'Paired rounds: 1/2 are diagnostic only; 3 required for D6/freeze'
         required: true
@@ -93,6 +93,16 @@ jobs:
           npm ci --prefix control
           npm ci --prefix base
           npm ci --prefix head
+      - name: Stage dispatched route planner on both historical checkouts
+        run: |
+          node --input-type=module <<'JS'
+          import {copyFileSync} from 'node:fs';
+          for (const root of ['base', 'head']) {
+            for (const file of ['generate-ext-perf.mjs', 'ext-perf-route-recovery.mjs']) {
+              copyFileSync(`control/scripts/${file}`, `${root}/scripts/${file}`);
+            }
+          }
+          JS
       - name: Interleaved A/B and B calibration
         timeout-minutes: 330
         env:

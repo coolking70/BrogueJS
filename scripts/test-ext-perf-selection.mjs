@@ -9,8 +9,12 @@ const {mkdtempSync,mkdirSync,writeFileSync,rmSync}=await import('node:fs');
 const {tmpdir}=await import('node:os');
 const {resolve,dirname}=await import('node:path');
 assert.equal(selectExtPerf(['i','o','--identity=6c1']).manifest,'scripts/ext-perf-6c1-budget.json');
-for(const flags of [['--identity=6c2'],['--identity=unknown'],['--identity=p0','--phase6b4'],['--identity=p0','--identity=6b4']])assert.throws(()=>selectExtPerf(['i','o',...flags]));
-assert.throws(()=>loadPerfIdentity(process.cwd(),'6c1'),'Uncalibrated C1 cannot pass the normal budget checker');
+assert.equal(selectExtPerf(['i','o','--identity=6c2']).manifest,'scripts/ext-perf-6c2-budget.json');
+for(const flags of [['--identity=6c3'],['--identity=unknown'],['--identity=p0','--phase6b4'],['--identity=p0','--identity=6b4']])assert.throws(()=>selectExtPerf(['i','o',...flags]));
+const frozen=loadPerfIdentity(process.cwd(),'6c1');
+assert.equal(frozen.entry.accepted,true);
+assert.equal(frozen.sources.all.source,'e27648489953069b9aca4c9cf2b8a5ed5162a372');
+assert.throws(()=>loadPerfIdentity(process.cwd(),'6c2'),'Uncalibrated C2 cannot pass the normal budget checker');
 const temp=mkdtempSync(resolve(tmpdir(),'c1-selection-'));
 try{
  const entry=perfIdentity('6c1'),source={recordingHash:'x',events:2050,coverage:{20:{settled:500}}};

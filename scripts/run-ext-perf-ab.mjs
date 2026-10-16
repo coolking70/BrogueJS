@@ -67,8 +67,11 @@ publish();
 try {
  assert.equal(Number(process.versions.node.split('.')[0]),24,'Use Node 24 on both sides');
  const instrumentationHash=hash(['profile-ext-perf.mjs','ext-perf-common.mjs'].map(n=>readFileSync(resolve(control,'scripts',n),'utf8')).join('\0'));
- const baseline=loadPerfIdentity(roots.A,options.baseIdentity),original=baseline.manifest,metrics=original.metrics;
- const headEntry=perfIdentity(options.headIdentity),generated=options.headIdentity==='6c1';
+ // Frozen inputs live with the dispatched tools: historical engine checkouts
+ // predate adoption of their cloud artifacts. Production recapture below must
+ // still reproduce every event/hash on A; no header or checkpoint substitution.
+ const baseline=loadPerfIdentity(control,options.baseIdentity),original=baseline.manifest,metrics=original.metrics;
+ const headEntry=perfIdentity(options.headIdentity),generated=headEntry.generate===true;
  if(!generated)loadPerfIdentity(roots.B,options.headIdentity);
  result.cumulativeReference=read(resolve(roots.A,'scripts/ext-perf-budget.json'));
  result.cumulativeScope='P0 frozen counts and timing reference retained; historical machine timings are descriptive only.';
@@ -78,15 +81,17 @@ try {
   assert.equal(sourceDiff,'','Engine checkout must be clean');
   assert.equal(git(root,'ls-files','--others','--exclude-standard','src'),'','Untracked engine source');
   result.identities[side]={commit:git(root,'rev-parse','HEAD'),srcTree:git(root,'rev-parse','HEAD:src'),sourceHash:hash(sourceDiff),lockHash:hash(readFileSync(resolve(root,'package-lock.json'),'utf8'))};
-  for(const n of ['profile-ext-perf.mjs','ext-perf-common.mjs','regenerate-ext-perf.mjs','generate-ext-perf.mjs','compare-ext-perf.mjs'])
+  // The workflow stages the dispatched planner into both historical checkouts;
+  // retain exact byte guards for generation, capture, observer and comparison.
+  for(const n of ['profile-ext-perf.mjs','ext-perf-common.mjs','regenerate-ext-perf.mjs','generate-ext-perf.mjs','ext-perf-route-recovery.mjs','compare-ext-perf.mjs'])
    assert.equal(readFileSync(resolve(root,'scripts',n),'utf8'),readFileSync(resolve(control,'scripts',n),'utf8'),`Tool drift ${side}/${n}`);
  }
  result.identities.control={commit:git(control,'rev-parse','HEAD'),srcTree:git(control,'rev-parse','HEAD:src'),sourceHash:hash(execFileSync('git',['diff','HEAD','--','scripts','.github'],{cwd:control,encoding:'utf8'}))};
  result.instrumentationHash=instrumentationHash;
- result.toolHashes=Object.fromEntries(['run-ext-perf-ab.mjs','generate-ext-perf.mjs','profile-ext-6c1.mjs','ext-perf-selection.mjs','ext-perf-ab-policy.mjs','capture-ext-perf-prefix.mjs','regenerate-ext-perf.mjs','profile-ext-perf.mjs','ext-perf-common.mjs','compare-ext-perf.mjs','ext-perf-budget.mjs'].map(n=>[n,hash(readFileSync(resolve(control,'scripts',n),'utf8'))]));
+ result.toolHashes=Object.fromEntries(['run-ext-perf-ab.mjs','generate-ext-perf.mjs','ext-perf-route-recovery.mjs','profile-ext-6c1.mjs','ext-perf-selection.mjs','ext-perf-ab-policy.mjs','capture-ext-perf-prefix.mjs','regenerate-ext-perf.mjs','profile-ext-perf.mjs','ext-perf-common.mjs','compare-ext-perf.mjs','ext-perf-budget.mjs'].map(n=>[n,hash(readFileSync(resolve(control,'scripts',n),'utf8'))]));
  const inputs={},routePaths={},sourcePaths={};
  for(const id of options.cases){
-  routePaths[`A-${id}`]=resolve(roots.A,baseline.entry.route(id));
+  routePaths[`A-${id}`]=resolve(control,baseline.entry.route(id));
   if(generated){
    const dir=resolve(out,'candidate-artifacts',id),stem=resolve(dir,`${id}-438491256`);
    run(`generate-B-${id}`,roots.B,'generate-ext-perf.mjs',[dir,id,'438491256','500']);
@@ -139,7 +144,7 @@ try {
  }
  if(!options.limit&&options.cases.length===2)for(let round=1;round<=options.rounds;round++){
   const args=options.cases.map(id=>`${id}=${resolve(out,`round-${round}`,`A-${id}-full`)}`);
-  run(`original-budget-${round}`,roots.A,'ext-perf-budget.mjs',['check',resolve(roots.A,baseline.entry.manifest),...args]);
+  run(`original-budget-${round}`,roots.A,'ext-perf-budget.mjs',['check',resolve(control,baseline.entry.manifest),...args]);
  }
  if(generated&&!options.limit){run('C1-bounded-supplement',roots.B,'profile-ext-6c1.mjs',[resolve(out,'c1-scenes.json')]);result.c1Scenes=read(resolve(out,'c1-scenes.json'));}
  result.hard='pass';
