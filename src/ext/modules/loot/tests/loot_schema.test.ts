@@ -1,3 +1,10 @@
+import { buildEffectiveLootCatalog } from '../catalog';
+import { deriveNativeFacts, validateLootItemData } from '../item';
+import { lootStatSources } from '../statSources';
+import { initialLootState } from '../session';
+import { itemStatPolicy } from '../../../../engine/Stats/ItemStatPolicy';
+import type { EquippedStatItem, StatSourceContext } from '../../../stats';
+import type { LootItemDataV1, LootPack } from '../types';
 import { describe, expect, it } from 'vitest';
 import { loadLootPack } from '../definitions';
 import { assertLootPack, computeStaticDrawBudget, validateLootLocale } from '../schema';
@@ -64,7 +71,7 @@ const negatives: Negative[] = [
   ['seven affix slots',p=>p.rarities.rarities[2].affixes.prefixMax=4,'BUDGET','rarities.rarities[2].affixes'],
   ['magic count exceeds slots',p=>p.presets.presets[0].affixCount.magic[1].n=3,'INVALID_COMBINATION','presets.presets[0].affixCount.magic[1].n'],
   ['affix count zero',p=>p.presets.presets[0].affixCount.magic[0].n=0,'INVALID_VALUE','presets.presets[0].affixCount.magic[0].n'],
-  ['set positive drop weight',p=>p.presets.presets[0].rarityWeights.set=1,'INVALID_VALUE','presets.presets[0].rarityWeights.set'],
+  ['set negative drop weight',p=>p.presets.presets[0].rarityWeights.set=-1,'INVALID_VALUE','presets.presets[0].rarityWeights.set'],
   ['nonboolean rune family',p=>p.affixes.runeFamilyEnabled='true','INVALID_TYPE','affixes.runeFamilyEnabled'],
   ['monster repeated ID',p=>p.monsterClasses.members[1].typeId=p.monsterClasses.members[0].typeId,'DUPLICATE_ID','monsterClasses.members[1].typeId'],
   ['unknown monster class',p=>p.monsterClasses.members[0].class='boss','INVALID_VALUE','monsterClasses.members[0].class'],
@@ -116,5 +123,73 @@ describe('strict loot pack schema',()=>{
   it('rejects empty locale text',()=>{
     const l={...locale,'ext.loot.affix.keen':''};
     expect(()=>validateLootLocale(loadLootPack(),l)).toThrow(LootDataError);
+  });
+});
+
+// R1-F1: literal budgets are checked against the real draft expansion and host policy.
+describe('set admission includes class-specific expanded enhancement rows',()=>{
+  const availability={combat:null,growth:null,giants:null};
+  function packWithRows(pieceIndex:number,modifiers:number,cap=4,damage:'none'|'increased'|'flat'='none') {
+    const raw=structuredClone(loadLootPack()),piece=raw.sets.sets[0]!.pieces[pieceIndex]!;
+    raw.enhancement.caps.set=cap;
+    raw.rarities.rarities.find(r=>r.id==='set')!.enhancementCap=cap;
+    piece.rows=Array.from({length:Math.ceil(modifiers/4)},(_,i)=>({
+      rowId:`${piece.id}.r${i}`,ranges:[[1000,1000]],
+      modifiers:Array.from({length:Math.min(4,modifiers-i*4)},()=>({stat:'native.accuracy',category:'increased' as const,unit:'bp' as const,valueIndex:0})),
+    }));
+    if(damage==='increased')piece.rows[0]!.modifiers[0]={stat:'loot.local.damage',category:'local-increased',unit:'bp',valueIndex:0};
+    if(damage==='flat'){
+      piece.rows[0]!.ranges=[[1,1],[2,2]];
+      for(const i of [0,1])piece.rows[0]!.modifiers[i]={stat:'loot.local.damage',category:'local-flat',unit:'int',valueIndex:i};
+    }
+    return raw;
+  }
+  function expectRuntimeBoundary(raw:LootPack,anchor:number,unenhanced:number,enhanced:number) {
+    const catalog=buildEffectiveLootCatalog(loadLootPack(raw),availability),set=catalog.pack.sets.sets[0]!;
+    const slots=['weapon','armor','left-ring','right-ring'] as const;
+    const equipment=set.pieces.map((piece,i):EquippedStatItem=>{
+      const data:LootItemDataV1={v:3,baseId:piece.baseId,ilvl:20,rarity:'set',uniqueId:null,setId:set.id,pieceId:piece.id,identityKnown:true,
+        affixes:piece.rows.map(r=>({id:r.rowId,tier:0,values:r.ranges.map(v=>v[0]),known:true})),
+        corrupted:false,enhancement:0,sockets:0,socketed:[],nameParts:null,origin:{source:'floor',depth:14}};
+      expect(validateLootItemData(data,catalog)).toBe(true);
+      return {id:i===anchor?10:20+i,slot:slots[i]!,base:{damageMin:1,damageMax:2,armorTenth:0,strengthRequired:0,weight:0,flags:[]},
+        moduleData:{loot:JSON.parse(JSON.stringify(data))},category:i===0?0:i===1?1:8,kindKey:piece.baseId,
+        enchant:deriveNativeFacts(data,catalog).enchantment,identified:true,runic:{kind:null,identified:true}};
+    });
+    const context:StatSourceContext={state:initialLootState('standard',catalog.fingerprint),playerId:1,facts:{},knownOnly:false,
+      equippedItems:()=>equipment,getComponent:()=>undefined,base:()=>0};
+    const collect=()=>lootStatSources(()=>catalog).collect({id:1,name:'player',hp:10,maxHp:10,x:1,y:1,player:true,
+      monsterId:null,allied:true,hostile:false,statuses:[],tags:[]},context);
+    for(const [level,expected] of [[0,unenhanced],[raw.enhancement.caps.set,enhanced]]){
+      const item=equipment[anchor]!,data=item.moduleData!.loot as unknown as LootItemDataV1;data.enhancement=level!;
+      expect(validateLootItemData(data,catalog)).toBe(true);
+      equipment[anchor]={...item,enchant:deriveNativeFacts(data,catalog).enchantment};
+      const rows=collect();expect(rows.filter(r=>r.sourceId.startsWith('loot.item.10.'))).toHaveLength(expected!);
+      expect(()=>itemStatPolicy(rows,'loot',equipment.map(i=>i.id))).not.toThrow();
+    }
+  }
+  it.each([
+    ['weapon',0,18,21],['armor',1,19,22],['left ring',2,21,24],['right ring',3,21,24],
+  ] as const)('%s accepts exactly 24 runtime rows and rejects 25 at admission',(_name,index,fixed,before)=>{
+    expectRuntimeBoundary(packWithRows(index,fixed),index,before,24);
+    expect(()=>loadLootPack(packWithRows(index,fixed+1))).toThrow(expect.objectContaining({code:'BUDGET',path:'sets.sets[0]'}));
+  });
+  it('counts local-increased damage twice before adding three weapon enhancement rows',()=>{
+    expectRuntimeBoundary(packWithRows(0,17,4,'increased'),0,21,24);
+    expect(()=>loadLootPack(packWithRows(0,18,4,'increased'))).toThrow(expect.objectContaining({code:'BUDGET',path:'sets.sets[0]'}));
+  });
+  it('counts a local-flat damage pair as two rows, not four',()=>{
+    expectRuntimeBoundary(packWithRows(0,18,4,'flat'),0,21,24);
+    expect(()=>loadLootPack(packWithRows(0,19,4,'flat'))).toThrow(expect.objectContaining({code:'BUDGET',path:'sets.sets[0]'}));
+  });
+  it.each([[0,18,21],[1,19,22]])('positive cap still counts zero-valued enhancement rows for piece %i',(index,fixed,before)=>{
+    const raw=packWithRows(index!,fixed!,1);
+    raw.enhancement.weapon.localDamageBpPerLevel=0;
+    raw.enhancement.armor.maxHpPerLevel=0;raw.enhancement.armor.defenseInternalPerLevel=0;
+    expectRuntimeBoundary(raw,index!,before!,24);
+  });
+  it.each([0,1,2])('zero enhancement cap adds no rows for piece %i',index=>{
+    expectRuntimeBoundary(packWithRows(index,21,0),index,24,24);
+    expect(()=>loadLootPack(packWithRows(index,22,0))).toThrow(expect.objectContaining({code:'BUDGET',path:'sets.sets[0]'}));
   });
 });

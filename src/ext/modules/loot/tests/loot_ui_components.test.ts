@@ -195,7 +195,7 @@ describe('loot UI local interactions', () => {
     const state = getLootUiState('filter.standard'); if (state.component !== 'filter') throw new Error('fixture component');
     const filter = mountState(state);
     const group = find(filter.root, 'role', 'radiogroup');
-    for (const [press, rarity] of [['ArrowRight', 'rare'], ['End', 'unique'], ['Home', 'normal'], ['ArrowLeft', 'unique'], ['ArrowUp', 'rare'], ['ArrowDown', 'unique']] as const) {
+    for (const [press, rarity] of [['ArrowRight', 'rare'], ['End', 'set'], ['Home', 'normal'], ['ArrowLeft', 'set'], ['ArrowUp', 'unique'], ['ArrowDown', 'set']] as const) {
       await key(group, press); expect(find(filter.root, 'data-rarity', rarity).props.tabindex).toBe(0); expect(focused).toBe(find(filter.root, 'data-rarity', rarity));
     }
     await key(group, ' '); await key(group, 'Enter'); expect(filter.events.submit).toBeUndefined();

@@ -561,6 +561,12 @@
         "growth"
       ],
       "optional": []
+    },
+    "src/ext/modules/loot/tests/loot_sets_growth.test.ts": {
+      "required": [
+        "growth"
+      ],
+      "optional": []
     }
   }
 }

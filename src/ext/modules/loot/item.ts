@@ -2,7 +2,7 @@ import { ITEM_RUNIC_TARGETS } from '../../itemSdk';
 import { enhancementCap, ringImplicit } from './economy';
 import type { EffectiveLootCatalog, ItemClass, LootAffixRoll, LootItemDataV1, LootModifierDraft, LootNativeFacts, ModifierSpec } from './types';
 
-const itemKeys = ['v', 'baseId', 'ilvl', 'rarity', 'uniqueId', 'setId', 'affixes', 'corrupted', 'enhancement', 'sockets', 'socketed', 'nameParts', 'origin'];
+const itemKeys = ['v', 'baseId', 'ilvl', 'rarity', 'uniqueId', 'setId', 'pieceId', 'identityKnown', 'affixes', 'corrupted', 'enhancement', 'sockets', 'socketed', 'nameParts', 'origin'];
 const rollKeys = ['id', 'tier', 'values', 'known'];
 function object(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value) && (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null);
@@ -34,12 +34,12 @@ function rollShape(value: unknown): value is LootAffixRoll {
     && typeof value.known === 'boolean' && denseArray(value.values) && value.values.every(v => Number.isSafeInteger(v));
 }
 
-/** Strict V2 trust boundary. Malformed data is rejected without mutation or RNG. */
+/** Strict V3 trust boundary. Malformed data is rejected without mutation or RNG. */
 export function validateLootItemData(value: unknown, catalog: EffectiveLootCatalog): value is LootItemDataV1 {
-  if (!object(value) || !exact(value, 'targetClass'in value?[...itemKeys,'targetClass']:itemKeys) || value.v !== 2 || typeof value.baseId !== 'string') return false;
+  if (!object(value) || !exact(value, 'targetClass'in value?[...itemKeys,'targetClass']:itemKeys) || value.v !== 3 || typeof value.baseId !== 'string') return false;
   const itemClass = lootItemClass(value.baseId, catalog);
-  if (!itemClass || !integer(value.ilvl, 1, 99) || !['normal', 'magic', 'rare', 'unique'].includes(value.rarity as string)) return false;
-  if (typeof value.corrupted !== 'boolean' || value.setId !== null || value.sockets !== 0 || !denseArray(value.socketed) || value.socketed.length !== 0) return false;
+  if (!itemClass || !integer(value.ilvl, 1, 99) || !['normal', 'magic', 'rare', 'unique', 'set'].includes(value.rarity as string)) return false;
+  if (typeof value.corrupted !== 'boolean' || typeof value.identityKnown !== 'boolean' || value.sockets !== 0 || !denseArray(value.socketed) || value.socketed.length !== 0) return false;
   if (!denseArray(value.affixes) || !value.affixes.every(rollShape)) return false;
   if (!object(value.origin) || !exact(value.origin, ['source', 'depth']) || !['floor', 'kill', 'encounter', 'vault'].includes(value.origin.source as string) || !integer(value.origin.depth, 1, 99)) return false;
   const rarity = catalog.pack.rarities.rarities.find(r => r.id === value.rarity);
@@ -50,6 +50,14 @@ export function validateLootItemData(value: unknown, catalog: EffectiveLootCatal
   if('targetClass'in value&&typeof value.targetClass!=='string')return false;
   const affixRows=value.affixes;
   if(value.targetClass!==undefined&&(!['slaying','immunity'].some(type=>affixRows.some(a=>catalog.affixes.find(d=>d.id===a.id)?.rune?.runicType===type))||!ITEM_RUNIC_TARGETS.some(t=>t.name===value.targetClass)))return false;
+  if (value.identityKnown && !value.affixes.every(a=>a.known)) return false;
+  if (value.rarity === 'set') {
+    if(typeof value.pieceId!=='string'||typeof value.setId!=='string'||value.uniqueId!==null||value.corrupted)return false;
+    const member=catalog.piecesById[value.pieceId];
+    return !!member&&member.setId===value.setId&&member.piece.baseId===value.baseId&&member.piece.minIlvl<=value.ilvl
+      &&value.affixes.length===member.piece.rows.length&&value.affixes.every((a,i)=>a.id===member.piece.rows[i]!.rowId&&a.tier===0&&valuesFit(a.values,member.piece.rows[i]!.ranges));
+  }
+  if(value.setId!==null||value.pieceId!==null||value.identityKnown!==value.affixes.every(a=>a.known))return false;
   if (value.rarity === 'unique') {
     if (typeof value.uniqueId !== 'string' || value.corrupted) return false;
     const unique = catalog.pack.uniques.uniques.find(u => u.id === value.uniqueId);
@@ -85,6 +93,7 @@ export function validateLootItemData(value: unknown, catalog: EffectiveLootCatal
 
 type Row = { roll: LootAffixRoll; modifiers: ModifierSpec[]; rune: { runicType: string } | null };
 function itemRows(data: LootItemDataV1, catalog: EffectiveLootCatalog): Row[] {
+  if (data.rarity === 'set') return data.affixes.map((roll,i)=>({roll,modifiers:catalog.piecesById[data.pieceId!]!.piece.rows[i]!.modifiers,rune:null}));
   if (data.rarity === 'unique') {
     const unique = catalog.pack.uniques.uniques.find(u => u.id === data.uniqueId);
     if (!unique) throw new RangeError('Unknown unique');
@@ -114,7 +123,7 @@ export function deriveNativeFacts(data: LootItemDataV1, catalog: EffectiveLootCa
     }
   }
   return { kind: data.baseId, category, enchantment: category === 'ring' ? implicit + Math.floor(data.enhancement / catalog.pack.enhancement.ring.implicitEveryLevels) : 0,
-    runicType, runicStrength, isCursed: data.corrupted, identified: data.affixes.every(a => a.known) };
+    runicType, runicStrength, isCursed: data.corrupted, identified: data.identityKnown };
 }
 
 export function projectItemModifiers(data: LootItemDataV1, catalog: EffectiveLootCatalog): LootModifierDraft[] {

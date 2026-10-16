@@ -31,7 +31,7 @@ describe('loot UI genuine first-hit fixtures', () => {
       expect(transformed.affixes.every(affix => affix.known)).toBe(true);
       expect(transformed.enhancement).toBe(cap);
       expect(() => transformLootUiFixture(recipe.id, { enhancement: cap + 1 })).toThrow(RangeError);
-      expect({ ...transformed, enhancement: data.enhancement, affixes: transformed.affixes.map(affix => ({ ...affix, known: false })) }).toEqual(data);
+      expect({ ...transformed, identityKnown: data.identityKnown, enhancement: data.enhancement, affixes: transformed.affixes.map(affix => ({ ...affix, known: false })) }).toEqual(data);
       expect(transformLootUiFixture(recipe.id)).toEqual(data);
       expect(Object.isFrozen(transformed)).toBe(true);
       expect(data.affixes.every(affix => !affix.known)).toBe(true);

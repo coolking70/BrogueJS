@@ -8,6 +8,8 @@ import {parseOptions,validateRun,compareTiming,decide,canFreeze,withObjectiveP99
 
 const args=['--base','a','--head','b','--out','o'];
 assert.equal(parseOptions(args).rounds,3);
+assert.equal(parseOptions([...args,'--base-identity','6b4','--head-identity','6c1']).headIdentity,'6c1');
+for(const extra of [['--base-identity','6c1'],['--head-identity','6c2'],['--base-identity','6b4','--head-identity','6b4'],['--head-identity','6c1','--head-identity','6c1']])assert.throws(()=>parseOptions([...args,...extra]));
 for(const extra of [['--rounds','0'],['--rounds','4'],['--rounds','1.5'],['--case','unknown'],['--limit','-1'],['--limit','1715'],['--unknown','x'],['--rounds','1','--rounds','3'],['--case']])assert.throws(()=>parseOptions([...args,...extra]));
 const sample=()=>({mode:'wall',oos:0,recordingHash:'hash',events:3,node:'node',machine:{cpu:'cpu'},sourceHash:'src',semantic:{stateHash:'state',rng:[1],blocks:3,rounds:3,roundTicks:300,rowsHash:'rows'},diagnostics:{stats:{hits:1}},segments:{counter:{calls:2}},elapsed:100,
  command:{n:3,p50:1,p95:10,max:20},round:{p95:10,p99:20,max:20},depth:{20:{p95:10,max:20}},roundDepth:{20:{p95:10,p99:20,max:20}}});

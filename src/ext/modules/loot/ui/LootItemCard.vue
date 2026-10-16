@@ -26,6 +26,10 @@ function keydown(event: KeyboardEvent) {
     <ul class="loot-card-affixes"><LootAffixRow v-for="row in visibleRows" :key="row.key" :row="row" /></ul>
     <button v-if="view.rows.length > limit" type="button" class="loot-card-button loot-card-toggle" :aria-expanded="expanded" data-action="toggle-rows" @click="expanded = !expanded">{{ expanded ? t('ext.loot.ui.card.less') : t('ext.loot.ui.card.more', { count: view.rows.length - limit }) }}</button>
     <ul v-if="view.notices.length" class="loot-card-notices"><li v-for="(notice, index) in view.notices" :key="index">{{ t(notice.nameKey, notice.params) }}</li></ul>
+    <section v-if="view.set" class="loot-card-set">
+      <h3>{{ t('ext.loot.ui.set.count',{name:t(view.set.name.nameKey,view.set.name.params),count:view.set.count,total:view.set.total}) }}</h3>
+      <div v-for="bonus in view.set.bonuses" :key="bonus.count"><p>{{ t('ext.loot.ui.set.threshold',{count:bonus.count}) }} · {{ t(bonus.active?'ext.loot.ui.set.active':'ext.loot.ui.set.inactive') }}</p><ul class="loot-card-affixes"><LootAffixRow v-for="row in bonus.rows" :key="row.key" :row="row" /></ul></div>
+    </section>
     <p v-if="view.flavor" class="loot-card-flavor">{{ t(view.flavor.nameKey, view.flavor.params) }}</p>
     <div v-if="actions.length" class="loot-card-actions"><button v-for="action in actions" :key="action" class="loot-card-button" type="button" :data-action="action" @click="emit('action', action)">{{ actionText(action) }}</button></div>
   </section>

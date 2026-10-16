@@ -72,7 +72,7 @@ function category(random: LootRandom, other: boolean): ItemClass | null {
   return roll <= 10 ? 'weapon' : roll <= 18 ? 'armor' : roll <= 21 ? 'ring' : null;
 }
 function startingItem(baseId: string): LootItemDataV1 {
-  return { v: 2, baseId, ilvl: 1, rarity: 'normal', uniqueId: null, setId: null, affixes: [], corrupted: false, enhancement: 0, sockets: 0, socketed: [], nameParts: null, origin: { source: 'floor', depth: 1 } };
+  return { v: 3, pieceId: null, identityKnown: true, baseId, ilvl: 1, rarity: 'normal', uniqueId: null, setId: null, affixes: [], corrupted: false, enhancement: 0, sockets: 0, socketed: [], nameParts: null, origin: { source: 'floor', depth: 1 } };
 }
 interface HeldItem { data: LootItemDataV1; category: ItemClass; modifiers: LootModifierDraft[] }
 function held(data: LootItemDataV1, catalog: EffectiveLootCatalog): HeldItem {

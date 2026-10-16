@@ -69,6 +69,9 @@ export function buildLootChipView(item: LootKnownItem, catalog: EffectiveLootCat
         parts.first = ref(catalog.pack.rareNames.first[item.rareName[0]]!);
         parts.second = ref(catalog.pack.rareNames.second[item.rareName[1]]!);
       } else template = { nameKey: 'ext.loot.ui.name.rare-unidentified' };
+    } else if (item.rarity === 'set') {
+      if(item.pieceId){template={nameKey:'ext.loot.ui.name.unique'};parts.unique=ref(catalog.piecesById[item.pieceId]!.piece);}
+      else template={nameKey:'ext.loot.ui.name.set-unidentified'};
     } else if (item.rarity === 'unique') {
       if (item.uniqueId !== null) {
         template = { nameKey: 'ext.loot.ui.name.unique' };
@@ -97,7 +100,7 @@ function statRef(mod: Pick<ModifierSpec, 'stat' | 'unit'>, options: LootUiOption
   }
   return ref(def);
 }
-function modifierLine(mod: ModifierSpec, value: number, polarity: 1 | -1, options: LootUiOptions,
+export function modifierLine(mod: ModifierSpec, value: number, polarity: 1 | -1, options: LootUiOptions,
   rangeMax?: number): LootModLineView {
   const direction = statDefinition(mod).better === 'higher' ? 1 : -1;
   const score = (rangeMax === undefined ? value : (value + rangeMax) / 2) * direction;
@@ -192,6 +195,7 @@ export function buildLootItemView(item: LootKnownItem, catalog: EffectiveLootCat
     : { nameKey: 'ext.loot.ui.notice.familiarity-turns', params: { remaining: item.familiarity.remaining } });
   const unique = item.uniqueId ? catalog.pack.uniques.uniques.find(u => u.id === item.uniqueId) : null;
   return freezeLootUi({ chip, subtitle, baseStats, rows, notices,
+    ...(item.setId?{set:buildLootSetView(item.setId,catalog,options)}:{}),
     flavor: unique ? { nameKey: unique.descriptionKey, params: {} } : null });
 }
 
@@ -304,6 +308,7 @@ export function buildLootSalvageView(entries: readonly { readonly key: string; r
     }));
     const min = Math.min(...yields), max = Math.max(...yields);
     const warnings: LootTextRef[] = [];
+    if (item.rarity === 'set') warnings.push({nameKey:'ext.loot.ui.salvage.warn-set',params:{}});
     if (item.rarity === 'unique') warnings.push({ nameKey: 'ext.loot.ui.salvage.warn-unique', params: {} });
     if (min !== max) warnings.push({ nameKey: item.ilvl === null ? 'ext.loot.ui.salvage.warn-ilvl-range' : 'ext.loot.ui.salvage.warn-range', params: {} });
     return { key: entry.key, chip: buildLootChipView(item, catalog), shards: { min, max }, blocked, warnings };
@@ -319,7 +324,7 @@ export function defaultLootPickupFilter(presetId: string): LootPickupFilterDraft
 }
 export function normalizeLootPickupFilter(value: unknown): LootPickupFilterDraft {
   if (!isPlainLootObject(value) || !exactLootKeys(value, ['v', 'minRarity', 'classes', 'autoPickupGold'])
-    || value.v !== 1 || !['normal', 'magic', 'rare', 'unique'].includes(value.minRarity as string)
+    || value.v !== 1 || !['normal', 'magic', 'rare', 'unique', 'set'].includes(value.minRarity as string)
     || typeof value.autoPickupGold !== 'boolean' || !Array.isArray(value.classes)
     || Array.from(value.classes).some(c => !['weapon', 'armor', 'ring'].includes(c))
     || new Set(value.classes).size !== value.classes.length) throw new LootUiError('INVALID_INPUT', 'filter');
@@ -347,4 +352,13 @@ export function buildLootPresetOptions(pack: LootPack): readonly LootPresetOptio
         value: `${lootSigned(Math.max(...preset.monsterScaling.map(s => s.hpBp)) / 100)}% / ${lootSigned(Math.max(...preset.monsterScaling.map(s => s.damageBp)) / 100)}%` },
     ] };
   }));
+}
+
+/** Only redacted identities enter these projections; pack/container items never count. */
+export function knownSetCount(setId:string,items:NonNullable<LootUiOptions['equippedKnown']>):number {
+ return new Set(items.filter(i=>i.known?.identified&&i.known.setId===setId).map(i=>i.known!.pieceId)).size;
+}
+export function buildLootSetView(setId:string,catalog:EffectiveLootCatalog,options:LootUiOptions):import('./types').LootSetView {
+ const set=catalog.setsById[setId]!,count=knownSetCount(setId,options.equippedKnown??[]);
+ return {id:set.id,name:ref(set),count,total:set.pieces.length,bonuses:set.bonuses.map(b=>({count:b.count,active:count>=b.count,rows:b.rows.map(row=>({key:row.rowId,known:true,position:'row',name:null,tier:null,negative:false,lines:row.modifiers.map(m=>modifierLine(m,row.ranges[m.valueIndex]![0],1,options))}))}))};
 }

@@ -1,4 +1,5 @@
 import type { StatModifierRow, StatSourceProvider } from '../../stats';
+import { setModifierDrafts } from './sets';
 import { projectItemModifiers } from './item';
 import { monsterScalingAt } from './economy';
 import type { EffectiveLootCatalog, LootItemDataV1, LootModifierDraft } from './types';
@@ -11,7 +12,7 @@ export function adaptLootModifier(mod: LootModifierDraft, itemId:number, index:n
   const stat=mod.stat==='native.defense'&&mod.unit==='display-armor'?'native.armor-base':remap[mod.stat]??mod.stat;
   const category=mod.category==='local-flat'?'flat':mod.category==='local-increased'?'increased':mod.category;
   const factor=['native.weapon-enchant','native.armor-enchant'].includes(stat)?4:mod.unit==='display-armor'?10:mod.stat==='native.awareness'?20:1;
-  return {stat,category,value:mod.value*factor,layer:'equipment',sourceKind:'item-affix',sourceId:`loot.item.${itemId}.affix.${index}`,known:mod.known,
+  return {stat,category,value:mod.value*factor,layer:'equipment',sourceKind:'item-affix',sourceId:mod.sourceId.startsWith('loot.piece.')?`loot.item.${itemId}.row.${mod.sourceId}.${index}`:`loot.item.${itemId}.affix.${index}`,known:mod.known,
     ...(category==='more'?{slot:'equipment'}:{}),...(category==='override'?{priority:0}:{}),
     ...(mod.conditions?.length?{conditions:mod.conditions.map(c=>({kind:'target-tag' as const,value:c.tag}))}:{})};
 }
@@ -25,7 +26,8 @@ export function lootStatSources(catalog:()=>EffectiveLootCatalog):StatSourceProv
     const scale=monsterScalingAt(preset,context.depth!);
     return [['native.max-hp',scale.hpBp],['native.physical-damage-dealt',scale.damageBp],['native.accuracy',scale.accuracyBp]].filter(([,n])=>n!==0).map(([stat,value])=>({stat:String(stat),value:Number(value),category:'increased',layer:'environment',sourceKind:'loot-scaling',sourceId:`loot.scaling.${stat}`}));
    }
-   const rows:StatModifierRow[]=context.equippedItems().flatMap(item=>{
+   const equipment=context.equippedItems();
+   const rows:StatModifierRow[]=equipment.flatMap(item=>{
     const data=item.moduleData?.loot as unknown as LootItemDataV1|undefined;
     if(!data)return [];
     const drafts=projectItemModifiers(data,c), expanded:LootModifierDraft[]=[];
@@ -45,6 +47,12 @@ export function lootStatSources(catalog:()=>EffectiveLootCatalog):StatSourceProv
      return [{...row,budget:{minimum:(cap.min??-1000000)*factor,maximum:(cap.max??1000000)*factor}}];
     });
    });
+   const members=equipment.flatMap(item=>item.moduleData?.loot?[{id:item.id,data:item.moduleData.loot as unknown as LootItemDataV1}]:[]);
+   for(const {anchorId,sourceId,draft} of setModifierDrafts(members,c,context.knownOnly)){
+    const row=adaptLootModifier(draft,anchorId,0);if(!row)continue;
+    const cap=c.pack.caps.caps.find(cap=>cap.stat===draft.stat&&cap.scope==='loot-sources');
+    rows.push({...row,sourceId,...(cap?{budget:{minimum:cap.min??-1000000,maximum:cap.max??1000000}}:{})});
+   }
    for(const cap of c.pack.caps.caps.filter(c=>c.scope==='final')) rows.push({stat:cap.stat,category:'clamp',value:cap.min??0,maximum:cap.max??1000000,layer:'environment',sourceKind:'loot-cap',sourceId:`loot.cap.${cap.stat}`});
    return rows;
   }

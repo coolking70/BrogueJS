@@ -72,7 +72,7 @@ function validateRequest(catalog: EffectiveLootCatalog, value: unknown): LootPre
     const claimed = new Set<string>();
     for (const [index, id] of request.claimedUniqueIds.entries()) {
         text(id, `request.claimedUniqueIds[${index}]`);
-        if (claimed.has(id) || !catalog.pack.uniques.uniques.some(unique => unique.id === id)) {
+        if (claimed.has(id) || !catalog.pack.uniques.uniques.some(unique => unique.id === id) && !catalog.piecesById[id]) {
             invalid(`request.claimedUniqueIds[${index}]`, 'Unknown or duplicate unique receipt');
         }
         claimed.add(id);
@@ -190,7 +190,12 @@ export function rollLootWithTrace(catalog: EffectiveLootCatalog, request: LootRo
             if (unique === undefined) rarity = 'rare';
             else { occupied.add(unique.id); result.newUniqueIds.push(unique.id); }
         }
-        const data: LootItemDataV1 = { v: 2, baseId, ilvl, rarity, uniqueId: unique?.id ?? null, setId: null,
+        const member = rarity === 'set' ? weightedPick((catalog.piecesByBase[baseId]??[]).filter(m=>m.piece.minIlvl<=ilvl&&!occupied.has(m.piece.id)),m=>m.piece.weight,random) : undefined;
+        if(rarity==='set'){
+            if(!member)rarity='rare';
+            else {occupied.add(member.piece.id);result.newUniqueIds.push(member.piece.id);}
+        }
+        const data: LootItemDataV1 = { v: 3, baseId, ilvl, rarity, uniqueId: unique?.id ?? null, setId: member?.setId ?? null, pieceId: member?.piece.id ?? null, identityKnown: false,
             affixes: [], corrupted: false, enhancement: 0, sockets: 0, socketed: [], nameParts: null,
             origin: { source: request.source, depth: request.depth } };
         if (rarity === 'magic' || rarity === 'rare') {
@@ -237,9 +242,11 @@ export function rollLootWithTrace(catalog: EffectiveLootCatalog, request: LootRo
                 }
             }
         }
-        if (unique !== undefined) data.affixes = unique.rows.map(row => ({ id: row.rowId, tier: 0,
+        const fixed = member?.piece ?? unique;
+        if (fixed !== undefined) data.affixes = fixed.rows.map(row => ({ id: row.rowId, tier: 0,
             values: row.ranges.map(([lo, hi]) => random.randomInt(lo, hi)), known: false }));
         if (rarity === 'rare') data.nameParts = [random.randomInt(0, pack.rareNames.first.length - 1), random.randomInt(0, pack.rareNames.second.length - 1)];
+        data.identityKnown = rarity !== 'set' && data.affixes.every(a=>a.known);
         const native=deriveNativeFacts(data,catalog);
         if(native.runicType==='slaying'||native.runicType==='immunity'){
             const targets=ITEM_RUNIC_TARGETS.filter(t=>t.maxDepth<=0||request.depth<=t.maxDepth);

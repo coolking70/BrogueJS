@@ -9,7 +9,7 @@ import type { LootKnowledgeFacts } from './ui/types';
 export function lootPresentation(catalog:()=>EffectiveLootCatalog):ItemPresentationProvider {
  return {project(item,knowledge){
    const k=knowledge as Record<string,Json>,data=item.moduleData!.loot as unknown as LootItemDataV1;
-   const location=k.location as LootKnowledgeFacts['location'],known=data.affixes.every(a=>a.known);
+   const location=k.location as LootKnowledgeFacts['location'],known=data.identityKnown;
    return JSON.parse(JSON.stringify(projectLootKnowledge(data,catalog(),{v:1,location,ringKindKnown:k.kindKnown===true,
     magicPolarity:'unknown',curseRevealed:false,hallucinating:false,
     familiarity:location==='floor'||known?null:{unit:item.category===0?'kills':'turns',remaining:Number(k.familiarityRemaining)}})));

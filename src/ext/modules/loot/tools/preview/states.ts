@@ -117,7 +117,7 @@ export const LOOT_UI_STATES: readonly LootUiState[] = freezeLootValue([
   card('card.t6', all('R17')),
 
   compare('compare.weapon', all('R07'), [equipped('E-W')]),
-  compare('compare.partial', source('R06', { reveal: [0, 1] }), [equipped('E-A')]),
+  compare('compare.partial', source('R06', { reveal: [0, 3] }), [equipped('E-A')]),
   compare('compare.empty-slot', all('R02'), [null]),
   compare('compare.rings', all('R05'), [equipped('E-R1'), equipped('E-R2')]),
   compare('compare.strength-short', all('R07'), [equipped('E-W')], { playerStrength: 12 }),

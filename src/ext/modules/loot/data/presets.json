@@ -13,14 +13,14 @@
         "magic": 120,
         "rare": 27,
         "unique": 3,
-        "set": 0
+        "set": 3
       },
       "rarityIlvlScalingBp": {
         "normal": 0,
         "magic": 100,
         "rare": 150,
         "unique": 150,
-        "set": 0
+        "set": 150
       },
       "affixCount": {
         "magic": [
@@ -132,14 +132,14 @@
         "magic": 220,
         "rare": 70,
         "unique": 10,
-        "set": 0
+        "set": 10
       },
       "rarityIlvlScalingBp": {
         "normal": 0,
         "magic": 150,
         "rare": 250,
         "unique": 250,
-        "set": 0
+        "set": 250
       },
       "affixCount": {
         "magic": [
@@ -251,14 +251,14 @@
         "magic": 330,
         "rare": 160,
         "unique": 30,
-        "set": 0
+        "set": 30
       },
       "rarityIlvlScalingBp": {
         "normal": 0,
         "magic": 150,
         "rare": 300,
         "unique": 300,
-        "set": 0
+        "set": 300
       },
       "affixCount": {
         "magic": [

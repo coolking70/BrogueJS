@@ -5,7 +5,7 @@ import { enhanceLoot, lootEnhancementLimit, refinementRows } from '../enhancemen
 import { deriveNativeFacts, validateLootItemData } from '../item';
 import type { LootItemDataV1 } from '../types';
 const catalog=buildEffectiveLootCatalog(loadLootPack(),{combat:null,growth:null,giants:null});
-const empty=(baseId='dagger',rarity:LootItemDataV1['rarity']='normal'):LootItemDataV1=>({v:2,baseId,rarity,ilvl:40,uniqueId:null,setId:null,affixes:[],corrupted:false,enhancement:0,sockets:0,socketed:[],nameParts:rarity==='rare'?[0,0]:null,origin:{source:'floor',depth:26}});
+const empty=(baseId='dagger',rarity:LootItemDataV1['rarity']='normal'):LootItemDataV1=>({v: 3,baseId,rarity,ilvl:40,uniqueId:null,setId: null, pieceId: null, identityKnown: true,affixes:[],corrupted:false,enhancement:0,sockets:0,socketed:[],nameParts:rarity==='rare'?[0,0]:null,origin:{source:'floor',depth:26}});
 const noDraw={randomInt(){throw Error('Unexpected draw');}};
 describe('6B4 independent enhancement and refinement arithmetic',()=>{
  it.each([['normal',10],['magic',8],['rare',6]] as const)('%s accepts only remaining levels to %i', (rarity,cap)=>{
@@ -20,7 +20,7 @@ describe('6B4 independent enhancement and refinement arithmetic',()=>{
  });
  it('all legal rows including full rows remain in stored candidate order; no improvement still succeeds',()=>{
   const data=empty('dagger','rare');data.enhancement=6;
-  data.affixes=[{id:'loot.affix.keen',tier:1,values:[1500],known:false},{id:'loot.affix.brutal',tier:1,values:[1,2],known:false}];
+  data.identityKnown=false;data.affixes=[{id:'loot.affix.keen',tier:1,values:[1500],known:false},{id:'loot.affix.brutal',tier:1,values:[1,2],known:false}];
   const keen=catalog.affixes.find(a=>a.id==='loot.affix.keen')!.tiers[0]!.ranges[0]!;
   data.affixes[0]!.values=[keen[1]];
   const calls:number[][]=[];const result=enhanceLoot(data,catalog,1,{randomInt(lo,hi){calls.push([lo,hi]);return lo;}});
@@ -29,12 +29,12 @@ describe('6B4 independent enhancement and refinement arithmetic',()=>{
  });
  it('multicomponent refinement takes independent maxima in declared order',()=>{
   const data=empty('dagger','magic');data.enhancement=8;
-  data.affixes=[{id:'loot.affix.brutal',tier:2,values:[2,3],known:false}];
+  data.identityKnown=false;data.affixes=[{id:'loot.affix.brutal',tier:2,values:[2,3],known:false}];
   const calls:number[][]=[];const result=enhanceLoot(data,catalog,1,{randomInt(lo,hi){calls.push([lo,hi]);return hi;}});
   expect(calls).toEqual([[1,2],[3,5]]);expect(result.affixes[0]!.values).toEqual([2,5]);expect(result.affixes[0]!.known).toBe(false);
  });
  it('unique cap4 excludes penalties and includes fixed full positive rows without dice',()=>{
-  const u=catalog.pack.uniques.uniques.find(u=>u.id==='loot.unique.colossus-maul')!,data={...empty(u.baseId,'unique'),uniqueId:u.id,enhancement:4,affixes:u.rows.map(r=>({id:r.rowId,tier:0,values:r.ranges.map(([lo])=>lo),known:false}))};
+  const u=catalog.pack.uniques.uniques.find(u=>u.id==='loot.unique.colossus-maul')!,data={...empty(u.baseId,'unique'),uniqueId:u.id,identityKnown:false,enhancement:4,affixes:u.rows.map(r=>({id:r.rowId,tier:0,values:r.ranges.map(([lo])=>lo),known:false}))};
   expect(validateLootItemData(data,catalog)).toBe(true);expect(refinementRows(data,catalog).map(r=>r.index)).toEqual([0,1,2,4]);
   const calls:number[][]=[];expect(enhanceLoot(data,catalog,1,{randomInt(lo,hi){calls.push([lo,hi]);return 0;}})).toEqual(data);expect(calls).toEqual([[0,3]]);
  });

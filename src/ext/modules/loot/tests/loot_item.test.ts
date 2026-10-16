@@ -7,7 +7,7 @@ import type { LootAffixRoll, LootItemDataV1 } from '../types';
 const catalog = () => buildEffectiveLootCatalog(loadLootPack(), { combat: null, growth: null, giants: null });
 const affix = (id: string, tier: number, values: number[], known = false): LootAffixRoll => ({ id: `loot.affix.${id}`, tier, values, known });
 function magic(): LootItemDataV1 {
-  return { v: 2, baseId: 'dagger', ilvl: 16, rarity: 'magic', uniqueId: null, setId: null, affixes: [affix('keen', 3, [5000]), affix('precise', 2, [1500])], corrupted: false,
+  return { v: 3, baseId: 'dagger', ilvl: 16, rarity: 'magic', uniqueId: null, setId: null, pieceId: null, identityKnown: false, affixes: [affix('keen', 3, [5000]), affix('precise', 2, [1500])], corrupted: false,
     enhancement: 0, sockets: 0, socketed: [], nameParts: null, origin: { source: 'floor', depth: 10 } };
 }
 function unique(id = 'whisper'): LootItemDataV1 {
@@ -67,7 +67,7 @@ describe('strict LootItemData V2 boundary (§8.2)', () => {
   });
   it.each([null, undefined, true, [], 1, 'loot'])('rejects non-object %s', value => expect(validateLootItemData(value, catalog())).toBe(false));
   it('accepts normal, magic, rare, all unique rows, and the single corruption compensation exception', () => {
-    const normal = { ...magic(), rarity: 'normal' as const, affixes: [] };
+    const normal = { ...magic(), rarity: 'normal' as const, identityKnown:true, affixes: [] };
     expect(validateLootItemData(normal, catalog())).toBe(true);
     expect(validateLootItemData(magic(), catalog())).toBe(true);
     expect(validateLootItemData(rare(), catalog())).toBe(true);
@@ -86,12 +86,12 @@ describe('strict LootItemData V2 boundary (§8.2)', () => {
 
 describe('native facts and modifier drafts', () => {
   it('derives ring implicit and enhancement, weapon zero enchantment, identification and corruption', () => {
-    const ring = { ...magic(), baseId: 'ring_of_light', affixes: [], rarity: 'normal' as const, ilvl: 45, enhancement: 4 };
+    const ring = { ...magic(), baseId: 'ring_of_light', affixes: [], identityKnown:true, rarity: 'normal' as const, ilvl: 45, enhancement: 4 };
     expect(deriveNativeFacts(ring, catalog())).toEqual({ kind: 'ring_of_light', category: 'ring', enchantment: 6, runicType: null, runicStrength: null, isCursed: false, identified: true });
     expect(deriveNativeFacts({ ...magic(), enhancement: 8 }, catalog()).enchantment).toBe(0);
     expect(deriveNativeFacts(corrupted(), catalog()).isCursed).toBe(true);
     expect(deriveNativeFacts(magic(), catalog()).identified).toBe(false);
-    const known = magic(); known.affixes.forEach(a => a.known = true);
+    const known = magic(); known.affixes.forEach(a => a.known = true); known.identityKnown=true;
     expect(deriveNativeFacts(known, catalog()).identified).toBe(true);
   });
   it('unique implicit override replaces high-ilvl implicit before enhancement', () => {

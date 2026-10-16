@@ -1,18 +1,28 @@
-name: ext 6B4 performance A/B
+name: ext phase6 performance A/B
 
 on:
   workflow_dispatch:
     inputs:
       base_ref:
-        description: A revision (before 6B4)
+        description: A revision (latest reviewed candidate)
         required: true
-        default: '43f115b'
+        default: '9abb255'
         type: string
       head_ref:
-        description: B revision (6B4 candidate)
+        description: B revision (6C1 candidate)
         required: true
         default: ext/phase6
         type: string
+      base_identity:
+        description: Reviewed A benchmark
+        type: choice
+        default: 6b4
+        options: [p0, 6b4]
+      head_identity:
+        description: B benchmark (6c1 captures fresh complete routes on this runner)
+        type: choice
+        default: 6c1
+        options: [6b4, 6c1]
       rounds:
         description: 'Paired rounds: 1/2 are diagnostic only; 3 required for D6/freeze'
         required: true
@@ -86,6 +96,8 @@ jobs:
       - name: Interleaved A/B and B calibration
         timeout-minutes: 330
         env:
+          PERF_BASE_IDENTITY: ${{ inputs.base_identity }}
+          PERF_HEAD_IDENTITY: ${{ inputs.head_identity }}
           PERF_ROUNDS: ${{ inputs.rounds }}
         run: >-
           node control/scripts/run-ext-perf-ab.mjs
@@ -93,6 +105,8 @@ jobs:
           --head "$GITHUB_WORKSPACE/head"
           --out "$RUNNER_TEMP/ext-perf"
           --rounds "$PERF_ROUNDS"
+          --base-identity "$PERF_BASE_IDENTITY"
+          --head-identity "$PERF_HEAD_IDENTITY"
       - name: Publish summary (including failures or partial runs)
         if: always()
         run: |

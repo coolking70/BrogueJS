@@ -27,7 +27,7 @@ export function projectLootKnowledge(data: LootItemDataV1, catalog: EffectiveLoo
   facts: LootKnowledgeFacts): LootKnownItem {
   if (!validateLootItemData(data, catalog)) throw new LootUiError('INVALID_ITEM', 'data');
   validateFacts(facts);
-  const identified = data.affixes.every(row => row.known);
+  const identified = data.identityKnown;
   if (facts.curseRevealed && !data.corrupted) throw new LootUiError('INCONSISTENT_FACTS', 'facts.curseRevealed');
   if ((facts.magicPolarity === 'malevolent' && !data.corrupted) || (facts.magicPolarity === 'benign' && data.corrupted)) {
     throw new LootUiError('INCONSISTENT_FACTS', 'facts.magicPolarity');
@@ -41,14 +41,15 @@ export function projectLootKnowledge(data: LootItemDataV1, catalog: EffectiveLoo
   const floor = facts.location === 'floor';
   const affixes: LootKnownAffix[] = floor ? [] : data.affixes.map(row => {
     const def = catalog.affixes.find(def => def.id === row.id);
-    const position = data.rarity === 'unique' ? 'row' : def!.position;
-    return row.known ? { known: true, id: row.id, position, polarity: data.rarity === 'unique' ? 1 : def!.polarity,
+    const position = ['unique','set'].includes(data.rarity) ? 'row' : def!.position;
+    return row.known ? { known: true, id: row.id, position, polarity: ['unique','set'].includes(data.rarity) ? 1 : def!.polarity,
       ...(data.targetClass&&def?.rune&&['slaying','immunity'].includes(def.rune.runicType)?{targetClass:data.targetClass}:{}), tier: row.tier, values: [...row.values] } : { known: false, position };
   });
   return freezeLootUi({ v: 1, location: facts.location, itemClass,
     baseId: itemClass === 'ring' && !facts.ringKindKnown ? null : data.baseId,
     rarity: floor && facts.hallucinating ? null : data.rarity, ilvl: floor ? null : data.ilvl,
     enhancement: data.enhancement, affixCount: floor ? null : data.affixes.length, affixes,
+    setId: !floor && identified ? data.setId : null, pieceId: !floor && identified ? data.pieceId : null,
     uniqueId: !floor && data.rarity === 'unique' && identified ? data.uniqueId : null,
     rareName: !floor && data.rarity === 'rare' && identified ? [...data.nameParts!] as [number, number] : null,
     corrupted, identified, polarity: corrupted === true ? 'malevolent' : identified && corrupted === false ? 'benign' : facts.magicPolarity,
@@ -58,7 +59,7 @@ export function projectLootKnowledge(data: LootItemDataV1, catalog: EffectiveLoo
 /** Resolve only an already disclosed row id; never infer an undisclosed unique identity. */
 export function knownAffixModifiers(row: Extract<LootKnownAffix, { known: true }>, catalog: EffectiveLootCatalog): readonly ModifierSpec[] {
   const result = row.position === 'row'
-    ? catalog.pack.uniques.uniques.flatMap(unique => unique.rows).find(def => def.rowId === row.id)?.modifiers
+    ? [...catalog.pack.uniques.uniques,...Object.values(catalog.piecesById).map(m=>m.piece)].flatMap(unique => unique.rows).find(def => def.rowId === row.id)?.modifiers
     : catalog.affixes.find(def => def.id === row.id)?.modifiers;
   if (!result) throw new LootUiError('UNKNOWN_AFFIX', 'item.affixes.id');
   return result;
@@ -66,7 +67,7 @@ export function knownAffixModifiers(row: Extract<LootKnownAffix, { known: true }
 
 /** Lightweight validation of the public, already redacted DTO; raw item data is not accepted. */
 export function assertLootKnownItem(value: unknown, catalog: EffectiveLootCatalog): asserts value is LootKnownItem {
-  const keys = ['v', 'location', 'itemClass', 'baseId', 'rarity', 'ilvl', 'enhancement', 'affixCount', 'affixes', 'uniqueId', 'rareName', 'corrupted', 'identified', 'polarity', 'familiarity'];
+  const keys = ['v', 'location', 'itemClass', 'baseId', 'rarity', 'ilvl', 'enhancement', 'affixCount', 'affixes', 'setId', 'pieceId', 'uniqueId', 'rareName', 'corrupted', 'identified', 'polarity', 'familiarity'];
   if (!isPlainLootObject(value) || !exactLootKeys(value, keys) || value.v !== 1
     || !['floor', 'pack', 'equipped', 'container'].includes(value.location as string)
     || !['weapon', 'armor', 'ring'].includes(value.itemClass as string)
@@ -100,10 +101,15 @@ export function assertLootKnownItem(value: unknown, catalog: EffectiveLootCatalo
   // Held DTOs retain every row, so identification must be proved by those rows.
   // Floor rows are deliberately redacted and cannot be used for this equivalence.
   if (value.location !== 'floor') {
-    if (value.identified !== value.affixes.every(row => row.known)) throw new LootUiError('INVALID_INPUT', 'item.identified');
+    if ((value.rarity!=='set'&&value.identified !== value.affixes.every(row => row.known)) || (value.identified&&!value.affixes.every(row=>row.known))) throw new LootUiError('INVALID_INPUT', 'item.identified');
     if ((value.uniqueId !== null) !== (value.rarity === 'unique' && value.identified)) throw new LootUiError('INVALID_INPUT', 'item.uniqueId');
     if ((value.rareName !== null) !== (value.rarity === 'rare' && value.identified)) throw new LootUiError('INVALID_INPUT', 'item.rareName');
   }
+  const setVisible=value.location!=='floor'&&value.rarity==='set'&&value.identified;
+  if(setVisible){
+    const member=typeof value.pieceId==='string'?catalog.piecesById[value.pieceId]:undefined;
+    if(!member||member.setId!==value.setId||(value.baseId!==null&&member.piece.baseId!==value.baseId)||member.piece.rows.length!==value.affixes.length||value.affixes.some((row,i)=>!row.known||row.id!==member.piece.rows[i]!.rowId))throw new LootUiError('INVALID_INPUT','item.pieceId');
+  }else if(value.setId!==null||value.pieceId!==null)throw new LootUiError('INVALID_INPUT','item.setId');
   if (value.uniqueId !== null && (typeof value.uniqueId !== 'string' || value.rarity !== 'unique' || !value.identified || !catalog.pack.uniques.uniques.some(u => u.id === value.uniqueId))) throw new LootUiError('INVALID_INPUT', 'item.uniqueId');
   if (value.uniqueId !== null) {
     const unique = catalog.pack.uniques.uniques.find(u => u.id === value.uniqueId)!;

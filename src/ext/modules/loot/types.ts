@@ -29,6 +29,10 @@ export interface UniqueDefinition {
   id: string; nameKey: string; descriptionKey: string; baseId: string; minIlvl: number; weight: number;
   rows: { rowId: string; ranges: Range[]; modifiers: ModifierSpec[] }[];
 }
+export interface SetDefinition {
+  id: string; nameKey: string; descriptionKey: string; pieces: UniqueDefinition[];
+  bonuses: { count: number; rows: UniqueDefinition['rows'] }[];
+}
 export interface UniquesFile {
   schema: 1; uniques: UniqueDefinition[];
   bossUniqueBias: { formId: string; uniqueId: string; multiplierBp: number }[];
@@ -73,6 +77,7 @@ export interface LootPack {
   rarities: RaritiesFile;
   affixes: AffixesFile;
   uniques: UniquesFile;
+  sets: { schema: 1; sets: SetDefinition[] };
   monsterClasses: { schema: 1; defaultClass: MonsterClassId; classes: MonsterClassId[];
     members: { typeId: string; class: MonsterClassId }[];
     modifiers: { leader: { chanceBonusBp: number }; champion: { chanceBonusBp: number; rarityBonusBp: number } } };
@@ -86,12 +91,12 @@ export interface LootPack {
     armor: { maxHpPerLevel: number; defenseInternalPerLevel: number }; ring: { implicitEveryLevels: number };
     atCap: { kind: 'refine'; target: 'random-positive-affix'; keep: 'higher'; rejectWhenAllAtTierMax: true };
     nonLootItems: 'native-plus-one' };
-  identify: { schema: 1; familiarityMultiplierBp: Record<'normal' | 'magic' | 'rare' | 'unique', number>;
+  identify: { schema: 2; familiarityMultiplierBp: Record<RarityId, number>;
     familiarityRounding: 'ceil'; scrollRevealsAll: true; firstTriggerReveal: { enabled: true; excludedStats: string[] } };
   corruption: { schema: 1; eligibleRarities: RarityId[]; maxTotalAffixes: number; negativeRuneFallback: boolean;
     compensation: { tierStep: number; maxTier: number }; nativeCursed: true };
-  salvage: { schema: 1; shardItemId: string; nameKey: string; maxStack: number;
-    base: Record<'normal' | 'magic' | 'rare' | 'unique', number>; ilvlStep: number;
+  salvage: { schema: 2; shardItemId: string; nameKey: string; maxStack: number;
+    base: Record<RarityId, number>; ilvlStep: number;
     corruptedMultiplierBp: number; minimum: number; exchange: { shards: number; effect: 'identify-one' } };
   caps: { schema: 1; caps: { stat: string; scope: 'loot-sources' | 'final'; min?: number; max?: number; unit: ModifierSpec['unit'] }[] };
   rareNames: { schema: 1; first: { nameKey: string }[]; second: { nameKey: string }[] };
@@ -99,7 +104,7 @@ export interface LootPack {
 export type LootRawFiles = { [K in keyof LootPack]: unknown };
 export interface LootAffixRoll { id: string; tier: number; values: number[]; known: boolean }
 export interface LootItemDataV1 {
-  v: 2; targetClass?: string; baseId: string; ilvl: number; rarity: RarityId; uniqueId: string | null; setId: null;
+  v: 3; targetClass?: string; baseId: string; ilvl: number; rarity: RarityId; uniqueId: string | null; setId: string | null; pieceId: string | null; identityKnown: boolean;
   affixes: LootAffixRoll[]; corrupted: boolean; enhancement: number; sockets: 0; socketed: [];
   nameParts: [number, number] | null; origin: { source: LootSource; depth: number };
 }
@@ -127,6 +132,10 @@ export interface LootAvailability {
 }
 export interface EffectiveLootCatalog {
   pack: LootPack; availability: LootAvailability; affixes: AffixDefinition[];
+  setsById: Readonly<Record<string, SetDefinition>>;
+  piecesById: Readonly<Record<string, { setId: string; piece: UniqueDefinition }>>;
+  piecesByBase: Readonly<Record<string, readonly { setId: string; piece: UniqueDefinition }[]>>;
+  pieceIds: readonly string[];
   effectiveWeight: Record<string, Partial<Record<ItemClass, number>>>;
   bossUniqueBias: UniquesFile['bossUniqueBias']; fingerprint: string;
 }

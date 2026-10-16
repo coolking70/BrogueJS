@@ -58,7 +58,7 @@ describe('loot generator properties', () => {
             expect(result.draws).toBeLessThanOrEqual(512);
             expect(result.items.length).toBeLessThanOrEqual(8);
             expect(trace.itemDraws).toHaveLength(result.items.length);
-            expect(trace.uniqueOpportunities).toBeGreaterThanOrEqual(result.newUniqueIds.length);
+            expect(trace.uniqueOpportunities).toBeGreaterThanOrEqual(result.newUniqueIds.filter(id=>id.startsWith('loot.unique.')).length);
             expect(new Set(result.newUniqueIds).size).toBe(result.newUniqueIds.length);
             expect(result.newUniqueIds.every(id => !request.claimedUniqueIds.includes(id))).toBe(true);
             expect(structuredClone(result)).toEqual(result);
@@ -73,6 +73,12 @@ describe('loot generator properties', () => {
                 expect(validateLootItemData(data, catalog)).toBe(true);
                 expect(data.enhancement).toBe(0);
                 expect(data.affixes.every(affix => affix.known === false)).toBe(true);
+                if (data.rarity === 'set') {
+                    const piece=catalog.piecesById[data.pieceId!]!.piece;
+                    expect(data.affixes.map(a=>a.id)).toEqual(piece.rows.map(r=>r.rowId));
+                    data.affixes.forEach((a,i)=>a.values.forEach((v,j)=>{expect(v).toBeGreaterThanOrEqual(piece.rows[i]!.ranges[j]![0]);expect(v).toBeLessThanOrEqual(piece.rows[i]!.ranges[j]![1]);}));
+                    continue;
+                }
                 if (data.rarity === 'normal' || data.rarity === 'unique') continue;
                 const definitions = data.affixes.map(roll => catalog.affixes.find(affix => affix.id === roll.id)!);
                 expect(new Set(definitions.map(affix => affix.group)).size).toBe(definitions.length);
@@ -135,7 +141,7 @@ describe('loot generator properties', () => {
     });
     it('calculates floored rarity weights and clamps excessive rarity find', () => {
         const preset = loadLootPack().presets.presets.find(preset => preset.id === 'standard')!;
-        expect(computeRarityWeights(preset, 16, 5000, 10000, 0, null)).toEqual({ normal: 700, magic: 408, rare: 147, unique: 21, set: 0 });
+        expect(computeRarityWeights(preset, 16, 5000, 10000, 0, null)).toEqual({ normal: 700, magic: 408, rare: 147, unique: 21, set: 21 });
         expect(computeRarityWeights(preset, 39, 5000, 30000, Number.MAX_SAFE_INTEGER, 'rare')).toEqual(computeRarityWeights(preset, 39, 5000, 30000, preset.rarityFind.cap, 'rare'));
     });
     const hiddenExtra = Object.defineProperty({ ...floor }, 'hidden', { value: true });

@@ -11,7 +11,7 @@ exports[`loot UI complete state snapshots > card.combat-affix 1`] = `
         "◆"
       </span>
       <span class="loot-chip-name">
-        "晨隙之锋 锁子甲"
+        "孤峰之影 皮甲"
       </span>
       <span class="loot-chip-rarity">
         "稀有"
@@ -35,7 +35,7 @@ exports[`loot UI complete state snapshots > card.combat-affix 1`] = `
         "护甲"
       </dt>
       <dd>
-        "7.8"
+        "7.1"
       </dd>
     </div>
     <div class="loot-card-base-stat">
@@ -43,7 +43,7 @@ exports[`loot UI complete state snapshots > card.combat-affix 1`] = `
         "力量需求"
       </dt>
       <dd>
-        "13"
+        "10"
       </dd>
     </div>
   </dl>
@@ -51,33 +51,15 @@ exports[`loot UI complete state snapshots > card.combat-affix 1`] = `
     <li class="loot-affix-row" data-known=true data-position="prefix">
       <div class="loot-affix-heading">
         <span>
-          "加固的"
-        </span>
-        <span class="loot-affix-tier">
-          "2阶"
-        </span>
-      </div>
-      <div class="loot-affix-line loot-affix-tone-good">
-        <span class="loot-affix-value">
-          "+17.61%"
-        </span>
-        <span>
-          "本地护甲"
-        </span>
-      </div>
-    </li>
-    <li class="loot-affix-row" data-known=true data-position="prefix">
-      <div class="loot-affix-heading">
-        <span>
           "镶板的"
         </span>
         <span class="loot-affix-tier">
-          "3阶"
+          "4阶"
         </span>
       </div>
       <div class="loot-affix-line loot-affix-tone-good">
         <span class="loot-affix-value">
-          "+2"
+          "+3"
         </span>
         <span>
           "护甲"
@@ -87,7 +69,7 @@ exports[`loot UI complete state snapshots > card.combat-affix 1`] = `
     <li class="loot-affix-row" data-known=true data-position="prefix">
       <div class="loot-affix-heading">
         <span>
-          "坚忍的"
+          "守护的"
         </span>
         <span class="loot-affix-tier">
           "3阶"
@@ -95,10 +77,46 @@ exports[`loot UI complete state snapshots > card.combat-affix 1`] = `
       </div>
       <div class="loot-affix-line loot-affix-tone-good">
         <span class="loot-affix-value">
-          "+5"
+          "-7.39%"
         </span>
         <span>
-          "体力上限"
+          "受到的物理伤害"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "加固的"
+        </span>
+        <span class="loot-affix-tier">
+          "4阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+39.06%"
+        </span>
+        <span>
+          "本地护甲"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "磐石之"
+        </span>
+        <span class="loot-affix-tier">
+          "4阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+3"
+        </span>
+        <span>
+          "韧性上限"
         </span>
       </div>
     </li>
@@ -511,7 +529,7 @@ exports[`loot UI complete state snapshots > card.floor 1`] = `
         "◆"
       </span>
       <span class="loot-chip-name">
-        "未鉴定的稀有带甲"
+        "未鉴定的稀有板条甲"
       </span>
       <span class="loot-chip-rarity">
         "稀有"
@@ -535,7 +553,7 @@ exports[`loot UI complete state snapshots > card.floor 1`] = `
         "力量需求"
       </dt>
       <dd>
-        "15"
+        "17"
       </dd>
     </div>
   </dl>
@@ -825,13 +843,13 @@ exports[`loot UI complete state snapshots > card.growth-fallback 1`] = `
   <h2 class="loot-card-title" id="v-0">
     <span class="loot-item-chip">
       <span aria-hidden="true" class="loot-chip-glyph">
-        "]"
+        "="
       </span>
       <span aria-hidden="true" class="loot-chip-marker">
         "◇"
       </span>
       <span class="loot-chip-name">
-        "镶板的精擅之皮甲"
+        "精擅之智慧戒指"
       </span>
       <span class="loot-chip-rarity">
         "魔法"
@@ -846,58 +864,32 @@ exports[`loot UI complete state snapshots > card.growth-fallback 1`] = `
       "物等 25"
     </span>
     <span>
-      "护甲"
+      "戒指"
     </span>
   </div>
   <dl class="loot-card-base-stats">
     <div class="loot-card-base-stat">
       <dt>
-        "护甲"
+        "戒指本体"
       </dt>
       <dd>
-        "6"
-      </dd>
-    </div>
-    <div class="loot-card-base-stat">
-      <dt>
-        "力量需求"
-      </dt>
-      <dd>
-        "10"
+        "2"
       </dd>
     </div>
   </dl>
   <ul class="loot-card-affixes">
-    <li class="loot-affix-row" data-known=true data-position="prefix">
-      <div class="loot-affix-heading">
-        <span>
-          "镶板的"
-        </span>
-        <span class="loot-affix-tier">
-          "4阶"
-        </span>
-      </div>
-      <div class="loot-affix-line loot-affix-tone-good">
-        <span class="loot-affix-value">
-          "+3"
-        </span>
-        <span>
-          "护甲"
-        </span>
-      </div>
-    </li>
     <li class="loot-affix-row" data-known=true data-position="suffix">
       <div class="loot-affix-heading">
         <span>
           "精擅之"
         </span>
         <span class="loot-affix-tier">
-          "4阶"
+          "3阶"
         </span>
       </div>
       <div class="loot-affix-line loot-affix-tone-good">
         <span class="loot-affix-value">
-          "+2"
+          "+1"
         </span>
         <span>
           "strength"
@@ -924,13 +916,13 @@ exports[`loot UI complete state snapshots > card.growth-labels 1`] = `
   <h2 class="loot-card-title" id="v-0">
     <span class="loot-item-chip">
       <span aria-hidden="true" class="loot-chip-glyph">
-        "]"
+        "="
       </span>
       <span aria-hidden="true" class="loot-chip-marker">
         "◇"
       </span>
       <span class="loot-chip-name">
-        "镶板的精擅之皮甲"
+        "精擅之智慧戒指"
       </span>
       <span class="loot-chip-rarity">
         "魔法"
@@ -945,58 +937,32 @@ exports[`loot UI complete state snapshots > card.growth-labels 1`] = `
       "物等 25"
     </span>
     <span>
-      "护甲"
+      "戒指"
     </span>
   </div>
   <dl class="loot-card-base-stats">
     <div class="loot-card-base-stat">
       <dt>
-        "护甲"
+        "戒指本体"
       </dt>
       <dd>
-        "6"
-      </dd>
-    </div>
-    <div class="loot-card-base-stat">
-      <dt>
-        "力量需求"
-      </dt>
-      <dd>
-        "10"
+        "2"
       </dd>
     </div>
   </dl>
   <ul class="loot-card-affixes">
-    <li class="loot-affix-row" data-known=true data-position="prefix">
-      <div class="loot-affix-heading">
-        <span>
-          "镶板的"
-        </span>
-        <span class="loot-affix-tier">
-          "4阶"
-        </span>
-      </div>
-      <div class="loot-affix-line loot-affix-tone-good">
-        <span class="loot-affix-value">
-          "+3"
-        </span>
-        <span>
-          "护甲"
-        </span>
-      </div>
-    </li>
     <li class="loot-affix-row" data-known=true data-position="suffix">
       <div class="loot-affix-heading">
         <span>
           "精擅之"
         </span>
         <span class="loot-affix-tier">
-          "4阶"
+          "3阶"
         </span>
       </div>
       <div class="loot-affix-line loot-affix-tone-good">
         <span class="loot-affix-value">
-          "+2"
+          "+1"
         </span>
         <span>
           "力量"
@@ -1353,7 +1319,7 @@ exports[`loot UI complete state snapshots > card.rare-partial 1`] = `
         "◆"
       </span>
       <span class="loot-chip-name">
-        "未鉴定的稀有带甲"
+        "未鉴定的稀有板条甲"
       </span>
       <span class="loot-chip-rarity">
         "稀有"
@@ -1380,7 +1346,7 @@ exports[`loot UI complete state snapshots > card.rare-partial 1`] = `
         "护甲"
       </dt>
       <dd>
-        "7"
+        "11.5"
         <span aria-label="仅含已知效果，数值尚不完整" class="loot-card-partial">
           " ?"
         </span>
@@ -1391,7 +1357,7 @@ exports[`loot UI complete state snapshots > card.rare-partial 1`] = `
         "力量需求"
       </dt>
       <dd>
-        "15"
+        "17"
       </dd>
     </div>
   </dl>
@@ -1399,7 +1365,25 @@ exports[`loot UI complete state snapshots > card.rare-partial 1`] = `
     <li class="loot-affix-row" data-known=true data-position="prefix">
       <div class="loot-affix-heading">
         <span>
-          "辉光的"
+          "加固的"
+        </span>
+        <span class="loot-affix-tier">
+          "3阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+28.79%"
+        </span>
+        <span>
+          "本地护甲"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "守护的"
         </span>
         <span class="loot-affix-tier">
           "1阶"
@@ -1407,10 +1391,10 @@ exports[`loot UI complete state snapshots > card.rare-partial 1`] = `
       </div>
       <div class="loot-affix-line loot-affix-tone-good">
         <span class="loot-affix-value">
-          "+1"
+          "-3.66%"
         </span>
         <span>
-          "照明"
+          "受到的物理伤害"
         </span>
       </div>
     </li>
@@ -1418,24 +1402,6 @@ exports[`loot UI complete state snapshots > card.rare-partial 1`] = `
       <div class="loot-affix-heading">
         <span>
           "未知前缀"
-        </span>
-      </div>
-    </li>
-    <li class="loot-affix-row" data-known=true data-position="suffix">
-      <div class="loot-affix-heading">
-        <span>
-          "活力之"
-        </span>
-        <span class="loot-affix-tier">
-          "1阶"
-        </span>
-      </div>
-      <div class="loot-affix-line loot-affix-tone-good">
-        <span class="loot-affix-value">
-          "+5"
-        </span>
-        <span>
-          "生命上限"
         </span>
       </div>
     </li>
@@ -1943,7 +1909,7 @@ exports[`loot UI complete state snapshots > card.unique-maul 1`] = `
       <div class="loot-affix-heading"></div>
       <div class="loot-affix-line loot-affix-tone-good">
         <span class="loot-affix-value">
-          "+107.16%"
+          "+122.7%"
         </span>
         <span>
           "物理伤害"
@@ -2256,7 +2222,7 @@ exports[`loot UI complete state snapshots > chip.floor 1`] = `
     "◆"
   </span>
   <span class="loot-chip-name">
-    "未鉴定的稀有带甲"
+    "未鉴定的稀有板条甲"
   </span>
   <span class="loot-chip-rarity">
     "稀有"
@@ -2536,7 +2502,7 @@ exports[`loot UI complete state snapshots > compare.floor 1`] = `
       "◆"
     </span>
     <span class="loot-chip-name">
-      "未鉴定的稀有带甲"
+      "未鉴定的稀有板条甲"
     </span>
     <span class="loot-chip-rarity">
       "稀有"
@@ -2731,7 +2697,7 @@ exports[`loot UI complete state snapshots > compare.partial 1`] = `
       "◆"
     </span>
     <span class="loot-chip-name">
-      "未鉴定的稀有带甲"
+      "未鉴定的稀有板条甲"
     </span>
     <span class="loot-chip-rarity">
       "稀有"
@@ -2774,7 +2740,7 @@ exports[`loot UI complete state snapshots > compare.partial 1`] = `
           </tr>
         </thead>
         <tbody>
-          <tr class="loot-compare-row loot-compare-same">
+          <tr class="loot-compare-row loot-compare-better">
             <th>
               "护甲"
             </th>
@@ -2782,13 +2748,13 @@ exports[`loot UI complete state snapshots > compare.partial 1`] = `
               "7"
             </td>
             <td data-label="候选">
-              "7?"
+              "12.5?"
             </td>
             <td class="loot-compare-delta" data-label="差值">
-              "0?"
+              "+5.5?"
             </td>
           </tr>
-          <tr class="loot-compare-row loot-compare-same">
+          <tr class="loot-compare-row loot-compare-worse">
             <th>
               "力量需求"
             </th>
@@ -2796,15 +2762,29 @@ exports[`loot UI complete state snapshots > compare.partial 1`] = `
               "15"
             </td>
             <td data-label="候选">
-              "15"
+              "17"
             </td>
             <td class="loot-compare-delta" data-label="差值">
-              "0"
+              "+2"
             </td>
           </tr>
           <tr class="loot-compare-row loot-compare-better">
             <th>
-              "照明"
+              "本地护甲"
+            </th>
+            <td data-label="当前">
+              "0%"
+            </td>
+            <td data-label="候选">
+              "+28.79%"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "+28.79%"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-better">
+            <th>
+              "护甲"
             </th>
             <td data-label="当前">
               "0"
@@ -2824,10 +2804,10 @@ exports[`loot UI complete state snapshots > compare.partial 1`] = `
               "+15"
             </td>
             <td data-label="候选">
-              "+5"
+              "0"
             </td>
             <td class="loot-compare-delta" data-label="差值">
-              "-10"
+              "-15"
             </td>
           </tr>
         </tbody>
@@ -3423,6 +3403,12 @@ exports[`loot UI complete state snapshots > filter.bountiful 1`] = `
         </span>
         " 唯一"
       </button>
+      <button aria-checked=false class="loot-filter-radio" data-rarity="set" disabled=false role="radio" tabindex=-1>
+        <span aria-hidden="true">
+          "✦"
+        </span>
+        " 套装"
+      </button>
     </div>
   </fieldset>
   <fieldset class="loot-filter-fieldset" disabled=false>
@@ -3505,6 +3491,12 @@ exports[`loot UI complete state snapshots > filter.dirty 1`] = `
         </span>
         " 唯一"
       </button>
+      <button aria-checked=false class="loot-filter-radio" data-rarity="set" disabled=false role="radio" tabindex=-1>
+        <span aria-hidden="true">
+          "✦"
+        </span>
+        " 套装"
+      </button>
     </div>
   </fieldset>
   <fieldset class="loot-filter-fieldset" disabled=false>
@@ -3586,6 +3578,12 @@ exports[`loot UI complete state snapshots > filter.no-classes 1`] = `
           "★"
         </span>
         " 唯一"
+      </button>
+      <button aria-checked=false class="loot-filter-radio" data-rarity="set" disabled=false role="radio" tabindex=-1>
+        <span aria-hidden="true">
+          "✦"
+        </span>
+        " 套装"
       </button>
     </div>
   </fieldset>
@@ -3672,6 +3670,12 @@ exports[`loot UI complete state snapshots > filter.read-only 1`] = `
         </span>
         " 唯一"
       </button>
+      <button aria-checked=false class="loot-filter-radio" data-rarity="set" disabled=true role="radio" tabindex=-1>
+        <span aria-hidden="true">
+          "✦"
+        </span>
+        " 套装"
+      </button>
     </div>
   </fieldset>
   <fieldset class="loot-filter-fieldset" disabled=true>
@@ -3753,6 +3757,12 @@ exports[`loot UI complete state snapshots > filter.standard 1`] = `
           "★"
         </span>
         " 唯一"
+      </button>
+      <button aria-checked=false class="loot-filter-radio" data-rarity="set" disabled=false role="radio" tabindex=-1>
+        <span aria-hidden="true">
+          "✦"
+        </span>
+        " 套装"
       </button>
     </div>
   </fieldset>
@@ -3839,7 +3849,7 @@ exports[`loot UI complete state snapshots > preset.disabled 1`] = `
         </span>
         <span class="loot-preset-metric">
           <span>
-            "物等三十：魔法 14.9% · 稀有 3.7% · 唯一 0.4%"
+            "物等三十：魔法 14.8% · 稀有 3.7% · 唯一 0.4%"
           </span>
           <span class="loot-preset-value"></span>
         </span>
@@ -3895,13 +3905,13 @@ exports[`loot UI complete state snapshots > preset.disabled 1`] = `
         </span>
         <span class="loot-preset-metric">
           <span>
-            "物等一：魔法 22.2% · 稀有 7.1% · 唯一 1.0%"
+            "物等一：魔法 22.0% · 稀有 7.0% · 唯一 1.0%"
           </span>
           <span class="loot-preset-value"></span>
         </span>
         <span class="loot-preset-metric">
           <span>
-            "物等三十：魔法 27.5% · 稀有 10.5% · 唯一 1.5%"
+            "物等三十：魔法 27.1% · 稀有 10.4% · 唯一 1.4%"
           </span>
           <span class="loot-preset-value"></span>
         </span>
@@ -3957,13 +3967,13 @@ exports[`loot UI complete state snapshots > preset.disabled 1`] = `
         </span>
         <span class="loot-preset-metric">
           <span>
-            "物等一：魔法 33.1% · 稀有 16.3% · 唯一 3.0%"
+            "物等一：魔法 32.2% · 稀有 15.8% · 唯一 2.9%"
           </span>
           <span class="loot-preset-value"></span>
         </span>
         <span class="loot-preset-metric">
           <span>
-            "物等三十：魔法 36.2% · 稀有 23.0% · 唯一 4.3%"
+            "物等三十：魔法 34.7% · 稀有 22.1% · 唯一 4.1%"
           </span>
           <span class="loot-preset-value"></span>
         </span>
@@ -4038,7 +4048,7 @@ exports[`loot UI complete state snapshots > preset.keyboard 1`] = `
         </span>
         <span class="loot-preset-metric">
           <span>
-            "物等三十：魔法 14.9% · 稀有 3.7% · 唯一 0.4%"
+            "物等三十：魔法 14.8% · 稀有 3.7% · 唯一 0.4%"
           </span>
           <span class="loot-preset-value"></span>
         </span>
@@ -4094,13 +4104,13 @@ exports[`loot UI complete state snapshots > preset.keyboard 1`] = `
         </span>
         <span class="loot-preset-metric">
           <span>
-            "物等一：魔法 22.2% · 稀有 7.1% · 唯一 1.0%"
+            "物等一：魔法 22.0% · 稀有 7.0% · 唯一 1.0%"
           </span>
           <span class="loot-preset-value"></span>
         </span>
         <span class="loot-preset-metric">
           <span>
-            "物等三十：魔法 27.5% · 稀有 10.5% · 唯一 1.5%"
+            "物等三十：魔法 27.1% · 稀有 10.4% · 唯一 1.4%"
           </span>
           <span class="loot-preset-value"></span>
         </span>
@@ -4156,13 +4166,13 @@ exports[`loot UI complete state snapshots > preset.keyboard 1`] = `
         </span>
         <span class="loot-preset-metric">
           <span>
-            "物等一：魔法 33.1% · 稀有 16.3% · 唯一 3.0%"
+            "物等一：魔法 32.2% · 稀有 15.8% · 唯一 2.9%"
           </span>
           <span class="loot-preset-value"></span>
         </span>
         <span class="loot-preset-metric">
           <span>
-            "物等三十：魔法 36.2% · 稀有 23.0% · 唯一 4.3%"
+            "物等三十：魔法 34.7% · 稀有 22.1% · 唯一 4.1%"
           </span>
           <span class="loot-preset-value"></span>
         </span>
@@ -4237,7 +4247,7 @@ exports[`loot UI complete state snapshots > preset.standard 1`] = `
         </span>
         <span class="loot-preset-metric">
           <span>
-            "物等三十：魔法 14.9% · 稀有 3.7% · 唯一 0.4%"
+            "物等三十：魔法 14.8% · 稀有 3.7% · 唯一 0.4%"
           </span>
           <span class="loot-preset-value"></span>
         </span>
@@ -4293,13 +4303,13 @@ exports[`loot UI complete state snapshots > preset.standard 1`] = `
         </span>
         <span class="loot-preset-metric">
           <span>
-            "物等一：魔法 22.2% · 稀有 7.1% · 唯一 1.0%"
+            "物等一：魔法 22.0% · 稀有 7.0% · 唯一 1.0%"
           </span>
           <span class="loot-preset-value"></span>
         </span>
         <span class="loot-preset-metric">
           <span>
-            "物等三十：魔法 27.5% · 稀有 10.5% · 唯一 1.5%"
+            "物等三十：魔法 27.1% · 稀有 10.4% · 唯一 1.4%"
           </span>
           <span class="loot-preset-value"></span>
         </span>
@@ -4355,13 +4365,13 @@ exports[`loot UI complete state snapshots > preset.standard 1`] = `
         </span>
         <span class="loot-preset-metric">
           <span>
-            "物等一：魔法 33.1% · 稀有 16.3% · 唯一 3.0%"
+            "物等一：魔法 32.2% · 稀有 15.8% · 唯一 2.9%"
           </span>
           <span class="loot-preset-value"></span>
         </span>
         <span class="loot-preset-metric">
           <span>
-            "物等三十：魔法 36.2% · 稀有 23.0% · 唯一 4.3%"
+            "物等三十：魔法 34.7% · 稀有 22.1% · 唯一 4.1%"
           </span>
           <span class="loot-preset-value"></span>
         </span>

@@ -1,8 +1,9 @@
 /** Production comparison adapter. Only knowledge DTOs and the public scalar SDK enter here. */
+import i18next from 'i18next';
 import type { StatQuery, EquipChange, PairFacts } from '../../stats';
 import type { EffectiveLootCatalog, ItemClass } from './types';
 import type { LootCompareView, LootKnownItem, LootTextRef, LootUiOptions, LootChipView } from './ui/types';
-import { buildLootChipView, buildLootModifierCompareRows } from './ui/viewModel';
+import { buildLootChipView, buildLootModifierCompareRows, knownSetCount } from './ui/viewModel';
 import { lootSigned } from './ui/format';
 export const lootCompareScalars:readonly {key:string;label:LootTextRef;lower?:boolean;divisor?:number;probe?:boolean}[]=[
  {key:'native.damage-min',label:{nameKey:'ext.loot.ui.integration.damage-min',params:{}}},
@@ -54,7 +55,15 @@ export function buildLiveLootCompareView(candidate:LiveLootItem,equipped:readonl
  const columns=indices.map(index=>{
   const previous=equipped[index];
   const after=currentIndex>=0?before:values({equip:candidate.id,...(previous?{unequip:previous.id}:{})});
-  return {slot:{nameKey:slots[index]!,params:{}},equipped:previous?chip(previous):null,rows:[...scalars.filter(s=>before[s.key]!==undefined&&after[s.key]!==undefined).map(s=>{
+  const all=options.equippedKnown??equipped.filter((i):i is LiveLootItem=>!!i);
+  const next=currentIndex>=0?all:[...all.filter(i=>i.id!==previous?.id&&i.id!==candidate.id),candidate];
+  const setIds=[...new Set([...all,...next].flatMap(i=>i.known?.setId?[i.known.setId]:[]))].sort();
+  const setRows=setIds.flatMap(id=>{
+   const a=knownSetCount(id,all),b=knownSetCount(id,next),set=catalog.setsById[id]!;
+   const row=(key:string,label:LootTextRef,x:number,y:number)=>({key,label,before:String(x),after:String(y),delta:lootSigned(y-x),tone:y>x?'better' as const:y<x?'worse' as const:'same' as const});
+   return [row(id,{nameKey:'ext.loot.ui.set.compare-count',params:{name:i18next.t(set.nameKey)}},a,b),...set.bonuses.map(bonus=>row(`${id}.${bonus.count}`,{nameKey:'ext.loot.ui.set.compare-bonus',params:{name:i18next.t(set.nameKey),count:bonus.count}},a>=bonus.count?1:0,b>=bonus.count?1:0))];
+  });
+  return {slot:{nameKey:slots[index]!,params:{}},equipped:previous?chip(previous):null,rows:[...setRows,...scalars.filter(s=>before[s.key]!==undefined&&after[s.key]!==undefined).map(s=>{
    const a=before[s.key]!/(s.divisor??1),b=after[s.key]!/(s.divisor??1),d=b-a,score=s.lower?-d:d;
    return {key:s.key,label:s.label,before:String(Math.round(a*1000)/1000),after:String(Math.round(b*1000)/1000),delta:lootSigned(d,1),tone:score>0?'better' as const:score<0?'worse' as const:'same' as const};
   }),...buildLootModifierCompareRows(candidate.known,previous?.known??null,catalog,options).filter(row=>row.condition||row.runic)]};

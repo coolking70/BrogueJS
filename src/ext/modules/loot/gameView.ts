@@ -9,8 +9,9 @@ import { itemDisplayName } from '../../../engine/Items/ItemExtensionBindings';
 import { resolveLootCatalog, stateOf } from './session';
 import { buildLiveLootCompareView, lootCompareScalars, lootRingEquipSlots } from './comparison';
 import { lootSigned } from './ui/format';
-import { buildLootItemView, buildLootSalvageView, defaultLootPickupFilter } from './ui/viewModel';
+import { buildLootItemView, buildLootSalvageView, defaultLootPickupFilter, buildLootSetView } from './ui/viewModel';
 import type { LootKnownItem, LootUiLocation, LootTextRef, LootAffixRowView } from './ui/types';
+const viewCatalogs=new WeakMap<object,ReturnType<typeof resolveLootCatalog>>();
 const text = (nameKey: string): LootTextRef => ({ nameKey, params: {} });
 export function reachableLootItems(game: Game): { item: Item; location: LootUiLocation }[] {
  const equipment=[game.player.equippedWeapon,game.player.equippedArmor,game.player.ringLeft,game.player.ringRight];
@@ -25,18 +26,21 @@ export function reachableLootItems(game: Game): { item: Item; location: LootUiLo
 }
 /** The adapter is the only place reading live Items. Vue receives known display data only. */
 export function readLootGameView(game:Game,selectedId:number|null,selectedIds:readonly number[]) {
- const runtime=game.extensionRuntime!,catalog=resolveLootCatalog(runtime.queryOptional.bind(runtime)),state=stateOf(runtime.itemCommandState('loot'));
+ const runtime=game.extensionRuntime!,catalog=viewCatalogs.get(runtime)??resolveLootCatalog(runtime.queryOptional.bind(runtime)),state=stateOf(runtime.itemCommandState('loot'));
+ viewCatalogs.set(runtime,catalog);
  const attributeResult=runtime.queryOptional('growth.attributes.v1',{v:1});
  const attributeLabels:Record<string,string>={};
  if(attributeResult.status==='available'){validateAttributeCatalog(attributeResult.value);for(const entry of attributeResult.value.attributes)attributeLabels[entry.id]=i18next.t(entry.nameKey);}
- const options={presetId:state.presetId,attributeLabels};
+ const options:import('./ui/types').LootUiOptions={presetId:state.presetId,attributeLabels};
  const reachable=reachableLootItems(game),equipment=[game.player.equippedWeapon,game.player.equippedArmor,game.player.ringLeft,game.player.ringRight];
  function known(item:Item,location:LootUiLocation):LootKnownItem|null {
   if(!item.moduleData?.loot||game.player.hasStatus('hallucinating'))return null;
   if(item.moduleData?.loot&&location!=='floor'&&!game.player.hasStatus('hallucinating')) return runtime.projectKnownItem(item,'loot',location).data as unknown as LootKnownItem;
   const rarity=item.moduleData?.loot&&location==='floor'?(runtime.projectKnownItem(item,'loot',location).data as {rarity?:LootKnownItem['rarity']}).rarity??null:null;
-  return {v:1,location,itemClass:item.category===0?'weapon':item.category===1?'armor':'ring',baseId:item.category===8&&!ItemLoader.identifiedItems.has(item.identityId??'')?null:item.identityId??null,rarity,ilvl:null,enhancement:0,affixCount:location==='floor'?null:0,affixes:[],uniqueId:null,rareName:null,corrupted:null,identified:!item.moduleData?.loot&&item.isIdentified,polarity:'unknown',familiarity:null};
+  return {v:1,location,itemClass:item.category===0?'weapon':item.category===1?'armor':'ring',baseId:item.category===8&&!ItemLoader.identifiedItems.has(item.identityId??'')?null:item.identityId??null,rarity,ilvl:null,enhancement:0,affixCount:location==='floor'?null:0,affixes:[],setId:null,pieceId:null,uniqueId:null,rareName:null,corrupted:null,identified:!item.moduleData?.loot&&item.isIdentified,polarity:'unknown',familiarity:null};
  }
+ Object.assign(options,{equippedKnown:equipment.filter((i):i is Item=>!!i).map(i=>({id:i.id,known:known(i,'equipped')}))});
+ const sourceSets=[...new Set(options.equippedKnown!.flatMap(i=>i.known?.setId?[i.known.setId]:[]))].sort().map(id=>buildLootSetView(id,catalog,options));
  const entries=reachable.map(({item,location})=>({id:item.id,name:itemDisplayName(item,location,game.player.hasStatus('hallucinating')),location,itemClass:item.category===0?'weapon' as const:item.category===1?'armor' as const:'ring' as const,known:known(item,location),owned:!!item.moduleData?.loot,
   canIdentify:location!=='floor'&&location!=='container'&&!!item.moduleData?.loot&&ItemLoader.canIdentifyItem(item),canSalvage:location==='pack'&&!!item.moduleData?.loot&&!game.player.hasStatus('hallucinating'),
   enhancement:item.moduleData?.loot&&['pack','equipped'].includes(location)?{level:(item.moduleData.loot as unknown as LootItemDataV1).enhancement,cap:enhancementCap(item.moduleData.loot as unknown as LootItemDataV1,catalog.pack),allowed:game.canEnchantTarget(item),scroll:game.player.inventory.items.some(i=>i.consumableId==='scroll_of_enchantment')}:null,
@@ -65,7 +69,7 @@ export function readLootGameView(game:Game,selectedId:number|null,selectedIds:re
   }).filter(row=>row.name);
  });
  return {revision:state.revision,presetId:state.presetId,filter:structuredClone(state.filter),defaults:defaultLootPickupFilter(state.presetId),
-  presetName:text(catalog.pack.presets.presets.find(p=>p.id===state.presetId)!.nameKey),entries,selected,card,compare,salvage,sources,sourceItems,
+  presetName:text(catalog.pack.presets.presets.find(p=>p.id===state.presetId)!.nameKey),entries,selected,card,compare,salvage,sources,sourceItems,sourceSets,
   shards:game.player.inventory.items.filter(i=>i.worldItem?.definitionId==='loot.shard').reduce((n,i)=>n+i.quantity,0)};
 }
 export type LootGameView=ReturnType<typeof readLootGameView>;

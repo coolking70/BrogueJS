@@ -51,10 +51,10 @@ describe('loot numeric formats and literal tables', () => {
   it('covers every stat/unit pair including disabled rune families and enhancement, once with no extras', () => {
     const p = loadLootPack();
     const actual = LOOT_UI_STATS.map(s => `${s.stat}/${s.unit}`);
-    const wanted = [...new Set([...p.affixes.affixes.flatMap(a => a.modifiers), ...p.uniques.uniques.flatMap(u => u.rows.flatMap(r => r.modifiers))]
+    const wanted = [...new Set([...p.affixes.affixes.flatMap(a => a.modifiers), ...p.uniques.uniques.flatMap(u => u.rows.flatMap(r => r.modifiers)), ...p.sets.sets.flatMap(s=>[...s.pieces.flatMap(p=>p.rows),...s.bonuses.flatMap(b=>b.rows)].flatMap(r=>r.modifiers))]
       .map(s => `${s.stat}/${s.unit}`).concat(['native.defense/int', 'native.max-hp/int', 'loot.ring-implicit/ring-point']))];
     expect([...actual].sort()).toEqual(wanted.sort()); expect(new Set(actual).size).toBe(actual.length);
-    for (const s of LOOT_UI_STATS) expect(s.better).toBe(['native.attack-speed', 'native.physical-damage-taken'].includes(s.stat) ? 'lower' : 'higher');
+    for (const s of LOOT_UI_STATS) expect(s.better).toBe(['native.move-speed', 'native.attack-speed', 'native.physical-damage-taken'].includes(s.stat) ? 'lower' : 'higher');
   });
   it('covers every native base with existing literal main-locale names and exact glyphs', () => {
     const p = loadLootPack(), bases = [...p.bases.weapons, ...p.bases.armors, ...p.bases.rings];
@@ -264,7 +264,7 @@ describe('loot filters, data-derived presets and pure outputs', () => {
     expect(normalizeLootPickupFilter({ ...defaultLootPickupFilter('standard'), classes: [] }).classes).toEqual([]);
     for (const id of ['missing', '__proto__', 'constructor']) expect(() => defaultLootPickupFilter(id)).toThrow(/UNKNOWN_PRESET/);
   });
-  it.each([null, {}, { ...defaultLootPickupFilter('standard'), extra: true }, { ...defaultLootPickupFilter('standard'), minRarity: 'set' },
+  it.each([null, {}, { ...defaultLootPickupFilter('standard'), extra: true }, { ...defaultLootPickupFilter('standard'), minRarity: 'runeword' },
     { ...defaultLootPickupFilter('standard'), classes: ['ring', 'ring'] }, { ...defaultLootPickupFilter('standard'), classes: ['wand'] },
     { ...defaultLootPickupFilter('standard'), autoPickupGold: 1 }, { ...defaultLootPickupFilter('standard'), v: 2 }])('rejects malformed filter %#', value => {
     expect(() => normalizeLootPickupFilter(value)).toThrow(/INVALID_INPUT/);
@@ -277,10 +277,10 @@ describe('loot filters, data-derived presets and pure outputs', () => {
     // standard kill multiplier10000/10000 =1.0; corrupt600/100=6%; gold10000/10000=1.0.
     expect(metric('kill-drop').value).toBe('×1.0'); expect(metric('corrupt').value).toBe('6%'); expect(metric('gold').value).toBe('×1.0');
     expect(metric('max-per-kill').value).toBe('2'); expect(metric('monster-peak').value).toBe('+50% / +100%');
-    // ilvl1: weights700, floor(220*1.015)=223, floor(70*1.025)=71, floor(10*1.025)=10; sum1004.
-    expect(metric('rarity-ilvl1').label.params).toEqual({ magic: '22.2%', rare: '7.1%', unique: '1.0%' });
-    // ilvl30: weights700,319,122,17 sum1158; percentages round individually to one decimal.
-    expect(metric('rarity-ilvl30').label.params).toEqual({ magic: '27.5%', rare: '10.5%', unique: '1.5%' });
+    // ilvl1: weights700, floor(220*1.015)=223, floor(70*1.025)=71, floor(10*1.025)=10; sum1014 (set10).
+    expect(metric('rarity-ilvl1').label.params).toEqual({ magic: '22.0%', rare: '7.0%', unique: '1.0%' });
+    // ilvl30: weights700,319,122,17 sum1175 (set17); percentages round individually to one decimal.
+    expect(metric('rarity-ilvl30').label.params).toEqual({ magic: '27.1%', rare: '10.4%', unique: '1.4%' });
     for (const option of all) expect(option.metrics.map(m => m.key)).toEqual(['kill-drop', 'max-per-kill', 'rarity-ilvl1', 'rarity-ilvl30', 'corrupt', 'gold', 'monster-peak']);
   });
   it('responds to input package metrics rather than embedding current numbers', () => {

@@ -100,6 +100,8 @@ export interface StatActorFacts extends ActorFacts {
   readonly tags: readonly string[];
 }
 export interface StatSourceContext {
+  /** Conservative equipment projection; absent means mechanical evaluation. */
+  readonly knownOnly?: boolean;
   readonly depth?: number;
   readonly playerId: number;
   readonly state: ReadonlyJson;

@@ -63,7 +63,7 @@
       "marker": "✦",
       "affixes": null,
       "enhancementCap": 4,
-      "droppable": false
+      "droppable": true
     },
     {
       "id": "runeword",

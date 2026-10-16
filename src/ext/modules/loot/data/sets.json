@@ -1,0 +1,371 @@
+{
+  "schema": 1,
+  "sets": [
+    {
+      "id": "loot.set.wanderer",
+      "nameKey": "ext.loot.set.wanderer.name",
+      "descriptionKey": "ext.loot.set.wanderer.description",
+      "pieces": [
+        {
+          "id": "loot.piece.wanderer.blade",
+          "nameKey": "ext.loot.piece.wanderer.blade.name",
+          "descriptionKey": "ext.loot.piece.wanderer.blade.description",
+          "baseId": "sword",
+          "minIlvl": 6,
+          "weight": 100,
+          "rows": [
+            {
+              "rowId": "loot.piece.wanderer.blade.r0",
+              "ranges": [
+                [
+                  1000,
+                  1000
+                ]
+              ],
+              "modifiers": [
+                {
+                  "stat": "native.accuracy",
+                  "category": "increased",
+                  "unit": "bp",
+                  "valueIndex": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "loot.piece.wanderer.coat",
+          "nameKey": "ext.loot.piece.wanderer.coat.name",
+          "descriptionKey": "ext.loot.piece.wanderer.coat.description",
+          "baseId": "leather_armor",
+          "minIlvl": 6,
+          "weight": 100,
+          "rows": [
+            {
+              "rowId": "loot.piece.wanderer.coat.r0",
+              "ranges": [
+                [
+                  10,
+                  10
+                ]
+              ],
+              "modifiers": [
+                {
+                  "stat": "native.max-hp",
+                  "category": "flat",
+                  "unit": "int",
+                  "valueIndex": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "loot.piece.wanderer.lamp",
+          "nameKey": "ext.loot.piece.wanderer.lamp.name",
+          "descriptionKey": "ext.loot.piece.wanderer.lamp.description",
+          "baseId": "ring_of_light",
+          "minIlvl": 6,
+          "weight": 100,
+          "rows": [
+            {
+              "rowId": "loot.piece.wanderer.lamp.r0",
+              "ranges": [
+                [
+                  1000,
+                  1000
+                ]
+              ],
+              "modifiers": [
+                {
+                  "stat": "native.resist.fire",
+                  "category": "flat",
+                  "unit": "bp",
+                  "valueIndex": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "loot.piece.wanderer.watch",
+          "nameKey": "ext.loot.piece.wanderer.watch.name",
+          "descriptionKey": "ext.loot.piece.wanderer.watch.description",
+          "baseId": "ring_of_awareness",
+          "minIlvl": 6,
+          "weight": 100,
+          "rows": [
+            {
+              "rowId": "loot.piece.wanderer.watch.r0",
+              "ranges": [
+                [
+                  10,
+                  10
+                ]
+              ],
+              "modifiers": [
+                {
+                  "stat": "native.max-hp",
+                  "category": "flat",
+                  "unit": "int",
+                  "valueIndex": 0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "bonuses": [
+        {
+          "count": 2,
+          "rows": [
+            {
+              "rowId": "loot.set.wanderer.b2.r0",
+              "ranges": [
+                [
+                  -1000,
+                  -1000
+                ]
+              ],
+              "modifiers": [
+                {
+                  "stat": "native.move-speed",
+                  "category": "increased",
+                  "unit": "bp",
+                  "valueIndex": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "count": 3,
+          "rows": [
+            {
+              "rowId": "loot.set.wanderer.b3.r0",
+              "ranges": [
+                [
+                  15,
+                  15
+                ]
+              ],
+              "modifiers": [
+                {
+                  "stat": "native.max-hp",
+                  "category": "flat",
+                  "unit": "int",
+                  "valueIndex": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "count": 4,
+          "rows": [
+            {
+              "rowId": "loot.set.wanderer.b4.r0",
+              "ranges": [
+                [
+                  2000,
+                  2000
+                ]
+              ],
+              "modifiers": [
+                {
+                  "stat": "loot.rarity-find",
+                  "category": "flat",
+                  "unit": "bp",
+                  "valueIndex": 0
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "loot.set.bastion",
+      "nameKey": "ext.loot.set.bastion.name",
+      "descriptionKey": "ext.loot.set.bastion.description",
+      "pieces": [
+        {
+          "id": "loot.piece.bastion.mace",
+          "nameKey": "ext.loot.piece.bastion.mace.name",
+          "descriptionKey": "ext.loot.piece.bastion.mace.description",
+          "baseId": "mace",
+          "minIlvl": 6,
+          "weight": 100,
+          "rows": [
+            {
+              "rowId": "loot.piece.bastion.mace.r0",
+              "ranges": [
+                [
+                  1000,
+                  1000
+                ]
+              ],
+              "modifiers": [
+                {
+                  "stat": "native.physical-damage-dealt",
+                  "category": "increased",
+                  "unit": "bp",
+                  "valueIndex": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "loot.piece.bastion.mail",
+          "nameKey": "ext.loot.piece.bastion.mail.name",
+          "descriptionKey": "ext.loot.piece.bastion.mail.description",
+          "baseId": "chain_mail",
+          "minIlvl": 6,
+          "weight": 100,
+          "rows": [
+            {
+              "rowId": "loot.piece.bastion.mail.r0",
+              "ranges": [
+                [
+                  1,
+                  1
+                ]
+              ],
+              "modifiers": [
+                {
+                  "stat": "native.defense",
+                  "category": "flat",
+                  "unit": "display-armor",
+                  "valueIndex": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "loot.piece.bastion.vigor",
+          "nameKey": "ext.loot.piece.bastion.vigor.name",
+          "descriptionKey": "ext.loot.piece.bastion.vigor.description",
+          "baseId": "ring_of_regeneration",
+          "minIlvl": 6,
+          "weight": 100,
+          "rows": [
+            {
+              "rowId": "loot.piece.bastion.vigor.r0",
+              "ranges": [
+                [
+                  10,
+                  10
+                ]
+              ],
+              "modifiers": [
+                {
+                  "stat": "native.max-hp",
+                  "category": "flat",
+                  "unit": "int",
+                  "valueIndex": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "loot.piece.bastion.guard",
+          "nameKey": "ext.loot.piece.bastion.guard.name",
+          "descriptionKey": "ext.loot.piece.bastion.guard.description",
+          "baseId": "ring_of_transference",
+          "minIlvl": 6,
+          "weight": 100,
+          "rows": [
+            {
+              "rowId": "loot.piece.bastion.guard.r0",
+              "ranges": [
+                [
+                  1000,
+                  1000
+                ]
+              ],
+              "modifiers": [
+                {
+                  "stat": "native.resist.poison",
+                  "category": "flat",
+                  "unit": "bp",
+                  "valueIndex": 0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "bonuses": [
+        {
+          "count": 2,
+          "rows": [
+            {
+              "rowId": "loot.set.bastion.b2.r0",
+              "ranges": [
+                [
+                  15,
+                  15
+                ]
+              ],
+              "modifiers": [
+                {
+                  "stat": "native.max-hp",
+                  "category": "flat",
+                  "unit": "int",
+                  "valueIndex": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "count": 3,
+          "rows": [
+            {
+              "rowId": "loot.set.bastion.b3.r0",
+              "ranges": [
+                [
+                  1500,
+                  1500
+                ]
+              ],
+              "modifiers": [
+                {
+                  "stat": "native.resist.fire",
+                  "category": "flat",
+                  "unit": "bp",
+                  "valueIndex": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "count": 4,
+          "rows": [
+            {
+              "rowId": "loot.set.bastion.b4.r0",
+              "ranges": [
+                [
+                  -1000,
+                  -1000
+                ]
+              ],
+              "modifiers": [
+                {
+                  "stat": "native.physical-damage-taken",
+                  "category": "increased",
+                  "unit": "bp",
+                  "valueIndex": 0
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

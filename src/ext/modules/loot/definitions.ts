@@ -5,6 +5,7 @@ import bases from './data/bases.json';
 import rarities from './data/rarities.json';
 import affixes from './data/affixes.json';
 import uniques from './data/uniques.json';
+import sets from './data/sets.json';
 import monsterClasses from './data/monsterClasses.json';
 import dropTables from './data/dropTables.json';
 import gold from './data/gold.json';
@@ -18,8 +19,8 @@ import rareNames from './data/rareNames.json';
 import { extensionDataFingerprint } from '../../fingerprint';
 import { assertLootPack, deepFreeze } from './schema';
 import type { LootPack, LootRawFiles } from './types';
-export const LOOT_VERSION = '0.2.0';
-const files = { ilvl, tiers, bases, rarities, affixes, uniques, monsterClasses, dropTables, gold, presets, enhancement, identify, corruption, salvage, caps, rareNames };
+export const LOOT_VERSION = '0.3.0';
+const files = { ilvl, tiers, bases, rarities, affixes, uniques, sets, monsterClasses, dropTables, gold, presets, enhancement, identify, corruption, salvage, caps, rareNames };
 let defaultPack: LootPack | undefined;
 export function loadLootPack(raw?: LootRawFiles): LootPack {
   if(raw===undefined && defaultPack) return defaultPack;
@@ -31,5 +32,5 @@ export function loadLootPack(raw?: LootRawFiles): LootPack {
 }
 let identity: { schema: number; version: string; fingerprint: string } | undefined;
 export function getLootPackIdentity() {
-  return identity ??= deepFreeze({schema:1,version:LOOT_VERSION,fingerprint:extensionDataFingerprint({pack:loadLootPack(),targets:ITEM_RUNIC_TARGETS})});
+  return identity ??= deepFreeze({schema:2,version:LOOT_VERSION,fingerprint:extensionDataFingerprint({pack:loadLootPack(),targets:ITEM_RUNIC_TARGETS})});
 }

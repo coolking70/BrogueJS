@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { loadLootPack } from '../definitions';
 import { enhancementCap, familiarityThresholds, goldRange, monsterScalingAt, ringImplicit, salvageYield } from '../economy';
 import type { LootItemDataV1 } from '../types';
-const item = (rarity: LootItemDataV1['rarity'], ilvl = 1, corrupted = false): LootItemDataV1 => ({ v: 2, baseId: 'dagger', ilvl, rarity, uniqueId: null, setId: null, affixes: [], corrupted, enhancement: 0, sockets: 0, socketed: [], nameParts: null, origin: { source: 'floor', depth: 1 } });
+const item = (rarity: LootItemDataV1['rarity'], ilvl = 1, corrupted = false): LootItemDataV1 => ({ v: 3, baseId: 'dagger', ilvl, rarity, uniqueId: null, setId: null, pieceId: null, identityKnown: true, affixes: [], corrupted, enhancement: 0, sockets: 0, socketed: [], nameParts: null, origin: { source: 'floor', depth: 1 } });
 const preset = (id = 'standard') => loadLootPack().presets.presets.find(p => p.id === id)!;
 
 describe('pure loot economy §9', () => {

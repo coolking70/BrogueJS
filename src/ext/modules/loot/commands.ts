@@ -4,7 +4,7 @@ import type { EffectiveLootCatalog, LootItemDataV1 } from './types';
 import { salvageYield } from './economy';
 import { stateOf } from './session';
 import { normalizeLootPickupFilter } from './ui/viewModel';
-export function revealLoot(data: LootItemDataV1):Json {return JSON.parse(JSON.stringify({...data,affixes:data.affixes.map(a=>({...a,known:true}))}));}
+export function revealLoot(data: LootItemDataV1):Json {return JSON.parse(JSON.stringify({...data,identityKnown:true,affixes:data.affixes.map(a=>({...a,known:true}))}));}
 export function lootCommands(catalog:()=>EffectiveLootCatalog):Record<string,ItemCommandProvider>{
  const command=(kind:ItemCommandProvider['kind']):ItemCommandProvider=>({kind,...(kind==='identify'?{materialDefinitionId:'loot.shard'}:{}),prepare(payload,ctx){
   const p=payload as Record<string,Json>,s=stateOf(ctx.state),next=structuredClone(s);next.revision++;
@@ -19,7 +19,8 @@ export function lootCommands(catalog:()=>EffectiveLootCatalog):Record<string,Ite
    if(items.some(i=>!i?.moduleData?.loot||ctx.equippedIds.includes(i.id)))return null;
    const data=items.map(i=>i!.moduleData!.loot as unknown as LootItemDataV1),preset=catalog().pack.presets.presets.find(p=>p.id===s.presetId)!;
    proposal.consume=ids.map(itemId=>({itemId,quantity:1}));proposal.materials=[{definitionId:'loot.shard',quantity:data.reduce((n,d)=>n+salvageYield(d,preset),0)}];proposal.chargedTicks=100*ids.length;
-   if(data.some(d=>d.uniqueId!==null))proposal.confirmation={nameKey:'ext.loot.ui.salvage.warn-unique',params:{}};
+   if(data.some(d=>d.rarity==='set'))proposal.confirmation={nameKey:'ext.loot.ui.salvage.warn-set',params:{}};
+   else if(data.some(d=>d.uniqueId!==null))proposal.confirmation={nameKey:'ext.loot.ui.salvage.warn-unique',params:{}};
   }
   if(kind==='identify'){
    const item=ctx.inventory.find(i=>i.id===p.itemId),data=item?.moduleData?.loot as unknown as LootItemDataV1|undefined;

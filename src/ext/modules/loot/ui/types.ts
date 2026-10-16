@@ -11,7 +11,7 @@ export interface LootKnowledgeFacts {
   readonly hallucinating: boolean;            // 仅 location='floor' 时生效
   readonly familiarity: { readonly unit: 'kills' | 'turns'; readonly remaining: number } | null;  // 熟悉度剩余 [6B-int]
 }
-export type LootAffixPosition = 'prefix' | 'suffix' | 'row';     // row = 唯一品固定行
+export type LootAffixPosition = 'prefix' | 'suffix' | 'row';     // row = 唯一品/套装固定行
 export type LootKnownAffix =
   | { readonly known: true; readonly id: string; readonly position: LootAffixPosition;
       readonly targetClass?: string; readonly polarity: 1 | -1; readonly tier: number; readonly values: readonly number[] }
@@ -26,10 +26,12 @@ export interface LootKnownItem {
   readonly enhancement: number;               // 玩家亲手强化，恒已知
   readonly affixCount: number | null;         // null ⇔ 地面
   readonly affixes: readonly LootKnownAffix[];  // 地面为 []；否则与 data.affixes 同序同长
+  readonly setId: string | null;
+  readonly pieceId: string | null;
   readonly uniqueId: string | null;           // 仅“唯一且已鉴定”非空
   readonly rareName: readonly [number, number] | null;  // 仅“稀有且已鉴定”非空
   readonly corrupted: boolean | null;         // null = 玩家未知
-  readonly identified: boolean;               // data.affixes 全部 known（normal 恒 true）
+  readonly identified: boolean;               // 完整身份；套装单行全部 known 仍可为 false
   readonly polarity: 'unknown' | 'benign' | 'malevolent';
   readonly familiarity: LootKnowledgeFacts['familiarity'];
 }
@@ -65,7 +67,7 @@ export interface LootAffixRowView {
   readonly key: string;                       // 稳定：`${index}:${id ?? 'unknown'}`
   readonly known: boolean;
   readonly position: LootAffixPosition;
-  readonly name: LootTextRef | null;          // 已知词缀名；唯一行 null；未知行为“未知前缀/后缀/词条”
+  readonly name: LootTextRef | null;          // 已知词缀名；固定行 null；未知行为“未知前缀/后缀/词条”
   readonly tier: number | null;               // 已知且非唯一行
   readonly lines: readonly LootModLineView[];
   readonly negative: boolean;                 // 已知负面词缀
@@ -75,7 +77,12 @@ export interface LootBaseStatView {
   readonly label: LootTextRef; readonly value: string;
   readonly partial: boolean;                  // 存在可能影响此值的未知行 → 组件加 '?' 标记
 }
+export interface LootSetView {
+  readonly id:string; readonly name:LootTextRef; readonly count:number; readonly total:number;
+  readonly bonuses: readonly {count:number;active:boolean;rows:readonly LootAffixRowView[]}[];
+}
 export interface LootItemView {
+  readonly set?: LootSetView;
   readonly chip: LootChipView;
   readonly subtitle: readonly LootTextRef[];  // 稀有度、物等、类别
   readonly baseStats: readonly LootBaseStatView[];
@@ -115,7 +122,7 @@ export interface LootSalvageView {
 }
 export interface LootPickupFilterDraft {      // 设计 §10.3 set-filter 载荷的 UI 草稿 [6B-int]
   readonly v: 1;
-  readonly minRarity: 'normal' | 'magic' | 'rare' | 'unique';
+  readonly minRarity: 'normal' | 'magic' | 'rare' | 'unique' | 'set';
   readonly classes: readonly ItemClass[];     // 去重，按 weapon, armor, ring 顺序；可为空
   readonly autoPickupGold: boolean;
 }
@@ -126,6 +133,7 @@ export interface LootPresetOptionView {
 }
 export interface LootUiOptions {
   readonly presetId: string;
+  readonly equippedKnown?: readonly {id:number;known:LootKnownItem|null}[];
   readonly attributeLabels?: Readonly<Record<string, string>>;   // growth 属性显示名，宿主提供 [5A2-S]
   readonly showTiers?: boolean;               // 默认 true
 }

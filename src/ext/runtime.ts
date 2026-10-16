@@ -460,7 +460,7 @@ export class ExtensionRuntime {
                     const previous=this.pureProviderPhase;this.pureProviderPhase=true;
                     try{let view=!change?session.moduleViews.get(module.id):undefined;if(!view){view={state:readonlyJson(this.states[module.id]!),components:{}};if(!change)session.moduleViews.set(module.id,view);}const context=Object.freeze({depth:session.depths?.get(id)??this.ports.actorQueryScope?.(actor(id))?.depth??this.ports.depth(),playerId:this.ports.playerId(),state:view.state,facts:pair,
                         getComponent:(actorId:number,name:string)=>{if(session.componentReaders){const dependency=`${module.id}:${actorId}:${name}`,readers=session.componentReaders.get(dependency)??new Set<number>();readers.add(id);session.componentReaders.set(dependency,readers);if(session.componentReaders.size>4096)session.componentReaders=null;}const key=`${actorId}:${name}`,value=session.previewComponents?.[`${actorId}:${module.id}:${name}`]??this.components[String(actorId)]?.[`${module.id}:${name}`];return value===undefined?undefined:view!.components[key]??(view!.components[key]=readonlyJson(value));},
-                        equippedItems:equipped,
+                        equippedItems:equipped, knownOnly:known===true,
                         input:(key:string)=>{
                             if(phase!=='derived'||!provider.derived!.inputs.includes(key))throw new StatValidationError('declaration');
                             const declaration=session.pipeline.keys.get(key)!;

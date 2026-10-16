@@ -88,17 +88,17 @@ export const LOOT_UI_FIXTURE_SEEDS: Readonly<Record<LootUiFixtureId, { readonly 
   'R03': { seed: 1, itemIndex: 0 },
   'R04': { seed: 25, itemIndex: 0 },
   'R05': { seed: 5, itemIndex: 0 },
-  'R06': { seed: 218, itemIndex: 0 },
+  'R06': { seed: 192, itemIndex: 0 },
   'R07': { seed: 272, itemIndex: 1 },
   'R08': { seed: 397, itemIndex: 0 },
   'R09': { seed: 7, itemIndex: 0 },
   'R10': { seed: 146, itemIndex: 0 },
   'R11': { seed: 46, itemIndex: 0 },
-  'R12': { seed: 707, itemIndex: 0 },
-  'R13': { seed: 150, itemIndex: 0 },
-  'R14': { seed: 7, itemIndex: 0 },
-  'R15': { seed: 79, itemIndex: 0 },
-  'R16': { seed: 39, itemIndex: 0 },
+  'R12': { seed: 110, itemIndex: 0 },
+  'R13': { seed: 36, itemIndex: 1 },
+  'R14': { seed: 75, itemIndex: 0 },
+  'R15': { seed: 39, itemIndex: 0 },
+  'R16': { seed: 105, itemIndex: 0 },
   'R17': { seed: 1, itemIndex: 0 },
   'E-W': { seed: 8, itemIndex: 0 },
   'E-A': { seed: 5, itemIndex: 0 },
@@ -125,6 +125,7 @@ export function transformLootUiFixture(id: LootUiFixtureId, options: LootUiFixtu
   const enhancement = options.enhancement === undefined ? data.enhancement : options.enhancement;
   if (!Number.isSafeInteger(enhancement) || enhancement < 0 || enhancement > enhancementCap(data, fixture.catalog.pack)) throw new RangeError('Enhancement outside rarity cap');
   data.affixes.forEach((affix, index) => { affix.known = reveal === 'all' || (Array.isArray(reveal) && reveal.includes(index)); });
+  data.identityKnown = data.affixes.every(a=>a.known);
   data.enhancement = enhancement;
   if (!validateLootItemData(data, fixture.catalog)) throw new RangeError('Fixture transform failed validation');
   return freezeLootValue(data);

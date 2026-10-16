@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "shardItemId": "loot.shard",
   "nameKey": "ext.loot.shard.name",
   "maxStack": 99,
@@ -7,7 +7,9 @@
     "normal": 1,
     "magic": 3,
     "rare": 8,
-    "unique": 20
+    "unique": 20,
+    "set": 20,
+    "runeword": 8
   },
   "ilvlStep": 10,
   "corruptedMultiplierBp": 15000,

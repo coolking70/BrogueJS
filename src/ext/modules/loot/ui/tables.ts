@@ -13,6 +13,7 @@ export const LOOT_UI_STATS: readonly LootUiStatDefinition[] = freezeLootUi([
   { stat: 'native.physical-damage-taken', unit: 'bp', nameKey: 'ext.loot.ui.stat.native-physical-damage-taken', better: 'lower' },
   { stat: 'native.light', unit: 'ring-point', nameKey: 'ext.loot.ui.stat.native-light', better: 'higher' },
   { stat: 'native.accuracy', unit: 'bp', nameKey: 'ext.loot.ui.stat.native-accuracy', better: 'higher' },
+  { stat: 'native.move-speed', unit: 'bp', nameKey: 'ext.loot.ui.stat.native-move-speed', better: 'lower' },
   { stat: 'native.attack-speed', unit: 'bp', nameKey: 'ext.loot.ui.stat.native-attack-speed', better: 'lower' },
   { stat: 'native.max-hp', unit: 'int', nameKey: 'ext.loot.ui.stat.native-max-hp', better: 'higher' },
   { stat: 'native.regeneration', unit: 'ring-point', nameKey: 'ext.loot.ui.stat.native-regeneration', better: 'higher' },

@@ -15,7 +15,7 @@ const draft = ref(clone(props.initialDraft ?? props.value));
 watch(() => JSON.stringify(props.value), (value, previous) => { if (value !== previous) draft.value = clone(props.value); });
 const disabled = computed(() => props.readOnly || props.submitting);
 const dirty = computed(() => JSON.stringify(normalizeLootPickupFilter(draft.value)) !== JSON.stringify(normalizeLootPickupFilter(props.value)));
-const rarityOptions = rarities.rarities.filter(value => ['normal', 'magic', 'rare', 'unique'].includes(value.id));
+const rarityOptions = rarities.rarities.filter(value => ['normal', 'magic', 'rare', 'unique', 'set'].includes(value.id));
 const classOptions: readonly ItemClass[] = ['weapon', 'armor', 'ring'];
 function classLabel(id: ItemClass) { return t(id === 'weapon' ? 'ext.loot.ui.filter.weapon' : id === 'armor' ? 'ext.loot.ui.filter.armor' : 'ext.loot.ui.filter.ring'); }
 function chooseRarity(id: string) { if (!disabled.value) draft.value = { ...draft.value, minRarity: id as LootPickupFilterDraft['minRarity'] }; }

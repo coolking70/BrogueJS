@@ -8,7 +8,7 @@ import { computeRarityWeights } from './rarity';
 import type { LootDataErrorCode } from './errors';
 import type { ItemClass, LootPack, ModifierSpec, RarityId } from './types';
 
-export const LOOT_FILE_NAMES = ['ilvl','tiers','bases','rarities','affixes','uniques','monsterClasses','dropTables','gold','presets','enhancement','identify','corruption','salvage','caps','rareNames'] as const;
+export const LOOT_FILE_NAMES = ['ilvl','tiers','bases','rarities','affixes','uniques','sets','monsterClasses','dropTables','gold','presets','enhancement','identify','corruption','salvage','caps','rareNames'] as const;
 const CLASSES = ['weapon', 'armor', 'ring'] as const;
 const RARITIES = ['normal', 'magic', 'rare', 'unique', 'set', 'runeword'] as const;
 const MONSTER_CLASSES = ['none', 'fodder', 'splitter', 'standard', 'elite'] as const;
@@ -18,7 +18,7 @@ const WEAPON_RUNES = ['speed','quietus','paralyzing','multiplicity','slowing','c
 const ARMOR_RUNES = ['multiplicity','mutuality','absorption','reprisal','immunity','reflection','respiration','dampening','burden','vulnerability','immolation'];
 const STATS = ['loot.local.damage','loot.local.armor','loot.ring-implicit','loot.rarity-find',
   'native.weapon-enchant','native.physical-damage-dealt','native.defense','native.physical-damage-taken',
-  'native.light','native.accuracy','native.attack-speed','native.max-hp','native.regeneration','native.strength',
+  'native.move-speed','native.light','native.accuracy','native.attack-speed','native.max-hp','native.regeneration','native.strength',
   'native.stealth-range','native.awareness','native.clairvoyance','native.wisdom','native.resist.fire','native.resist.poison',
   'native.transference','native.reaping','native.runic-power','native.armor-runic-power',
   'combat.stamina-capacity','combat.poise-capacity','combat.stamina-regen','combat.poise-recovery',
@@ -92,6 +92,8 @@ const affix = object({id, nameKey:key, position:enumeration(['prefix','suffix'])
 const rarityWeights = record(RARITIES.filter(r => r !== 'runeword'),weight);
 const affixCounts = array(object({n:integer(1,6),w:weight}),1,6);
 const file = (shape: Record<string,Check>): Check => object({schema:(v,p)=>{if(v!==1) fail('INVALID_SCHEMA',p);},...shape});
+const file2 = (shape: Record<string,Check>): Check => object({schema:literal(2),...shape});
+const fixedRows = (max:number) => array(object({rowId:id,ranges:rangeList,modifiers}),1,max);
 const schemas: Record<keyof LootPack,Check> = {
   ilvl:file({ilvlPerDepthBp:integer(0,1000000),min:integer(1,99),max:integer(1,99),siteIlvl:integer(1,99),
     sourceBonus:record([...SOURCES,'part','craft'],num),classBonus:record(MONSTER_CLASSES,num),championBonus:num}),
@@ -111,6 +113,9 @@ const schemas: Record<keyof LootPack,Check> = {
   uniques:file({uniques:array(object({id,nameKey:key,descriptionKey:key,baseId:nativeId,minIlvl:integer(1,99),weight,
     rows:array(object({rowId:id,ranges:rangeList,modifiers}),1,8)}),0,128),
     bossUniqueBias:array(object({formId:id,uniqueId:id,multiplierBp:nonnegative}),0,128)}),
+  sets:file({sets:array(object({id,nameKey:key,descriptionKey:key,
+    pieces:array(object({id,nameKey:key,descriptionKey:key,baseId:nativeId,minIlvl:integer(1,99),weight,rows:fixedRows(8)}),1,4),
+    bonuses:array(object({count:integer(2,4),rows:fixedRows(4)}),0,3)}),0,32)}),
   monsterClasses:file({defaultClass:enumeration(MONSTER_CLASSES),classes:array(enumeration(MONSTER_CLASSES),5,5),
     members:array(object({typeId:nativeId,class:enumeration(MONSTER_CLASSES)}),0,4096),
     modifiers:object({leader:object({chanceBonusBp:bp}),champion:object({chanceBonusBp:bp,rarityBonusBp:nonnegative})})}),
@@ -131,11 +136,11 @@ const schemas: Record<keyof LootPack,Check> = {
   enhancement:file({caps:record(RARITIES,integer(0,100)),weapon:object({localDamageBpPerLevel:nonnegative,weaponEnchantEveryLevels:integer(1)}),
     armor:object({maxHpPerLevel:nonnegative,defenseInternalPerLevel:nonnegative}),ring:object({implicitEveryLevels:integer(1)}),
     atCap:object({kind:literal('refine'),target:literal('random-positive-affix'),keep:literal('higher'),rejectWhenAllAtTierMax:literal(true)}),nonLootItems:literal('native-plus-one')}),
-  identify:file({familiarityMultiplierBp:record(['normal','magic','rare','unique'],nonnegative),familiarityRounding:literal('ceil'),scrollRevealsAll:literal(true),
+  identify:file2({familiarityMultiplierBp:record(RARITIES,nonnegative),familiarityRounding:literal('ceil'),scrollRevealsAll:literal(true),
     firstTriggerReveal:object({enabled:literal(true),excludedStats:array(enumeration(STATS),0,64)})}),
   corruption:file({eligibleRarities:array(enumeration(['magic','rare']),1,2),maxTotalAffixes:integer(1,6),negativeRuneFallback:bool,
     compensation:object({tierStep:literal(1),maxTier:integer(1,6)}),nativeCursed:literal(true)}),
-  salvage:file({shardItemId:id,nameKey:key,maxStack:integer(1,999),base:record(['normal','magic','rare','unique'],nonnegative),ilvlStep:integer(1,99),
+  salvage:file2({shardItemId:id,nameKey:key,maxStack:integer(1,999),base:record(RARITIES,nonnegative),ilvlStep:integer(1,99),
     corruptedMultiplierBp:nonnegative,minimum:literal(1),exchange:object({shards:integer(1),effect:literal('identify-one')})}),
   caps:file({caps:array(object({stat:enumeration(STATS),scope:enumeration(['loot-sources','final']),unit:enumeration(UNIT)},{min:num,max:num}),1,64)}),
   rareNames:file({first:array(object({nameKey:key}),32,32),second:array(object({nameKey:key}),32,32)}),
@@ -155,7 +160,7 @@ function validateModifiers(mods: ModifierSpec[], ranges: [number,number][], path
       'loot.ring-implicit':['override/ring-point','flat/ring-point'], 'loot.rarity-find':['flat/bp'],
       'native.weapon-enchant':['flat/int'], 'native.physical-damage-dealt':['increased/bp'],
       'native.defense':['flat/display-armor','flat/int'], 'native.physical-damage-taken':['increased/bp'],
-      'native.accuracy':['increased/bp'], 'native.attack-speed':['more/bp'],
+      'native.move-speed':['increased/bp'], 'native.accuracy':['increased/bp'], 'native.attack-speed':['more/bp'],
       'native.max-hp':['flat/int'], 'native.strength':['flat/int'],
       'native.resist.fire':['flat/bp'], 'native.resist.poison':['flat/bp'],
       'native.runic-power':['flat/runic-strength'], 'native.armor-runic-power':['flat/runic-strength'],
@@ -188,7 +193,7 @@ export function computeStaticDrawBudget(pack: LootPack): { perItem: number; perE
   const maxValues = Math.max(0,...active.filter(a=>a.polarity===1).flatMap(a=>a.tiers.map(t=>t.ranges.filter(([l,h])=>l!==h).length)));
   const maxNegativeValues = Math.max(0,...active.filter(a=>a.polarity===-1).flatMap(a=>a.tiers.map(t=>t.ranges.filter(([l,h])=>l!==h).length)));
   const slots = Math.max(0,...pack.presets.presets.flatMap(p=>[...p.affixCount.magic,...p.affixCount.rare,...p.affixCount.rareHighIlvl.table].map(x=>x.n)));
-  const uniqueValues = Math.max(0,...pack.uniques.uniques.map(u=>u.rows.reduce((n,r)=>n+r.ranges.filter(([l,h])=>l!==h).length,0)));
+  const uniqueValues = Math.max(0,...[...pack.uniques.uniques,...pack.sets.sets.flatMap(s=>s.pieces)].map(u=>u.rows.reduce((n,r)=>n+r.ranges.filter(([l,h])=>l!==h).length,0)));
   const affixPath = 1 + slots*(3+maxValues) + (4+maxNegativeValues+maxValues) + 2;
   const uniquePath = 1 + uniqueValues;
   const perItem = 3 + affixPath + uniquePath;
@@ -262,7 +267,7 @@ export function assertLootPack(value: unknown, locale: unknown = zhCN): asserts 
     if(r.affixes && r.affixes.prefixMax+r.affixes.suffixMax>6)fail('BUDGET',`rarities.rarities[${i}].affixes`);
     if((['normal','magic','rare'].includes(r.id)) !== (r.affixes!==null))fail('INVALID_COMBINATION',`rarities.rarities[${i}].affixes`);
     if(p.enhancement.caps[r.id]!==r.enhancementCap)fail('INVALID_COMBINATION',`enhancement.caps.${r.id}`);
-    if(r.droppable!==!['set','runeword'].includes(r.id))fail('INVALID_COMBINATION',`rarities.rarities[${i}].droppable`);
+    if(r.droppable!==(r.id!=='runeword'))fail('INVALID_COMBINATION',`rarities.rarities[${i}].droppable`);
   });
   unique(p.affixes.affixes.map(a=>a.id),'affixes.affixes','.id');
   const affixMap=new Map(p.affixes.affixes.map(a=>[a.id,a]));
@@ -318,6 +323,42 @@ export function assertLootPack(value: unknown, locale: unknown = zhCN): asserts 
       validateModifiers(r.modifiers,r.ranges,`${path}.rows[${j}].modifiers`,[cls]);
     });
   });
+  unique(p.sets.sets.map(s=>s.id),'sets.sets');
+  unique(p.sets.sets.flatMap(s=>s.pieces.map(p=>p.id)),'sets.pieces');
+  if(p.uniques.uniques.length+p.sets.sets.reduce((n,s)=>n+s.pieces.length,0)>128)fail('BUDGET','sets.receipts');
+  p.sets.sets.forEach((set,i)=>{
+    const path=`sets.sets[${i}]`;
+    if(!set.id.startsWith('loot.set.'))fail('INVALID_VALUE',path);
+    const checkRows=(rows:typeof set.pieces[number]['rows'],prefix:string,classes:ItemClass[],constant:boolean)=>{
+      rows.forEach((r,j)=>{
+        if(rowIds.has(r.rowId))fail('DUPLICATE_ID',prefix);rowIds.add(r.rowId);
+        if(r.rowId!==`${prefix}.r${j}`)fail('INVALID_REFERENCE',prefix);
+        validateModifiers(r.modifiers,r.ranges,prefix,classes);
+        if(r.modifiers.some(m=>m.runicType||m.stat.startsWith('growth.')||m.stat.startsWith('combat.')||m.stat==='loot.ring-implicit'))fail('INVALID_COMBINATION',prefix);
+        if(constant&&r.ranges.some(([lo,hi])=>lo!==hi))fail('INVALID_RANGE',prefix);
+      });
+    };
+    for(const piece of set.pieces){
+      const cls=baseClass.get(piece.baseId);
+      if(!cls)fail('INVALID_REFERENCE',path);
+      if(!piece.id.startsWith('loot.piece.'))fail('INVALID_VALUE',path);
+      checkRows(piece.rows,piece.id,[cls],false);
+    }
+    set.bonuses.forEach((bonus,j)=>{
+      if(bonus.count>set.pieces.length||(j>0&&bonus.count<=set.bonuses[j-1]!.count))fail('INVALID_COMBINATION',path);
+      checkRows(bonus.rows,`${set.id}.b${bonus.count}`,['weapon','armor','ring'],true);
+      if(bonus.rows.some(r=>r.modifiers.some(m=>m.category.startsWith('local-')||m.stat==='native.weapon-enchant')))fail('INVALID_COMBINATION',path);
+    });
+    // Conservative worst anchor: all cumulative bonuses plus its fixed and enhancement rows.
+    const expanded=(rows:typeof set.pieces[number]['rows'])=>rows.reduce((n,r)=>n+r.modifiers.reduce((n,m)=>n+(m.stat==='loot.local.damage'&&m.category==='local-increased'?2:1),0),0);
+    const rewards=set.bonuses.reduce((n,b)=>n+expanded(b.rows),0);
+    // projectItemModifiers -> lootStatSources: weapon damage-min/max + enchant;
+    // armor max-hp + defense; ring implicit/enhancement stay in native enchant
+    // and adaptLootModifier omits both. Even zero-valued weapon/armor rows count.
+    const enhancementRows:Record<ItemClass,number>={weapon:3,armor:2,ring:0};
+    if(set.pieces.some(piece=>expanded(piece.rows)+rewards
+      +(p.enhancement.caps.set>0?enhancementRows[baseClass.get(piece.baseId)!]:0)>24))fail('BUDGET',path);
+  });
   p.uniques.bossUniqueBias.forEach((b,i)=>{if(!p.uniques.uniques.some(u=>u.id===b.uniqueId))fail('INVALID_REFERENCE',`uniques.bossUniqueBias[${i}].uniqueId`);});
   unique(p.monsterClasses.classes,'monsterClasses.classes');
   unique(p.monsterClasses.members.map(m=>m.typeId),'monsterClasses.members','.typeId');
@@ -334,7 +375,6 @@ export function assertLootPack(value: unknown, locale: unknown = zhCN): asserts 
   unique(p.presets.presets.map(x=>x.id),'presets.presets','.id');
   p.presets.presets.forEach((preset,i)=>{
     const path=`presets.presets[${i}]`;
-    if(preset.rarityWeights.set!==0)fail('INVALID_VALUE',`${path}.rarityWeights.set`);
     if(!Object.values(preset.rarityWeights).some(w=>w>0))fail('MISSING_CANDIDATE',`${path}.rarityWeights`);
     for(const r of ['magic','rare'] as const) {
       const quota=rarityMap.get(r)!.affixes!;

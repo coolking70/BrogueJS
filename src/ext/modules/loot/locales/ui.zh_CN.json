@@ -220,5 +220,14 @@
   "ext.loot.ui.target.airborne": "目标：飞行生物",
   "ext.loot.ui.target.fireborne": "目标：火生生物",
   "ext.loot.ui.target.troll": "目标：巨魔",
-  "ext.loot.ui.runic.inactive": "{{value}}（符文已失效）"
+  "ext.loot.ui.runic.inactive": "{{value}}（符文已失效）",
+  "ext.loot.ui.name.set-unidentified": "未鉴定的套装{{base}}",
+  "ext.loot.ui.salvage.warn-set": "分解将永久失去套装部件，本局不会再次掉落。",
+  "ext.loot.ui.set.count": "{{name}}：已知装备 {{count}} / {{total}} 件",
+  "ext.loot.ui.set.threshold": "{{count}} 件奖励",
+  "ext.loot.ui.set.active": "已生效",
+  "ext.loot.ui.set.inactive": "未达到已知件数",
+  "ext.loot.ui.set.compare-count": "{{name}} · 已知件数",
+  "ext.loot.ui.set.compare-bonus": "{{name}} · {{count}} 件奖励（1=生效）",
+  "ext.loot.ui.stat.native-move-speed": "移动耗时"
 }

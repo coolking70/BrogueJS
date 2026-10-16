@@ -65,6 +65,12 @@ export function buildEffectiveLootCatalog(pack: LootPack, availability: LootAvai
     }
     const bossUniqueBias = pack.uniques.bossUniqueBias.filter(bias => normalized.giants?.formIds.includes(bias.formId))
         .map(bias => ({ ...bias }));
-    return freezeLootValue({ pack, availability: normalized, affixes, effectiveWeight, bossUniqueBias,
+    const setsById = Object.fromEntries(pack.sets.sets.map(set => [set.id, set]));
+    const members = pack.sets.sets.flatMap(set => set.pieces.map(piece => ({setId: set.id, piece})))
+        .sort((a,b) => a.setId.localeCompare(b.setId) || a.piece.id.localeCompare(b.piece.id));
+    const piecesById = Object.fromEntries(members.map(member => [member.piece.id, member]));
+    const piecesByBase: Record<string, typeof members> = {};
+    for (const member of members) (piecesByBase[member.piece.baseId] ??= []).push(member);
+    return freezeLootValue({ setsById, piecesById, piecesByBase, pieceIds: members.map(m => m.piece.id), pack, availability: normalized, affixes, effectiveWeight, bossUniqueBias,
         fingerprint: extensionDataFingerprint({ pack, targets:ITEM_RUNIC_TARGETS, availability: normalized }) });
 }

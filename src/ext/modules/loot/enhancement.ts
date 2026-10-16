@@ -8,7 +8,7 @@ import type { EffectiveLootCatalog, LootItemDataV1, LootRandom } from './types';
 /** Stable stored row order, including full positive rows. Negative values in a
  * positive modifier (speed/reduction) improve toward the end of its range. */
 export function refinementRows(data: LootItemDataV1, catalog: EffectiveLootCatalog) {
- const unique=catalog.pack.uniques.uniques.find(u=>u.id===data.uniqueId);
+ const unique=catalog.piecesById[data.pieceId!]?.piece??catalog.pack.uniques.uniques.find(u=>u.id===data.uniqueId);
  return data.affixes.flatMap((roll,index)=>{
   const row=unique?.rows.find(r=>r.rowId===roll.id),affix=catalog.affixes.find(a=>a.id===roll.id);
   const ranges=row?.ranges??affix?.tiers.find(t=>t.tier===roll.tier)?.ranges;

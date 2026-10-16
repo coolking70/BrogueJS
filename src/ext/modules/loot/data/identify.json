@@ -1,10 +1,12 @@
 {
-  "schema": 1,
+  "schema": 2,
   "familiarityMultiplierBp": {
     "normal": 10000,
     "magic": 5000,
     "rare": 10000,
-    "unique": 15000
+    "unique": 15000,
+    "set": 15000,
+    "runeword": 10000
   },
   "familiarityRounding": "ceil",
   "scrollRevealsAll": true,

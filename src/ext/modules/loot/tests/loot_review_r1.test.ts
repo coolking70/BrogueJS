@@ -108,7 +108,7 @@ it.each(['empty','left','right','full-left','full-right','equipped'] as const)('
 
 function fixture(g:ReturnType<typeof worldHarnessGame>,id:Parameters<typeof getLootUiFixture>[0],reveal:'none'|'partial'|'all'){
  const data=JSON.parse(JSON.stringify(getLootUiFixture(id).data)) as LootItemDataV1;
- data.affixes.forEach((r,i)=>r.known=reveal==='all'||reveal==='partial'&&i===0);
+ data.affixes.forEach((r,i)=>r.known=reveal==='all'||reveal==='partial'&&i===0);data.identityKnown=data.affixes.every(r=>r.known);
  const c=resolveLootCatalog(g.extensionRuntime!.queryOptional.bind(g.extensionRuntime)),n=deriveNativeFacts(data,c);
  const item=assembleDropItem({native:{kind:n.kind,category:n.category,enchantment:n.enchantment,runicType:n.runicType,isCursed:n.isCursed,identified:n.identified,familiarityRemaining:1000},moduleData:{loot:JSON.parse(JSON.stringify(data))}});
  g.player.inventory.addItem(item);g.extensionRuntime!.bindItemData(item);return item;

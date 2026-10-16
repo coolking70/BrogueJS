@@ -30,15 +30,15 @@ export function createLootModule(configuration:Json=DEFAULT_CONFIGURATION):Exten
   itemEnhancement:lootEnhancement(getCatalog),itemDrops:lootDrops(getCatalog),itemCommands:lootCommands(getCatalog),statSources:lootStatSources(getCatalog),itemPresentation:lootPresentation(getCatalog),
   itemDataValidators:{loot:(data,{item,phase})=>{
    if(!validateLootItemData(data,catalog)||item.quantity!==1||item.kindKey!==data.baseId
-    ||item.category!==({weapon:0,armor:1,ring:8}[lootItemClass(data.baseId,catalog)!])||item.identified!==data.affixes.every(a=>a.known))return false;
+    ||item.category!==({weapon:0,armor:1,ring:8}[lootItemClass(data.baseId,catalog)!])||item.identified!==data.identityKnown)return false;
    const native=deriveNativeFacts(data,catalog);
    if(item.runicType!==null&&item.runicType!==undefined&&item.runicType!==native.runicType)return false;
    if(data.targetClass!==undefined&&item.vorpalEnemy!==data.targetClass)return false;
    return phase!=='create'||item.enchantment===native.enchantment&&item.isCursed===native.isCursed&&item.runicType===native.runicType;
   }},
-  itemKnowledge:{trigger:(data,{fact,item})=>triggerLootKnowledge(data as unknown as LootItemDataV1,catalog,fact,item.enchantment),known:data=>(data as unknown as LootItemDataV1).affixes.every(a=>a.known),unique:data=>(data as unknown as LootItemDataV1).uniqueId!==null,reveal:data=>revealLoot(data as unknown as LootItemDataV1)},
+  itemKnowledge:{trigger:(data,{fact,item})=>triggerLootKnowledge(data as unknown as LootItemDataV1,catalog,fact,item.enchantment),known:data=>(data as unknown as LootItemDataV1).identityKnown,unique:data=>(data as unknown as LootItemDataV1).uniqueId!==null||(data as unknown as LootItemDataV1).pieceId!==null,reveal:data=>revealLoot(data as unknown as LootItemDataV1)},
   itemPickup:(item,state)=>{const f=stateOf(state).filter;if(item.category===5)return f.autoPickupGold;
    const data=item.moduleData?.loot as unknown as LootItemDataV1|undefined;if(!data)return true;
-   return f.classes.includes(lootItemClass(data.baseId,catalog)!)&&['normal','magic','rare','unique'].indexOf(data.rarity)>=['normal','magic','rare','unique'].indexOf(f.minRarity);}
+   return f.classes.includes(lootItemClass(data.baseId,catalog)!)&&['normal','magic','rare','unique','set'].indexOf(data.rarity)>=['normal','magic','rare','unique','set'].indexOf(f.minRarity);}
  };
 }

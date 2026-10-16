@@ -88,12 +88,12 @@ const META = [
 const parseRanges=(text:string)=>text ? text.split(',').map(pair=>pair.split(':').map(Number)) : [];
 const pack=loadLootPack();
 describe('loot data double transcription',()=>{
-  it('loads exactly sixteen rule files and recursively freezes every object',()=>{
-    expect(Object.keys(pack)).toEqual(['ilvl','tiers','bases','rarities','affixes','uniques','monsterClasses','dropTables','gold','presets','enhancement','identify','corruption','salvage','caps','rareNames']);
+  it('loads exactly seventeen rule files and recursively freezes every object',()=>{
+    expect(Object.keys(pack)).toEqual(['ilvl','tiers','bases','rarities','affixes','uniques','sets','monsterClasses','dropTables','gold','presets','enhancement','identify','corruption','salvage','caps','rareNames']);
     const check=(v:unknown):void=>{if(v&&typeof v==='object'){expect(Object.isFrozen(v)).toBe(true);Object.values(v).forEach(check);}};check(pack);
-    expect(LOOT_VERSION).toBe('0.2.0');expect(getLootPackIdentity()).toEqual({schema:1,version:'0.2.0',fingerprint:extensionDataFingerprint({pack,targets:ITEM_RUNIC_TARGETS})});
+    expect(LOOT_VERSION).toBe('0.3.0');expect(getLootPackIdentity()).toEqual({schema:2,version:'0.3.0',fingerprint:extensionDataFingerprint({pack,targets:ITEM_RUNIC_TARGETS})});
     // v1.1 four-field data patch; regenerated independently alongside the literal tapes.
-    expect(getLootPackIdentity().fingerprint).toBe('sha256:cd6afd51bcbcb6e012f914f073aa637bae6d3e702d9f3aef25022de8713e6590');
+    expect(getLootPackIdentity().fingerprint).toBe('sha256:25ae08fe56130634da233a7900220f0fdc4a68154f29d563fb75258d5ff3276a');
   });
   it('independently transcribes all 35 ordinary affix rows, exact intervals, metadata and dependencies',()=>{
     expect(pack.affixes.affixes).toHaveLength(56);expect(pack.affixes.runeFamilyEnabled).toBe(true);
@@ -158,8 +158,8 @@ describe('loot data double transcription',()=>{
     const rows=pack.presets.presets;expect(rows.map(p=>p.id)).toEqual(['scarce','standard','bountiful']);
     const columns={floorConversionBp:[10000,10000,10000],killDropMultiplierBp:[6000,10000,20000],maxPerKill:[1,2,3],corruptChanceBp:[1000,600,400],goldMultiplierBp:[5000,10000,15000],salvageMultiplierBp:[10000,10000,7500]} as const;
     for(const [k,v]of Object.entries(columns))expect(rows.map(p=>p[k as keyof typeof columns])).toEqual(v);
-    expect(rows.map(p=>Object.values(p.rarityWeights))).toEqual([[850,120,27,3,0],[700,220,70,10,0],[480,330,160,30,0]]);
-    expect(rows.map(p=>Object.values(p.rarityIlvlScalingBp))).toEqual([[0,100,150,150,0],[0,150,250,250,0],[0,150,300,300,0]]);
+    expect(rows.map(p=>Object.values(p.rarityWeights))).toEqual([[850,120,27,3,3],[700,220,70,10,10],[480,330,160,30,30]]);
+    expect(rows.map(p=>Object.values(p.rarityIlvlScalingBp))).toEqual([[0,100,150,150,150],[0,150,250,250,250],[0,150,300,300,300]]);
     const parse=(s:string)=>s.split(' ').map(x=>{const[n,w]=x.split(':').map(Number);return {n,w};});
     expect(rows.map(p=>p.affixCount.magic)).toEqual(['1:60 2:40','1:55 2:45','1:40 2:60'].map(parse));
     expect(rows.map(p=>p.affixCount.rare)).toEqual(['3:55 4:35 5:10','3:45 4:35 5:20','4:50 5:35 6:15'].map(parse));
@@ -212,12 +212,12 @@ describe('loot data double transcription',()=>{
     expect(pack.ilvl).toEqual({schema:1,ilvlPerDepthBp:15000,min:1,max:99,siteIlvl:1,sourceBonus:{floor:0,kill:0,vault:3,encounter:5,part:2,craft:0},classBonus:{none:0,fodder:0,splitter:0,standard:0,elite:1},championBonus:2});
     expect(pack.tiers).toEqual({schema:1,tiers:[1,6,12,20,30,40,55].map((minIlvl,i)=>({tier:i+1,minIlvl,enabled:i<6})),window:{size:3,weightsHighToLow:[25,40,35]}});
     expect(pack.rarities.rarities.map(({id,order,colorDark,colorLight,marker,affixes,enhancementCap,droppable})=>({id,order,colorDark,colorLight,marker,affixes,enhancementCap,droppable}))).toEqual([
-      ['normal','#c8c8c8','#4a4a4a','',0,10,true],['magic','#6a8cff','#2b4fd1','◇',1,8,true],['rare','#ffd94a','#9c7a00','◆',3,6,true],['unique','#c7a046','#7a5a14','★',null,4,true],['set','#3fd36b','#16803a','✦',null,4,false],['runeword','#b8a77a','#6b5c33','⊕',null,0,false],
+      ['normal','#c8c8c8','#4a4a4a','',0,10,true],['magic','#6a8cff','#2b4fd1','◇',1,8,true],['rare','#ffd94a','#9c7a00','◆',3,6,true],['unique','#c7a046','#7a5a14','★',null,4,true],['set','#3fd36b','#16803a','✦',null,4,true],['runeword','#b8a77a','#6b5c33','⊕',null,0,false],
     ].map(([id,colorDark,colorLight,marker,n,enhancementCap,droppable],order)=>({id,order,colorDark,colorLight,marker,affixes:n===null?null:{prefixMax:n,suffixMax:n},enhancementCap,droppable})));
     expect(pack.enhancement).toEqual({schema:1,caps:{normal:10,magic:8,rare:6,unique:4,set:4,runeword:0},weapon:{localDamageBpPerLevel:1000,weaponEnchantEveryLevels:3},armor:{maxHpPerLevel:5,defenseInternalPerLevel:5},ring:{implicitEveryLevels:2},atCap:{kind:'refine',target:'random-positive-affix',keep:'higher',rejectWhenAllAtTierMax:true},nonLootItems:'native-plus-one'});
-    expect(pack.identify).toEqual({schema:1,familiarityMultiplierBp:{normal:10000,magic:5000,rare:10000,unique:15000},familiarityRounding:'ceil',scrollRevealsAll:true,firstTriggerReveal:{enabled:true,excludedStats:['native.stealth-range','native.awareness','native.clairvoyance','native.light','native.wisdom','loot.rarity-find','growth.xp-gain']}});
+    expect(pack.identify).toEqual({schema:2,familiarityMultiplierBp:{normal:10000,magic:5000,rare:10000,unique:15000,set:15000,runeword:10000},familiarityRounding:'ceil',scrollRevealsAll:true,firstTriggerReveal:{enabled:true,excludedStats:['native.stealth-range','native.awareness','native.clairvoyance','native.light','native.wisdom','loot.rarity-find','growth.xp-gain']}});
     expect(pack.corruption).toEqual({schema:1,eligibleRarities:['magic','rare'],maxTotalAffixes:6,negativeRuneFallback:true,compensation:{tierStep:1,maxTier:6},nativeCursed:true});
-    expect(pack.salvage).toEqual({schema:1,shardItemId:'loot.shard',nameKey:'ext.loot.shard.name',maxStack:99,base:{normal:1,magic:3,rare:8,unique:20},ilvlStep:10,corruptedMultiplierBp:15000,minimum:1,exchange:{shards:10,effect:'identify-one'}});
+    expect(pack.salvage).toEqual({schema:2,shardItemId:'loot.shard',nameKey:'ext.loot.shard.name',maxStack:99,base:{normal:1,magic:3,rare:8,unique:20,set:20,runeword:8},ilvlStep:10,corruptedMultiplierBp:15000,minimum:1,exchange:{shards:10,effect:'identify-one'}});
     expect(pack.caps.caps).toEqual([
       ['max-hp','final',9999,'int'],['resist.fire','final',7500,'bp'],['resist.poison','final',7500,'bp'],['weapon-enchant','loot-sources',10,'int'],['defense','final',220,'int'],
       ['regeneration','loot-sources',8,'ring-point'],['stealth-range','loot-sources',5,'ring-point'],['transference','loot-sources',6,'ring-point'],['reaping','loot-sources',8,'ring-point'],['wisdom','loot-sources',6,'ring-point'],['light','loot-sources',6,'ring-point'],['clairvoyance','loot-sources',6,'ring-point'],['awareness','loot-sources',8,'ring-point'],['attack-speed','loot-sources',-4000,'bp'],['physical-damage-taken','loot-sources',-5000,'bp'],
