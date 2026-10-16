@@ -65,7 +65,7 @@ const negatives: Negative[] = [
   ['magic count exceeds slots',p=>p.presets.presets[0].affixCount.magic[1].n=3,'INVALID_COMBINATION','presets.presets[0].affixCount.magic[1].n'],
   ['affix count zero',p=>p.presets.presets[0].affixCount.magic[0].n=0,'INVALID_VALUE','presets.presets[0].affixCount.magic[0].n'],
   ['set positive drop weight',p=>p.presets.presets[0].rarityWeights.set=1,'INVALID_VALUE','presets.presets[0].rarityWeights.set'],
-  ['enabled rune family',p=>p.affixes.runeFamilyEnabled=true,'INVALID_VALUE','affixes.runeFamilyEnabled'],
+  ['nonboolean rune family',p=>p.affixes.runeFamilyEnabled='true','INVALID_TYPE','affixes.runeFamilyEnabled'],
   ['monster repeated ID',p=>p.monsterClasses.members[1].typeId=p.monsterClasses.members[0].typeId,'DUPLICATE_ID','monsterClasses.members[1].typeId'],
   ['unknown monster class',p=>p.monsterClasses.members[0].class='boss','INVALID_VALUE','monsterClasses.members[0].class'],
   ['unknown rarity',p=>p.dropTables.tables[0].minRarity='mythic','INVALID_VALUE','dropTables.tables[0].minRarity'],

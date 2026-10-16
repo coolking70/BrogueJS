@@ -1,3 +1,4 @@
+import { itemRunicPower } from '../Items/ItemExtensionBindings';
 import { hasItemData, copyItemValue, freezeItemValue } from '../Items/ItemData';
 import type { EquippedStatItem } from '../../ext/stats';
 import { checkpointGenerationWorld } from '../Core/WorldCheckpoint';
@@ -19,6 +20,7 @@ interface NativeEnvironment { darkness(): boolean; shadow(): boolean; rested(): 
 const environments = new WeakMap<Creature, NativeEnvironment>();
 const bindings = new WeakMap<Creature, { pipeline: StatPipeline; dirty(): void; bonus(key:string):number; atomic<T>(work:()=>T):T }>();
 const revisions = new WeakMap<Creature, number>();
+const inspectionItems=new WeakMap<Creature,Item>();
 const itemProposals=new WeakMap<Creature,ReadonlyMap<number,Partial<Item>>>();
 function speedDelta(a:Creature,attack:boolean):number{const base=(a as unknown as Record<string,number>)[attack?'infoAttackSpeed':'infoMovementSpeed']??(attack?a.attackSpeed:a.movementSpeed);return a.hasStatus('haste')||a.hasStatus('hasted')?Math.floor(base/2)-base:a.hasStatus('slowed')?base:0;}
 export function configureNativeStats(actor:Creature, environment:NativeEnvironment):void { environments.set(actor,environment); markStatsDirty(actor); }
@@ -69,7 +71,7 @@ export function nativeEquippedItems(actor:Creature,change?:EquipChange):readonly
   if(!change)return slots.map(item=>projectItem(actor,item));
   const remove=new Set(Array.isArray(change.unequip)?change.unequip:change.unequip?[change.unequip]:[]);
   let items=slots.filter(i=>!remove.has(i.id));
-  if(change.equip!==undefined){ const item=a.inventory?.items.find(i=>i.id===change.equip);if(!item)throw new StatValidationError('source');
+  if(change.equip!==undefined){ const item=a.inventory?.items.find(i=>i.id===change.equip) ?? (inspectionItems.get(actor)?.id===change.equip?inspectionItems.get(actor):undefined);if(!item)throw new StatValidationError('source');
     if(item.category===8){if(!items.some(i=>i.id===item.id)&&items.filter(i=>i.category===8).length>=2)throw new StatValidationError('source');}
     else items=items.filter(i=>i.category!==item.category);
     if(!items.some(i=>i.id===item.id))items.push(item);
@@ -96,10 +98,17 @@ function projectItem(actor:Creature,item:Item):Item {
   return proposal?Object.assign(Object.create(Object.getPrototypeOf(item)),item,proposal) as Item:item;
 }
 /** Engine UI projection of a mechanical enchantment proposal; no live Item writes. */
-export function hypotheticalItemFields(actor:Creature,itemId:number,fields:Readonly<Pick<Item,'enchantment'|'strengthRequired'>>,knownOnly:boolean):Readonly<Record<string,number>> {
+export function hypotheticalItemFields(actor:Creature,itemId:number,fields:Readonly<Pick<Item,'enchantment'|'strengthRequired'>&Partial<Pick<Item,'moduleData'>>>,knownOnly:boolean):Readonly<Record<string,number>> {
   if(!Number.isSafeInteger(fields.enchantment!*4)||!Number.isSafeInteger(fields.strengthRequired)||fields.strengthRequired!<0)throw new StatValidationError('source');
   const previous=itemProposals.get(actor);itemProposals.set(actor,new Map([[itemId,{...fields}]]));
   try{return statQuery(actor).hypothetical(actor.id,{equip:itemId},knownOnly);}finally{if(previous)itemProposals.set(actor,previous);else itemProposals.delete(actor);}
+}
+/** Inspect a bound item outside inventory through the same pure equipment pipeline.
+ * The candidate exists only during this query; commands retain inventory admission. */
+export function hypotheticalEquipment(actor:Creature,item:Item,fields:Parameters<typeof hypotheticalItemFields>[2],knownOnly:boolean):Readonly<Record<string,number>> {
+  const previous=inspectionItems.get(actor);inspectionItems.set(actor,item);
+  try{return hypotheticalItemFields(actor,item.id,fields,knownOnly);}
+  finally{if(previous)inspectionItems.set(actor,previous);else inspectionItems.delete(actor);}
 }
 function damageRange(a:EquippedActor,weapon?:Item){ const text=weapon?.damage??a.damageString??'1d2', dice=/^(\d+)d(\d+)(?:\+(\d+))?$/.exec(text), range=/^(\d+)-(\d+)$/.exec(text);
   return dice?{min:Number(dice[1])+Number(dice[3]??0),max:Number(dice[1])*Number(dice[2])+Number(dice[3]??0)}:range?{min:Number(range[1]),max:Number(range[2])}:{min:Number.isNaN(parseInt(text,10))?1:parseInt(text,10),max:Number.isNaN(parseInt(text,10))?1:parseInt(text,10)}; }
@@ -123,8 +132,8 @@ export function nativeBase(actor:Creature,key:string,dep:(key:string)=>number,fa
     case 'native.damage-min':case 'native.damage-max':{const v=facts.baseValue??dep(key.endsWith('min')?'native.weapon-base-min':'native.weapon-base-max');if(facts.projectileEnchant!==undefined)return enchantedDamage(v,dep('native.weapon-enchant')/4);return weapon?Math.max(1,enchantedDamage(v,dep('native.weapon-enchant')/4)):v;}
     case 'native.hit-chance':case 'native.physical-damage-dealt':case 'native.physical-damage-taken':return facts.baseValue??0;
     case 'native.evasion':return 0;
-    case 'native.runic-power':return dep('native.weapon-enchant');
-    case 'native.armor-runic-power':return dep('native.armor-enchant');
+    case 'native.runic-power':return facts.projectileEnchant!==undefined?(facts.baseValue??dep('native.weapon-enchant')):weapon?.runicType?(itemRunicPower(a.inventory?.items.find(i=>i.id===weapon.id)??(inspectionItems.get(actor)?.id===weapon.id?inspectionItems.get(actor)!:weapon),knownOnly,weapon.moduleData)??dep('native.weapon-enchant')):dep('native.weapon-enchant');
+    case 'native.armor-runic-power':return armor?.runicType?(itemRunicPower(a.inventory?.items.find(i=>i.id===armor.id)??(inspectionItems.get(actor)?.id===armor.id?inspectionItems.get(actor)!:armor),knownOnly,armor.moduleData)??dep('native.armor-enchant')):dep('native.armor-enchant');
     case 'native.attack-speed':return a.attackSpeed-speedDelta(a,true);
     case 'native.move-speed':{if(!Number.isSafeInteger(a.movementSpeed)||a.movementSpeed<=0)throw new RangeError('Movement speed must be positive');return a.movementSpeed-speedDelta(a,false);}
     case 'native.awareness':return 0;
@@ -214,4 +223,4 @@ export function nativeStrengthAdjustment(strength:number,required:number):number
 export function projectileFacts(item:Pick<Item,'enchantment'|'strengthRequired'>):PairFacts{return {attackKind:'thrown',projectileEnchant:item.enchantment*4,projectileStrength:item.strengthRequired??0};}
 export function nativeProjectileProbability(actor:Creature,target:Creature,item:Item):number{return nativeProbability(nativeStat(actor,'native.accuracy',projectileFacts(item)),nativeStat(target,'native.defense'));}
 export function nativeProjectileRoll(actor:Creature,item:Item,roll:number):number{return nativeStat(actor,'native.damage-min',{...projectileFacts(item),baseValue:roll});}
-export function nativeProjectileRunic(actor:Creature,item:Item):number{return nativeStat(actor,'native.runic-power',projectileFacts(item))/4;}
+export function nativeProjectileRunic(actor:Creature,item:Item):number{return nativeStat(actor,'native.runic-power',{...projectileFacts(item),...(itemRunicPower(item,false)===null?{}:{baseValue:itemRunicPower(item,false)!})})/4;}

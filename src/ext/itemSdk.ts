@@ -1,6 +1,7 @@
+export { ITEM_RUNIC_TARGETS } from './itemTargets';
 /** C6-1 item capabilities. Candidate until the integration report freezes v1. */
 import type { ReadonlyJson } from './types';
-export const ITEM_SDK_VERSION = 1 as const;
+export const ITEM_SDK_VERSION = 2 as const;
 export type ItemModuleData = Readonly<Record<string, ReadonlyJson>>;
 export type ItemDataPhase = 'create' | 'update' | 'save' | 'load';
 export interface ItemFacts {
@@ -11,6 +12,8 @@ export interface ItemFacts {
   readonly quantity: number;
   readonly identified: boolean;
   readonly enchantment: number;
+  readonly runicType?:string|null;
+  readonly vorpalEnemy?:string|null;
   readonly isCursed: boolean;
   readonly moduleData?: ItemModuleData;
 }
@@ -21,7 +24,14 @@ export interface ItemDataValidationContext {
   readonly phase: ItemDataPhase;
 }
 export type ItemDataValidator = (value: ReadonlyJson, context: ItemDataValidationContext) => boolean;
+export interface ItemEnhancementProvider {
+  preview(data:ReadonlyJson):{data:ReadonlyJson;enchantmentDelta:number}|null;
+  limit(data: ReadonlyJson): number;
+  apply(data: ReadonlyJson, amount: number, random: Readonly<{randomInt(lo:number,hi:number):number}>): {data: ReadonlyJson; enchantmentDelta: number};
+}
 export interface ItemContribution {
+  readonly itemRunicPower?: (data:ReadonlyJson,knownOnly:boolean)=>number|null;
+  readonly itemEnhancement?: ItemEnhancementProvider;
   readonly itemPickup?: (item:ItemFacts,state:ReadonlyJson)=>boolean;
   readonly itemCommands?: Readonly<Record<string,ItemCommandProvider>>;
   readonly itemPresentation?: ItemPresentationProvider;
@@ -54,6 +64,7 @@ export type DropEvent = DropBase & (
       readonly encounterOrdinal: number; readonly formId: string | null }
 );
 export interface NativeAssembly {
+  readonly targetClass?:string;
   readonly kind: string;
   readonly category: ItemClass;
   readonly enchantment: number;
@@ -160,6 +171,8 @@ export interface ItemCommandProvider {
 }
 
 export type ItemTriggerFact = {
+  readonly kind:'runic-effect'; phase:'effect'|'native-reveal'|'projectile'; result:'committed'; readonly settlementId:number; readonly actorId:number; readonly itemId:number; readonly targetId:number|null; readonly runicType:string; readonly targetTags:readonly string[];
+} | {
   readonly kind: 'physical-hit';
   readonly role: 'attacker' | 'defender';
   readonly targetTags: readonly string[];

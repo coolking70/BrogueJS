@@ -9,7 +9,7 @@ import LootSalvagePanel from '../LootSalvagePanel.vue';
 import type { LootGameView } from '../../gameView';
 import type { LootPickupFilterDraft } from '../types';
 const props=defineProps<{view:LootGameView|null;tab:string;comparing:boolean;selectedIds:readonly number[];submitting:boolean;feedback:string;readOnly:boolean;presentationHidden?:boolean}>();
-const emit=defineEmits<{close:[];back:[];compare:[value:boolean];tab:[value:string];select:[id:number];batch:[ids:number[]];filter:[draft:LootPickupFilterDraft];salvage:[];identify:[];equip:[unequip:boolean,replace?:'left'|'right']}>();
+const emit=defineEmits<{close:[];back:[];compare:[value:boolean];tab:[value:string];select:[id:number];batch:[ids:number[]];filter:[draft:LootPickupFilterDraft];salvage:[];identify:[];enchant:[];equip:[unequip:boolean,replace?:'left'|'right']}>();
 const {t}=useTranslation();
 const filter=ref('all');
 const entries=computed(()=>props.view?.entries.filter(e=>filter.value==='all'||e.itemClass===filter.value)??[]);
@@ -29,6 +29,13 @@ function back(){emit('back');}
    <template v-else-if="tab==='sources'"><p>{{ t('ext.loot.ui.live.known-only') }}</p><section v-for="source in view.sourceItems" :key="source.id"><h3>{{ source.name }}</h3><ul><LootAffixRow v-for="row in source.rows" :key="row.key" :row="row" /></ul></section><p>{{ t('ext.loot.ui.live.runic') }}</p><ul><li v-for="(row,index) in view.sources" :key="index">{{ row.name }} · {{ t(row.label.nameKey,row.label.params) }}: {{ row.value }}</li></ul></template>
    <template v-else-if="view.selected&&tab==='items'">
     <h3>{{ view.selected.name }}</h3><p>{{ view.selected.location==='floor'?t('ext.loot.ui.live.floor'):view.selected.location==='container'?t('ext.loot.ui.live.container'):view.selected.location==='equipped'?t('ext.loot.ui.live.equipped'):t('ext.loot.ui.live.pack') }}</p>
+    <template v-if="view.selected.enhancement">
+     <p>{{ t('ext.loot.ui.enhancement.level',{level:view.selected.enhancement.level,cap:view.selected.enhancement.cap}) }}</p>
+     <p>{{ view.selected.enhancement.level>=view.selected.enhancement.cap?t('ext.loot.ui.enhancement.refine'):t('ext.loot.ui.enhancement.next') }}</p>
+     <p v-if="!view.selected.enhancement.allowed">{{ t('ext.loot.ui.enhancement.full') }}</p>
+     <p v-else-if="!view.selected.enhancement.scroll">{{ t('ext.loot.ui.enhancement.no-scroll') }}</p>
+     <button :disabled="disabled||!view.selected.enhancement.allowed||!view.selected.enhancement.scroll" @click="emit('enchant')">{{ t('ext.loot.ui.enhancement.read') }}</button>
+    </template>
     <LootItemCard v-if="view.card&&!comparing" :view="view.card" />
     <LootComparePanel v-if="view.compare&&comparing" :view="view.compare" @close="emit('compare',false)" />
     <p>{{ t('ext.loot.ui.live.unknown') }}</p><p>{{ t('ext.loot.ui.live.runic') }}</p>

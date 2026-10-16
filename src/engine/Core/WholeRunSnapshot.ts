@@ -495,6 +495,7 @@ export function isWholeRunSnapshot(value: unknown, spatialCatalog?: SpatialCatal
         || s.currentLevelDepth !== s.depth || !s.run || !s.flavors || !s.player || !s.entityGraph
         || !Number.isFinite(s.ticksTillUpdateEnvironment) || typeof s.pendingEnchantment !== 'boolean'
         || (s.pendingEnchantment && typeof s.run.enchantmentScrollWasKnown !== 'boolean')
+        || (s.run.enchantmentScrollId!==undefined&&(!s.pendingEnchantment||!Number.isSafeInteger(s.run.enchantmentScrollId)||s.run.enchantmentScrollId<1))
         || !Array.isArray(s.identifiedItems) || !Array.isArray(s.magicPolarityRevealed)
         || !s.callTitles || !s.stats || !Number.isFinite(s.rewardRoomsGenerated)
         || !Array.isArray(s.run.meteredItems) || !Number.isFinite(s.run.foodSpawned)

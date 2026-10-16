@@ -33,10 +33,10 @@ describe('loot UI localization closure', () => {
     }
     expect(descriptor.locales?.zh_CN).toEqual({ ...core, ...ui });
   });
-  it('preserves the approved v1.1 pack identity and module version', () => {
-    expect(LOOT_VERSION).toBe('0.1.1');
-    expect(getLootPackIdentity()).toEqual({ schema: 1, version: '0.1.1',
-      fingerprint: 'sha256:7785d8e68e6486bd422e40c6a3f0d317b102683116dcea8e483f2256d9c84fd2' });
+  it('preserves the approved 6B4 pack identity and module version', () => {
+    expect(LOOT_VERSION).toBe('0.2.0');
+    expect(getLootPackIdentity()).toEqual({ schema: 1, version: '0.2.0',
+      fingerprint: 'sha256:cd6afd51bcbcb6e012f914f073aa637bae6d3e702d9f3aef25022de8713e6590' });
     expect(descriptor.rules).toEqual(lootRules());expect(descriptor.version).toBe(LOOT_MODULE_VERSION);
   });
 });

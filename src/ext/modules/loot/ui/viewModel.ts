@@ -1,3 +1,4 @@
+import { LOOT_TARGET_NAMES } from './targets';
 import weapons from '../../../../data/weapons.json';
 import armors from '../../../../data/armors.json';
 import { computeRarityWeights } from '../rarity';
@@ -120,6 +121,7 @@ function affixRow(row: LootKnownAffix, index: number, catalog: EffectiveLootCata
     lines.push(modifierLine(mod, row.values[mod.valueIndex]!, row.polarity, options,
       paired >= 0 ? row.values[mods[paired]!.valueIndex] : undefined));
   });
+  if(row.targetClass)for(const line of lines)if(line.runic)(line as {condition:LootModLineView['condition']}).condition=ref(LOOT_TARGET_NAMES[row.targetClass]!);
   const def = row.position === 'row' ? null : catalog.affixes.find(a => a.id === row.id)!;
   return { key: `${index}:${row.id}`, known: true, position: row.position, name: def ? ref(def) : null,
     tier: def && options.showTiers !== false ? row.tier : null, lines, negative: row.polarity === -1 };

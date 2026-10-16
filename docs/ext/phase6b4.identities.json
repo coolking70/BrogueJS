@@ -1,0 +1,372 @@
+{
+  "head": "8d7c79974fee69d7ffdd45b286b9b6878f081be7",
+  "branch": "ext/phase6",
+  "src": {
+    "sha256": "650ea6258f5e5b208ab38cd99195532dc1c0ffd83bed070b54b86cac71c53479",
+    "files": 1456,
+    "encoding": "sorted repo-relative UTF-8 path + NUL + file bytes + NUL"
+  },
+  "dist": {
+    "sha256": "fb26405cb63c2bfc983dab010318e2d26f415543f74979e4e9b8401e63ccae07",
+    "files": 61,
+    "encoding": "sorted repo-relative UTF-8 path + NUL + file bytes + NUL"
+  },
+  "itemSdk": {
+    "sha256": "b33756df2fa7301defd0818a4f2f0366cf43716683026d4f11e1160d09176859",
+    "files": 2,
+    "encoding": "sorted relative UTF-8 path + NUL + file bytes + NUL"
+  },
+  "allSdk": {
+    "sha256": "c41996815733bcaabc4657cd0152c0a48337b6ee227c8c944bc9d6fe7fef7c86",
+    "files": 5,
+    "encoding": "sorted relative UTF-8 path + NUL + file bytes + NUL",
+    "pattern": "src/ext/*Sdk.ts"
+  },
+  "lootData": {
+    "sha256": "343a20c71ee5b9260df8eb52dd4cdd5aca196d26c31fe34c81b91347707780c3",
+    "files": 16,
+    "encoding": "sorted relative UTF-8 path + NUL + file bytes + NUL"
+  },
+  "sharedSourceMatchesOnlyRemovalCopy": false,
+  "sharedSourceDifferences": [
+    "src/engine/Core/Game.ts",
+    "src/engine/Stats/NativeStatSources.ts",
+    "src/engine/UI/ItemDetailContext.ts",
+    "src/test/g_3_gas_effects.test.ts"
+  ],
+  "removedCopy": "/var/folders/2s/dmv643cj5493tlmrh5rfgwxw0000gn/T/brogue-removed-modules-ToVBM1/candidate",
+  "presetIdentities": [
+    {
+      "presetId": "scarce",
+      "growth": false,
+      "manifest": {
+        "schema": 1,
+        "foundation": 17,
+        "modules": [
+          {
+            "id": "loot",
+            "version": "0.5.0",
+            "rules": {
+              "schema": 1,
+              "version": "0.5.0",
+              "fingerprint": "sha256:327d018accdcd88113c499a04dab2a7af753a73fae54b9102fe1ace925fbfb2d"
+            },
+            "configuration": {
+              "presetId": "scarce"
+            }
+          }
+        ]
+      },
+      "catalogFingerprint": "sha256:480f446cad167d6d46bdc8fa96a46c04ea9d57a5bdb7c14d7d50f9b27e4f3a93",
+      "growthAvailable": false,
+      "state": {
+        "v": 1,
+        "presetId": "scarce",
+        "created": true,
+        "revision": 1,
+        "catalogFingerprint": "sha256:480f446cad167d6d46bdc8fa96a46c04ea9d57a5bdb7c14d7d50f9b27e4f3a93",
+        "uniqueMask": 0,
+        "watermark": 0,
+        "filter": {
+          "v": 1,
+          "minRarity": "normal",
+          "classes": [
+            "weapon",
+            "armor",
+            "ring"
+          ],
+          "autoPickupGold": true
+        }
+      }
+    },
+    {
+      "presetId": "scarce",
+      "growth": true,
+      "manifest": {
+        "schema": 1,
+        "foundation": 17,
+        "modules": [
+          {
+            "id": "growth",
+            "version": "1.10.0",
+            "rules": {
+              "schema": 1,
+              "version": "1.10.0",
+              "fingerprint": "sha256:2599e550813f0df085701c908fe3edb88fcd29e3350870378ccbf417e20624f8"
+            }
+          },
+          {
+            "id": "loot",
+            "version": "0.5.0",
+            "rules": {
+              "schema": 1,
+              "version": "0.5.0",
+              "fingerprint": "sha256:327d018accdcd88113c499a04dab2a7af753a73fae54b9102fe1ace925fbfb2d"
+            },
+            "configuration": {
+              "presetId": "scarce"
+            }
+          }
+        ]
+      },
+      "catalogFingerprint": "sha256:664ab376a339e1bb63f7276d9071a473c1057f4c2e984cfa987467560e45d4c2",
+      "growthAvailable": true,
+      "state": {
+        "v": 1,
+        "presetId": "scarce",
+        "created": true,
+        "revision": 1,
+        "catalogFingerprint": "sha256:664ab376a339e1bb63f7276d9071a473c1057f4c2e984cfa987467560e45d4c2",
+        "uniqueMask": 0,
+        "watermark": 0,
+        "filter": {
+          "v": 1,
+          "minRarity": "normal",
+          "classes": [
+            "weapon",
+            "armor",
+            "ring"
+          ],
+          "autoPickupGold": true
+        }
+      }
+    },
+    {
+      "presetId": "standard",
+      "growth": false,
+      "manifest": {
+        "schema": 1,
+        "foundation": 17,
+        "modules": [
+          {
+            "id": "loot",
+            "version": "0.5.0",
+            "rules": {
+              "schema": 1,
+              "version": "0.5.0",
+              "fingerprint": "sha256:b49c1c88ee47792ae31d59c1d9336c1a761c24d8755d70b7ee955ba14edeacb3"
+            },
+            "configuration": {
+              "presetId": "standard"
+            }
+          }
+        ]
+      },
+      "catalogFingerprint": "sha256:480f446cad167d6d46bdc8fa96a46c04ea9d57a5bdb7c14d7d50f9b27e4f3a93",
+      "growthAvailable": false,
+      "state": {
+        "v": 1,
+        "presetId": "standard",
+        "created": true,
+        "revision": 1,
+        "catalogFingerprint": "sha256:480f446cad167d6d46bdc8fa96a46c04ea9d57a5bdb7c14d7d50f9b27e4f3a93",
+        "uniqueMask": 0,
+        "watermark": 0,
+        "filter": {
+          "v": 1,
+          "minRarity": "magic",
+          "classes": [
+            "weapon",
+            "armor",
+            "ring"
+          ],
+          "autoPickupGold": true
+        }
+      }
+    },
+    {
+      "presetId": "standard",
+      "growth": true,
+      "manifest": {
+        "schema": 1,
+        "foundation": 17,
+        "modules": [
+          {
+            "id": "growth",
+            "version": "1.10.0",
+            "rules": {
+              "schema": 1,
+              "version": "1.10.0",
+              "fingerprint": "sha256:2599e550813f0df085701c908fe3edb88fcd29e3350870378ccbf417e20624f8"
+            }
+          },
+          {
+            "id": "loot",
+            "version": "0.5.0",
+            "rules": {
+              "schema": 1,
+              "version": "0.5.0",
+              "fingerprint": "sha256:b49c1c88ee47792ae31d59c1d9336c1a761c24d8755d70b7ee955ba14edeacb3"
+            },
+            "configuration": {
+              "presetId": "standard"
+            }
+          }
+        ]
+      },
+      "catalogFingerprint": "sha256:664ab376a339e1bb63f7276d9071a473c1057f4c2e984cfa987467560e45d4c2",
+      "growthAvailable": true,
+      "state": {
+        "v": 1,
+        "presetId": "standard",
+        "created": true,
+        "revision": 1,
+        "catalogFingerprint": "sha256:664ab376a339e1bb63f7276d9071a473c1057f4c2e984cfa987467560e45d4c2",
+        "uniqueMask": 0,
+        "watermark": 0,
+        "filter": {
+          "v": 1,
+          "minRarity": "magic",
+          "classes": [
+            "weapon",
+            "armor",
+            "ring"
+          ],
+          "autoPickupGold": true
+        }
+      }
+    },
+    {
+      "presetId": "bountiful",
+      "growth": false,
+      "manifest": {
+        "schema": 1,
+        "foundation": 17,
+        "modules": [
+          {
+            "id": "loot",
+            "version": "0.5.0",
+            "rules": {
+              "schema": 1,
+              "version": "0.5.0",
+              "fingerprint": "sha256:d7010ff8ed80a4305fbd9363a558db9a2f27b4da8b0f2a547e74928ab6b4adb2"
+            },
+            "configuration": {
+              "presetId": "bountiful"
+            }
+          }
+        ]
+      },
+      "catalogFingerprint": "sha256:480f446cad167d6d46bdc8fa96a46c04ea9d57a5bdb7c14d7d50f9b27e4f3a93",
+      "growthAvailable": false,
+      "state": {
+        "v": 1,
+        "presetId": "bountiful",
+        "created": true,
+        "revision": 1,
+        "catalogFingerprint": "sha256:480f446cad167d6d46bdc8fa96a46c04ea9d57a5bdb7c14d7d50f9b27e4f3a93",
+        "uniqueMask": 0,
+        "watermark": 0,
+        "filter": {
+          "v": 1,
+          "minRarity": "magic",
+          "classes": [
+            "weapon",
+            "armor",
+            "ring"
+          ],
+          "autoPickupGold": true
+        }
+      }
+    },
+    {
+      "presetId": "bountiful",
+      "growth": true,
+      "manifest": {
+        "schema": 1,
+        "foundation": 17,
+        "modules": [
+          {
+            "id": "growth",
+            "version": "1.10.0",
+            "rules": {
+              "schema": 1,
+              "version": "1.10.0",
+              "fingerprint": "sha256:2599e550813f0df085701c908fe3edb88fcd29e3350870378ccbf417e20624f8"
+            }
+          },
+          {
+            "id": "loot",
+            "version": "0.5.0",
+            "rules": {
+              "schema": 1,
+              "version": "0.5.0",
+              "fingerprint": "sha256:d7010ff8ed80a4305fbd9363a558db9a2f27b4da8b0f2a547e74928ab6b4adb2"
+            },
+            "configuration": {
+              "presetId": "bountiful"
+            }
+          }
+        ]
+      },
+      "catalogFingerprint": "sha256:664ab376a339e1bb63f7276d9071a473c1057f4c2e984cfa987467560e45d4c2",
+      "growthAvailable": true,
+      "state": {
+        "v": 1,
+        "presetId": "bountiful",
+        "created": true,
+        "revision": 1,
+        "catalogFingerprint": "sha256:664ab376a339e1bb63f7276d9071a473c1057f4c2e984cfa987467560e45d4c2",
+        "uniqueMask": 0,
+        "watermark": 0,
+        "filter": {
+          "v": 1,
+          "minRarity": "magic",
+          "classes": [
+            "weapon",
+            "armor",
+            "ring"
+          ],
+          "autoPickupGold": true
+        }
+      }
+    }
+  ],
+  "performance": {
+    "status": "P0 pending; D6 blocked by contaminated timing; no accepted 6B4 manifest",
+    "originalManifestSha256": "a284205c8e8d335d52bf5aeaf1337b1770a5ba01f5f0d0cec4238d9e7dc04fba",
+    "phase6b4Manifest": null,
+    "evidenceSha256": "fab5779e4230916f164b836f488b324f31af0729c404c63a22aced2cc752bc76",
+    "recordings": {
+      "classic": {
+        "path": "/private/tmp/phase6b4-new-input/classic-438491256.recording.json",
+        "rawFileSha256": "b604bb0313cedf7a802479cb0de36efd63edda441b342b07d3ce44c0a49640b9",
+        "canonicalRecordingHash": "651a38e00d142d91ba18b8d4fe86d4dab976750a2057815f217b8bec56917bca",
+        "routeSha256": "0e6a5b454ecde9c687b2c6ed08822ccaab3a3b9f9f5be3b1ab8f04777e8e6f0b",
+        "sourceSha256": "a17ab72442c3d32f66f7ef29333a97109042d50b249909a9ba9753cb78e33063"
+      },
+      "all": {
+        "path": "/private/tmp/phase6b4-new-input/all-438491256.recording.json",
+        "rawFileSha256": "40d621ebf9318b75bb45fa76f5c9016da197454cde2a4f57b513c92b9e407eca",
+        "canonicalRecordingHash": "47f5d69eb48ee40681b799e5daff113e3439dce4bdc44a01af36d125dc1ac359",
+        "routeSha256": "8fef64902e7b2f664a06e331e0fe1d57a14607dd6faee0c9ef52131564baf92e",
+        "sourceSha256": "e7a22e2fd5b67985bee4e07f9397ba2458d6043e76339fa69760c4951bd88f1a"
+      }
+    }
+  },
+  "beforeReviewR1": {
+    "src": {
+      "sha256": "fb608a49780b4dec5fae81a2a84841e867dbb19e5e239645b76e0dc710dd6bb8",
+      "files": 1456,
+      "encoding": "sorted relative UTF-8 path + NUL + file bytes + NUL"
+    },
+    "dist": {
+      "sha256": "012d309c648dee31ba31c446867a0cdb37435b127886a627e81d59d4b2f1c65d",
+      "files": 61,
+      "encoding": "sorted relative UTF-8 path + NUL + file bytes + NUL"
+    },
+    "sharedSourceMatchesOnlyRemovalCopy": true
+  },
+  "removalEvidenceNote": "The one removal run predates R1; not rerun under the R1 related-only scope. Retained copy is not asserted identical to current source.",
+  "reviewR1": {
+    "findings": "R1-F1/R1-F2/R1-F3 fixed with save/load regressions",
+    "relatedTests": {
+      "files": 14,
+      "distinctPassed": 487,
+      "results": "/private/tmp/p6b4-r1-test-results.json"
+    },
+    "sourceFreeze": "/private/tmp/p6b4-r1-source-freeze.json",
+    "performance": "Blocked by recurring Sleep/DarkWake through 13:03:44 +0800; original attempt 1 invalidated and remaining all replay interrupted. Zero accepted current rounds; no frozen budget or final gate.",
+    "lastPowerCheck": "/private/tmp/p6b4-r1-power-final.json"
+  }
+}

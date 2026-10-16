@@ -76,7 +76,7 @@ export function itemFacts(row: object): ItemFacts {
     kindKey: (read('identityId') ?? read('consumableId') ?? read('name')) as string,
     ...(read('worldItem')?{materialDefinitionId:(read('worldItem') as {definitionId:string}).definitionId}:{}),
     quantity: read('quantity') as number, identified: read('identified') === true,
-    enchantment: read('enchantment') as number, isCursed: read('isCursed') === true,
+    enchantment: read('enchantment') as number,runicType:(read('runicType')??null) as string|null,vorpalEnemy:(read('vorpalEnemy')??null) as string|null, isCursed: read('isCursed') === true,
     ...(data === undefined ? {} : { moduleData: data as Record<string, Json> }) });
 }
 export function validateItemData(row: object, enabledModules: readonly string[], validators: ReadonlyMap<string, ItemDataValidator>, phase: ItemDataPhase): void {

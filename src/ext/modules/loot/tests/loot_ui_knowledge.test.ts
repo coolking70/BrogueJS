@@ -16,7 +16,7 @@ const sorted = (drafts: LootModifierDraft[]) => [...drafts].sort((a, b) => a.sou
 describe('loot known projection trust boundary', () => {
   it('rejects invalid item data first and gives a stable code/path', () => {
     const f = getLootUiFixture('R04');
-    expect(() => projectLootKnowledge({ ...f.data, v: 2 } as unknown as LootItemDataV1, f.catalog, facts())).toThrowError(new LootUiError('INVALID_ITEM', 'data'));
+    expect(() => projectLootKnowledge({ ...f.data, v: 1 } as unknown as LootItemDataV1, f.catalog, facts())).toThrowError(new LootUiError('INVALID_ITEM', 'data'));
   });
   it.each([
     null, {}, { ...facts(), extra: true }, { ...facts(), v: 2 }, { ...facts(), location: 'void' },

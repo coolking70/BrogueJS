@@ -107,7 +107,7 @@ const schemas: Record<keyof LootPack,Check> = {
     colorLight:(v,p)=>{if(typeof v!=='string'||!/^#[0-9a-f]{6}$/.test(v))fail('INVALID_VALUE',p);},
     marker:(v,p)=>{if(typeof v!=='string')fail('INVALID_TYPE',p);},
     affixes:nullable(object({prefixMax:integer(0,6),suffixMax:integer(0,6)})),enhancementCap:integer(0,100),droppable:bool}),6,6)}),
-  affixes:file({runeFamilyEnabled:literal(false),affixes:array(affix,1,256)}),
+  affixes:file({runeFamilyEnabled:bool,affixes:array(affix,1,256)}),
   uniques:file({uniques:array(object({id,nameKey:key,descriptionKey:key,baseId:nativeId,minIlvl:integer(1,99),weight,
     rows:array(object({rowId:id,ranges:rangeList,modifiers}),1,8)}),0,128),
     bossUniqueBias:array(object({formId:id,uniqueId:id,multiplierBp:nonnegative}),0,128)}),

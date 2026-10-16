@@ -49,6 +49,13 @@ export function useLootUi(host:ModuleUiHost):ModuleUiSession {
   pending={revision,events:game.recordedInputEvents.length,cancelled:false};submitting.value=true;feedback.value=i18next.t('ext.loot.ui.live.pending');
   try{game.executeCommand('ext:command',JSON.stringify({module:'loot',action,payload:{v:1,revision,...payload}}));}catch{feedback.value=i18next.t('ext.loot.ui.live.rejected');pending=null;submitting.value=false;}refresh();
  }
+ function enchant(){
+  if(!live()||!opened.value||readOnly()||submitting.value||game.isAdvancing||game.isInputLocked()||host.isPresentationBusy?.())return;
+  const target=game.player.inventory.items.find(i=>i.id===selected.value),scroll=game.player.inventory.items.find(i=>i.consumableId==='scroll_of_enchantment');
+  if(!target||!scroll||!game.canEnchantTarget(target))return;
+  submitting.value=true;close();
+  try{game.executeItemCommand('read',scroll);}finally{submitting.value=false;}
+ }
  function equip(unequip=false,replace?:'left'|'right'){
   if(!live()||readOnly()||submitting.value||game.isAdvancing||game.isInputLocked()||host.isPresentationBusy?.())return;
   const entry=reachableLootItems(game).find(e=>e.item.id===selected.value);if(!entry||!['pack','equipped'].includes(entry.location))return;
@@ -71,5 +78,5 @@ export function useLootUi(host:ModuleUiHost):ModuleUiSession {
   // The shared host tick / presentation-settled callback retries refresh.
   panel:computed(()=>opened.value?{component:Panel,props:{view:view.value,tab:tab.value,comparing:comparing.value,onCompare:(value:boolean)=>{comparing.value=value;},selectedIds:batch.value,submitting:submitting.value,feedback:feedback.value,readOnly:readOnly(),
    onClose:close,onBack:back,onTab:(value:string)=>{tab.value=value;selected.value=null;comparing.value=false;refresh();},onSelect:(id:number)=>{selected.value=id;refresh();},onBatch:(ids:number[])=>{batch.value=ids;refresh();},
-   onFilter:(draft:LootPickupFilterDraft)=>submit('set-filter',{...draft}),onSalvage:()=>submit('salvage',{itemIds:batch.value}),onIdentify:()=>submit('identify-shards',{itemId:selected.value}),onEquip:equip}}:null),refresh,close};
+   onFilter:(draft:LootPickupFilterDraft)=>submit('set-filter',{...draft}),onSalvage:()=>submit('salvage',{itemIds:batch.value}),onIdentify:()=>submit('identify-shards',{itemId:selected.value}),onEnchant:enchant,onEquip:equip}}:null),refresh,close};
 }

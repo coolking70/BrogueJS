@@ -144,6 +144,7 @@ export interface ExtensionRuleInput {
 export interface ItemGrowthInput {
     readonly actor: ActorFacts; readonly itemId: string;
     readonly nativeDestination: 'strengthBonus' | 'maxHpBonus' | 'enchantment'; readonly nativeAmount: number;
+    readonly nativeLimit?: number;
 }
 export interface CharacterResources { strength: number | null; gold: number | null }
 export interface CharacterResourceCommit extends CharacterResources { expectedStrength: number | null; expectedGold: number | null }
@@ -289,6 +290,8 @@ export interface ExtensionModule extends ExtensionVersion, WorldModuleFields {
     initialState(): Json;
     validateState(state: unknown): state is Json;
     hooks?: HookHandlers;
+    readonly itemRunicPower?: import('./itemSdk').ItemContribution['itemRunicPower'];
+    readonly itemEnhancement?: import('./itemSdk').ItemEnhancementProvider;
     readonly itemPickup?: import('./itemSdk').ItemContribution['itemPickup'];
     readonly itemCommands?: import('./itemSdk').ItemContribution['itemCommands'];
     readonly itemPresentation?: import('./itemSdk').ItemPresentationProvider;
@@ -309,6 +312,7 @@ export interface ExtensionModule extends ExtensionVersion, WorldModuleFields {
     initializationReady?(context: ExtensionContext): boolean;
     resourceCommits?: boolean;
     readonly statSources?: StatSourceProvider;
+    itemGrowthRedirects?(itemId: string, nativeDestination: ItemGrowthInput['nativeDestination']): boolean;
     commitItemGrowth?(input: Readonly<ItemGrowthInput>, context: ExtensionContext): { nativeAmount: number };
     initialCommand?: { action: string; payload: Json };
     /** Pure creation preflight, before an existing run is retired; no live actor ports. */

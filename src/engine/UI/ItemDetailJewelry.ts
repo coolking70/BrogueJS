@@ -13,18 +13,19 @@ import i18next from 'i18next';
 
 export function ringDetail(item: Item, ctx: ItemDetailContext): DetailSection[] {
     const k = itemKnowledge(item, ctx), e = item.enchantment, lines: DetailLine[] = [];
+    const next=ctx.usesEnhancement?(ctx.nextEnchantment??e):e+1;
     const add = (key: string, values: Record<string, number | string> = {}) => lines.push({ text: detailText(key, values) });
     if (k.instanceKnown && k.kindKnown) {
         add('ring.enchant', { enchant: signed(e) });
         switch (item.identityId) {
             case 'ring_of_clairvoyance':
-                add(e > 0 ? 'ring.clairvoyance' : e < 0 ? 'ring.blindness' : 'ring.no_clairvoyance', { radius: ringClairvoyanceRadius(e), next: ringClairvoyanceRadius(e + 1) }); break;
-            case 'ring_of_stealth': add('ring.stealth', { change: signed(ringStealthAdjustment(e)), next: signed(ringStealthAdjustment(e + 1)) }); break;
-            case 'ring_of_regeneration': add('ring.regeneration', { turns: Math.floor(turnsForFullRegenInThousandths(e) / 1000), next: Math.floor(turnsForFullRegenInThousandths(e + 1) / 1000) }); break;
-            case 'ring_of_transference': add(e < 0 ? 'ring.transference_bad' : 'ring.transference', { percent: Math.abs(ringTransferencePercent(e)), next: Math.abs(ringTransferencePercent(e + 1)) }); break;
-            case 'ring_of_awareness': add('ring.awareness', { change: ringAwarenessBonus(e), next: ringAwarenessBonus(e + 1) }); break;
-            case 'ring_of_reaping': add(e < 0 ? 'ring.reaping_bad' : 'ring.reaping', { turns: Math.abs(e), next: Math.abs(e + 1) }); break;
-            case 'ring_of_wisdom': add('ring.wisdom', { percent: ringWisdomMultiplierPercent(e), next: ringWisdomMultiplierPercent(e + 1) }); break;
+                add(e > 0 ? 'ring.clairvoyance' : e < 0 ? 'ring.blindness' : 'ring.no_clairvoyance', { radius: ringClairvoyanceRadius(e), next: ringClairvoyanceRadius(next) }); break;
+            case 'ring_of_stealth': add('ring.stealth', { change: signed(ringStealthAdjustment(e)), next: signed(ringStealthAdjustment(next)) }); break;
+            case 'ring_of_regeneration': add('ring.regeneration', { turns: Math.floor(turnsForFullRegenInThousandths(e) / 1000), next: Math.floor(turnsForFullRegenInThousandths(next) / 1000) }); break;
+            case 'ring_of_transference': add(e < 0 ? 'ring.transference_bad' : 'ring.transference', { percent: Math.abs(ringTransferencePercent(e)), next: Math.abs(ringTransferencePercent(next)) }); break;
+            case 'ring_of_awareness': add('ring.awareness', { change: ringAwarenessBonus(e), next: ringAwarenessBonus(next) }); break;
+            case 'ring_of_reaping': add(e < 0 ? 'ring.reaping_bad' : 'ring.reaping', { turns: Math.abs(e), next: Math.abs(next) }); break;
+            case 'ring_of_wisdom': add('ring.wisdom', { percent: ringWisdomMultiplierPercent(e), next: ringWisdomMultiplierPercent(next) }); break;
             // CE light has no separate numeric paragraph: its intro explains it.
         }
     } else {
@@ -32,6 +33,8 @@ export function ringDetail(item: Item, ctx: ItemDetailContext): DetailSection[] 
         add('identify.ring', { remaining });
         if (!k.instanceKnown && (remaining < ItemLoader.RING_DELAY_TO_AUTO_ID || item.magicDetected)) add('ring.cap', { cap: item.timesEnchanted + 1 });
     }
+    if(ctx.enhancementAtCap)add('enhancement.at-cap');
+    else if(ctx.usesEnhancement&&k.instanceKnown&&k.kindKnown&&next===e)add('enhancement.ring-unchanged');
     return lines.length ? [{ header: detailText('header.ring'), lines }] : [];
 }
 

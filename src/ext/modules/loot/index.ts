@@ -1,8 +1,9 @@
+import { lootEnhancement } from './enhancement';
 import type { ExtensionModule, Json } from '../../types';
 import type { WorldDefinitionPack } from '../../worldSdk';
 import { buildEffectiveLootCatalog } from './catalog';
 import { loadLootPack } from './definitions';
-import { validateLootItemData, lootItemClass, deriveNativeFacts } from './item';
+import { validateLootItemData, lootItemClass, deriveNativeFacts, projectItemModifiers } from './item';
 import { DEFAULT_CONFIGURATION, LOOT_MODULE_VERSION, initialLootState, lootRules, resolveLootCatalog, stateOf, validConfiguration, validLootState } from './session';
 import { triggerLootKnowledge } from './knowledge';
 import { lootDrops } from './drops';
@@ -22,12 +23,18 @@ export function createLootModule(configuration:Json=DEFAULT_CONFIGURATION):Exten
   initialState:()=>initialLootState(presetId,catalog.fingerprint),validateState:(value):value is Json=>validLootState(value,presetId,catalog.fingerprint),
   initialCommand:{action:'create',payload:{v:1,presetId}},validateInitialCommand:(action,payload)=>action==='create'&&!!payload&&typeof payload==='object'&&!Array.isArray(payload)&&Object.keys(payload).sort().join(',')==='presetId,v'&&payload.v===1&&payload.presetId===presetId,
   initializationReady:ctx=>stateOf(ctx.state).created,
-  itemDrops:lootDrops(getCatalog),itemCommands:lootCommands(getCatalog),statSources:lootStatSources(getCatalog),itemPresentation:lootPresentation(getCatalog),
+  itemRunicPower:(data,knownOnly)=>{
+   const mods=projectItemModifiers(data as unknown as LootItemDataV1,catalog).filter(m=>m.runicType!==null&&m.unit==='runic-strength');
+   return mods.length?(knownOnly&&!mods[0]!.known?0:mods[0]!.value*4):0;
+  },
+  itemEnhancement:lootEnhancement(getCatalog),itemDrops:lootDrops(getCatalog),itemCommands:lootCommands(getCatalog),statSources:lootStatSources(getCatalog),itemPresentation:lootPresentation(getCatalog),
   itemDataValidators:{loot:(data,{item,phase})=>{
    if(!validateLootItemData(data,catalog)||item.quantity!==1||item.kindKey!==data.baseId
     ||item.category!==({weapon:0,armor:1,ring:8}[lootItemClass(data.baseId,catalog)!])||item.identified!==data.affixes.every(a=>a.known))return false;
    const native=deriveNativeFacts(data,catalog);
-   return phase!=='create'||item.enchantment===native.enchantment&&item.isCursed===native.isCursed;
+   if(item.runicType!==null&&item.runicType!==undefined&&item.runicType!==native.runicType)return false;
+   if(data.targetClass!==undefined&&item.vorpalEnemy!==data.targetClass)return false;
+   return phase!=='create'||item.enchantment===native.enchantment&&item.isCursed===native.isCursed&&item.runicType===native.runicType;
   }},
   itemKnowledge:{trigger:(data,{fact,item})=>triggerLootKnowledge(data as unknown as LootItemDataV1,catalog,fact,item.enchantment),known:data=>(data as unknown as LootItemDataV1).affixes.every(a=>a.known),unique:data=>(data as unknown as LootItemDataV1).uniqueId!==null,reveal:data=>revealLoot(data as unknown as LootItemDataV1)},
   itemPickup:(item,state)=>{const f=stateOf(state).filter;if(item.category===5)return f.autoPickupGold;

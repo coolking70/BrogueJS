@@ -246,7 +246,7 @@ exports[`loot UI complete state snapshots > card.corrupted 1`] = `
     <li class="loot-affix-row" data-known=true data-position="suffix">
       <div class="loot-affix-heading">
         <span>
-          "巨力之"
+          "汲血之"
         </span>
         <span class="loot-affix-tier">
           "3阶"
@@ -257,14 +257,14 @@ exports[`loot UI complete state snapshots > card.corrupted 1`] = `
           "+1"
         </span>
         <span>
-          "力量"
+          "吸血"
         </span>
       </div>
     </li>
     <li class="loot-affix-row" data-known=true data-position="suffix">
       <div class="loot-affix-heading">
         <span>
-          "汲血之"
+          "巨力之"
         </span>
         <span class="loot-affix-tier">
           "2阶"
@@ -275,7 +275,7 @@ exports[`loot UI complete state snapshots > card.corrupted 1`] = `
           "+1"
         </span>
         <span>
-          "吸血"
+          "力量"
         </span>
       </div>
     </li>
@@ -711,7 +711,7 @@ exports[`loot UI complete state snapshots > card.giantsbane 1`] = `
         "◆"
       </span>
       <span class="loot-chip-name">
-        "断星之握 战斧"
+        "沉沙之殇 连枷"
       </span>
       <span class="loot-chip-rarity">
         "稀有"
@@ -735,7 +735,7 @@ exports[`loot UI complete state snapshots > card.giantsbane 1`] = `
         "伤害"
       </dt>
       <dd>
-        "19–26"
+        "12–24"
       </dd>
     </div>
     <div class="loot-card-base-stat">
@@ -743,7 +743,7 @@ exports[`loot UI complete state snapshots > card.giantsbane 1`] = `
         "力量需求"
       </dt>
       <dd>
-        "19"
+        "17"
       </dd>
     </div>
   </dl>
@@ -754,12 +754,12 @@ exports[`loot UI complete state snapshots > card.giantsbane 1`] = `
           "锋利的"
         </span>
         <span class="loot-affix-tier">
-          "3阶"
+          "2阶"
         </span>
       </div>
       <div class="loot-affix-line loot-affix-tone-good">
         <span class="loot-affix-value">
-          "+58.67%"
+          "+28.96%"
         </span>
         <span>
           "本地伤害"
@@ -777,7 +777,7 @@ exports[`loot UI complete state snapshots > card.giantsbane 1`] = `
       </div>
       <div class="loot-affix-line loot-affix-tone-good">
         <span class="loot-affix-value">
-          "+89.73%"
+          "+68.1%"
         </span>
         <span>
           "物理伤害"
@@ -787,39 +787,21 @@ exports[`loot UI complete state snapshots > card.giantsbane 1`] = `
         </span>
       </div>
     </li>
-    <li class="loot-affix-row" data-known=true data-position="suffix">
+    <li class="loot-affix-row" data-known=true data-position="prefix">
       <div class="loot-affix-heading">
         <span>
-          "迅捷之"
+          "凶暴的"
         </span>
         <span class="loot-affix-tier">
-          "3阶"
+          "2阶"
         </span>
       </div>
       <div class="loot-affix-line loot-affix-tone-good">
         <span class="loot-affix-value">
-          "-10.31%"
+          "+1–4"
         </span>
         <span>
-          "攻击耗时"
-        </span>
-      </div>
-    </li>
-    <li class="loot-affix-row" data-known=true data-position="suffix">
-      <div class="loot-affix-heading">
-        <span>
-          "精准之"
-        </span>
-        <span class="loot-affix-tier">
-          "4阶"
-        </span>
-      </div>
-      <div class="loot-affix-line loot-affix-tone-good">
-        <span class="loot-affix-value">
-          "+26.5%"
-        </span>
-        <span>
-          "命中"
+          "本地伤害"
         </span>
       </div>
     </li>
@@ -843,13 +825,13 @@ exports[`loot UI complete state snapshots > card.growth-fallback 1`] = `
   <h2 class="loot-card-title" id="v-0">
     <span class="loot-item-chip">
       <span aria-hidden="true" class="loot-chip-glyph">
-        ")"
+        "]"
       </span>
       <span aria-hidden="true" class="loot-chip-marker">
         "◇"
       </span>
       <span class="loot-chip-name">
-        "精擅之阔剑"
+        "镶板的精擅之皮甲"
       </span>
       <span class="loot-chip-rarity">
         "魔法"
@@ -864,16 +846,16 @@ exports[`loot UI complete state snapshots > card.growth-fallback 1`] = `
       "物等 25"
     </span>
     <span>
-      "武器"
+      "护甲"
     </span>
   </div>
   <dl class="loot-card-base-stats">
     <div class="loot-card-base-stat">
       <dt>
-        "伤害"
+        "护甲"
       </dt>
       <dd>
-        "14–22"
+        "6"
       </dd>
     </div>
     <div class="loot-card-base-stat">
@@ -881,11 +863,29 @@ exports[`loot UI complete state snapshots > card.growth-fallback 1`] = `
         "力量需求"
       </dt>
       <dd>
-        "19"
+        "10"
       </dd>
     </div>
   </dl>
   <ul class="loot-card-affixes">
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "镶板的"
+        </span>
+        <span class="loot-affix-tier">
+          "4阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+3"
+        </span>
+        <span>
+          "护甲"
+        </span>
+      </div>
+    </li>
     <li class="loot-affix-row" data-known=true data-position="suffix">
       <div class="loot-affix-heading">
         <span>
@@ -924,13 +924,13 @@ exports[`loot UI complete state snapshots > card.growth-labels 1`] = `
   <h2 class="loot-card-title" id="v-0">
     <span class="loot-item-chip">
       <span aria-hidden="true" class="loot-chip-glyph">
-        ")"
+        "]"
       </span>
       <span aria-hidden="true" class="loot-chip-marker">
         "◇"
       </span>
       <span class="loot-chip-name">
-        "精擅之阔剑"
+        "镶板的精擅之皮甲"
       </span>
       <span class="loot-chip-rarity">
         "魔法"
@@ -945,16 +945,16 @@ exports[`loot UI complete state snapshots > card.growth-labels 1`] = `
       "物等 25"
     </span>
     <span>
-      "武器"
+      "护甲"
     </span>
   </div>
   <dl class="loot-card-base-stats">
     <div class="loot-card-base-stat">
       <dt>
-        "伤害"
+        "护甲"
       </dt>
       <dd>
-        "14–22"
+        "6"
       </dd>
     </div>
     <div class="loot-card-base-stat">
@@ -962,11 +962,29 @@ exports[`loot UI complete state snapshots > card.growth-labels 1`] = `
         "力量需求"
       </dt>
       <dd>
-        "19"
+        "10"
       </dd>
     </div>
   </dl>
   <ul class="loot-card-affixes">
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "镶板的"
+        </span>
+        <span class="loot-affix-tier">
+          "4阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+3"
+        </span>
+        <span>
+          "护甲"
+        </span>
+      </div>
+    </li>
     <li class="loot-affix-row" data-known=true data-position="suffix">
       <div class="loot-affix-heading">
         <span>
@@ -1623,7 +1641,7 @@ exports[`loot UI complete state snapshots > card.t6 1`] = `
     <li class="loot-affix-row" data-known=true data-position="suffix">
       <div class="loot-affix-heading">
         <span>
-          "抗毒之"
+          "吸收符文之"
         </span>
         <span class="loot-affix-tier">
           "4阶"
@@ -1631,10 +1649,13 @@ exports[`loot UI complete state snapshots > card.t6 1`] = `
       </div>
       <div class="loot-affix-line loot-affix-tone-good">
         <span class="loot-affix-value">
-          "+30.29%"
+          "6"
         </span>
         <span>
-          "毒素抗性"
+          "符文强度"
+        </span>
+        <span>
+          "吸收"
         </span>
       </div>
     </li>
@@ -2569,7 +2590,7 @@ exports[`loot UI complete state snapshots > compare.folded 1`] = `
           "◇"
         </span>
         <span class="loot-chip-name">
-          "精准之阔剑"
+          "迅捷之阔剑"
         </span>
       </span>
       <table class="loot-compare-table">
@@ -2668,13 +2689,13 @@ exports[`loot UI complete state snapshots > compare.folded 1`] = `
               "命中"
             </th>
             <td data-label="当前">
-              "+13.3%"
+              "0%"
             </td>
             <td data-label="候选">
               "+29.84%"
             </td>
             <td class="loot-compare-delta" data-label="差值">
-              "+16.54%"
+              "+29.84%"
             </td>
           </tr>
         </tbody>
@@ -3093,7 +3114,7 @@ exports[`loot UI complete state snapshots > compare.strength-short 1`] = `
           "◇"
         </span>
         <span class="loot-chip-name">
-          "精准之阔剑"
+          "迅捷之阔剑"
         </span>
       </span>
       <table class="loot-compare-table">
@@ -3172,16 +3193,16 @@ exports[`loot UI complete state snapshots > compare.strength-short 1`] = `
           </tr>
           <tr class="loot-compare-row loot-compare-worse">
             <th>
-              "命中"
+              "攻击耗时"
             </th>
             <td data-label="当前">
-              "+13.3%"
+              "-8.88%"
             </td>
             <td data-label="候选">
               "0%"
             </td>
             <td class="loot-compare-delta" data-label="差值">
-              "-13.3%"
+              "+8.88%"
             </td>
           </tr>
           <tr class="loot-compare-row loot-compare-better">
@@ -3250,7 +3271,7 @@ exports[`loot UI complete state snapshots > compare.weapon 1`] = `
           "◇"
         </span>
         <span class="loot-chip-name">
-          "精准之阔剑"
+          "迅捷之阔剑"
         </span>
       </span>
       <table class="loot-compare-table">
@@ -3329,16 +3350,16 @@ exports[`loot UI complete state snapshots > compare.weapon 1`] = `
           </tr>
           <tr class="loot-compare-row loot-compare-worse">
             <th>
-              "命中"
+              "攻击耗时"
             </th>
             <td data-label="当前">
-              "+13.3%"
+              "-8.88%"
             </td>
             <td data-label="候选">
               "0%"
             </td>
             <td class="loot-compare-delta" data-label="差值">
-              "-13.3%"
+              "+8.88%"
             </td>
           </tr>
           <tr class="loot-compare-row loot-compare-better">
@@ -4484,7 +4505,7 @@ exports[`loot UI complete state snapshots > salvage.blocked 1`] = `
             "◇"
           </span>
           <span class="loot-chip-name">
-            "精准之阔剑"
+            "迅捷之阔剑"
           </span>
           <span class="loot-chip-rarity">
             "魔法"

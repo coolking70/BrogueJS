@@ -1,3 +1,4 @@
+import { LOOT_TARGET_NAMES } from './targets';
 import { lootItemClass, validateLootItemData } from '../item';
 import { ringImplicit } from '../economy';
 import type { EffectiveLootCatalog, LootItemDataV1, LootModifierDraft, ModifierSpec } from '../types';
@@ -42,7 +43,7 @@ export function projectLootKnowledge(data: LootItemDataV1, catalog: EffectiveLoo
     const def = catalog.affixes.find(def => def.id === row.id);
     const position = data.rarity === 'unique' ? 'row' : def!.position;
     return row.known ? { known: true, id: row.id, position, polarity: data.rarity === 'unique' ? 1 : def!.polarity,
-      tier: row.tier, values: [...row.values] } : { known: false, position };
+      ...(data.targetClass&&def?.rune&&['slaying','immunity'].includes(def.rune.runicType)?{targetClass:data.targetClass}:{}), tier: row.tier, values: [...row.values] } : { known: false, position };
   });
   return freezeLootUi({ v: 1, location: facts.location, itemClass,
     baseId: itemClass === 'ring' && !facts.ringKindKnown ? null : data.baseId,
@@ -87,10 +88,11 @@ export function assertLootKnownItem(value: unknown, catalog: EffectiveLootCatalo
     const row = value.affixes[i];
     if (!isPlainLootObject(row) || typeof row.known !== 'boolean'
       || !['prefix', 'suffix', 'row'].includes(row.position as string)
-      || !exactLootKeys(row, row.known ? ['known', 'id', 'position', 'polarity', 'tier', 'values'] : ['known', 'position'])) throw new LootUiError('INVALID_INPUT', `item.affixes.${i}`);
+      || !exactLootKeys(row, row.known ? ['known', 'id', 'position', 'polarity', 'tier', 'values',...(row.targetClass===undefined?[]:['targetClass'])] : ['known', 'position'])) throw new LootUiError('INVALID_INPUT', `item.affixes.${i}`);
     if (row.known) {
       if (typeof row.id !== 'string' || ![1, -1].includes(row.polarity as number) || !isLootInteger(row.tier, 0, 6)
         || !Array.isArray(row.values) || Array.from(row.values).some(v => !isLootInteger(v, -Number.MAX_SAFE_INTEGER))) throw new LootUiError('INVALID_INPUT', `item.affixes.${i}`);
+      if(row.targetClass!==undefined&&(!(typeof row.targetClass==='string'&&Object.prototype.hasOwnProperty.call(LOOT_TARGET_NAMES,row.targetClass))||!catalog.affixes.some(a=>a.id===row.id&&a.rune&&['slaying','immunity'].includes(a.rune.runicType))))throw new LootUiError('INVALID_INPUT', `item.affixes.${i}.targetClass`);
       const mods = knownAffixModifiers(row as unknown as Extract<LootKnownAffix, { known: true }>, catalog);
       if (mods.some(mod => !isLootInteger((row.values as number[])[mod.valueIndex], -Number.MAX_SAFE_INTEGER))) throw new LootUiError('INVALID_INPUT', `item.affixes.${i}.values`);
     }

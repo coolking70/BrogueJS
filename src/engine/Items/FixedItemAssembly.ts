@@ -1,3 +1,4 @@
+import { ITEM_RUNIC_TARGETS } from '../../ext/itemSdk';
 /** Sole deterministic native equipment constructor shared by C5 and C6. */
 import { Item, ItemCategory } from './Item';
 import { ItemLoader } from './ItemLoader';
@@ -26,7 +27,8 @@ export function assembleNativeTemplate(kind: string, quantity = 1): Item {
 }
 export function validateNativeAssembly(native: NativeAssembly): void {
   assertItemJson(native);
-  if (Object.keys(native).sort().join(',') !== 'category,enchantment,familiarityRemaining,identified,isCursed,kind,runicType'
+  if (Object.keys(native).filter(k=>k!=='targetClass').sort().join(',') !== 'category,enchantment,familiarityRemaining,identified,isCursed,kind,runicType'
+      || (['slaying','immunity'].includes(native.runicType??'') ? !ITEM_RUNIC_TARGETS.some(t=>t.name===native.targetClass) : native.targetClass!==undefined)
       || !FIXED_EQUIPMENT_BASES[native.category]?.includes(native.kind)
       || !Number.isSafeInteger(native.enchantment) || Math.abs(native.enchantment) > 100
       || native.category !== 'ring' && native.enchantment !== 0
@@ -38,6 +40,7 @@ export function validateNativeAssembly(native: NativeAssembly): void {
 export function assembleDropItem(spec: DropItemSpec): Item {
   validateNativeAssembly(spec.native);
   const n = spec.native, item = assembleNativeTemplate(n.kind);
+  if(n.targetClass)item.vorpalEnemy=n.targetClass;
   item.enchantment = n.enchantment; item.identified = n.identified; item.canBeIdentified = !n.identified;
   item.isCursed = n.isCursed; item.charges = n.familiarityRemaining;
   if (n.runicType !== null) { item.runicType = n.runicType; (item.flags ??= []).push('ITEM_RUNIC'); }

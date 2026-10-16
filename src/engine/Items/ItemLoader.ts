@@ -1,3 +1,4 @@
+import { ITEM_RUNIC_TARGETS } from '../../ext/itemSdk';
 import { notifyItemIdentification, itemIdentificationTransaction } from './ItemExtensionBindings';
 import { nativeRingEnchant } from '../Stats/NativeStatSources';
 import { markItemStatsDirty, markItemKnowledgeDirty } from './ItemStatInvalidation';
@@ -399,25 +400,6 @@ export class ItemLoader {
      * 全 15 类。生成侧复刻 chooseVorpalEnemy 的抽取行为与 RNG 消耗；
      * U15d-1/2 的战斗侧类别门读取 Combat/MonsterClass.ts 成员表。
      */
-    private static readonly CE_MONSTER_CLASSES: readonly {
-        name: string; frequency: number; maxDepth: number;
-    }[] = [
-        { name: 'abomination', frequency: 10, maxDepth: -1 },
-        { name: 'dar',         frequency: 10, maxDepth: 22 },
-        { name: 'animal',      frequency: 10, maxDepth: 10 },
-        { name: 'goblin',      frequency: 10, maxDepth: 10 },
-        { name: 'ogre',        frequency: 10, maxDepth: 16 },
-        { name: 'dragon',      frequency: 10, maxDepth: -1 },
-        { name: 'undead',      frequency: 10, maxDepth: -1 },
-        { name: 'jelly',       frequency: 10, maxDepth: 15 },
-        { name: 'turret',      frequency: 5,  maxDepth: 18 },
-        { name: 'infernal',    frequency: 10, maxDepth: -1 },
-        { name: 'mage',        frequency: 10, maxDepth: -1 },
-        { name: 'waterborne',  frequency: 10, maxDepth: 17 },
-        { name: 'airborne',    frequency: 10, maxDepth: 15 },
-        { name: 'fireborne',   frequency: 10, maxDepth: 12 },
-        { name: 'troll',       frequency: 10, maxDepth: 15 },
-    ];
 
     /**
      * CE chooseVorpalEnemy（Items.c:7667-7679）+ lotteryDraw（:7648-7662）：
@@ -425,16 +407,16 @@ export class ItemLoader {
      * rand_range(0, sum-1) 走表。depth = 生成时所在层（rogue.depthLevel）。
      */
     public static chooseVorpalEnemy(depth: number): string {
-        const freqs = this.CE_MONSTER_CLASSES.map(c =>
+        const freqs = ITEM_RUNIC_TARGETS.map(c =>
             (c.maxDepth <= 0 || depth <= c.maxDepth) ? c.frequency : 0);
         let maxFreq = 0;
         for (const f of freqs) maxFreq += f;
         let randIndex = rng.randRange(0, maxFreq - 1);
         for (let i = 0; i < freqs.length; i++) {
-            if (freqs[i]! > randIndex) return this.CE_MONSTER_CLASSES[i]!.name;
+            if (freqs[i]! > randIndex) return ITEM_RUNIC_TARGETS[i]!.name;
             randIndex -= freqs[i]!;
         }
-        return this.CE_MONSTER_CLASSES[0]!.name; // 不可达（CE brogueAssert(false) 同位）
+        return ITEM_RUNIC_TARGETS[0]!.name; // 不可达（CE brogueAssert(false) 同位）
     }
 
     /** CE weaponTable.range.lowerBound 的 web 等价（damage 记法的 min）。

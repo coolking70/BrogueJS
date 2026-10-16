@@ -1,3 +1,5 @@
+import {ItemLoader} from '../../../../engine/Items/ItemLoader';
+import {logger} from '../../../../engine/Systems/Logger';
 import '../../../../i18n';
 import { beforeAll, afterAll, it, expect, vi } from 'vitest';
 import * as Vue from 'vue';
@@ -184,4 +186,16 @@ it('D7 preset Tab stays in the modal and a rejected start allows retry without l
   all(body).find(n=>n.props['data-preset']==='scarce')!.props.onClick();await Vue.nextTick();
   for(let i=1;i<=2;i++){confirm.props.onClick();await Vue.nextTick();await Vue.nextTick();await Vue.nextTick();expect(complete).toHaveBeenCalledTimes(i);expect(confirm.props.disabled).toBe(false);expect((document.activeElement as unknown as N).props['data-preset']).toBe('scarce');}
  }finally{app.unmount();body.children=[];}
+});
+
+it('native inventory close cancels a deferred enhancement without spending its scroll or turn',async()=>{
+ const h=createWorldHarness({seed:42,mode:'easy',modules:['loot']}),g=worldHarnessGame(h);let app:ReturnType<typeof renderer.createApp>|undefined;
+ try{
+  while(logger.pendingAcknowledgment)logger.acknowledgeNext();const scroll=ItemLoader.spawnScroll('scroll_of_enchantment',-1,-1)!;g.player.inventory.addItem(scroll);ItemLoader.identifyItemKind(scroll);g.executeItemCommand('read',scroll);
+  expect(g.canCancelEnchantment).toBe(true);const tick=timeSystem.currentTick,submit=vi.spyOn(g,'executeCommand');
+  const Inventory=await createSfcHarness({baseURL:import.meta.url,stubs:{'../../../../engine/Core/Game':{activeGame:g}},stubComponents:Vue.defineComponent({render:()=>null})}).load('../../../../components/InventoryOverlay.vue');
+  const root=node();app=renderer.createApp(Inventory);app.use(I18NextVue,{i18next});app.mount(root);await Vue.nextTick();
+  const close=all(root).find(n=>n.props.class==='close-btn')!;expect(close).toBeDefined();expect(close.props.disabled).toBe(false);close.props.onClick();await Vue.nextTick();
+  expect(submit).toHaveBeenCalledWith('escape');expect(g.pendingEnchantment).toBe(false);expect(g.player.inventory.items).toContain(scroll);expect(timeSystem.currentTick).toBe(tick);
+ }finally{app?.unmount();h.dispose();vi.restoreAllMocks();}
 });

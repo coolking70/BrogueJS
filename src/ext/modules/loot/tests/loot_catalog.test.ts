@@ -20,7 +20,7 @@ describe('effective loot catalog', () => {
             'loot.affix.warding': { armor: c ? 0 : 300 },
         };
         for (const affix of pack.affixes.affixes) {
-            if (affix.rune !== null) { expect(ids).not.toContain(affix.id); continue; }
+            if (affix.rune !== null && !pack.affixes.runeFamilyEnabled) { expect(ids).not.toContain(affix.id); continue; }
             const available = affix.requires === null || (affix.requires.module === 'combat' ? c : g);
             if (!available || affix.expand !== null) { expect(ids).not.toContain(affix.id); continue; }
             expect(ids).toContain(affix.id);

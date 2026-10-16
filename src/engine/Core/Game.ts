@@ -1,3 +1,4 @@
+import { nativeProjectileRunic } from '../Stats/NativeStatSources';
 import { prepareItemCommand, commitItemCommand } from './ItemCommands';
 import type { DropInput } from '../../ext/itemDrops';
 import type { DropEvent, DropProposal, DropAcceptance, ItemClass } from '../../ext/itemSdk';
@@ -468,6 +469,8 @@ const TURNS_FOR_FULL_REGEN = 300;
 // Detached load preflight already compiled this trusted installed catalog.
 // During publication it supplies authority before session hooks are attached.
 const loadingSpatialCatalogs = new WeakMap<Game, SpatialCatalog>();
+const runicTransactions=new WeakSet<Game>();
+
 export class Game {
     /** Explicit mechanical truth, across owned layers. Ordinary runs omit it. */
     declare public world5?: World5Snapshot;
@@ -797,8 +800,10 @@ export class Game {
      * U03: mandatory selection survives a checkpoint; reopening costs no extra turn.
      */
     public pendingIdentify: boolean = false;
+    public get canCancelEnchantment(): boolean { return this.pendingEnchantment && this.pendingEnchantmentScrollId !== null; }
     public pendingEnchantment: boolean = false;
     private pendingEnchantmentScrollWasKnown: boolean = false;
+    private pendingEnchantmentScrollId: number | null = null;
     // W-2: transient choice, never persisted; selection cannot spend a turn.
     public pendingArcana: { item: Item; cursor: Pos } | null = null;
 
@@ -1080,6 +1085,7 @@ export class Game {
         this.pendingIdentify = false;
         this.pendingEnchantment = false;
         this.pendingEnchantmentScrollWasKnown = false;
+        this.pendingEnchantmentScrollId = null;
         this.pendingArcana = null;
         // B-1c：恶意品确认待决态不得跨场景泄漏（与 pendingIdentify 同处复位）
         this.pendingUseConfirm = null;
@@ -1327,7 +1333,7 @@ export class Game {
             converted=proposal.converted;
             const accepted: {index:number;itemId:number}[]=[],skipped:DropAcceptance['skipped'][number][]=[],newUniqueIds:string[]=[];
             for(const spec of proposal.items)this.extensionRuntime!.validateItemData({id:getNextEntityId(),category:ItemCategory[spec.native.category.toUpperCase() as 'WEAPON'|'ARMOR'|'RING'],identityId:spec.native.kind,
-                quantity:1,identified:spec.native.identified,enchantment:spec.native.enchantment,isCursed:spec.native.isCursed,moduleData:spec.moduleData},'create');
+                quantity:1,identified:spec.native.identified,enchantment:spec.native.enchantment,isCursed:spec.native.isCursed,runicType:spec.native.runicType,vorpalEnemy:spec.native.targetClass??null,moduleData:spec.moduleData},'create');
             const ids=new Set<number>();forEachItemRoot(this,item=>ids.add(item.id));let roots=ids.size;
             const outer=event.source==='floor'||event.source==='vault';
             const destination=()=>{if(outer)return {...event.at};const candidates=captiveItemDropCandidates(this,event.at,this.items);return candidates.length?{...candidates[rng.randRange(0,candidates.length-1)]!}:null;};
@@ -4924,7 +4930,12 @@ export class Game {
 
         // CE Items.c:7824-7835: once read, enchantment requires a valid target;
         // Escape/close/cancel cannot discard the scroll's unresolved effect.
-        if (this.pendingEnchantment) return;
+        if (this.pendingEnchantment) {
+            if(this.pendingEnchantmentScrollId!==null&&(action==='escape'||action==='cancel_target')){
+                this.pendingEnchantment=false;this.pendingEnchantmentScrollId=null;this.pendingEnchantmentScrollWasKnown=false;this.isInventoryOpen=false;this.needsRender=true;
+            }
+            return;
+        }
 
         if (this.pendingArcana) {
             if (action === 'escape' || action === 'cancel_target') this.cancelArcanaSelection();
@@ -6050,6 +6061,12 @@ export class Game {
         // B-1c：CE Items.c:7757-7767——同款恶意品确认（读卷轴分支）。
         if (this.gateMalevolentUse(item, confirmed)) return;
 
+        if(item.consumableId==='scroll_of_enchantment'&&this.extensionRuntime?.hasItemEnhancement()){
+            if(!this.player.inventory.items.some(target=>this.canEnchantTarget(target)))return;
+            this.pendingEnchantment=true;this.pendingEnchantmentScrollId=item.id;
+            this.pendingEnchantmentScrollWasKnown=ItemLoader.identifiedItems.has(item.consumableId);
+            this.isInventoryOpen=true;this.needsRender=true;return;
+        }
         if (consumeForUse(this.player, item)) {
             const trueId = (item as any).consumableId;
             const data = ItemLoader.scrolls.find(s => s.id === trueId);
@@ -6376,6 +6393,9 @@ export class Game {
     /** Execute an explicit aim. Direct engine callers can retain the candidate/
      * last-direction fallback; inventory use always goes through confirmation. */
     public zapBoltFromPlayer(bolt: BoltConfig, item: Item, aim?: Pos): BoltResult {
+        return this.runicEffectTransaction(this.player.equippedArmor,()=>this.zapBoltFromPlayerBody(bolt,item,aim));
+    }
+    private zapBoltFromPlayerBody(bolt: BoltConfig, item: Item, aim?: Pos): BoltResult {
         if (this.interactionActive) throw new Error('Player action blocked by interaction gate');
         this.bindDungeonFeatureEffects();
         const first = aim ? undefined : this.getArcanaCandidates(item)[0];
@@ -6740,9 +6760,10 @@ export class Game {
     /** Reflection is travel, never a damage redirect or an autoID observation.
      * Armor identification is independent of identification of the fired item. */
     private observeBoltReflection(reflection: BoltReflection): void {
-        if (reflection.creature === this.player && this.player.equippedArmor?.runicType === 'reflection') {
-            this.player.equippedArmor.runicKnown = true;
-            markItemStatsDirty(this.player.equippedArmor);
+        if (reflection.creature === this.player && (this.player.equippedArmor?.runicType==='reflection'||this.player.equippedArmor?.moduleData&&this.player.equippedArmor.runicType==='immunity')) {
+            if(!this.player.equippedArmor!.moduleData){this.player.equippedArmor!.runicKnown = true;
+            markItemStatsDirty(this.player.equippedArmor!);}
+            this.extensionRuntime?.commitItemRunicKnowledge(this.player,this.player.equippedArmor!,null,this.player.equippedArmor!.runicType!);
         }
     }
 
@@ -7660,6 +7681,9 @@ export class Game {
     }
 
     public castMonsterBolt(caster: Monster, target: Creature, ceBoltName: string): BoltResult | undefined {
+        return this.runicEffectTransaction(this.player.equippedArmor,()=>this.castMonsterBoltBody(caster,target,ceBoltName));
+    }
+    private castMonsterBoltBody(caster: Monster, target: Creature, ceBoltName: string): BoltResult | undefined {
         const meta = MONSTER_BOLT_TABLE[ceBoltName];
         if (!meta || meta.effect === null || meta.effect === BoltEffect.TUNNELING
             || meta.effect === BoltEffect.OBSTRUCTION) return; // CE monsters never cast these.
@@ -8047,10 +8071,22 @@ export class Game {
 
     /** CE Items.c:7819-7836 accepts every eligible item in the pack. */
     public canEnchantTarget(item: Item): boolean {
-        return canEnchantChosenItem(this.player, item);
+        return canEnchantChosenItem(this.player, item)&&((this.extensionRuntime?.itemEnhancementLimit(item)??1)>0
+            ||this.extensionRuntime?.itemGrowthRedirects('scroll_of_enchantment','enchantment')===true);
     }
 
     public chooseEnchantTarget(item: Item): boolean {
+        if(this.pendingEnchantmentScrollId===null)return this.completeEnchantTarget(item);
+        const scroll=this.player.inventory.items.find(i=>i.id===this.pendingEnchantmentScrollId);
+        if(!scroll||scroll.consumableId!=='scroll_of_enchantment'||!this.canEnchantTarget(item)||!this.extensionRuntime)return false;
+        const restore=this.checkpointCombatFactWorld(),restoreRandom=checkpointGenerationWorld(()=>({shallow:[],deep:[rng]})),allocator=getNextEntityId();
+        try{return this.extensionRuntime.itemCommandTransaction(()=>{
+            if(!this.completeEnchantTarget(item,scroll))return false;
+            return true;
+        });}catch{restore();restoreRandom();restoreNextEntityId(allocator);return false;}
+    }
+
+    private completeEnchantTarget(item: Item, scroll?:Item): boolean {
         if (this.interactionActive) return false;
         if (!this.pendingEnchantment || this.isInputLocked() || this.isGameOver
             || this.player.hp <= 0) return false;
@@ -8058,7 +8094,12 @@ export class Game {
             logger.log(i18next.t('scroll.cannot_enchant', { defaultValue: "Can't enchant that." }), '#aaaaaa', { acknowledge: true });
             return false;
         }
-        this.enchantEquippedItem(item);
+        if(!this.enchantEquippedItem(item))return false;
+        if(scroll){
+            if(!consumeForUse(this.player,scroll))throw new Error('Missing enchantment scroll');
+            ItemLoader.identifyItemKind(scroll);
+            logger.log(i18next.t('scroll.reveal_enchantment', { defaultValue: 'This is a scroll of enchanting.' }), '#00ffff', { acknowledge: true });
+        }
         this.createFlare(this.player.loc.x, this.player.loc.y, LightKind.SCROLL_ENCHANTMENT_LIGHT);
         if (!this.pendingEnchantmentScrollWasKnown && enchantingAutoIdentifiesTarget(item)) {
             // CE readScroll's original scrollKind is a value copy, while theItem
@@ -8066,6 +8107,7 @@ export class Game {
             if (item.category === ItemCategory.WEAPON || item.category === ItemCategory.ARMOR) {
                 if (item.runicType && !item.runicKnown) {
                     const oldName = item.displayName;
+                    this.extensionRuntime?.commitItemRunicKnowledge(this.player,item,null,item.runicType,'native-reveal');
                     item.runicKnown = true;
                     markItemStatsDirty(item);
                     logger.log(i18next.t('item.runic_revealed', { oldName, name: item.displayName,
@@ -8079,6 +8121,7 @@ export class Game {
         }
         this.pendingEnchantment = false;
         this.pendingEnchantmentScrollWasKnown = false;
+        this.pendingEnchantmentScrollId = null;
         this.isInventoryOpen = false;
         this.needsRender = true;
         finishItemUse(this.player, () => this.playerTurnEnded());
@@ -8099,9 +8142,11 @@ export class Game {
         if (this.extensionRuntime) {
             // A real accepted target and its complete native permanent bundle share the
             // module transaction. Cleanup and the existing RNG draw occur only afterward.
+            const limit=this.extensionRuntime.itemEnhancementLimit(target);
             this.extensionRuntime.commitItemGrowth(this.player, 'scroll_of_enchantment', 'enchantment', 1, {
+                ...(limit===null?{}:{limit}),
                 apply: amount => {
-                    try { applyChosenEnchantmentGain(target, amount); markStatsDirty(this.player); }
+                    try { if(limit===null)applyChosenEnchantmentGain(target, amount);else this.extensionRuntime!.applyItemEnhancement(target,amount);markStatsDirty(this.player); }
                     catch { throw new Error(i18next.t('ext.command.rejected', { defaultValue: 'Module command is not available in the current state.' })); }
                 },
                 rollback: checkpointEnchantmentGain(target),
@@ -8654,12 +8699,17 @@ export class Game {
                 logger.log(cursedMessage, '#ff9999');
                 return;
             }
-            // Confirmation/curse refusal stay pure; accepted unequip is the
-            // first native mutation, including trusted perform callers.
-            settleResidentNeeds(this);
-            if (equipped && !this.unequipItem(item, false, cursedMessage)) return;
         }
+        return this.runicEffectTransaction(item,()=>this.throwItemCommitted(item,tx,ty,equipped));
+    }
 
+    private throwItemCommitted(item:Item,tx:number,ty:number,equipped:boolean):void {
+        // Capture the accepted command before unequip, inventory removal and IDs.
+        if((equipped||item.timesEnchanted>0)&&item.quantity<=1){
+            settleResidentNeeds(this);
+            const cursedMessage=i18next.t('throw.cursed_equipped',{name:item.displayName,defaultValue:'You cannot unequip your {{name}}; it appears to be cursed.'});
+            if(equipped&&!this.unequipItem(item,false,cursedMessage))return;
+        }
         settleResidentNeeds(this);
         if (this.extensionRuntime) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'throw' });
 
@@ -8718,8 +8768,8 @@ export class Game {
                             //（resolveThrownWeapon 同口径只在存活时掷）。
                             if (res.triggeredRunic) {
                                 withBodyAttackContact(this.player, monst, contact, () => {
-                                    if (effects) effects.withOrigin(projectileOrigin, () => this.applyWeaponRunicEffect(monst, res.damage, res.triggeredRunic!));
-                                    else this.applyWeaponRunicEffect(monst, res.damage, res.triggeredRunic!);
+                                    if (effects) effects.withOrigin(projectileOrigin, () => this.applyWeaponRunicEffect(monst, res.damage, res.triggeredRunic!,thrown.moduleData?thrown:undefined));
+                                    else this.applyWeaponRunicEffect(monst, res.damage, res.triggeredRunic!,thrown.moduleData?thrown:undefined);
                                 });
                             }
                         }
@@ -9100,29 +9150,44 @@ export class Game {
      * This is separate from tryTriggerWeaponRunic, which uses legacy flat-chance triggers.
      * applyWeaponRunicEffect is called when Combat.ts's enchantment-scaled trigger fires.
      */
-    private applyWeaponRunicEffect(target: Monster, damage: number, runicType: string): void {
+    private runicEffectTransaction<T>(item:Item|null,work:()=>T):T {
+        if(!item?.moduleData||!item.runicType||item.runicKnown||!this.extensionRuntime||runicTransactions.has(this))return work();
+        const restore=this.checkpointCombatFactWorld(),restoreRandom=checkpointGenerationWorld(()=>({shallow:[],deep:[rng]})),allocator=getNextEntityId();
+        runicTransactions.add(this);
+        try{return this.extensionRuntime.itemCommandTransaction(work);}
+        catch(error){restore();restoreRandom();restoreNextEntityId(allocator);throw error;}
+        finally{runicTransactions.delete(this);}
+    }
+
+    private applyWeaponRunicEffect(target: Monster, damage: number, runicType: string, projectile?:Item): void {
+        return this.runicEffectTransaction(projectile??this.player.equippedWeapon,()=>this.applyWeaponRunicEffectBody(target,damage,runicType,projectile));
+    }
+    private applyWeaponRunicEffectBody(target: Monster, damage: number, runicType: string, projectile?:Item): void {
         if (this.extensionRuntime && this.extensionRuntime.causality.current?.actorId !== this.player.id) {
             const effects = this.extensionRuntime.causality;
             return effects.withOrigin(effects.create('melee', this.player.id, this.player.id, this.player.extensionHooks?.partyId(this.player) ?? null),
-                () => this.applyWeaponRunicEffect(target, damage, runicType));
+                () => this.applyWeaponRunicEffectBody(target, damage, runicType,projectile));
         }
-        const weapon = this.player.equippedWeapon;
+        const weapon = projectile??this.player.equippedWeapon;
         if (!weapon) return;
         const previouslyKnown = weapon.runicKnown;
+        const controlled=!!weapon.moduleData;
+        let committed=false;
         // CE Combat.c:679-695: a visible flare/flash identifies before the
         // effect; submerged targets identify only through an observable effect.
         const visible = this.canObserveBoltTarget(target);
-        if (visible) { weapon.runicKnown = true; markItemStatsDirty(weapon); }
+        if (visible) { if(!controlled)weapon.runicKnown = true; if(!controlled)markItemStatsDirty(weapon); }
         if (!isSubmerged(target)) {
             if (runicType === 'speed') this.createFlare(this.player.x, this.player.y, LightKind.SCROLL_ENCHANTMENT_LIGHT);
             else if (runicType === 'quietus') this.createFlare(physicalContactOf(target).x, physicalContactOf(target).y, LightKind.QUIETUS_FLARE_LIGHT);
             else if (runicType === 'slaying') this.createFlare(physicalContactOf(target).x, physicalContactOf(target).y, LightKind.SLAYING_FLARE_LIGHT);
         }
-        const enchant = nativeStat(this.player,'native.runic-power')/4;
+        const enchant = projectile?nativeProjectileRunic(this.player,projectile):nativeStat(this.player,'native.runic-power')/4;
 
         switch (runicType) {
             case 'paralyzing': {
                 const duration = weaponParalysisDuration(enchant);
+                committed=duration>target.getStatusDuration('paralyzed');
                 // CE writes the status array directly; web's generic
                 // statusImmunities are not a weapon runic eligibility gate.
                 target.setStatusDuration('paralyzed', Math.max(target.getStatusDuration('paralyzed'), duration));
@@ -9142,16 +9207,21 @@ export class Game {
                 break;
             }
             case 'quietus': {
+                const hp=target.hp;
                 withWholeBodyDamage(target, () => target.takeDamage(9999, true, this.grid));
-                weapon.runicKnown = true;
-                markItemStatsDirty(weapon);
+                committed=hp>target.hp;
+                if(!controlled)weapon.runicKnown = true;
+                if(!controlled)markItemStatsDirty(weapon);
                 logger.log(i18next.t('runic.weapon.quietus', { target: this.monsterDisplayName(target), defaultValue: `Runic magic instantly slays the ${this.monsterDisplayName(target)}!` }), '#ccaaff');
                 break;
             }
             case 'slaying': {
+                if(controlled&&(!weapon.vorpalEnemy||!monsterIsInClass(target.typeId,weapon.vorpalEnemy)))break;
+                const hp=target.hp;
                 withWholeBodyDamage(target, () => target.takeDamage(9999, true, this.grid));
-                weapon.runicKnown = true;
-                markItemStatsDirty(weapon);
+                committed=hp>target.hp;
+                if(!controlled)weapon.runicKnown = true;
+                if(!controlled)markItemStatsDirty(weapon);
                 logger.log(i18next.t('runic.weapon.slaying', { target: this.monsterDisplayName(target), defaultValue: `Your weapon of slaying destroys the ${this.monsterDisplayName(target)}!` }), '#ff6666');
                 break;
             }
@@ -9165,19 +9235,21 @@ export class Game {
                 // CE grants a free player action; the attack recovery helper
                 // skips adding attackSpeed while this sentinel is negative.
                 if (this.player.ticksUntilTurn !== -1) {
+                    committed=true;
                     this.player.ticksUntilTurn = -1;
-                    weapon.runicKnown = true;
-                    markItemStatsDirty(weapon);
+                    if(!controlled)weapon.runicKnown = true;
+                    if(!controlled)markItemStatsDirty(weapon);
                     logger.log(i18next.t('runic.weapon.speed', { target: this.monsterDisplayName(target), defaultValue: 'Your weapon trembles and time freezes for a moment!' }), '#ffffaa');
                 }
                 break;
             }
             case 'slowing': {
+                committed=target.getStatusDuration('slowed')!==weaponSlowDuration(enchant)||target.getStatusDuration('hasted')>0;
                 target.setStatusDuration('slowed', weaponSlowDuration(enchant));
                 target.setStatusDuration('hasted', 0);
                 if (visible) {
-                    weapon.runicKnown = true;
-                    markItemStatsDirty(weapon);
+                    if(!controlled)weapon.runicKnown = true;
+                    if(!controlled)markItemStatsDirty(weapon);
                     logger.log(i18next.t('runic.weapon.slowing', { target: this.monsterDisplayName(target), defaultValue: `The ${this.monsterDisplayName(target)} slows down.` }), '#99cc99');
                 }
                 break;
@@ -9207,15 +9279,16 @@ export class Game {
                     if (weapon.flags?.includes('ITEM_ATTACKS_ALL_ADJACENT')) blade.abilityFlags.add('MA_ATTACKS_ALL_ADJACENT');
                     if (weapon.flags?.includes('ITEM_ATTACKS_EXTEND')) blade.abilityFlags.add('MA_ATTACKS_EXTEND');
                     if (this.extensionRuntime) markCreatureBirth(blade, 'summoned', this.player.id);
-                    this.monsters.push(blade);
+                    this.monsters.push(blade);committed=true;
                 }
-                weapon.runicKnown = true;
-                markItemStatsDirty(weapon);
+                if(!controlled)weapon.runicKnown = true;
+                if(!controlled)markItemStatsDirty(weapon);
                 logger.log(i18next.t('runic.weapon.multiplicity', { name: weapon.displayName, defaultValue: `Your ${weapon.displayName} flashes, and spectral duplicates appear!` }), '#ffffff');
                 break;
             }
             case 'confusion': {
                 const confDuration = weaponConfusionDuration(enchant);
+                committed=confDuration>target.getStatusDuration('confused');
                 target.setStatusDuration('confused', Math.max(target.getStatusDuration('confused'), confDuration));
                 target.maxStatus.confused = target.getStatusDuration('confused');
                 if (visible) {
@@ -9245,6 +9318,7 @@ export class Game {
                     traveled++;
                 }
                 if (traveled > 0) {
+                    committed=true;
                     const contactEffects = () => target.spatial ? this.applyEnvironmentalEffects(target, false, undefined, previousBody) : this.applyEnvironmentalEffects(target);
                     if (this.extensionRuntime) {
                         const effects = this.extensionRuntime.causality, parent = effects.current;
@@ -9266,18 +9340,23 @@ export class Game {
             }
             case 'mercy': {
                 // CE heal(defender, onHitMercyHealPercent=50, false).
+                committed=target.hp<target.maxHp&&Math.trunc(target.maxHp/2)>0;
                 target.hp = Math.min(target.maxHp, target.hp + Math.trunc(target.maxHp / 2));
-                if (visible) { weapon.runicKnown = true; markItemStatsDirty(weapon); }
+                if (visible) { if(!controlled)weapon.runicKnown = true; if(!controlled)markItemStatsDirty(weapon); }
                 logger.log(i18next.t('runic.weapon.mercy', { target: this.monsterDisplayName(target), defaultValue: `Your weapon of mercy spares the ${this.monsterDisplayName(target)}.` }), '#88ff88');
                 break;
             }
             case 'plenty': {
-                const clone = this.cloneMonster(target);
-                if (clone && this.canObserveBoltTarget(clone)) { weapon.runicKnown = true; markItemStatsDirty(weapon); }
+                const clone = this.cloneMonster(target);committed=!!clone;
+                if (clone && this.canObserveBoltTarget(clone)) { if(!controlled)weapon.runicKnown = true; if(!controlled)markItemStatsDirty(weapon); }
                 break;
             }
             default:
                 break;
+        }
+        if(controlled){
+            weapon.runicKnown=previouslyKnown;
+            if(committed)this.extensionRuntime?.commitItemRunicKnowledge(this.player,weapon,target,runicType,projectile?'projectile':'effect');
         }
         if (!previouslyKnown && weapon.runicKnown) {
             logger.log(i18next.t('runic.weapon.identified', {
@@ -9290,6 +9369,9 @@ export class Game {
     /** Runtime attacks pass beforeDamage=true so armor acts before shielding
      * (CE Combat.c:1272,1325). Default preserves the public post-hit API. */
     public tryTriggerArmorRunic(attacker: Monster, incomingDamage: number, beforeDamage = false, melee = true): number {
+        return this.runicEffectTransaction(this.player.equippedArmor,()=>this.tryTriggerArmorRunicBody(attacker,incomingDamage,beforeDamage,melee));
+    }
+    private tryTriggerArmorRunicBody(attacker: Monster, incomingDamage: number, beforeDamage: boolean, melee: boolean): number {
         let remainingDamage = incomingDamage;
         const prevent = (amount: number) => {
             remainingDamage -= amount;
@@ -9297,6 +9379,12 @@ export class Game {
         };
         const armor = this.player.equippedArmor;
         if (!armor?.runicType) return remainingDamage;
+        const priorKnown=armor.runicKnown,controlled=!!armor.moduleData;
+        let committed=false;
+        const finish=(value:number)=>{
+            if(armor.moduleData){armor.runicKnown=priorKnown;if(committed)this.extensionRuntime?.commitItemRunicKnowledge(this.player,armor,attacker,armor.runicType!);}
+            return value;
+        };
 
         // 符文强度吃 netEnchant（含力量修正、钳 [-20,50]），与 P1-11 的 playerDefense
         // 同源；取值口径与 Combat.ts:73-78 一致（strengthRequired 缺省 0）。
@@ -9313,7 +9401,7 @@ export class Game {
                     ? this.cloneMonster(attacker, undefined, { creationReason: 'summoned', initiallyAllied: true })
                     : this.cloneMonster(attacker);
                 if (!clone) break;
-                clone.isAlly = true;
+                committed=true;clone.isAlly = true;
                 clone.leader = null;
                 clone.boundToPlayer = true;
                 clone.doesNotTrackLeader = true;
@@ -9331,11 +9419,11 @@ export class Game {
                 clone.name = attacker.name.length <= 6 ? `spectral ${attacker.name}` : 'spectral clone';
                 clone.color = 0xff5555;
             }
-            armor.runicKnown = true;
-            markItemStatsDirty(armor);
+            if(!controlled)armor.runicKnown = true;
+            if(!controlled)markItemStatsDirty(armor);
             logger.log(i18next.t('runic.armor.multiplicity', { name: armor.displayName,
                 target: this.monsterDisplayName(attacker), defaultValue: `Your ${armor.displayName} flashes, and spectral images appear!` }), '#ff7777');
-            return remainingDamage;
+            return finish(remainingDamage);
         }
 
         if (armor.runicType === 'mutuality') {
@@ -9354,18 +9442,21 @@ export class Game {
             if (count > 0 && incomingDamage > 0) {
                 const share = Math.floor((incomingDamage + count) / (count + 1));
                 // CE distributes before the player's shield absorbs the remaining share.
+                committed=incomingDamage>share;
                 prevent(incomingDamage - share);
                 for (const m of hitList) {
+                    const hpBefore = m.hp;
                     if (this.extensionRuntime) {
                         const effects = this.extensionRuntime.causality;
                         effects.withOrigin(effects.create('reprisal', this.player.id, this.player.id, this.player.extensionHooks?.partyId(this.player) ?? null),
                             () => m.takeDamage(share, true, this.grid, undefined, 'physical'));
                     } else m.takeDamage(share, true, this.grid);
+                    committed ||= m.hp < hpBefore;
                     this.spawnFloatingText(`-${share}`, m.loc.x, m.loc.y, 0xddaaff);
                 }
                 const wasKnown = armor.runicKnown;
-                armor.runicKnown = true;
-                markItemStatsDirty(armor);
+                if(!controlled)armor.runicKnown = true;
+                if(!controlled)markItemStatsDirty(armor);
                 if (!wasKnown) logger.log(
                     i18next.t('runic.armor.mutuality', {
                         target: attacker.name,
@@ -9375,21 +9466,21 @@ export class Game {
                     '#ddaaff'
                 );
             }
-            return remainingDamage;
+            return finish(remainingDamage);
         }
 
         if (armor.runicType === 'vitality' && rng.randPercent(15)) {
             // web 自创符文（CE 无 A_VITALITY），本轮保留现有行为。
             this.applyTimedStatus(this.player, 'regenerating', 15);
-            armor.runicKnown = true;
-            markItemStatsDirty(armor);
+            if(!controlled)armor.runicKnown = true;
+            if(!controlled)markItemStatsDirty(armor);
             logger.log(
                 i18next.t('runic.armor.vitality', {
                     defaultValue: `Your armor pulses with healing energy.`
                 }),
                 '#44ff44'
             );
-            return remainingDamage;
+            return finish(remainingDamage);
         }
 
         if (armor.runicType === 'absorption') {
@@ -9400,12 +9491,12 @@ export class Game {
             const absorbRoll = rng.randRange(1, armorAbsorptionMax(netEnch));
             const absorbed = Math.min(absorbRoll, incomingDamage);
             if (absorbed > 0) {
-                prevent(absorbed);
+                committed=true;prevent(absorbed);
             }
             if (absorbRoll >= incomingDamage) {
                 const wasKnown = armor.runicKnown;
-                armor.runicKnown = true;
-                markItemStatsDirty(armor);
+                if(!controlled)armor.runicKnown = true;
+                if(!controlled)markItemStatsDirty(armor);
                 if (!wasKnown) logger.log(
                     i18next.t('runic.armor.absorption', {
                         damage: absorbed,
@@ -9415,7 +9506,7 @@ export class Game {
                 );
                 this.spawnFloatingText(`+${absorbed}`, this.player.loc.x, this.player.loc.y, 0xaaddff);
             }
-            return remainingDamage;
+            return finish(remainingDamage);
         }
 
         if (armor.runicType === 'reprisal' && melee &&
@@ -9425,14 +9516,16 @@ export class Game {
             // 反弹 armorReprisalPercent(netEnchant)% 伤害（PowerTables.c:106）：
             // max(1, percent * damage / 100)（C 整数除法）。
             const reprisalDmg = Math.max(1, Math.trunc((armorReprisalPercent(netEnch) * incomingDamage) / 100));
+            const beforeHp=attacker.hp;
             if (this.extensionRuntime) {
                 const effects = this.extensionRuntime.causality;
                 effects.withOrigin(effects.create('reprisal', this.player.id, this.player.id, this.player.extensionHooks?.partyId(this.player) ?? null),
                     () => attacker.takeDamage(reprisalDmg, true, this.grid, undefined, 'physical'));
             } else attacker.takeDamage(reprisalDmg, true, this.grid);
+            committed=incomingDamage>0&&attacker.hp<beforeHp;
             if (canSeeMonster(this.player, this.grid, attacker)) {
-                armor.runicKnown = true;
-                markItemStatsDirty(armor);
+                if(!controlled)armor.runicKnown = true;
+                if(!controlled)markItemStatsDirty(armor);
                 logger.log(
                     i18next.t('runic.armor.reprisal', {
                         target: attacker.name,
@@ -9441,14 +9534,14 @@ export class Game {
                     }), '#ff8844');
             }
             this.spawnFloatingText(`-${reprisalDmg}`, physicalContactOf(attacker).x, physicalContactOf(attacker).y, 0xff8844);
-            return remainingDamage;
+            return finish(remainingDamage);
         }
 
         if (armor.runicType === 'immunity' && monsterIsInClass(attacker.typeId, armor.vorpalEnemy)) {
-            prevent(incomingDamage);
+            committed=incomingDamage>0;prevent(incomingDamage);
             const wasKnown = armor.runicKnown;
-            armor.runicKnown = true;
-            markItemStatsDirty(armor);
+            if(!controlled)armor.runicKnown = true;
+            if(!controlled)markItemStatsDirty(armor);
             if (!wasKnown) logger.log(
                 i18next.t('runic.armor.immunity', {
                     target: attacker.name,
@@ -9456,35 +9549,36 @@ export class Game {
                 }),
                 '#ffff44'
             );
-            return remainingDamage;
+            return finish(remainingDamage);
         }
         if (armor.runicType === 'burden' && rng.randPercent(10)) {
-            armor.strengthRequired = (armor.strengthRequired ?? 0) + 1;markStatsDirty(this.player);
-            armor.runicKnown = true;
-            markItemStatsDirty(armor);
+            committed=true;armor.strengthRequired = (armor.strengthRequired ?? 0) + 1;markStatsDirty(this.player);
+            if(!controlled)armor.runicKnown = true;
+            if(!controlled)markItemStatsDirty(armor);
             logger.log(i18next.t('runic.armor.burden', { name: armor.displayName,
                 defaultValue: `Your ${armor.displayName} suddenly feels heavier!` }), '#ff8888');
-            return remainingDamage;
+            return finish(remainingDamage);
         }
         if (armor.runicType === 'vulnerability') {
+            committed=remainingDamage>0;
             const wasKnown = armor.runicKnown;
-            armor.runicKnown = true;
-            markItemStatsDirty(armor);
+            if(!controlled)armor.runicKnown = true;
+            if(!controlled)markItemStatsDirty(armor);
             if (!wasKnown) logger.log(i18next.t('runic.armor.vulnerability', { name: armor.displayName,
                 defaultValue: `Your ${armor.displayName} pulses and you are wracked with pain!` }), '#ff8888');
-            return remainingDamage * 2;
+            return finish(remainingDamage * 2);
         }
         if (armor.runicType === 'immolation' && rng.randPercent(10)) {
             const wasKnown = armor.runicKnown;
-            armor.runicKnown = true;
-            markItemStatsDirty(armor);
+            if(!controlled)armor.runicKnown = true;
+            if(!controlled)markItemStatsDirty(armor);
             logger.log(i18next.t('runic.armor.immolation', { name: armor.displayName,
                 defaultValue: `Flames suddenly explode out of your ${armor.displayName}!` }), '#ff8844', { acknowledge: !wasKnown });
             // CE Combat.c:1086-1088: catalog DF_ARMOR_IMMOLATION, refresh on, no blocking abort.
-            spawnDungeonFeature(this.grid, this.player.loc.x, this.player.loc.y,
-                catalogFeature(DF.DF_ARMOR_IMMOLATION), false);
+            committed=spawnDungeonFeature(this.grid, this.player.loc.x, this.player.loc.y,
+                catalogFeature(DF.DF_ARMOR_IMMOLATION), false).builtCells.length>0;
         }
-        return remainingDamage;
+        return finish(remainingDamage);
     }
 
     /** W-10: one application per P2 objective block, before countdown decrement.
@@ -9920,10 +10014,13 @@ export class Game {
     }
 
     private resolvePlayerMeleeAttackAt(target: Monster, lungeAttack: boolean): AttackResult {
+        return this.runicEffectTransaction(this.player.equippedWeapon,()=>this.resolvePlayerMeleeAttackBody(target,lungeAttack));
+    }
+    private resolvePlayerMeleeAttackBody(target: Monster, lungeAttack: boolean): AttackResult {
         if (this.extensionRuntime && this.extensionRuntime.causality.current?.kind !== 'melee') {
             const effects = this.extensionRuntime.causality;
             return effects.withOrigin(effects.create('melee', this.player.id, this.player.id, this.player.extensionHooks?.partyId(this.player) ?? null),
-                () => this.resolvePlayerMeleeAttackAt(target, lungeAttack));
+                () => this.resolvePlayerMeleeAttackBody(target, lungeAttack));
         }
         // Terminal transfer retires the live group before the attack returns.
         // Capture its owner now so native player-only rewards use the core.
@@ -11979,6 +12076,7 @@ export class Game {
             currentTick: timeSystem.currentTick, nextEntityId: getNextEntityId(), nextMachineNumber: getNextMachineNumber(),
             playerFalling: this.playerFalling, pendingIdentify: this.pendingIdentify,
             // Omit settled transaction metadata: ordinary world/trace payloads stay unchanged.
+            enchantmentScrollId: this.pendingEnchantmentScrollId??undefined,
             enchantmentScrollWasKnown: this.pendingEnchantment ? this.pendingEnchantmentScrollWasKnown : undefined,
             justSearched: this.justSearched, justRested: this.justRested, searchingCharge: this.searchingCharge,
             secretScanDepth: this.secretScanDepth, levelHasSecrets: this.levelHasSecrets,
@@ -12185,7 +12283,11 @@ export class Game {
         // reject it, so that read-only phase cannot consume the live ID allocator.
         const preflightNextId = getNextEntityId();
         let decodedPlayer: Player;
-        try { decodedPlayer = decodePlayer(snapshot.player, entityGraph.items); }
+        try {
+            decodedPlayer = decodePlayer(snapshot.player, entityGraph.items);
+            if(snapshot.run.enchantmentScrollId!==undefined&&(!extensions?.hasItemEnhancement()
+                ||!decodedPlayer.inventory.items.some(i=>i.id===snapshot.run.enchantmentScrollId&&i.consumableId==='scroll_of_enchantment'&&i.quantity>0)))return false;
+        }
         catch { return false; }
         finally { if (preflightNextId !== null) restoreNextEntityId(preflightNextId); }
         // Observation-only history is serialized, but must not pin growth components or session hooks.
@@ -12372,6 +12474,7 @@ export class Game {
 
         this.pendingIdentify = run.pendingIdentify; this.pendingEnchantment = snapshot.pendingEnchantment;
         this.pendingEnchantmentScrollWasKnown = run.enchantmentScrollWasKnown ?? false;
+        this.pendingEnchantmentScrollId = run.enchantmentScrollId ?? null;
         this.isInventoryOpen = this.pendingIdentify || this.pendingEnchantment;
         this.referenceScreen = null; this.pendingArcana = null; this.pendingUseConfirm = null;
         this.isThrowing = false; this.throwItemTarget = null; this.isExamining = false; this.inspectTarget = null;
@@ -12603,6 +12706,9 @@ export class Game {
      * 返回是否实际结算了一次伤害（测试与调用方判据）。
      */
     private resolveExplosionDamage(entity: Player | Monster): boolean {
+        return this.runicEffectTransaction(entity===this.player&&this.player.equippedArmor?.runicType==='dampening'&&footprintSome(entity,p=>!!(cellTerrainFlags(this.grid,p.x,p.y)&T_CAUSES_EXPLOSIVE_DAMAGE))?this.player.equippedArmor:null,()=>this.resolveExplosionDamageBody(entity));
+    }
+    private resolveExplosionDamageBody(entity: Player | Monster): boolean {
         if (!entity.spatial) return this.resolveExplosionDamageAt(entity);
         if (hasDeclaredZones(entity)) {
             const scope = squareContactScope(this.grid) ?? new Set<string>(), receipt = `zone-explosion:${entity.id}`;
@@ -12645,6 +12751,7 @@ export class Game {
             logger.log(i18next.t('env.player_explosion_hit', { defaultValue: 'The force of the explosion slams into you.' }), '#ffff44');
             // CE Time.c:352-359：dampening 护甲符文完全吸收爆炸伤害并自动鉴定。
             if (this.player.equippedArmor?.runicType === 'dampening') {
+                if(damage>0)this.extensionRuntime?.commitItemRunicKnowledge(this.player,this.player.equippedArmor,null,'dampening');
                 logger.log(i18next.t('runic.armor.dampening_explosion', { defaultValue: 'Your armor pulses and absorbs the damage.' }), '#66ffff');
                 this.player.equippedArmor.runicKnown = true;
                 markItemStatsDirty(this.player.equippedArmor);
@@ -12715,15 +12822,28 @@ export class Game {
         return true;
     }
 
+    /** Called only at the phase where this armor blocks a real damage/status change. */
+    private revealRespiration(armor: Item): void {
+        const wasKnown = armor.runicKnown;
+        this.extensionRuntime?.commitItemRunicKnowledge(this.player, armor, null, 'respiration');
+        if (!wasKnown) {
+            armor.runicKnown = true;
+            markItemStatsDirty(armor);
+            logger.log(i18next.t('runic.armor.respiration_gas', { defaultValue: 'Your armor trembles and a pocket of clean air swirls around you.' }), '#66ffff');
+        }
+    }
+
     /** CE Time.c:421-439: submerged, inanimate and invulnerable creatures are immune. */
     private applyNauseaFromTerrain(entity: Creature): void {
+        const armor=entity===this.player&&this.player.equippedArmor?.runicType==='respiration'&&footprintSome(entity,p=>!!(cellTerrainFlags(this.grid,p.x,p.y)&T_CAUSES_NAUSEA))?this.player.equippedArmor:null;
+        return this.runicEffectTransaction(armor,()=>this.applyNauseaFromTerrainBody(entity));
+    }
+    private applyNauseaFromTerrainBody(entity: Creature): void {
         assertNativeSpatial(entity);
         if (entity.hp <= 0 || isSubmerged(entity) || !footprintSome(entity, p => !!(cellTerrainFlags(this.grid, p.x, p.y) & T_CAUSES_NAUSEA))) return;
         if (entity instanceof Monster && (entity.hasBehavior('MONST_INANIMATE') || entity.isInvulnerable())) return;
         if (entity === this.player && this.player.equippedArmor?.runicType === 'respiration') {
-            if (!this.player.equippedArmor.runicKnown) logger.log(i18next.t('runic.armor.respiration_gas', { defaultValue: 'Your armor trembles and a pocket of clean air swirls around you.' }), '#66ffff');
-            this.player.equippedArmor.runicKnown = true;
-            markItemStatsDirty(this.player.equippedArmor);
+            if (entity.getStatusDuration('nauseous') < 20 && !entity.hasStatusImmunity('nauseous')) this.revealRespiration(this.player.equippedArmor);
             return;
         }
         const first = !entity.hasStatus('nauseous');
@@ -12749,10 +12869,15 @@ export class Game {
     }
 
     private applyEnvironmentalEffects(instantTarget?: Creature, deferPlayerNausea = false, scope?: Set<string>, previousBody?: readonly Readonly<Pos>[]): void {
+        const armor=this.player.equippedArmor;
+        const protection=armor?.moduleData&&!armor.runicKnown&&['respiration','dampening'].includes(armor.runicType??'')&&(!instantTarget||instantTarget===this.player)&&footprintSome(this.player,p=>!!(cellTerrainFlags(this.grid,p.x,p.y)&(T_RESPIRATION_IMMUNITIES|T_CAUSES_EXPLOSIVE_DAMAGE)))?this.player.equippedArmor:null;
+        return this.runicEffectTransaction(protection,()=>this.applyEnvironmentalEffectsBody(instantTarget,deferPlayerNausea,scope,previousBody));
+    }
+    private applyEnvironmentalEffectsBody(instantTarget?: Creature, deferPlayerNausea = false, scope?: Set<string>, previousBody?: readonly Readonly<Pos>[]): void {
         // Terrain never inherits an attack. Only the immediate lethal leaves below
         // consult the separately bounded displacement/death-explosion evidence.
         if (this.extensionRuntime && this.extensionRuntime.causality.current !== null) {
-            return this.extensionRuntime.causality.withOrigin(null, () => this.applyEnvironmentalEffects(instantTarget, deferPlayerNausea, scope, previousBody));
+            return this.extensionRuntime.causality.withOrigin(null, () => this.applyEnvironmentalEffectsBody(instantTarget, deferPlayerNausea, scope, previousBody));
         }
         const checkEntity = (entity: any, name: string): void => {
             if (entity.hp <= 0) return;
@@ -12902,11 +13027,7 @@ export class Game {
                 const exempt = entity instanceof Monster && (entity.hasBehavior('MONST_INANIMATE') || entity.isInvulnerable());
                 const armor = entity === this.player ? this.player.equippedArmor : null;
                 if (!exempt && armor?.runicType === 'respiration') {
-                    if (!armor.runicKnown) {
-                        armor.runicKnown = true;
-                        markItemStatsDirty(armor);
-                        logger.log(i18next.t('runic.armor.respiration_gas', { defaultValue: 'Your armor trembles and a pocket of clean air swirls around you.' }), '#66ffff');
-                    }
+                    this.revealRespiration(armor);
                 } else if (!exempt) {
                     if (entity instanceof Monster) entity.takeDamage(Math.max(1, Math.floor(entity.maxHp / 15)), true, this.grid);
                     else entity.takeDamage(Math.max(1, Math.floor(entity.maxHp / 15)), true, this.grid); // bypasses shields
@@ -12956,22 +13077,19 @@ export class Game {
                     const respirationImmune = (gasFlags & T_RESPIRATION_IMMUNITIES) !== 0
                         && entity === this.player
                         && this.player.equippedArmor?.runicType === 'respiration';
-                    if (respirationImmune && !this.player.equippedArmor!.runicKnown) {
-                        this.player.equippedArmor!.runicKnown = true;
-                        markItemStatsDirty(this.player.equippedArmor!);
-                        logger.log(i18next.t('runic.armor.respiration_gas', { defaultValue: 'Your armor trembles and a pocket of clean air swirls around you.' }), '#66ffff');
-                    }
 
                     // 混乱气体（T_CAUSES_CONFUSION，Time.c:443-470）：
                     // STATUS_CONFUSED = max(…, 25)，豁免 MONST_INANIMATE /
                     // MONST_INVULNERABLE；玩家看得见且首次上状态时惊醒
                     // 睡眠怪（:448-452，creatureState → TRACKING_SCENT）。
-                    if ((gasFlags & T_CAUSES_CONFUSION) !== 0 && !respirationImmune && effect('confusion', true)) {
+                    if ((gasFlags & T_CAUSES_CONFUSION) !== 0 && effect('confusion', true)) {
                         const owner = bodyStatusOwner(entity, 'confused');
                         const exempt = entity !== this.player
                             && ((owner as Monster).hasBehavior('MONST_INANIMATE')
                                 || (owner as Monster).isInvulnerable());
-                        if (!exempt) {
+                        if (respirationImmune) {
+                            if (entity.getStatusDuration('confused') < 25 && !entity.hasStatusImmunity('confused')) this.revealRespiration(this.player.equippedArmor!);
+                        } else if (!exempt) {
                             // CE :449 的惊醒判据是"本回合赋值前 STATUS_CONFUSED
                             // 为 0"（外层还有 canDirectlySeeMonster——web 对应
                             // visibleMonsters），不是"本次刷新生效"。
@@ -12994,12 +13112,14 @@ export class Game {
                     // 麻痹气体（T_CAUSES_PARALYSIS，Time.c:471-497）：
                     // STATUS_PARALYZED = max(…, 20)，豁免同混乱 + 潜水
                     // （X2g 的 submerged 运行态）。CE 不惊醒睡眠怪。
-                    if ((gasFlags & T_CAUSES_PARALYSIS) !== 0 && !respirationImmune && !isSubmerged(entity) && effect('paralysis', true)) {
+                    if ((gasFlags & T_CAUSES_PARALYSIS) !== 0 && !isSubmerged(entity) && effect('paralysis', true)) {
                         const owner = bodyStatusOwner(entity, 'paralyzed');
                         const exempt = entity !== this.player
                             && ((owner as Monster).hasBehavior('MONST_INANIMATE')
                                 || (owner as Monster).isInvulnerable());
-                        if (!exempt) {
+                        if (respirationImmune) {
+                            if (entity.getStatusDuration('paralyzed') < 20 && !entity.hasStatusImmunity('paralyzed')) this.revealRespiration(this.player.equippedArmor!);
+                        } else if (!exempt) {
                             if (entity === this.player) this.disturbed = true; // CE Time.c:492
                             const applied = entity === this.player
                                 ? entity.applyStatus('paralyzed', 20)

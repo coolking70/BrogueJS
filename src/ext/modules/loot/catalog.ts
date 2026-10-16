@@ -1,3 +1,4 @@
+import { ITEM_RUNIC_TARGETS } from '../../itemSdk';
 import { extensionDataFingerprint } from '../../fingerprint';
 import { validId } from '../../json';
 import type { AffixDefinition, EffectiveLootCatalog, ItemClass, LootAvailability, LootPack } from './types';
@@ -65,5 +66,5 @@ export function buildEffectiveLootCatalog(pack: LootPack, availability: LootAvai
     const bossUniqueBias = pack.uniques.bossUniqueBias.filter(bias => normalized.giants?.formIds.includes(bias.formId))
         .map(bias => ({ ...bias }));
     return freezeLootValue({ pack, availability: normalized, affixes, effectiveWeight, bossUniqueBias,
-        fingerprint: extensionDataFingerprint({ pack, availability: normalized }) });
+        fingerprint: extensionDataFingerprint({ pack, targets:ITEM_RUNIC_TARGETS, availability: normalized }) });
 }

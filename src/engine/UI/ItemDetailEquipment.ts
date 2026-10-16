@@ -22,9 +22,8 @@ export function equipmentDetail(item: Item, ctx: ItemDetailContext): DetailSecti
     // Same inputs as ItemUseCoordinator.enchantChosenItem: +1 E and -1 strength
     // requirement (floored at zero). Do not call the mutator: throwing gear rolls RNG.
     const projection = enchantedEquipment(item.enchantment, req);
-    const nextReq = projection.strengthRequired;
+    const nextReq = ctx.usesEnhancement?req:projection.strengthRequired;
     const nextStats=ctx.nextStatProjection??equipmentStats({...item,...projection},str);
-    const next = nextStats[weapon?'native.weapon-enchant':'native.armor-enchant']!/4;
     const lines: DetailLine[] = [], sections: DetailSection[] = [];
     const add = (key: string, values: Record<string, number | string> = {}) => lines.push({ text: detailText(key, values) });
     const range = item.damage ? CombatSystem.parseDamageString(item.damage) : undefined;
@@ -32,7 +31,7 @@ export function equipmentDetail(item: Item, ctx: ItemDetailContext): DetailSecti
         add('weapon.base', { dice: item.damage!, low: range.min, high: range.max });
         if (k.instanceKnown) {
             add('weapon.actual', { low: projected['native.damage-min']!, high: projected['native.damage-max']!, enchant: signed(item.enchantment) });
-            add('weapon.next', { low: nextStats['native.damage-min']!, high: nextStats['native.damage-max']!, strength: nextReq });
+            if(!ctx.enhancementAtCap)add('weapon.next', { low: nextStats['native.damage-min']!, high: nextStats['native.damage-max']!, strength: nextReq });
         }
         if (ctx.weapon !== undefined && !ctx.equipped) {
             const current = ctx.weapon;
@@ -55,7 +54,7 @@ export function equipmentDetail(item: Item, ctx: ItemDetailContext): DetailSecti
                 armor: projected['native.defense']!/10, enchant: signed(ne),
                 note: ne !== item.enchantment ? detailText('strength.note') : '',
             });
-            add('armor.next', { armor: Math.trunc(nextStats['native.defense']! / 10), strength: nextReq });
+            if(!ctx.enhancementAtCap)add('armor.next', { armor: Math.trunc(nextStats['native.defense']! / 10), strength: nextReq });
         }
         if (ctx.armor !== undefined && !ctx.equipped) {
             const current = ctx.armor;
@@ -67,6 +66,7 @@ export function equipmentDetail(item: Item, ctx: ItemDetailContext): DetailSecti
             if (stealth) add('armor.stealth', { change: signed(stealth) });
         }
     }
+    if(ctx.enhancementAtCap)add('enhancement.at-cap');
     if (item.strengthRequired !== undefined) {
         const mod = nativeStrengthAdjustment(str, req);
         add('strength', { required: req, strength: str, state: detailText(mod >= 0 ? 'strength.enough' : 'strength.low') });
@@ -78,19 +78,20 @@ export function equipmentDetail(item: Item, ctx: ItemDetailContext): DetailSecti
     if (item.isProtected) add('protected', { name: item.displayName });
     sections.push({ header: detailText(weapon ? 'header.weapon' : 'header.armor'), lines });
     if (item.runicType) {
-        if (k.runicKnown) sections.push(runicDetail(item, ctx, ne, next));
+        if (k.runicKnown) sections.push(runicDetail(item, ctx, projected[weapon?'native.runic-power':'native.armor-runic-power']!/4, nextStats[weapon?'native.runic-power':'native.armor-runic-power']!/4));
         else if (k.instanceKnown) sections.push({ lines: [{ text: detailText('runic.unknown') }] });
     }
     return sections;
 }
 
 function runicDetail(item: Item, ctx: ItemDetailContext, ne: number, next: number): DetailSection {
-    const id = item.runicType!, weapon = item.category === C.WEAPON, known = itemKnowledge(item, ctx).instanceKnown;
+    const id = item.runicType!, weapon = item.category === C.WEAPON, known = ctx.usesEnhancement?itemKnowledge(item,ctx).runicKnown:itemKnowledge(item, ctx).instanceKnown;
     const lines: DetailLine[] = [];
     const add = (key: string, values: Record<string, number | string> = {}) => lines.push({ text: detailText(key, values), color: '#ffcc44' });
     const name = i18next.t('runic.name.' + id, { defaultValue: detailText('runic.unreadable') }) ?? detailText('runic.unreadable');
     const target = detailText('class.' + (item.vorpalEnemy ?? 'unknown'));
     add((weapon ? 'weapon.runic.' : 'armor.runic.') + id, { target });
+    if(ctx.usesEnhancement&&known&&ne===next)add('enhancement.runic-unchanged');
     if (weapon) {
         if (id === 'slaying') {
             if (!item.isProtected && monsters.some(m => monsterIsInClass(m.id, item.vorpalEnemy)

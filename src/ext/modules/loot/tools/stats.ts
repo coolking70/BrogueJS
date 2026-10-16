@@ -72,7 +72,7 @@ function category(random: LootRandom, other: boolean): ItemClass | null {
   return roll <= 10 ? 'weapon' : roll <= 18 ? 'armor' : roll <= 21 ? 'ring' : null;
 }
 function startingItem(baseId: string): LootItemDataV1 {
-  return { v: 1, baseId, ilvl: 1, rarity: 'normal', uniqueId: null, setId: null, affixes: [], corrupted: false, enhancement: 0, sockets: 0, socketed: [], nameParts: null, origin: { source: 'floor', depth: 1 } };
+  return { v: 2, baseId, ilvl: 1, rarity: 'normal', uniqueId: null, setId: null, affixes: [], corrupted: false, enhancement: 0, sockets: 0, socketed: [], nameParts: null, origin: { source: 'floor', depth: 1 } };
 }
 interface HeldItem { data: LootItemDataV1; category: ItemClass; modifiers: LootModifierDraft[] }
 function held(data: LootItemDataV1, catalog: EffectiveLootCatalog): HeldItem {
@@ -138,7 +138,7 @@ export function bestConsistentDefense(baseHp: number, armors: readonly DefenseOp
     const hp = Math.max(1, baseHp + armor.hp + pair.hp);
     const mitigationBp = Math.min(capBp, armor.mitigationBp + pair.mitigationBp);
     const ehp = hp / (1 - mitigationBp / 10000);
-    if (ehp > best.ehp) best = { hp, mitigation: mitigationBp / 100, ehp };
+    if (ehp > best.ehp) best = { hp, mitigation: mitigationBp / 100 || 0, ehp };
   }
   return best;
 }

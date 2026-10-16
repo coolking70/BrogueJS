@@ -1,3 +1,4 @@
+import { ITEM_RUNIC_TARGETS } from '../../itemSdk';
 import { enhancementCap, ringImplicit } from './economy';
 import type { EffectiveLootCatalog, ItemClass, LootAffixRoll, LootItemDataV1, LootModifierDraft, LootNativeFacts, ModifierSpec } from './types';
 
@@ -33,9 +34,9 @@ function rollShape(value: unknown): value is LootAffixRoll {
     && typeof value.known === 'boolean' && denseArray(value.values) && value.values.every(v => Number.isSafeInteger(v));
 }
 
-/** Strict V1 trust boundary. Malformed data is rejected without mutation or RNG. */
+/** Strict V2 trust boundary. Malformed data is rejected without mutation or RNG. */
 export function validateLootItemData(value: unknown, catalog: EffectiveLootCatalog): value is LootItemDataV1 {
-  if (!object(value) || !exact(value, itemKeys) || value.v !== 1 || typeof value.baseId !== 'string') return false;
+  if (!object(value) || !exact(value, 'targetClass'in value?[...itemKeys,'targetClass']:itemKeys) || value.v !== 2 || typeof value.baseId !== 'string') return false;
   const itemClass = lootItemClass(value.baseId, catalog);
   if (!itemClass || !integer(value.ilvl, 1, 99) || !['normal', 'magic', 'rare', 'unique'].includes(value.rarity as string)) return false;
   if (typeof value.corrupted !== 'boolean' || value.setId !== null || value.sockets !== 0 || !denseArray(value.socketed) || value.socketed.length !== 0) return false;
@@ -46,6 +47,9 @@ export function validateLootItemData(value: unknown, catalog: EffectiveLootCatal
   if (value.rarity === 'rare') {
     if (!denseArray(value.nameParts) || value.nameParts.length !== 2 || !integer(value.nameParts[0], 0, catalog.pack.rareNames.first.length - 1) || !integer(value.nameParts[1], 0, catalog.pack.rareNames.second.length - 1)) return false;
   } else if (value.nameParts !== null) return false;
+  if('targetClass'in value&&typeof value.targetClass!=='string')return false;
+  const affixRows=value.affixes;
+  if(value.targetClass!==undefined&&(!['slaying','immunity'].some(type=>affixRows.some(a=>catalog.affixes.find(d=>d.id===a.id)?.rune?.runicType===type))||!ITEM_RUNIC_TARGETS.some(t=>t.name===value.targetClass)))return false;
   if (value.rarity === 'unique') {
     if (typeof value.uniqueId !== 'string' || value.corrupted) return false;
     const unique = catalog.pack.uniques.uniques.find(u => u.id === value.uniqueId);
@@ -62,7 +66,8 @@ export function validateLootItemData(value: unknown, catalog: EffectiveLootCatal
   let advanced = 0;
   for (const roll of value.affixes) {
     const affix = catalog.affixes.find(a => a.id === roll.id);
-    if (!affix || !affix.itemClasses.includes(itemClass) || affix.rune !== null || usedGroups.has(affix.group)) return false;
+    if (!affix || !affix.itemClasses.includes(itemClass) || usedGroups.has(affix.group)) return false;
+    if(affix.rune&&(!catalog.pack.affixes.runeFamilyEnabled||affix.rune.slot!==itemClass||(['slaying','immunity'].includes(affix.rune.runicType)&&typeof value.targetClass!=='string')))return false;
     usedGroups.add(affix.group);
     const tier = affix.tiers.find(t => t.tier === roll.tier);
     if (!tier || roll.tier < 1 || roll.tier > affix.maxTier || !valuesFit(roll.values, tier.ranges)) return false;

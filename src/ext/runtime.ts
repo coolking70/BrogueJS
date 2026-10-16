@@ -6,7 +6,7 @@ import { bindItemExtension, unbindItemExtension, ITEM_COLOR_TOKENS, type ItemLoc
 import { redactItemProjection } from '../engine/Items/ItemPresentation';
 import { ItemLoader } from '../engine/Items/ItemLoader';
 import { itemFacts, hasItemData, copyItemValue, freezeItemValue } from '../engine/Items/ItemData';
-import { markItemKnowledgeDirty } from '../engine/Items/ItemStatInvalidation';
+import { markItemStatsDirty, markItemKnowledgeDirty } from '../engine/Items/ItemStatInvalidation';
 import { itemStatPolicy } from '../engine/Stats/ItemStatPolicy';
 import { ItemDrops, type DropInput, type ItemDropSnapshot } from './itemDrops';
 import type { DropSource, DropProposal, DropAcceptance, DropEvent } from './itemSdk';
@@ -1241,10 +1241,14 @@ export class ExtensionRuntime {
     }
     /** Pure engine adapter: one provider per slot, finite synchronous bounded scalars. */
 
+    itemGrowthRedirects(itemId:string,nativeDestination:ItemGrowthInput['nativeDestination']):boolean {
+        const provider=this.modules.find(m=>m.commitItemGrowth);
+        return provider?.itemGrowthRedirects?this.ediblePure(()=>provider.itemGrowthRedirects!(itemId,nativeDestination))===true:false;
+    }
     commitItemGrowth(actor: Creature, itemId: string, nativeDestination: ItemGrowthInput['nativeDestination'], nativeAmount: number,
-        nativeCommit?: { apply(amount: number): void; rollback?(): void }): number {
+        nativeCommit?: { apply(amount: number): void; rollback?(): void; limit?:number }): number {
         const module = this.modules.find(module => module.commitItemGrowth);
-        if (!module) { nativeCommit?.apply(nativeAmount); return nativeAmount; }
+        if (!module) { const accepted=Math.min(nativeAmount,nativeCommit?.limit??nativeAmount);nativeCommit?.apply(accepted); return accepted; }
         if (!this.creatures.has(actor) || !Number.isSafeInteger(nativeAmount) || nativeAmount < 0) throw new Error('Invalid item growth owner or amount');
         const states = checkpointJson(this.states), components = checkpointJson(this.components),stats=statSessions.get(this)!.ledger.snapshot();
         const resources = [...this.creatures].map(creature => ({ creature, hp: creature.hp, maxHp: creature.maxHp,
@@ -1252,7 +1256,7 @@ export class ExtensionRuntime {
         const prior = this.resourcePhase; this.resourcePhase = true;
         let result: { nativeAmount: number } | undefined;
         try {
-            this.invoke(module, context => { result = module.commitItemGrowth!(Object.freeze({ actor: this.actorFacts(actor), itemId, nativeDestination, nativeAmount }), context); });
+            this.invoke(module, context => { result = module.commitItemGrowth!(Object.freeze({ actor: this.actorFacts(actor), itemId, nativeDestination, nativeAmount, ...(nativeCommit?.limit===undefined?{}:{nativeLimit:nativeCommit.limit}) }), context); });
             requireSynchronous(result);
             if (!result || Object.keys(result).join(',') !== 'nativeAmount' || !Number.isSafeInteger(result.nativeAmount) || result.nativeAmount < 0)
                 throw new Error('Invalid item growth result');
@@ -1958,6 +1962,33 @@ export class ExtensionRuntime {
         this.states[owner]=module.actorActions?copyItemValue(next) as Json:immutableJson(copyItemValue(next) as Json);
         const session=statSessions.get(this)!;session.pipeline.clear();session.moduleViews.clear();markRecordingRoot(this);
     }
+    hasItemEnhancement():boolean {return this.modules.some(m=>m.itemEnhancement);}
+    itemEnhancementLimit(item:Item):number|null {
+        const owners=this.modules.filter(m=>m.itemEnhancement&&item.moduleData?.[m.id]!==undefined);
+        if(!owners.length)return null;
+        if(owners.length!==1)throw new ItemDataError('C6_OWNER');
+        const owner=owners[0]!,limit=this.ediblePure(()=>owner.itemEnhancement!.limit(itemFacts(item).moduleData![owner.id]!));
+        if(!Number.isSafeInteger(limit)||limit<0||limit>100)throw new ItemDataError('C6_DATA');
+        return limit;
+    }
+    applyItemEnhancement(item:Item,amount:number):void {
+        if(this.pureProviderPhase)throw new ItemDataError('C6_DATA');
+        const limit=this.itemEnhancementLimit(item),owner=this.modules.find(m=>m.itemEnhancement&&item.moduleData?.[m.id]!==undefined);
+        if(!owner||limit===null||!Number.isSafeInteger(amount)||amount<0||amount>limit)throw new ItemDataError('C6_DATA');
+        if(amount===0)return;
+        let draws=0;
+        const proposal=this.ediblePure(()=>owner.itemEnhancement!.apply(itemFacts(item).moduleData![owner.id]!,amount,Object.freeze({randomInt:(lo:number,hi:number)=>{
+            if(!Number.isSafeInteger(lo)||!Number.isSafeInteger(hi)||lo>hi||++draws>64)throw new ItemDataError('C6_BUDGET');
+            return lo===hi?lo:this.ports.randomInt(lo,hi);
+        }})));
+        assertItemJson(proposal);
+        if(Object.keys(proposal).sort().join(',')!=='data,enchantmentDelta'||!Number.isSafeInteger(proposal.enchantmentDelta)||Math.abs(proposal.enchantmentDelta)>100||item.category!==8&&proposal.enchantmentDelta!==0)throw new ItemDataError('C6_DATA');
+        const candidate={...item,moduleData:{...item.moduleData,[owner.id]:copyItemValue(proposal.data) as Json},enchantment:item.enchantment+proposal.enchantmentDelta};
+        this.validateItemData(candidate,'update');
+        if(!Number.isSafeInteger(item.timesEnchanted+amount))throw new ItemDataError('C6_DATA');
+        item.moduleData=candidate.moduleData;item.enchantment=candidate.enchantment;item.timesEnchanted+=amount;
+        markItemStatsDirty(item);markRecordingRoot(item);markRecordingRoot(this);
+    }
     itemKnown(item:object):boolean {
         const facts=itemFacts(item);return Object.entries(facts.moduleData??{}).every(([owner,data])=>{
             const p=this.modules.find(m=>m.id===owner)?.itemKnowledge;if(!p)return true;
@@ -1986,6 +2017,17 @@ export class ExtensionRuntime {
         // knowledge can still make this a valid identification-scroll target.
         item.canBeIdentified=true;ItemLoader.updateIdentifiableItem(item);
         markItemKnowledgeDirty(item);markRecordingRoot(item);markRecordingRoot(this);
+    }
+    /** Execution-only receipt, bound to this session's currently equipped item. */
+    commitItemRunicKnowledge(actor:Player,item:Item,target:Creature|null,runicType:string,phase:'effect'|'native-reveal'|'projectile'='effect'):void {
+        if(this.disposed||this.pureProviderPhase||actor.id!==this.ports.playerId()||!this.creatures.has(actor)||!hasItemData(item)||!boundExtensionItems.get(this)!.has(item)
+            ||(phase==='projectile'?this.causality.current?.actorId!==actor.id:phase==='effect'?![actor.equippedWeapon,actor.equippedArmor].includes(item):!actor.inventory.items.includes(item))||item.runicType!==runicType||!item.flags?.includes('ITEM_RUNIC'))return;
+        const fact={kind:'runic-effect' as const,phase,result:'committed' as const,settlementId:this.nextFactId,actorId:actor.id,itemId:item.id,targetId:target?.id??null,runicType,targetTags:target?nativeStatFacts(target,this.ports.playerId()).tags:[]};
+        const commit=this.prepareTriggeredItemKnowledge(item,fact);
+        if(commit){
+            if(!Number.isSafeInteger(this.nextFactId+1))throw new ItemDataError('C6_DATA');
+            commit();this.nextFactId++;item.runicKnown=true;markItemKnowledgeDirty(item);markRecordingRoot(this);
+        }
     }
     commitEquipmentStatKnowledge(actorId:number):void {
         this.commitItemStatKnowledge(actorId,['native.max-hp','native.strength','combat.stamina-capacity','combat.poise-capacity',...this.stats.keys.values()].flatMap(key=>typeof key==='string'?[key]:key.attributeId||key.kind==='materialized'?[key.id]:[]));
@@ -2042,6 +2084,21 @@ export class ExtensionRuntime {
         const hallucinating=()=>[...this.creatures].some(a=>a.id===this.ports.playerId()&&a.hasStatus('hallucinating'));
         const known=(owner:string,baseName:string,location:ItemLocation)=>this.projectKnownItem(item,owner,location,baseName);
         bindItemExtension(item,{
+            enhanced:()=>this.itemEnhancementLimit(item)!==null,
+            enhancementPreview:()=>{
+                const owner=this.modules.find(m=>m.itemEnhancement&&item.moduleData?.[m.id]!==undefined);if(!owner)return null;
+                const proposal=this.ediblePure(()=>owner.itemEnhancement!.preview(itemFacts(item).moduleData![owner.id]!));if(!proposal)return null;
+                assertItemJson(proposal);
+                const candidate={...item,moduleData:{...item.moduleData,[owner.id]:copyItemValue(proposal.data) as Json},enchantment:item.enchantment+proposal.enchantmentDelta};
+                this.validateItemData(candidate,'update');return {moduleData:candidate.moduleData,enchantment:candidate.enchantment,strengthRequired:item.strengthRequired??0};
+            },
+            runicPower:(knownOnly,data)=>{
+                const provider=this.modules.find(m=>m.itemRunicPower&&item.moduleData?.[m.id]!==undefined);
+                if(!provider)return null;
+                const value=this.ediblePure(()=>provider.itemRunicPower!(freezeItemValue(copyItemValue((data??item.moduleData)![provider.id]!)),knownOnly));
+                if(value!==null&&(!Number.isSafeInteger(value)||value<0||value>200))throw new ItemDataError('C6_DATA');
+                return value;
+            },
             atomic:work=>{const restore=nativeFactCheckpoints.get(this)?.();try{return work();}catch(error){restore?.();throw error;}},
             name:(baseName,location)=>{
                 if(this.disposed||hallucinating())return baseName;

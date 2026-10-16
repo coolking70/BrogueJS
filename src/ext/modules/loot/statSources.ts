@@ -6,7 +6,7 @@ import { stateOf } from './session';
 const remap: Record<string,string> = {'native.damage-min':'native.weapon-base-min','native.damage-max':'native.weapon-base-max','loot.local.armor':'native.armor-base',
   'native.regeneration':'native.regeneration-bonus','native.stealth-range':'native.stealth-points','native.light':'native.light-points'};
 export function adaptLootModifier(mod: LootModifierDraft, itemId:number, index:number): StatModifierRow | null {
-  // Implicit is already in native enchant; fixed runic types keep native power until 6B4.
+  // Implicit is already in native enchant; runic L0 is supplied by itemRunicPower, never added to native enchant.
   if(mod.stat==='loot.ring-implicit'||mod.runicType!==null||mod.unit==='runic-strength')return null;
   const stat=mod.stat==='native.defense'&&mod.unit==='display-armor'?'native.armor-base':remap[mod.stat]??mod.stat;
   const category=mod.category==='local-flat'?'flat':mod.category==='local-increased'?'increased':mod.category;

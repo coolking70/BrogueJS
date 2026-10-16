@@ -1,0 +1,3232 @@
+{
+  "loot.affix.rune-w-speed": {
+    "seed": 24,
+    "request": {
+      "v": 1,
+      "source": "floor",
+      "depth": 40,
+      "presetId": "scarce",
+      "rarityFindBp": 0,
+      "claimedUniqueIds": [],
+      "itemClass": "weapon"
+    },
+    "draws": [
+      [
+        1,
+        102,
+        34
+      ],
+      [
+        1,
+        1098,
+        1059
+      ],
+      [
+        1,
+        100,
+        30
+      ],
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        3100,
+        1628
+      ],
+      [
+        1,
+        100,
+        12
+      ],
+      [
+        3,
+        5,
+        3
+      ],
+      [
+        8,
+        11,
+        9
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        3795,
+        2973
+      ],
+      [
+        1,
+        100,
+        65
+      ],
+      [
+        2,
+        3,
+        2
+      ],
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        2100,
+        921
+      ],
+      [
+        1,
+        100,
+        68
+      ],
+      [
+        8600,
+        11500,
+        9642
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        3295,
+        3015
+      ],
+      [
+        1,
+        100,
+        51
+      ],
+      [
+        7,
+        8,
+        7
+      ],
+      [
+        1,
+        10000,
+        7812
+      ],
+      [
+        0,
+        31,
+        12
+      ],
+      [
+        0,
+        31,
+        30
+      ]
+    ],
+    "data": {
+      "v": 2,
+      "baseId": "mace",
+      "ilvl": 60,
+      "rarity": "rare",
+      "uniqueId": null,
+      "setId": null,
+      "affixes": [
+        {
+          "id": "loot.affix.brutal",
+          "tier": 4,
+          "values": [
+            3,
+            9
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.leech",
+          "tier": 5,
+          "values": [
+            2
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.keen",
+          "tier": 5,
+          "values": [
+            9642
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.rune-w-speed",
+          "tier": 5,
+          "values": [
+            7
+          ],
+          "known": false
+        }
+      ],
+      "corrupted": false,
+      "enhancement": 0,
+      "sockets": 0,
+      "socketed": [],
+      "nameParts": [
+        12,
+        30
+      ],
+      "origin": {
+        "source": "floor",
+        "depth": 40
+      }
+    },
+    "native": {
+      "kind": "mace",
+      "category": "weapon",
+      "enchantment": 0,
+      "runicType": "speed",
+      "runicStrength": 7,
+      "isCursed": false,
+      "identified": false
+    }
+  },
+  "loot.affix.rune-w-paralyzing": {
+    "seed": 116,
+    "request": {
+      "v": 1,
+      "source": "floor",
+      "depth": 40,
+      "presetId": "scarce",
+      "rarityFindBp": 0,
+      "claimedUniqueIds": [],
+      "itemClass": "weapon"
+    },
+    "draws": [
+      [
+        1,
+        102,
+        98
+      ],
+      [
+        1,
+        1098,
+        963
+      ],
+      [
+        1,
+        100,
+        34
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        3795,
+        3595
+      ],
+      [
+        1,
+        100,
+        3
+      ],
+      [
+        1,
+        10000,
+        7034
+      ]
+    ],
+    "data": {
+      "v": 2,
+      "baseId": "war_axe",
+      "ilvl": 60,
+      "rarity": "magic",
+      "uniqueId": null,
+      "setId": null,
+      "affixes": [
+        {
+          "id": "loot.affix.rune-w-paralyzing",
+          "tier": 3,
+          "values": [
+            4
+          ],
+          "known": false
+        }
+      ],
+      "corrupted": false,
+      "enhancement": 0,
+      "sockets": 0,
+      "socketed": [],
+      "nameParts": null,
+      "origin": {
+        "source": "floor",
+        "depth": 40
+      }
+    },
+    "native": {
+      "kind": "war_axe",
+      "category": "weapon",
+      "enchantment": 0,
+      "runicType": "paralyzing",
+      "runicStrength": 4,
+      "isCursed": false,
+      "identified": false
+    }
+  },
+  "loot.affix.rune-a-multiplicity": {
+    "seed": 116,
+    "request": {
+      "v": 1,
+      "source": "floor",
+      "depth": 40,
+      "presetId": "scarce",
+      "rarityFindBp": 0,
+      "claimedUniqueIds": [],
+      "itemClass": "armor"
+    },
+    "draws": [
+      [
+        1,
+        48,
+        46
+      ],
+      [
+        1,
+        1098,
+        963
+      ],
+      [
+        1,
+        100,
+        34
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        5605,
+        5309
+      ],
+      [
+        1,
+        100,
+        3
+      ],
+      [
+        5,
+        6,
+        6
+      ],
+      [
+        1,
+        10000,
+        6171
+      ]
+    ],
+    "data": {
+      "v": 2,
+      "baseId": "plate_mail",
+      "ilvl": 60,
+      "rarity": "magic",
+      "uniqueId": null,
+      "setId": null,
+      "affixes": [
+        {
+          "id": "loot.affix.rune-a-multiplicity",
+          "tier": 4,
+          "values": [
+            6
+          ],
+          "known": false
+        }
+      ],
+      "corrupted": false,
+      "enhancement": 0,
+      "sockets": 0,
+      "socketed": [],
+      "nameParts": null,
+      "origin": {
+        "source": "floor",
+        "depth": 40
+      }
+    },
+    "native": {
+      "kind": "plate_mail",
+      "category": "armor",
+      "enchantment": 0,
+      "runicType": "multiplicity",
+      "runicStrength": 6,
+      "isCursed": false,
+      "identified": false
+    }
+  },
+  "loot.affix.rune-w-multiplicity": {
+    "seed": 130,
+    "request": {
+      "v": 1,
+      "source": "floor",
+      "depth": 40,
+      "presetId": "scarce",
+      "rarityFindBp": 0,
+      "claimedUniqueIds": [],
+      "itemClass": "weapon"
+    },
+    "draws": [
+      [
+        1,
+        102,
+        21
+      ],
+      [
+        1,
+        1098,
+        1088
+      ],
+      [
+        1,
+        100,
+        68
+      ],
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        3100,
+        1253
+      ],
+      [
+        1,
+        100,
+        25
+      ],
+      [
+        3,
+        5,
+        5
+      ],
+      [
+        8,
+        11,
+        9
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        3795,
+        90
+      ],
+      [
+        1,
+        100,
+        99
+      ],
+      [
+        4300,
+        5200,
+        4635
+      ],
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        2100,
+        355
+      ],
+      [
+        1,
+        100,
+        56
+      ],
+      [
+        8600,
+        11500,
+        9452
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        2895,
+        333
+      ],
+      [
+        1,
+        100,
+        65
+      ],
+      [
+        -1800,
+        -1600,
+        -1763
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        2395,
+        2204
+      ],
+      [
+        1,
+        100,
+        59
+      ],
+      [
+        7,
+        8,
+        8
+      ],
+      [
+        1,
+        10000,
+        5143
+      ],
+      [
+        0,
+        31,
+        21
+      ],
+      [
+        0,
+        31,
+        17
+      ]
+    ],
+    "data": {
+      "v": 2,
+      "baseId": "rapier",
+      "ilvl": 60,
+      "rarity": "rare",
+      "uniqueId": null,
+      "setId": null,
+      "affixes": [
+        {
+          "id": "loot.affix.brutal",
+          "tier": 4,
+          "values": [
+            5,
+            9
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.precise",
+          "tier": 6,
+          "values": [
+            4635
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.keen",
+          "tier": 5,
+          "values": [
+            9452
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.swift",
+          "tier": 5,
+          "values": [
+            -1763
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.rune-w-multiplicity",
+          "tier": 5,
+          "values": [
+            8
+          ],
+          "known": false
+        }
+      ],
+      "corrupted": false,
+      "enhancement": 0,
+      "sockets": 0,
+      "socketed": [],
+      "nameParts": [
+        21,
+        17
+      ],
+      "origin": {
+        "source": "floor",
+        "depth": 40
+      }
+    },
+    "native": {
+      "kind": "rapier",
+      "category": "weapon",
+      "enchantment": 0,
+      "runicType": "multiplicity",
+      "runicStrength": 8,
+      "isCursed": false,
+      "identified": false
+    }
+  },
+  "loot.affix.rune-w-confusion": {
+    "seed": 138,
+    "request": {
+      "v": 1,
+      "source": "floor",
+      "depth": 40,
+      "presetId": "scarce",
+      "rarityFindBp": 0,
+      "claimedUniqueIds": [],
+      "itemClass": "weapon"
+    },
+    "draws": [
+      [
+        1,
+        102,
+        15
+      ],
+      [
+        1,
+        1098,
+        873
+      ],
+      [
+        1,
+        100,
+        82
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        3795,
+        3714
+      ],
+      [
+        1,
+        100,
+        71
+      ],
+      [
+        7,
+        8,
+        7
+      ],
+      [
+        1,
+        3100,
+        342
+      ],
+      [
+        1,
+        100,
+        76
+      ],
+      [
+        11600,
+        15000,
+        14441
+      ],
+      [
+        1,
+        10000,
+        2335
+      ]
+    ],
+    "data": {
+      "v": 2,
+      "baseId": "spear",
+      "ilvl": 60,
+      "rarity": "magic",
+      "uniqueId": null,
+      "setId": null,
+      "affixes": [
+        {
+          "id": "loot.affix.rune-w-confusion",
+          "tier": 5,
+          "values": [
+            7
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.keen",
+          "tier": 6,
+          "values": [
+            14441
+          ],
+          "known": false
+        }
+      ],
+      "corrupted": false,
+      "enhancement": 0,
+      "sockets": 0,
+      "socketed": [],
+      "nameParts": null,
+      "origin": {
+        "source": "floor",
+        "depth": 40
+      }
+    },
+    "native": {
+      "kind": "spear",
+      "category": "weapon",
+      "enchantment": 0,
+      "runicType": "confusion",
+      "runicStrength": 7,
+      "isCursed": false,
+      "identified": false
+    }
+  },
+  "loot.affix.rune-a-immunity": {
+    "seed": 138,
+    "request": {
+      "v": 1,
+      "source": "floor",
+      "depth": 40,
+      "presetId": "scarce",
+      "rarityFindBp": 0,
+      "claimedUniqueIds": [],
+      "itemClass": "armor"
+    },
+    "draws": [
+      [
+        1,
+        48,
+        7
+      ],
+      [
+        1,
+        1098,
+        873
+      ],
+      [
+        1,
+        100,
+        82
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        5605,
+        5485
+      ],
+      [
+        1,
+        100,
+        71
+      ],
+      [
+        7,
+        8,
+        7
+      ],
+      [
+        1,
+        3100,
+        342
+      ],
+      [
+        1,
+        100,
+        76
+      ],
+      [
+        5100,
+        6000,
+        5852
+      ],
+      [
+        1,
+        10000,
+        2335
+      ],
+      [
+        0,
+        49,
+        6
+      ]
+    ],
+    "data": {
+      "v": 2,
+      "baseId": "scale_mail",
+      "ilvl": 60,
+      "rarity": "magic",
+      "uniqueId": null,
+      "setId": null,
+      "affixes": [
+        {
+          "id": "loot.affix.rune-a-immunity",
+          "tier": 5,
+          "values": [
+            7
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.reinforced",
+          "tier": 6,
+          "values": [
+            5852
+          ],
+          "known": false
+        }
+      ],
+      "corrupted": false,
+      "enhancement": 0,
+      "sockets": 0,
+      "socketed": [],
+      "nameParts": null,
+      "origin": {
+        "source": "floor",
+        "depth": 40
+      },
+      "targetClass": "abomination"
+    },
+    "native": {
+      "kind": "scale_mail",
+      "category": "armor",
+      "enchantment": 0,
+      "runicType": "immunity",
+      "runicStrength": 7,
+      "isCursed": false,
+      "identified": false
+    }
+  },
+  "loot.affix.rune-a-absorption": {
+    "seed": 206,
+    "request": {
+      "v": 1,
+      "source": "floor",
+      "depth": 40,
+      "presetId": "scarce",
+      "rarityFindBp": 0,
+      "claimedUniqueIds": [],
+      "itemClass": "armor"
+    },
+    "draws": [
+      [
+        1,
+        48,
+        32
+      ],
+      [
+        1,
+        1098,
+        999
+      ],
+      [
+        1,
+        100,
+        91
+      ],
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        3100,
+        1872
+      ],
+      [
+        1,
+        100,
+        97
+      ],
+      [
+        -1800,
+        -1500,
+        -1681
+      ],
+      [
+        1,
+        5605,
+        5383
+      ],
+      [
+        1,
+        100,
+        48
+      ],
+      [
+        7,
+        8,
+        8
+      ],
+      [
+        1,
+        10000,
+        3785
+      ]
+    ],
+    "data": {
+      "v": 2,
+      "baseId": "splint_mail",
+      "ilvl": 60,
+      "rarity": "magic",
+      "uniqueId": null,
+      "setId": null,
+      "affixes": [
+        {
+          "id": "loot.affix.warding",
+          "tier": 6,
+          "values": [
+            -1681
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.rune-a-absorption",
+          "tier": 5,
+          "values": [
+            8
+          ],
+          "known": false
+        }
+      ],
+      "corrupted": false,
+      "enhancement": 0,
+      "sockets": 0,
+      "socketed": [],
+      "nameParts": null,
+      "origin": {
+        "source": "floor",
+        "depth": 40
+      }
+    },
+    "native": {
+      "kind": "splint_mail",
+      "category": "armor",
+      "enchantment": 0,
+      "runicType": "absorption",
+      "runicStrength": 8,
+      "isCursed": false,
+      "identified": false
+    }
+  },
+  "loot.affix.rune-a-reprisal": {
+    "seed": 209,
+    "request": {
+      "v": 1,
+      "source": "floor",
+      "depth": 40,
+      "presetId": "scarce",
+      "rarityFindBp": 0,
+      "claimedUniqueIds": [],
+      "itemClass": "armor"
+    },
+    "draws": [
+      [
+        1,
+        48,
+        6
+      ],
+      [
+        1,
+        1098,
+        1086
+      ],
+      [
+        1,
+        100,
+        85
+      ],
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        3100,
+        1076
+      ],
+      [
+        1,
+        100,
+        11
+      ],
+      [
+        2,
+        3,
+        2
+      ],
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        2300,
+        1691
+      ],
+      [
+        1,
+        100,
+        22
+      ],
+      [
+        -1100,
+        -900,
+        -913
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        5605,
+        4050
+      ],
+      [
+        1,
+        100,
+        33
+      ],
+      [
+        2600,
+        3300,
+        2625
+      ],
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        1300,
+        205
+      ],
+      [
+        1,
+        100,
+        41
+      ],
+      [
+        4100,
+        5000,
+        4319
+      ],
+      [
+        1,
+        4905,
+        4746
+      ],
+      [
+        1,
+        100,
+        33
+      ],
+      [
+        5,
+        6,
+        5
+      ],
+      [
+        1,
+        10000,
+        815
+      ],
+      [
+        1,
+        1600,
+        754
+      ],
+      [
+        1,
+        100,
+        90
+      ],
+      [
+        0,
+        4,
+        2
+      ],
+      [
+        3400,
+        4200,
+        3932
+      ],
+      [
+        0,
+        31,
+        13
+      ],
+      [
+        0,
+        31,
+        25
+      ]
+    ],
+    "data": {
+      "v": 2,
+      "baseId": "scale_mail",
+      "ilvl": 60,
+      "rarity": "rare",
+      "uniqueId": null,
+      "setId": null,
+      "affixes": [
+        {
+          "id": "loot.affix.plated",
+          "tier": 4,
+          "values": [
+            2
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.warding",
+          "tier": 4,
+          "values": [
+            -913
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.fireward",
+          "tier": 5,
+          "values": [
+            3932
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.reinforced",
+          "tier": 5,
+          "values": [
+            4319
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.rune-a-reprisal",
+          "tier": 4,
+          "values": [
+            5
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.frail",
+          "tier": 6,
+          "values": [
+            -40
+          ],
+          "known": false
+        }
+      ],
+      "corrupted": true,
+      "enhancement": 0,
+      "sockets": 0,
+      "socketed": [],
+      "nameParts": [
+        13,
+        25
+      ],
+      "origin": {
+        "source": "floor",
+        "depth": 40
+      }
+    },
+    "native": {
+      "kind": "scale_mail",
+      "category": "armor",
+      "enchantment": 0,
+      "runicType": "reprisal",
+      "runicStrength": 5,
+      "isCursed": true,
+      "identified": false
+    }
+  },
+  "loot.affix.rune-w-slowing": {
+    "seed": 271,
+    "request": {
+      "v": 1,
+      "source": "floor",
+      "depth": 40,
+      "presetId": "scarce",
+      "rarityFindBp": 0,
+      "claimedUniqueIds": [],
+      "itemClass": "weapon"
+    },
+    "draws": [
+      [
+        1,
+        102,
+        36
+      ],
+      [
+        1,
+        1098,
+        1056
+      ],
+      [
+        1,
+        100,
+        52
+      ],
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        3100,
+        439
+      ],
+      [
+        1,
+        100,
+        57
+      ],
+      [
+        8600,
+        11500,
+        9182
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        3795,
+        2312
+      ],
+      [
+        1,
+        100,
+        25
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        2595,
+        2095
+      ],
+      [
+        1,
+        100,
+        21
+      ],
+      [
+        2,
+        3,
+        2
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        2195,
+        2053
+      ],
+      [
+        1,
+        100,
+        50
+      ],
+      [
+        7,
+        8,
+        8
+      ],
+      [
+        1,
+        10000,
+        8398
+      ],
+      [
+        0,
+        31,
+        29
+      ],
+      [
+        0,
+        31,
+        27
+      ]
+    ],
+    "data": {
+      "v": 2,
+      "baseId": "mace",
+      "ilvl": 60,
+      "rarity": "rare",
+      "uniqueId": null,
+      "setId": null,
+      "affixes": [
+        {
+          "id": "loot.affix.keen",
+          "tier": 5,
+          "values": [
+            9182
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.titan",
+          "tier": 4,
+          "values": [
+            2
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.reaper",
+          "tier": 4,
+          "values": [
+            2
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.rune-w-slowing",
+          "tier": 5,
+          "values": [
+            8
+          ],
+          "known": false
+        }
+      ],
+      "corrupted": false,
+      "enhancement": 0,
+      "sockets": 0,
+      "socketed": [],
+      "nameParts": [
+        29,
+        27
+      ],
+      "origin": {
+        "source": "floor",
+        "depth": 40
+      }
+    },
+    "native": {
+      "kind": "mace",
+      "category": "weapon",
+      "enchantment": 0,
+      "runicType": "slowing",
+      "runicStrength": 8,
+      "isCursed": false,
+      "identified": false
+    }
+  },
+  "loot.affix.rune-a-mutuality": {
+    "seed": 271,
+    "request": {
+      "v": 1,
+      "source": "floor",
+      "depth": 40,
+      "presetId": "scarce",
+      "rarityFindBp": 0,
+      "claimedUniqueIds": [],
+      "itemClass": "armor"
+    },
+    "draws": [
+      [
+        1,
+        48,
+        17
+      ],
+      [
+        1,
+        1098,
+        1056
+      ],
+      [
+        1,
+        100,
+        52
+      ],
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        3100,
+        439
+      ],
+      [
+        1,
+        100,
+        57
+      ],
+      [
+        4100,
+        5000,
+        4280
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        5605,
+        3415
+      ],
+      [
+        1,
+        100,
+        25
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        4405,
+        3555
+      ],
+      [
+        1,
+        100,
+        21
+      ],
+      [
+        2600,
+        3300,
+        2622
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        3705,
+        3464
+      ],
+      [
+        1,
+        100,
+        50
+      ],
+      [
+        7,
+        8,
+        8
+      ],
+      [
+        1,
+        10000,
+        8398
+      ],
+      [
+        0,
+        31,
+        29
+      ],
+      [
+        0,
+        31,
+        27
+      ]
+    ],
+    "data": {
+      "v": 2,
+      "baseId": "chain_mail",
+      "ilvl": 60,
+      "rarity": "rare",
+      "uniqueId": null,
+      "setId": null,
+      "affixes": [
+        {
+          "id": "loot.affix.reinforced",
+          "tier": 5,
+          "values": [
+            4280
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.titan",
+          "tier": 4,
+          "values": [
+            2
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.antivenom",
+          "tier": 4,
+          "values": [
+            2622
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.rune-a-mutuality",
+          "tier": 5,
+          "values": [
+            8
+          ],
+          "known": false
+        }
+      ],
+      "corrupted": false,
+      "enhancement": 0,
+      "sockets": 0,
+      "socketed": [],
+      "nameParts": [
+        29,
+        27
+      ],
+      "origin": {
+        "source": "floor",
+        "depth": 40
+      }
+    },
+    "native": {
+      "kind": "chain_mail",
+      "category": "armor",
+      "enchantment": 0,
+      "runicType": "mutuality",
+      "runicStrength": 8,
+      "isCursed": false,
+      "identified": false
+    }
+  },
+  "loot.affix.rune-w-quietus": {
+    "seed": 347,
+    "request": {
+      "v": 1,
+      "source": "floor",
+      "depth": 40,
+      "presetId": "scarce",
+      "rarityFindBp": 0,
+      "claimedUniqueIds": [],
+      "itemClass": "weapon"
+    },
+    "draws": [
+      [
+        1,
+        102,
+        45
+      ],
+      [
+        1,
+        1098,
+        1080
+      ],
+      [
+        1,
+        100,
+        44
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        3795,
+        64
+      ],
+      [
+        1,
+        100,
+        33
+      ],
+      [
+        2600,
+        3300,
+        2754
+      ],
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        3100,
+        2674
+      ],
+      [
+        1,
+        100,
+        77
+      ],
+      [
+        12100,
+        16000,
+        15755
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        2895,
+        2240
+      ],
+      [
+        1,
+        100,
+        42
+      ],
+      [
+        3,
+        4,
+        4
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        2495,
+        2255
+      ],
+      [
+        1,
+        100,
+        13
+      ],
+      [
+        1,
+        10000,
+        2620
+      ],
+      [
+        0,
+        31,
+        19
+      ],
+      [
+        0,
+        31,
+        19
+      ]
+    ],
+    "data": {
+      "v": 2,
+      "baseId": "axe",
+      "ilvl": 60,
+      "rarity": "rare",
+      "uniqueId": null,
+      "setId": null,
+      "affixes": [
+        {
+          "id": "loot.affix.precise",
+          "tier": 4,
+          "values": [
+            2754
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.giantsbane",
+          "tier": 6,
+          "values": [
+            15755
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.reaper",
+          "tier": 5,
+          "values": [
+            4
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.rune-w-quietus",
+          "tier": 2,
+          "values": [
+            3
+          ],
+          "known": false
+        }
+      ],
+      "corrupted": false,
+      "enhancement": 0,
+      "sockets": 0,
+      "socketed": [],
+      "nameParts": [
+        19,
+        19
+      ],
+      "origin": {
+        "source": "floor",
+        "depth": 40
+      }
+    },
+    "native": {
+      "kind": "axe",
+      "category": "weapon",
+      "enchantment": 0,
+      "runicType": "quietus",
+      "runicStrength": 3,
+      "isCursed": false,
+      "identified": false
+    }
+  },
+  "loot.affix.rune-a-reflection": {
+    "seed": 363,
+    "request": {
+      "v": 1,
+      "source": "floor",
+      "depth": 40,
+      "presetId": "scarce",
+      "rarityFindBp": 0,
+      "claimedUniqueIds": [],
+      "itemClass": "armor"
+    },
+    "draws": [
+      [
+        1,
+        48,
+        19
+      ],
+      [
+        1,
+        1098,
+        1070
+      ],
+      [
+        1,
+        100,
+        35
+      ],
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        3100,
+        1120
+      ],
+      [
+        1,
+        100,
+        23
+      ],
+      [
+        2,
+        3,
+        3
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        5605,
+        1013
+      ],
+      [
+        1,
+        100,
+        85
+      ],
+      [
+        51,
+        68,
+        67
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        3805,
+        3740
+      ],
+      [
+        1,
+        100,
+        42
+      ],
+      [
+        7,
+        8,
+        7
+      ],
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        2300,
+        2287
+      ],
+      [
+        1,
+        100,
+        50
+      ],
+      [
+        1,
+        10000,
+        6600
+      ],
+      [
+        0,
+        31,
+        16
+      ],
+      [
+        0,
+        31,
+        22
+      ]
+    ],
+    "data": {
+      "v": 2,
+      "baseId": "banded_mail",
+      "ilvl": 60,
+      "rarity": "rare",
+      "uniqueId": null,
+      "setId": null,
+      "affixes": [
+        {
+          "id": "loot.affix.plated",
+          "tier": 4,
+          "values": [
+            3
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.vital",
+          "tier": 6,
+          "values": [
+            67
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.rune-a-reflection",
+          "tier": 5,
+          "values": [
+            7
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.radiant",
+          "tier": 5,
+          "values": [
+            2
+          ],
+          "known": false
+        }
+      ],
+      "corrupted": false,
+      "enhancement": 0,
+      "sockets": 0,
+      "socketed": [],
+      "nameParts": [
+        16,
+        22
+      ],
+      "origin": {
+        "source": "floor",
+        "depth": 40
+      }
+    },
+    "native": {
+      "kind": "banded_mail",
+      "category": "armor",
+      "enchantment": 0,
+      "runicType": "reflection",
+      "runicStrength": 7,
+      "isCursed": false,
+      "identified": false
+    }
+  },
+  "loot.affix.rune-w-mercy": {
+    "seed": 780,
+    "request": {
+      "v": 1,
+      "source": "floor",
+      "depth": 40,
+      "presetId": "scarce",
+      "rarityFindBp": 0,
+      "claimedUniqueIds": [],
+      "itemClass": "weapon"
+    },
+    "draws": [
+      [
+        1,
+        102,
+        74
+      ],
+      [
+        1,
+        1098,
+        1069
+      ],
+      [
+        1,
+        100,
+        45
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        3795,
+        2453
+      ],
+      [
+        1,
+        100,
+        63
+      ],
+      [
+        2,
+        3,
+        2
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        2595,
+        208
+      ],
+      [
+        1,
+        100,
+        78
+      ],
+      [
+        4300,
+        5200,
+        4875
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        1695,
+        213
+      ],
+      [
+        1,
+        100,
+        82
+      ],
+      [
+        -2200,
+        -1900,
+        -2069
+      ],
+      [
+        1,
+        3100,
+        446
+      ],
+      [
+        1,
+        100,
+        50
+      ],
+      [
+        8600,
+        11500,
+        10434
+      ],
+      [
+        1,
+        10000,
+        184
+      ],
+      [
+        1,
+        20,
+        9
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        11600,
+        15000,
+        14905
+      ],
+      [
+        0,
+        31,
+        2
+      ],
+      [
+        0,
+        31,
+        20
+      ]
+    ],
+    "data": {
+      "v": 2,
+      "baseId": "war_pike",
+      "ilvl": 60,
+      "rarity": "rare",
+      "uniqueId": null,
+      "setId": null,
+      "affixes": [
+        {
+          "id": "loot.affix.titan",
+          "tier": 5,
+          "values": [
+            2
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.precise",
+          "tier": 6,
+          "values": [
+            4875
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.swift",
+          "tier": 6,
+          "values": [
+            -2069
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.keen",
+          "tier": 6,
+          "values": [
+            14905
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.rune-w-mercy",
+          "tier": 1,
+          "values": [],
+          "known": false
+        }
+      ],
+      "corrupted": true,
+      "enhancement": 0,
+      "sockets": 0,
+      "socketed": [],
+      "nameParts": [
+        2,
+        20
+      ],
+      "origin": {
+        "source": "floor",
+        "depth": 40
+      }
+    },
+    "native": {
+      "kind": "war_pike",
+      "category": "weapon",
+      "enchantment": 0,
+      "runicType": "mercy",
+      "runicStrength": null,
+      "isCursed": true,
+      "identified": false
+    }
+  },
+  "loot.affix.rune-w-force": {
+    "seed": 986,
+    "request": {
+      "v": 1,
+      "source": "floor",
+      "depth": 40,
+      "presetId": "scarce",
+      "rarityFindBp": 0,
+      "claimedUniqueIds": [],
+      "itemClass": "weapon"
+    },
+    "draws": [
+      [
+        1,
+        102,
+        9
+      ],
+      [
+        1,
+        1098,
+        870
+      ],
+      [
+        1,
+        100,
+        35
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        3795,
+        3746
+      ],
+      [
+        1,
+        100,
+        43
+      ],
+      [
+        7,
+        8,
+        7
+      ],
+      [
+        1,
+        10000,
+        7048
+      ]
+    ],
+    "data": {
+      "v": 2,
+      "baseId": "whip",
+      "ilvl": 60,
+      "rarity": "magic",
+      "uniqueId": null,
+      "setId": null,
+      "affixes": [
+        {
+          "id": "loot.affix.rune-w-force",
+          "tier": 5,
+          "values": [
+            7
+          ],
+          "known": false
+        }
+      ],
+      "corrupted": false,
+      "enhancement": 0,
+      "sockets": 0,
+      "socketed": [],
+      "nameParts": null,
+      "origin": {
+        "source": "floor",
+        "depth": 40
+      }
+    },
+    "native": {
+      "kind": "whip",
+      "category": "weapon",
+      "enchantment": 0,
+      "runicType": "force",
+      "runicStrength": 7,
+      "isCursed": false,
+      "identified": false
+    }
+  },
+  "loot.affix.rune-w-slaying": {
+    "seed": 1211,
+    "request": {
+      "v": 1,
+      "source": "floor",
+      "depth": 40,
+      "presetId": "scarce",
+      "rarityFindBp": 0,
+      "claimedUniqueIds": [],
+      "itemClass": "weapon"
+    },
+    "draws": [
+      [
+        1,
+        102,
+        43
+      ],
+      [
+        1,
+        1098,
+        1026
+      ],
+      [
+        1,
+        100,
+        4
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        3795,
+        3787
+      ],
+      [
+        1,
+        100,
+        35
+      ],
+      [
+        5,
+        6,
+        6
+      ],
+      [
+        1,
+        10000,
+        5619
+      ],
+      [
+        0,
+        49,
+        9
+      ]
+    ],
+    "data": {
+      "v": 2,
+      "baseId": "axe",
+      "ilvl": 60,
+      "rarity": "magic",
+      "uniqueId": null,
+      "setId": null,
+      "affixes": [
+        {
+          "id": "loot.affix.rune-w-slaying",
+          "tier": 4,
+          "values": [
+            6
+          ],
+          "known": false
+        }
+      ],
+      "corrupted": false,
+      "enhancement": 0,
+      "sockets": 0,
+      "socketed": [],
+      "nameParts": null,
+      "origin": {
+        "source": "floor",
+        "depth": 40
+      },
+      "targetClass": "abomination"
+    },
+    "native": {
+      "kind": "axe",
+      "category": "weapon",
+      "enchantment": 0,
+      "runicType": "slaying",
+      "runicStrength": 6,
+      "isCursed": false,
+      "identified": false
+    }
+  },
+  "loot.affix.rune-a-dampening": {
+    "seed": 1211,
+    "request": {
+      "v": 1,
+      "source": "floor",
+      "depth": 40,
+      "presetId": "scarce",
+      "rarityFindBp": 0,
+      "claimedUniqueIds": [],
+      "itemClass": "armor"
+    },
+    "draws": [
+      [
+        1,
+        48,
+        20
+      ],
+      [
+        1,
+        1098,
+        1026
+      ],
+      [
+        1,
+        100,
+        4
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        5605,
+        5593
+      ],
+      [
+        1,
+        100,
+        35
+      ],
+      [
+        5,
+        6,
+        6
+      ],
+      [
+        1,
+        10000,
+        5619
+      ]
+    ],
+    "data": {
+      "v": 2,
+      "baseId": "banded_mail",
+      "ilvl": 60,
+      "rarity": "magic",
+      "uniqueId": null,
+      "setId": null,
+      "affixes": [
+        {
+          "id": "loot.affix.rune-a-dampening",
+          "tier": 4,
+          "values": [
+            6
+          ],
+          "known": false
+        }
+      ],
+      "corrupted": false,
+      "enhancement": 0,
+      "sockets": 0,
+      "socketed": [],
+      "nameParts": null,
+      "origin": {
+        "source": "floor",
+        "depth": 40
+      }
+    },
+    "native": {
+      "kind": "banded_mail",
+      "category": "armor",
+      "enchantment": 0,
+      "runicType": "dampening",
+      "runicStrength": 6,
+      "isCursed": false,
+      "identified": false
+    }
+  },
+  "loot.affix.rune-a-respiration": {
+    "seed": 1553,
+    "request": {
+      "v": 1,
+      "source": "floor",
+      "depth": 40,
+      "presetId": "scarce",
+      "rarityFindBp": 0,
+      "claimedUniqueIds": [],
+      "itemClass": "armor"
+    },
+    "draws": [
+      [
+        1,
+        48,
+        17
+      ],
+      [
+        1,
+        1098,
+        996
+      ],
+      [
+        1,
+        100,
+        94
+      ],
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        3100,
+        2265
+      ],
+      [
+        1,
+        100,
+        67
+      ],
+      [
+        -1400,
+        -1200,
+        -1232
+      ],
+      [
+        1,
+        5605,
+        5549
+      ],
+      [
+        1,
+        100,
+        65
+      ],
+      [
+        7,
+        8,
+        7
+      ],
+      [
+        1,
+        10000,
+        5112
+      ]
+    ],
+    "data": {
+      "v": 2,
+      "baseId": "chain_mail",
+      "ilvl": 60,
+      "rarity": "magic",
+      "uniqueId": null,
+      "setId": null,
+      "affixes": [
+        {
+          "id": "loot.affix.warding",
+          "tier": 5,
+          "values": [
+            -1232
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.rune-a-respiration",
+          "tier": 5,
+          "values": [
+            7
+          ],
+          "known": false
+        }
+      ],
+      "corrupted": false,
+      "enhancement": 0,
+      "sockets": 0,
+      "socketed": [],
+      "nameParts": null,
+      "origin": {
+        "source": "floor",
+        "depth": 40
+      }
+    },
+    "native": {
+      "kind": "chain_mail",
+      "category": "armor",
+      "enchantment": 0,
+      "runicType": "respiration",
+      "runicStrength": 7,
+      "isCursed": false,
+      "identified": false
+    }
+  },
+  "loot.affix.rune-a-burden": {
+    "seed": 2345,
+    "request": {
+      "v": 1,
+      "source": "floor",
+      "depth": 40,
+      "presetId": "scarce",
+      "rarityFindBp": 0,
+      "claimedUniqueIds": [],
+      "itemClass": "armor"
+    },
+    "draws": [
+      [
+        1,
+        48,
+        33
+      ],
+      [
+        1,
+        1098,
+        1095
+      ],
+      [
+        1,
+        100,
+        20
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        5605,
+        3855
+      ],
+      [
+        1,
+        100,
+        25
+      ],
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        3100,
+        711
+      ],
+      [
+        1,
+        100,
+        45
+      ],
+      [
+        4100,
+        5000,
+        4414
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        5205,
+        2501
+      ],
+      [
+        1,
+        100,
+        48
+      ],
+      [
+        2,
+        3,
+        2
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        4005,
+        1400
+      ],
+      [
+        1,
+        100,
+        27
+      ],
+      [
+        26,
+        36,
+        26
+      ],
+      [
+        1,
+        10000,
+        140
+      ],
+      [
+        1,
+        30,
+        5
+      ],
+      [
+        0,
+        3,
+        0
+      ],
+      [
+        2,
+        3,
+        2
+      ],
+      [
+        0,
+        31,
+        17
+      ],
+      [
+        0,
+        31,
+        4
+      ]
+    ],
+    "data": {
+      "v": 2,
+      "baseId": "splint_mail",
+      "ilvl": 60,
+      "rarity": "rare",
+      "uniqueId": null,
+      "setId": null,
+      "affixes": [
+        {
+          "id": "loot.affix.shadow",
+          "tier": 5,
+          "values": [
+            2
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.reinforced",
+          "tier": 5,
+          "values": [
+            4414
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.titan",
+          "tier": 5,
+          "values": [
+            2
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.vital",
+          "tier": 4,
+          "values": [
+            26
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.rune-a-burden",
+          "tier": 1,
+          "values": [],
+          "known": false
+        }
+      ],
+      "corrupted": true,
+      "enhancement": 0,
+      "sockets": 0,
+      "socketed": [],
+      "nameParts": [
+        17,
+        4
+      ],
+      "origin": {
+        "source": "floor",
+        "depth": 40
+      }
+    },
+    "native": {
+      "kind": "splint_mail",
+      "category": "armor",
+      "enchantment": 0,
+      "runicType": "burden",
+      "runicStrength": null,
+      "isCursed": true,
+      "identified": false
+    }
+  },
+  "loot.affix.rune-a-vulnerability": {
+    "seed": 3639,
+    "request": {
+      "v": 1,
+      "source": "floor",
+      "depth": 40,
+      "presetId": "scarce",
+      "rarityFindBp": 0,
+      "claimedUniqueIds": [],
+      "itemClass": "armor"
+    },
+    "draws": [
+      [
+        1,
+        48,
+        12
+      ],
+      [
+        1,
+        1098,
+        1077
+      ],
+      [
+        1,
+        100,
+        54
+      ],
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        3100,
+        2077
+      ],
+      [
+        1,
+        100,
+        100
+      ],
+      [
+        -1800,
+        -1500,
+        -1695
+      ],
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        2100,
+        331
+      ],
+      [
+        1,
+        100,
+        84
+      ],
+      [
+        5100,
+        6000,
+        5176
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        5605,
+        53
+      ],
+      [
+        1,
+        100,
+        34
+      ],
+      [
+        26,
+        36,
+        26
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        3805,
+        1879
+      ],
+      [
+        1,
+        100,
+        51
+      ],
+      [
+        2,
+        3,
+        3
+      ],
+      [
+        1,
+        10000,
+        388
+      ],
+      [
+        1,
+        30,
+        16
+      ],
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        37,
+        50,
+        47
+      ],
+      [
+        0,
+        31,
+        11
+      ],
+      [
+        0,
+        31,
+        12
+      ]
+    ],
+    "data": {
+      "v": 2,
+      "baseId": "chain_mail",
+      "ilvl": 60,
+      "rarity": "rare",
+      "uniqueId": null,
+      "setId": null,
+      "affixes": [
+        {
+          "id": "loot.affix.warding",
+          "tier": 6,
+          "values": [
+            -1695
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.reinforced",
+          "tier": 6,
+          "values": [
+            5176
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.vital",
+          "tier": 5,
+          "values": [
+            47
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.shadow",
+          "tier": 5,
+          "values": [
+            3
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.rune-a-vulnerability",
+          "tier": 1,
+          "values": [],
+          "known": false
+        }
+      ],
+      "corrupted": true,
+      "enhancement": 0,
+      "sockets": 0,
+      "socketed": [],
+      "nameParts": [
+        11,
+        12
+      ],
+      "origin": {
+        "source": "floor",
+        "depth": 40
+      }
+    },
+    "native": {
+      "kind": "chain_mail",
+      "category": "armor",
+      "enchantment": 0,
+      "runicType": "vulnerability",
+      "runicStrength": null,
+      "isCursed": true,
+      "identified": false
+    }
+  },
+  "loot.affix.rune-a-immolation": {
+    "seed": 4342,
+    "request": {
+      "v": 1,
+      "source": "floor",
+      "depth": 40,
+      "presetId": "scarce",
+      "rarityFindBp": 0,
+      "claimedUniqueIds": [],
+      "itemClass": "armor"
+    },
+    "draws": [
+      [
+        1,
+        48,
+        15
+      ],
+      [
+        1,
+        1098,
+        1056
+      ],
+      [
+        1,
+        100,
+        79
+      ],
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        3100,
+        2831
+      ],
+      [
+        1,
+        100,
+        63
+      ],
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        2800,
+        142
+      ],
+      [
+        1,
+        100,
+        39
+      ],
+      [
+        4100,
+        5000,
+        4883
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        5605,
+        1127
+      ],
+      [
+        1,
+        100,
+        9
+      ],
+      [
+        26,
+        36,
+        28
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        3805,
+        1767
+      ],
+      [
+        1,
+        100,
+        39
+      ],
+      [
+        2,
+        3,
+        3
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        3405,
+        890
+      ],
+      [
+        1,
+        100,
+        17
+      ],
+      [
+        1,
+        10000,
+        703
+      ],
+      [
+        1,
+        30,
+        25
+      ],
+      [
+        0,
+        4,
+        1
+      ],
+      [
+        5100,
+        6000,
+        5590
+      ],
+      [
+        0,
+        31,
+        15
+      ],
+      [
+        0,
+        31,
+        21
+      ]
+    ],
+    "data": {
+      "v": 2,
+      "baseId": "chain_mail",
+      "ilvl": 60,
+      "rarity": "rare",
+      "uniqueId": null,
+      "setId": null,
+      "affixes": [
+        {
+          "id": "loot.affix.radiant",
+          "tier": 5,
+          "values": [
+            2
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.reinforced",
+          "tier": 6,
+          "values": [
+            5590
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.vital",
+          "tier": 4,
+          "values": [
+            28
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.shadow",
+          "tier": 5,
+          "values": [
+            3
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.titan",
+          "tier": 4,
+          "values": [
+            2
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.rune-a-immolation",
+          "tier": 1,
+          "values": [],
+          "known": false
+        }
+      ],
+      "corrupted": true,
+      "enhancement": 0,
+      "sockets": 0,
+      "socketed": [],
+      "nameParts": [
+        15,
+        21
+      ],
+      "origin": {
+        "source": "floor",
+        "depth": 40
+      }
+    },
+    "native": {
+      "kind": "chain_mail",
+      "category": "armor",
+      "enchantment": 0,
+      "runicType": "immolation",
+      "runicStrength": null,
+      "isCursed": true,
+      "identified": false
+    }
+  },
+  "loot.affix.rune-w-plenty": {
+    "seed": 5975,
+    "request": {
+      "v": 1,
+      "source": "floor",
+      "depth": 40,
+      "presetId": "scarce",
+      "rarityFindBp": 0,
+      "claimedUniqueIds": [],
+      "itemClass": "weapon"
+    },
+    "draws": [
+      [
+        1,
+        102,
+        20
+      ],
+      [
+        1,
+        1098,
+        886
+      ],
+      [
+        1,
+        100,
+        37
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        3795,
+        2902
+      ],
+      [
+        1,
+        100,
+        14
+      ],
+      [
+        1,
+        10000,
+        43
+      ],
+      [
+        1,
+        2420,
+        2414
+      ],
+      [
+        2,
+        3,
+        3
+      ]
+    ],
+    "data": {
+      "v": 2,
+      "baseId": "rapier",
+      "ilvl": 60,
+      "rarity": "magic",
+      "uniqueId": null,
+      "setId": null,
+      "affixes": [
+        {
+          "id": "loot.affix.leech",
+          "tier": 5,
+          "values": [
+            3
+          ],
+          "known": false
+        },
+        {
+          "id": "loot.affix.rune-w-plenty",
+          "tier": 1,
+          "values": [],
+          "known": false
+        }
+      ],
+      "corrupted": true,
+      "enhancement": 0,
+      "sockets": 0,
+      "socketed": [],
+      "nameParts": null,
+      "origin": {
+        "source": "floor",
+        "depth": 40
+      }
+    },
+    "native": {
+      "kind": "rapier",
+      "category": "weapon",
+      "enchantment": 0,
+      "runicType": "plenty",
+      "runicStrength": null,
+      "isCursed": true,
+      "identified": false
+    }
+  }
+}

@@ -1,3 +1,4 @@
+import { ItemLoader } from '../../../../engine/Items/ItemLoader';
 import '../../../../i18n';
 import { afterEach, expect, it, vi } from 'vitest';
 import { effectScope, ref } from 'vue';
@@ -44,4 +45,20 @@ it('all game keys are claimed, Esc returns by layer, load revokes old callbacks'
 it('floor projection has no hidden rows or phantom comparison, hallucination has no floor entries',()=>{
  const {g}=setup(),item=g.items.find(i=>i.moduleData?.loot)!;g.grid.getCell(item.x,item.y)!.isVisible=true;
  const v=readLootGameView(g,item.id,[]);expect(v.selected?.location).toBe('floor');expect(v.selected?.known?.affixes).toEqual([]);expect(v.compare).toBeNull();g.player.applyStatus('hallucinating',10);expect(readLootGameView(g,item.id,[]).selected).toBeNull();
+});
+it('enhancement button closes the panel into native selection, submits once, and refreshes actual level',()=>{
+ const {g,session,props}=setup(),item=add(g,'R07'),scroll=ItemLoader.spawnScroll('scroll_of_enchantment',-1,-1)!;
+ g.player.inventory.addItem(scroll);ItemLoader.identifyItemKind(scroll);session.itemActions!(item.id)[0]!.invoke();const p=props(),tick=timeSystem.currentTick,submit=vi.spyOn(g,'executeItemCommand');
+ expect(p.view.selected.enhancement).toMatchObject({level:0,cap:6,allowed:true,scroll:true});p.onEnchant();p.onEnchant();
+ expect(submit).toHaveBeenCalledTimes(1);expect(session.panel.value).toBeNull();expect(g.pendingEnchantment).toBe(true);expect(g.player.inventory.items).toContain(scroll);expect(timeSystem.currentTick).toBe(tick);
+ g.executeItemCommand('enchant',item);expect(g.player.inventory.items).not.toContain(scroll);session.itemActions!(item.id)[0]!.invoke();expect(props().view.selected.enhancement.level).toBe(1);
+});
+
+it('disabled native rune is marked inactive in the live card without exposing unknown rows',()=>{
+ const {g}=setup(),item=add(g,'R17');item.runicType=undefined;
+ expect(JSON.stringify(readLootGameView(g,item.id,[]).card)).not.toContain('符文已失效');
+ ItemLoader.identifyInstance(item);const view=readLootGameView(g,item.id,[]);
+ expect(view.card!.rows.flatMap(r=>r.lines).filter(l=>l.runic).every(l=>l.value.includes('符文已失效'))).toBe(true);
+ expect(view.card!.rows.flatMap(r=>r.lines).filter(l=>l.runic)).toHaveLength(1);
+ const audit=auditFullObjectGraph([g,rng]);readLootGameView(g,item.id,[]);expect(audit.differences()).toEqual([]);
 });

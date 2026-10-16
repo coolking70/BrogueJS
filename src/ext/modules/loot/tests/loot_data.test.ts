@@ -1,3 +1,4 @@
+import { ITEM_RUNIC_TARGETS } from '../../../itemSdk';
 import { describe, expect, it } from 'vitest';
 import { extensionDataFingerprint } from '../../../fingerprint';
 import { getLootPackIdentity, loadLootPack, LOOT_VERSION } from '../definitions';
@@ -90,12 +91,12 @@ describe('loot data double transcription',()=>{
   it('loads exactly sixteen rule files and recursively freezes every object',()=>{
     expect(Object.keys(pack)).toEqual(['ilvl','tiers','bases','rarities','affixes','uniques','monsterClasses','dropTables','gold','presets','enhancement','identify','corruption','salvage','caps','rareNames']);
     const check=(v:unknown):void=>{if(v&&typeof v==='object'){expect(Object.isFrozen(v)).toBe(true);Object.values(v).forEach(check);}};check(pack);
-    expect(LOOT_VERSION).toBe('0.1.1');expect(getLootPackIdentity()).toEqual({schema:1,version:'0.1.1',fingerprint:extensionDataFingerprint(pack)});
+    expect(LOOT_VERSION).toBe('0.2.0');expect(getLootPackIdentity()).toEqual({schema:1,version:'0.2.0',fingerprint:extensionDataFingerprint({pack,targets:ITEM_RUNIC_TARGETS})});
     // v1.1 four-field data patch; regenerated independently alongside the literal tapes.
-    expect(getLootPackIdentity().fingerprint).toBe('sha256:7785d8e68e6486bd422e40c6a3f0d317b102683116dcea8e483f2256d9c84fd2');
+    expect(getLootPackIdentity().fingerprint).toBe('sha256:cd6afd51bcbcb6e012f914f073aa637bae6d3e702d9f3aef25022de8713e6590');
   });
   it('independently transcribes all 35 ordinary affix rows, exact intervals, metadata and dependencies',()=>{
-    expect(pack.affixes.affixes).toHaveLength(56);expect(pack.affixes.runeFamilyEnabled).toBe(false);
+    expect(pack.affixes.affixes).toHaveLength(56);expect(pack.affixes.runeFamilyEnabled).toBe(true);
     const entries=Object.entries(AFFIX_RANGES);
     entries.forEach(([id,values],i)=>{
       const a=pack.affixes.affixes[i]!, [position,classes,group,weight,stat,category,unit]=META[i]!.split(' ');
@@ -238,8 +239,8 @@ describe('loot data double transcription',()=>{
     visit(mutable);expect(checked).toBeGreaterThan(1000);expect(mutable).toEqual(pack);
   });
   it('has stable identity; numeric edits change fingerprint and locale edits never do',()=>{
-    expect(extensionDataFingerprint(structuredClone(pack))).toBe(getLootPackIdentity().fingerprint);
+    expect(extensionDataFingerprint({pack:structuredClone(pack),targets:ITEM_RUNIC_TARGETS})).toBe(getLootPackIdentity().fingerprint);
     const changed=structuredClone(pack);changed.gold.amount.minBase+=1;expect(extensionDataFingerprint(loadLootPack(changed))).not.toBe(getLootPackIdentity().fingerprint);
-    const display={...locale,'ext.loot.affix.keen':'锋芒的'};assertLootPack(pack,display);expect(extensionDataFingerprint(pack)).toBe(getLootPackIdentity().fingerprint);
+    const display={...locale,'ext.loot.affix.keen':'锋芒的'};assertLootPack(pack,display);expect(extensionDataFingerprint({pack,targets:ITEM_RUNIC_TARGETS})).toBe(getLootPackIdentity().fingerprint);
   });
 });

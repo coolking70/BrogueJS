@@ -555,6 +555,12 @@
     "src/test/perf_ext_kernels.test.ts": {
       "required": [],
       "optional": []
+    },
+    "src/ext/modules/loot/tests/loot_b4_growth.test.ts": {
+      "required": [
+        "growth"
+      ],
+      "optional": []
     }
   }
 }

@@ -160,13 +160,13 @@ describe('C5 recording v4 digest contract', () => {
     expect(digestRoot(empty, null, DIGEST_DOMAINS)).toBe(
       independent([
         'c5-root-v1',
-        ['brogue-web-whole-run-v7', 7, 16, 2],
+        ['brogue-web-whole-run-v7', 7, 17, 2],
         independent(null),
         DIGEST_DOMAINS.map((d) => empty[d])
       ])
     );
     expect(digestRoot(empty, null, DIGEST_DOMAINS)).toBe(
-      '54ba08909354cb6a47cba280b1a83fe3e893acfef4a8a70bfb15bf62fdb75b8a'
+      '1b536dc901b91f43f545295d272d678641471cc69e84ba47b16c40ae2def0458'
     );
     expect(merkleDomain('native', { '\u{10000}': 1, '\ue000': 2 })).toBe(
       independent([

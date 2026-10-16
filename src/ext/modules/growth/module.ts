@@ -540,6 +540,10 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
             componentFields:{identity:['professionId','lineageId','faithId','choices'],'skill-build':['learned','inherited','active','passive','effects']} },
         projectPlayerComponent: (name,value) => name === 'skill-build'
             ? projectGrowthSkillBuild(pack,value as unknown as GrowthSkillBuild) as unknown as Json : structuredClone(value) as Json,
+        itemGrowthRedirects(itemId,nativeDestination) {
+            const rule=config.itemGrowth.rules.find(r=>r.itemId===itemId);
+            return !!rule&&rule.nativeEffect==='replace'&&rule.destination!==nativeDestination;
+        },
         commitItemGrowth(input,context) {
             try {
             const {actor} = input, items = component<GrowthItemLedger>(context,actor.id,'items');
@@ -547,6 +551,12 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
             let result: ReturnType<typeof resolveGrowthItemGain>;
             try { result = resolveGrowthItemGain(config.itemGrowth,input.itemId,input.nativeDestination,input.nativeAmount,items); }
             catch { throw rejected(); }
+            if(input.nativeLimit!==undefined&&result.destination===input.nativeDestination){
+                if(!Number.isSafeInteger(input.nativeLimit)||input.nativeLimit<0)throw rejected();
+                const accepted=Math.min(result.amount,input.nativeLimit),prior=items.awarded[input.itemId]??0;
+                result={...result,amount:accepted,nativeAmount:accepted,items:{awarded:{...items.awarded}}};
+                if(accepted&&config.itemGrowth.rules.some(r=>r.itemId===input.itemId))result.items.awarded[input.itemId]=prior+accepted;
+            }
             const progression = component<GrowthProgression>(context,actor.id,'progression');
             if (result.destination !== input.nativeDestination && result.amount) {
                 if (result.destination === 'attribute-points') progression.attributePoints = addGrowthIntegers(progression.attributePoints,result.amount);

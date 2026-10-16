@@ -14,7 +14,7 @@ export interface LootKnowledgeFacts {
 export type LootAffixPosition = 'prefix' | 'suffix' | 'row';     // row = 唯一品固定行
 export type LootKnownAffix =
   | { readonly known: true; readonly id: string; readonly position: LootAffixPosition;
-      readonly polarity: 1 | -1; readonly tier: number; readonly values: readonly number[] }
+      readonly targetClass?: string; readonly polarity: 1 | -1; readonly tier: number; readonly values: readonly number[] }
   | { readonly known: false; readonly position: LootAffixPosition };
 export interface LootKnownItem {
   readonly v: 1;

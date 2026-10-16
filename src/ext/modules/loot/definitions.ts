@@ -1,3 +1,4 @@
+import { ITEM_RUNIC_TARGETS } from '../../itemSdk';
 import ilvl from './data/ilvl.json';
 import tiers from './data/tiers.json';
 import bases from './data/bases.json';
@@ -17,7 +18,7 @@ import rareNames from './data/rareNames.json';
 import { extensionDataFingerprint } from '../../fingerprint';
 import { assertLootPack, deepFreeze } from './schema';
 import type { LootPack, LootRawFiles } from './types';
-export const LOOT_VERSION = '0.1.1';
+export const LOOT_VERSION = '0.2.0';
 const files = { ilvl, tiers, bases, rarities, affixes, uniques, monsterClasses, dropTables, gold, presets, enhancement, identify, corruption, salvage, caps, rareNames };
 let defaultPack: LootPack | undefined;
 export function loadLootPack(raw?: LootRawFiles): LootPack {
@@ -30,5 +31,5 @@ export function loadLootPack(raw?: LootRawFiles): LootPack {
 }
 let identity: { schema: number; version: string; fingerprint: string } | undefined;
 export function getLootPackIdentity() {
-  return identity ??= deepFreeze({schema:1,version:LOOT_VERSION,fingerprint:extensionDataFingerprint(loadLootPack())});
+  return identity ??= deepFreeze({schema:1,version:LOOT_VERSION,fingerprint:extensionDataFingerprint({pack:loadLootPack(),targets:ITEM_RUNIC_TARGETS})});
 }

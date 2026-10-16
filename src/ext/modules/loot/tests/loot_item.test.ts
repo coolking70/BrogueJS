@@ -7,7 +7,7 @@ import type { LootAffixRoll, LootItemDataV1 } from '../types';
 const catalog = () => buildEffectiveLootCatalog(loadLootPack(), { combat: null, growth: null, giants: null });
 const affix = (id: string, tier: number, values: number[], known = false): LootAffixRoll => ({ id: `loot.affix.${id}`, tier, values, known });
 function magic(): LootItemDataV1 {
-  return { v: 1, baseId: 'dagger', ilvl: 16, rarity: 'magic', uniqueId: null, setId: null, affixes: [affix('keen', 3, [5000]), affix('precise', 2, [1500])], corrupted: false,
+  return { v: 2, baseId: 'dagger', ilvl: 16, rarity: 'magic', uniqueId: null, setId: null, affixes: [affix('keen', 3, [5000]), affix('precise', 2, [1500])], corrupted: false,
     enhancement: 0, sockets: 0, socketed: [], nameParts: null, origin: { source: 'floor', depth: 10 } };
 }
 function unique(id = 'whisper'): LootItemDataV1 {
@@ -22,7 +22,7 @@ function corrupted(): LootItemDataV1 {
 // Test mutators intentionally build values outside the public TypeScript type.
 type MutableInvalid = Record<string, any>;
 const negatives: [string, () => LootItemDataV1, (value: MutableInvalid) => void][] = [
-  ['version', magic, x => x.v = 2], ['unknown field', magic, x => x.extra = 0], ['missing field', magic, x => delete x.setId],
+  ['version', magic, x => x.v = 1], ['unknown field', magic, x => x.extra = 0], ['missing field', magic, x => delete x.setId],
   ['unknown base', magic, x => x.baseId = 'halberd'], ['ilvl low', magic, x => x.ilvl = 0], ['ilvl high', magic, x => x.ilvl = 100],
   ['ilvl noninteger', magic, x => x.ilvl = 1.5], ['ilvl infinity', magic, x => x.ilvl = Infinity], ['set rarity', magic, x => x.rarity = 'set'], ['runeword rarity', magic, x => x.rarity = 'runeword'],
   ['unknown rarity', magic, x => x.rarity = 'mythic'], ['unique missing ID', unique, x => x.uniqueId = null], ['nonunique ID', magic, x => x.uniqueId = 'loot.unique.whisper'],
@@ -32,7 +32,7 @@ const negatives: [string, () => LootItemDataV1, (value: MutableInvalid) => void]
   ['positive prefixes limit', magic, x => x.affixes[1] = affix('brutal', 1, [1, 2])], ['positive suffixes limit', magic, x => x.affixes[0] = affix('titan', 1, [1])],
   ['duplicate group', rare, x => { x.corrupted = true; x.affixes.push(affix('dull', 3, [-2000])); }],
   ['unknown affix', magic, x => x.affixes[0].id = 'loot.affix.unknown'], ['wrong class', magic, x => x.affixes[0] = affix('vital', 1, [5])],
-  ['unavailable module affix', magic, x => x.affixes[1] = affix('adept.strength', 1, [1])], ['disabled rune', magic, x => x.affixes[1] = affix('rune-w-speed', 1, [2])],
+  ['unavailable module affix', magic, x => x.affixes[1] = affix('adept.strength', 1, [1])], ['wrong-slot rune', magic, x => x.affixes[1] = affix('rune-a-absorption', 1, [2])],
   ['tier above max', magic, x => x.affixes[0].tier = 7], ['zero tier', magic, x => x.affixes[0].tier = 0], ['fractional tier', magic, x => x.affixes[0].tier = 1.5],
   ['locked normal tier', magic, x => { x.ilvl = 1; x.affixes = [affix('keen', 2, [3000])]; }],
   ['two corruption upgrades', corrupted, x => x.affixes[1] = affix('precise', 2, [1500])], ['corruption plus two tiers', corrupted, x => x.affixes[0] = affix('keen', 3, [5000])],
@@ -60,7 +60,7 @@ const negatives: [string, () => LootItemDataV1, (value: MutableInvalid) => void]
   ['object getter', magic, x => Object.defineProperty(x, 'ilvl', { get() { throw new Error('must not read getter'); } })],
 ];
 
-describe('strict LootItemData V1 boundary (§8.2)', () => {
+describe('strict LootItemData V2 boundary (§8.2)', () => {
   it.each(negatives)('rejects %s', (_name, create, change) => {
     const value = create(); change(value);
     expect(validateLootItemData(value, catalog())).toBe(false);

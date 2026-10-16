@@ -41,7 +41,8 @@
     "world5": "world5",
     "actorActions": "actorActions",
     "worldWorkFacts": "world5",
-    "worldWorkDetails": "world5"
+    "worldWorkDetails": "world5",
+    "pendingEnchantmentScrollId": "native"
   },
   "excluded": {
     "squareLandingRetry": "derived",

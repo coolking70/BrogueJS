@@ -300,6 +300,19 @@ describe('G-3 对抗⑦：A_RESPIRATION 护甲豁免伤害/混乱/麻痹（Time.
         expect(game.player.equippedArmor!.runicKnown, 'CE :618-621 autoIdentify').toBe(true);
     });
 
+    it('R1 native respiration does not identify on instantaneous poison contact before damage settlement', () => {
+        const game = createHeadlessGame(42);
+        openRoom(game); wearRespiration(game);
+        game.environment.addGas(4, 4, GasType.POISON, 1000);
+        const hp = game.player.hp;
+        (game as any).applyEnvironmentalEffects(game.player);
+        expect(game.player.hp).toBe(hp);
+        expect(game.player.equippedArmor!.runicKnown).toBe(false);
+        priv(game).applyEnvironmentalEffects();
+        expect(game.player.hp).toBe(hp);
+        expect(game.player.equippedArmor!.runicKnown).toBe(true);
+    });
+
     it('同甲对混乱/麻痹也豁免（T_RESPIRATION_IMMUNITIES 全组，Rogue.h:1956）', () => {
         for (const type of [GasType.CONFUSION, GasType.PARALYSIS]) {
             const game = createHeadlessGame(42);

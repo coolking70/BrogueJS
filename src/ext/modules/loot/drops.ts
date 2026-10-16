@@ -19,7 +19,7 @@ export function lootDrops(catalog: () => EffectiveLootCatalog): DropProvider {
       const preset = catalog().pack.presets.presets.find(p=>p.id===s.presetId)!;
       return {v:1,converted:result.converted,gold:result.gold,uniqueIds:result.items.map(i=>i.data.uniqueId),items:result.items.map(item=>{
         const f=familiarityThresholds(item.data,preset),n=item.native;
-        return {native:{kind:n.kind,category:n.category,enchantment:n.enchantment,runicType:n.runicType,isCursed:n.isCursed,identified:n.identified,
+        return {native:{...(item.data.targetClass?{targetClass:item.data.targetClass}:{}),kind:n.kind,category:n.category,enchantment:n.enchantment,runicType:n.runicType,isCursed:n.isCursed,identified:n.identified,
           familiarityRemaining:n.category==='weapon'?f.weaponKills:n.category==='armor'?f.armorTurns:f.ringTurns},moduleData:{loot:JSON.parse(JSON.stringify(item.data))}};
       })};
     },

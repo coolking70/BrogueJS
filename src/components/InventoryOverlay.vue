@@ -28,6 +28,7 @@ let ringSelectionPlayer = activeGame.player;
 // 轮询的既有模式镜像进 ref）
 const pendingIdentify = ref(false);
 const pendingEnchantment = ref(false);
+const canCancelEnchantment = ref(false);
 const callTarget = ref<Item | null>(null);
 const callText = ref('');
 const callMode = ref<'kind' | 'inscribe' | 'choice' | 'relabel'>('kind');
@@ -57,6 +58,7 @@ const updateInventoryState = () => {
     isVisible.value = activeGame.isInventoryOpen;
     pendingIdentify.value = activeGame.pendingIdentify;
     pendingEnchantment.value = activeGame.pendingEnchantment;
+    canCancelEnchantment.value = activeGame.canCancelEnchantment;
     pendingUseConfirm.value = activeGame.pendingUseConfirm;
     if (isVisible.value) {
         inventoryItems.value = [...activeGame.player.inventory.items];
@@ -102,6 +104,12 @@ const flushDeferredClose = () => {
 };
 
 const closeInventory = () => {
+    if (activeGame.canCancelEnchantment) {
+        activeGame.executeCommand('escape');
+        selectedItem.value = null;
+        updateInventoryState();
+        return;
+    }
     if (activeGame.pendingEnchantment) return; // CE mandatory target after reading.
     activeGame.handlePlayerAction('escape');
     ringReplacementTarget.value = null;
@@ -482,7 +490,7 @@ const handleInventoryKey = (event: KeyboardEvent): boolean => {
     <div class="inventory-modal">
       <div class="modal-header">
         <h2>{{ t('Your Inventory') || 'Your Inventory' }}</h2>
-        <button class="close-btn" :disabled="pendingEnchantment" @click="closeInventory">×</button>
+        <button class="close-btn" :disabled="pendingEnchantment && !canCancelEnchantment" @click="closeInventory">×</button>
       </div>
       
       <div class="modal-content">

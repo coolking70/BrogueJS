@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "runeFamilyEnabled": false,
+  "runeFamilyEnabled": true,
   "affixes": [
     {
       "id": "loot.affix.keen",

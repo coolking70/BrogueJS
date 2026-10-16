@@ -7,6 +7,9 @@ export const ITEM_COLOR_TOKENS=Object.freeze({
   'item-epic':'#c080ff','item-unique':'#ffd060','item-corrupted':'#ff6878'
 });
 interface Binding {
+  enhancementPreview():Partial<Pick<Item,'moduleData'|'enchantment'|'strengthRequired'>>|null;
+  enhanced():boolean;
+  runicPower(knownOnly:boolean,data?:Item['moduleData']):number|null;
   name(baseName:string,location:ItemLocation,hallucinating:boolean):string;
   appearance():{colorToken:string;marker:string}|null;
   atomic<T>(work:()=>T):T;
@@ -36,3 +39,9 @@ export function itemIdentificationTransaction<T>(item:Item|null,work:()=>T):T {
   try{return binding.atomic(work);}finally{identifying.delete(binding);}
 }
 
+
+/** Formula L0 read; never identifies or opens a transaction. */
+export function itemRunicPower(item:Item,knownOnly:boolean,data?:Item['moduleData']):number|null {return bindings.get(item)?.runicPower(knownOnly,data)??null;}
+
+export function itemEnhancementPreview(item:Item){return bindings.get(item)?.enhancementPreview()??null;}
+export function itemUsesEnhancement(item:Item):boolean{return bindings.get(item)?.enhanced()??false;}

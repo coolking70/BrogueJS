@@ -24,7 +24,7 @@ export interface AffixDefinition {
   rune: { slot: 'weapon' | 'armor'; runicType: string } | null;
   tags: string[];
 }
-export interface AffixesFile { schema: 1; runeFamilyEnabled: false; affixes: AffixDefinition[] }
+export interface AffixesFile { schema: 1; runeFamilyEnabled: boolean; affixes: AffixDefinition[] }
 export interface UniqueDefinition {
   id: string; nameKey: string; descriptionKey: string; baseId: string; minIlvl: number; weight: number;
   rows: { rowId: string; ranges: Range[]; modifiers: ModifierSpec[] }[];
@@ -99,7 +99,7 @@ export interface LootPack {
 export type LootRawFiles = { [K in keyof LootPack]: unknown };
 export interface LootAffixRoll { id: string; tier: number; values: number[]; known: boolean }
 export interface LootItemDataV1 {
-  v: 1; baseId: string; ilvl: number; rarity: RarityId; uniqueId: string | null; setId: null;
+  v: 2; targetClass?: string; baseId: string; ilvl: number; rarity: RarityId; uniqueId: string | null; setId: null;
   affixes: LootAffixRoll[]; corrupted: boolean; enhancement: number; sockets: 0; socketed: [];
   nameParts: [number, number] | null; origin: { source: LootSource; depth: number };
 }

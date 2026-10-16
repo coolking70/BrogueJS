@@ -7,9 +7,11 @@ import type { EffectiveLootCatalog, LootAvailability, LootPack, LootRollRequest 
 type Draw = [number, number, number];
 const unavailable: LootAvailability = { combat: null, growth: null, giants: null };
 const common = { v: 1 as const, depth: 1, presetId: 'standard', rarityFindBp: 0, claimedUniqueIds: [] };
-const catalog = (availability = unavailable) => buildEffectiveLootCatalog(loadLootPack(), availability);
+// Original non-rune literal tapes retain their exact semantic premise. Current enabled-family tapes are covered separately.
+const legacyPack=()=>{const p=structuredClone(loadLootPack());p.affixes.runeFamilyEnabled=false;return loadLootPack(p);};
+const catalog = (availability = unavailable) => buildEffectiveLootCatalog(legacyPack(), availability);
 const changed = (edit: (pack: LootPack) => void, availability = unavailable) => {
-    const pack = structuredClone(loadLootPack()); edit(pack); return buildEffectiveLootCatalog(loadLootPack(pack), availability);
+    const pack = structuredClone(legacyPack()); edit(pack); return buildEffectiveLootCatalog(loadLootPack(pack), availability);
 };
 function tapeRoll(request: LootRollRequest, tape: Draw[], effective = catalog()) {
     let next = 0;
@@ -37,7 +39,7 @@ describe('literal deterministic loot tapes', () => {
             [1, 10000, 9000], [0, 31, 5], [0, 31, 17], [1, 10000, 7000],
         ]);
         expect(result).toEqual({ v: 1, converted: true, items: [{ data: {
-            v: 1, baseId: 'war_axe', ilvl: 16, rarity: 'rare', uniqueId: null, setId: null,
+            v: 2, baseId: 'war_axe', ilvl: 16, rarity: 'rare', uniqueId: null, setId: null,
             affixes: [affix('keen', 3, [5200]), affix('precise', 2, [1500]), affix('brutal', 2, [2, 4])],
             corrupted: false, enhancement: 0, sockets: 0, socketed: [], nameParts: [5, 17], origin: { source: 'kill', depth: 10 },
         }, native: { kind: 'war_axe', category: 'weapon', enchantment: 0, runicType: null, runicStrength: null, isCursed: false, identified: false } }],
@@ -47,7 +49,7 @@ describe('literal deterministic loot tapes', () => {
         const { result } = tapeRoll({ ...common, source: 'floor', itemClass: 'ring' }, [
             [1, 80, 25], [1, 1004, 800], [1, 100, 20], [0, 1, 1], [1, 7750, 2000], [5, 9, 7], [1, 10000, 10000],
         ]);
-        expect(result.items[0]!.data).toEqual({ v: 1, baseId: 'ring_of_regeneration', ilvl: 1, rarity: 'magic', uniqueId: null, setId: null,
+        expect(result.items[0]!.data).toEqual({ v: 2, baseId: 'ring_of_regeneration', ilvl: 1, rarity: 'magic', uniqueId: null, setId: null,
             affixes: [affix('vital', 1, [7])], corrupted: false, enhancement: 0, sockets: 0, socketed: [], nameParts: null, origin: { source: 'floor', depth: 1 } });
         expect(result.items[0]!.native.enchantment).toBe(1);
         expect(result.converted).toBe(true); expect(result.gold).toBe(0);

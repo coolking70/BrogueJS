@@ -506,5 +506,9 @@
   "worldWorkCommandEpoch": {
     "kind": "session",
     "contract": "5A2: 会话句柄scope时期，非持久 ID；新局/成功载入归零，句柄另绑定世界根身份，旧世界句柄不能复活。"
+  },
+  "pendingEnchantmentScrollId": {
+    "kind": "run",
+    "contract": "6B4：延迟消费的强化卷轴ID，run.enchantmentScrollId保存；成功/取消/新局清空；load校验背包卷轴所有权；非延迟原生路径null。"
   }
 }

@@ -1,0 +1,102 @@
+{
+  "kind": "wizard-command-route",
+  "planner": "original complete route reused; no world edits",
+  "originalRecordingHash": "fb0181b502ee693fcdd3966307884c7ff2f0ab16b60628c45fddbad813475905",
+  "source": "8d7c79974fee69d7ffdd45b286b9b6878f081be7",
+  "node": "v24.19.0",
+  "seed": "438491256",
+  "mode": "wizard",
+  "recordedAt": 1792022400000,
+  "recordingVersion": 4,
+  "codec": {
+    "wholeRun": 7,
+    "foundation": 17,
+    "origin": 2
+  },
+  "extensions": null,
+  "modules": [],
+  "coverage": {
+    "1": {
+      "settled": 48,
+      "maxMonsters": 8
+    },
+    "2": {
+      "settled": 54,
+      "maxMonsters": 10
+    },
+    "3": {
+      "settled": 58,
+      "maxMonsters": 8
+    },
+    "4": {
+      "settled": 91,
+      "maxMonsters": 12
+    },
+    "5": {
+      "settled": 41,
+      "maxMonsters": 14
+    },
+    "6": {
+      "settled": 62,
+      "maxMonsters": 17
+    },
+    "7": {
+      "settled": 91,
+      "maxMonsters": 33
+    },
+    "8": {
+      "settled": 74,
+      "maxMonsters": 20
+    },
+    "9": {
+      "settled": 40,
+      "maxMonsters": 20
+    },
+    "10": {
+      "settled": 159,
+      "maxMonsters": 33
+    },
+    "11": {
+      "settled": 54,
+      "maxMonsters": 15
+    },
+    "12": {
+      "settled": 55,
+      "maxMonsters": 32
+    },
+    "13": {
+      "settled": 82,
+      "maxMonsters": 15
+    },
+    "14": {
+      "settled": 38,
+      "maxMonsters": 19
+    },
+    "15": {
+      "settled": 77,
+      "maxMonsters": 30
+    },
+    "16": {
+      "settled": 135,
+      "maxMonsters": 21
+    },
+    "17": {
+      "settled": 71,
+      "maxMonsters": 18
+    },
+    "18": {
+      "settled": 236,
+      "maxMonsters": 22
+    },
+    "19": {
+      "settled": 66,
+      "maxMonsters": 17
+    },
+    "20": {
+      "settled": 500,
+      "maxMonsters": 35
+    }
+  },
+  "events": 2208,
+  "recordingHash": "651a38e00d142d91ba18b8d4fe86d4dab976750a2057815f217b8bec56917bca"
+}

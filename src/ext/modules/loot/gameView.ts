@@ -1,3 +1,5 @@
+import { enhancementCap } from './economy';
+import type { LootItemDataV1 } from './types';
 import i18next from 'i18next';
 import { validateAttributeCatalog } from '../../attributeCatalog';
 import type { Game } from '../../../engine/Core/Game';
@@ -8,7 +10,7 @@ import { resolveLootCatalog, stateOf } from './session';
 import { buildLiveLootCompareView, lootCompareScalars, lootRingEquipSlots } from './comparison';
 import { lootSigned } from './ui/format';
 import { buildLootItemView, buildLootSalvageView, defaultLootPickupFilter } from './ui/viewModel';
-import type { LootKnownItem, LootUiLocation, LootTextRef } from './ui/types';
+import type { LootKnownItem, LootUiLocation, LootTextRef, LootAffixRowView } from './ui/types';
 const text = (nameKey: string): LootTextRef => ({ nameKey, params: {} });
 export function reachableLootItems(game: Game): { item: Item; location: LootUiLocation }[] {
  const equipment=[game.player.equippedWeapon,game.player.equippedArmor,game.player.ringLeft,game.player.ringRight];
@@ -37,21 +39,23 @@ export function readLootGameView(game:Game,selectedId:number|null,selectedIds:re
  }
  const entries=reachable.map(({item,location})=>({id:item.id,name:itemDisplayName(item,location,game.player.hasStatus('hallucinating')),location,itemClass:item.category===0?'weapon' as const:item.category===1?'armor' as const:'ring' as const,known:known(item,location),owned:!!item.moduleData?.loot,
   canIdentify:location!=='floor'&&location!=='container'&&!!item.moduleData?.loot&&ItemLoader.canIdentifyItem(item),canSalvage:location==='pack'&&!!item.moduleData?.loot&&!game.player.hasStatus('hallucinating'),
+  enhancement:item.moduleData?.loot&&['pack','equipped'].includes(location)?{level:(item.moduleData.loot as unknown as LootItemDataV1).enhancement,cap:enhancementCap(item.moduleData.loot as unknown as LootItemDataV1,catalog.pack),allowed:game.canEnchantTarget(item),scroll:game.player.inventory.items.some(i=>i.consumableId==='scroll_of_enchantment')}:null,
   canEquip:location==='pack',canUnequip:location==='equipped',
   ringEquipSlots:item.category===ItemCategory.RING&&location==='pack'?lootRingEquipSlots(item.id,equipment.slice(2).map(i=>i?.id??null)).map(index=>({slot:index===0?'left' as const:'right' as const,replace:!!equipment[index+2]})):[]}));
+ const liveRows=(id:number,rows:readonly LootAffixRowView[]):readonly LootAffixRowView[]=>reachable.find(r=>r.item.id===id)?.item.runicType?rows:rows.map(row=>({...row,lines:row.lines.map(line=>line.runic?{...line,value:i18next.t('ext.loot.ui.runic.inactive',{value:line.value}),tone:'neutral' as const}:line)}));
  const selected=entries.find(e=>e.id===selectedId)??null;
  let card=null,compare=null;
  if(selected&&!game.player.hasStatus('hallucinating')) {
   const raw=selected.known?buildLootItemView(selected.known,catalog,options):null;
   // Beta base formulas are never displayed in the game. Native prose remains in inspection.
-  card=raw?{...raw,baseStats:[]}:null;
+  card=raw?{...raw,rows:liveRows(selected.id,raw.rows),baseStats:[]}:null;
   if(selected.location==='pack'||selected.location==='equipped') {
    const slots=selected.itemClass==='weapon'?[equipment[0]]:selected.itemClass==='armor'?[equipment[1]]:equipment.slice(2);
    compare=buildLiveLootCompareView({id:selected.id,known:selected.known,native:{itemClass:selected.itemClass,name:selected.name}},slots.map(i=>i?{id:i.id,known:known(i,'equipped'),native:!i.moduleData?.loot?{itemClass:i.category===0?'weapon':i.category===1?'armor':'ring',name:itemDisplayName(i,'equipped')}:undefined}:null),catalog,options,runtime.stats,game.player.id);
   }
  }
  const salvage=buildLootSalvageView(entries.filter(e=>selectedIds.includes(e.id)&&e.canSalvage).map(e=>({key:String(e.id),item:e.known!})),catalog,state.presetId);
- const sourceItems=entries.filter(e=>e.location==='equipped'&&e.known).map(e=>({id:e.id,name:e.name,rows:buildLootItemView(e.known!,catalog,options).rows.filter(row=>row.known)}));
+ const sourceItems=entries.filter(e=>e.location==='equipped'&&e.known).map(e=>({id:e.id,name:e.name,rows:liveRows(e.id,buildLootItemView(e.known!,catalog,options).rows.filter(row=>row.known))}));
  const sources=lootCompareScalars.flatMap(s=>{
   let b;try{b=runtime.stats.breakdown(game.player.id,s.key,{},true);}catch{return [];}
   return b.rows.filter(row=>row.known!==false&&row.layer==='equipment').map(row=>{

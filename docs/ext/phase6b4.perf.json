@@ -1,0 +1,1622 @@
+{
+  "runner": {
+    "node": "v24.19.0",
+    "heapMiB": 3072,
+    "machine": "Apple M5 / darwin arm64",
+    "policy": "serial wall; original instrumentation unchanged"
+  },
+  "cases": {
+    "classic": {
+      "opening": {
+        "path": "/private/tmp/phase6b4-perf-before-retry/classic",
+        "summarySha256": "0be2bff3f48d3c2f35751df328aea0349e0b382326f1964a632cca350e4e5e01",
+        "sourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "recordingHash": "fb0181b502ee693fcdd3966307884c7ff2f0ab16b60628c45fddbad813475905",
+        "events": 2208,
+        "oos": 0,
+        "elapsed": 19629.844291,
+        "command": {
+          "n": 2208,
+          "p50": 3.835000000002765,
+          "p95": 12.080957999998645,
+          "max": 884.7344580000008,
+          "total": 19612.80409000002
+        },
+        "round": {
+          "n": 2431,
+          "p50": 2.402791000000434,
+          "p95": 6.914834000002884,
+          "max": 17.811085000000276,
+          "total": 7567.817276999868
+        },
+        "objectiveBlocks": {
+          "n": 2431,
+          "p50": 1.3736659999995027,
+          "p95": 1.6897920000010345,
+          "max": 10.481417000000874,
+          "total": 3393.7305349999597
+        },
+        "memory": {
+          "rss": 1646100480,
+          "heapTotal": 1280212992,
+          "heapUsed": 1171496040,
+          "external": 18469925,
+          "arrayBuffers": 8569599
+        },
+        "semantic": {
+          "stateHash": "b099974554cdb317a829b00c8b3dd9cc53f82903d6a1611360be5bd8f5aacd70",
+          "eventDomainsHash": "3ae0c021ab4e915078c20582b5afe24f5c6ef5043bce91f5febe294e87cb372c",
+          "verifiedFullDomainsHash": "f815f72556186757b27babdf6750864ee1fdfc6cc65b0fa3a2368e48d1eb7a6b",
+          "rng": {
+            "version": 2,
+            "algorithm": "brogue-web-ranval32-uint64-level-v2",
+            "streams": [
+              {
+                "a": 3669891280,
+                "b": 2644049431,
+                "c": 2417755615,
+                "d": 2216036564
+              },
+              {
+                "a": 3820078849,
+                "b": 2809687634,
+                "c": 3034455232,
+                "d": 4046475444
+              }
+            ],
+            "currentRNG": 0,
+            "randomNumbersGenerated": 5595527,
+            "cosmeticNumbersGenerated": 556
+          },
+          "rowsHash": "e5d9b7e22d222a54659cf7b4ae088e6f6bbf68e0a62823f2154372b75c287bef",
+          "blocks": 2431,
+          "rounds": 2431,
+          "roundTicks": 241350
+        },
+        "diagnostics": {
+          "stats": {
+            "hits": 0,
+            "misses": 0
+          },
+          "maxFootprintCells": 35,
+          "maxBodyMembers": 0
+        },
+        "depth20": {
+          "n": 500,
+          "p50": 7.729125000001659,
+          "p95": 13.951208000002225,
+          "max": 884.7344580000008,
+          "total": 6668.039385000018
+        },
+        "roundDepth20": {
+          "n": 867,
+          "p50": 3.200831999998627,
+          "p95": 7.3304579999967245,
+          "max": 14.665624999997817,
+          "total": 3249.1724229998817
+        },
+        "objectiveDepth20": {
+          "n": 867,
+          "p50": 1.3670410000013362,
+          "p95": 1.4778329999971902,
+          "max": 9.726166000000376,
+          "total": 1234.5466049999486
+        },
+        "counts": {
+          "updateVision": 6944,
+          "hasCreatureAtForLight": 5802024,
+          "objectiveTimeBlock": 2431,
+          "updateEnvironment": 3381,
+          "collectExtensionComponents": 0,
+          "projectWholeRun": 9,
+          "recordingEventDigest": 2208,
+          "getMonsterAt": 6551356,
+          "checkpointCombatFactWorld": 0,
+          "checkpointResidentWorld": 0,
+          "light.buildLightMask": 367790,
+          "light.paintLight": 756,
+          "light.dance": 0,
+          "gas.update": 5132,
+          "extension.snapshot": 0,
+          "extension.transaction": 0,
+          "extension.settle": 0
+        }
+      },
+      "pairedOriginal": {
+        "path": "/private/tmp/phase6b4-original-control/classic",
+        "summarySha256": "e9dddbb75839461f3d30e5a4236d877eb7be47c28c635974e4ef19e2851bc1c1",
+        "sourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "recordingHash": "fb0181b502ee693fcdd3966307884c7ff2f0ab16b60628c45fddbad813475905",
+        "events": 2208,
+        "oos": 0,
+        "elapsed": 40785.511666000006,
+        "command": {
+          "n": 2208,
+          "p50": 7.95708299999751,
+          "p95": 24.72254199999952,
+          "max": 1843.0148750000008,
+          "total": 40753.59973399988
+        },
+        "round": {
+          "n": 2431,
+          "p50": 4.861124999997628,
+          "p95": 14.47637499999837,
+          "max": 65.14304199999606,
+          "total": 15527.498116000152
+        },
+        "objectiveBlocks": {
+          "n": 2431,
+          "p50": 2.7036669999979495,
+          "p95": 4.0592089999991,
+          "max": 25.925790999999663,
+          "total": 6988.42861199998
+        },
+        "memory": {
+          "rss": 1808482304,
+          "heapTotal": 1518206976,
+          "heapUsed": 1403436632,
+          "external": 18399760,
+          "arrayBuffers": 8499434
+        },
+        "semantic": {
+          "stateHash": "b099974554cdb317a829b00c8b3dd9cc53f82903d6a1611360be5bd8f5aacd70",
+          "eventDomainsHash": "3ae0c021ab4e915078c20582b5afe24f5c6ef5043bce91f5febe294e87cb372c",
+          "verifiedFullDomainsHash": "f815f72556186757b27babdf6750864ee1fdfc6cc65b0fa3a2368e48d1eb7a6b",
+          "rng": {
+            "version": 2,
+            "algorithm": "brogue-web-ranval32-uint64-level-v2",
+            "streams": [
+              {
+                "a": 3669891280,
+                "b": 2644049431,
+                "c": 2417755615,
+                "d": 2216036564
+              },
+              {
+                "a": 3820078849,
+                "b": 2809687634,
+                "c": 3034455232,
+                "d": 4046475444
+              }
+            ],
+            "currentRNG": 0,
+            "randomNumbersGenerated": 5595527,
+            "cosmeticNumbersGenerated": 556
+          },
+          "rowsHash": "e5d9b7e22d222a54659cf7b4ae088e6f6bbf68e0a62823f2154372b75c287bef",
+          "blocks": 2431,
+          "rounds": 2431,
+          "roundTicks": 241350
+        },
+        "diagnostics": {
+          "stats": {
+            "hits": 0,
+            "misses": 0
+          },
+          "maxFootprintCells": 35,
+          "maxBodyMembers": 0
+        },
+        "depth20": {
+          "n": 500,
+          "p50": 15.226875000000291,
+          "p95": 29.08270800000173,
+          "max": 1732.0647499999977,
+          "total": 13346.880214999863
+        },
+        "roundDepth20": {
+          "n": 867,
+          "p50": 6.199917000005371,
+          "p95": 14.890959000011208,
+          "max": 65.14304199999606,
+          "total": 6505.986127000051
+        },
+        "objectiveDepth20": {
+          "n": 867,
+          "p50": 2.6902499999996508,
+          "p95": 2.9449170000007143,
+          "max": 22.798666999999114,
+          "total": 2475.599806999995
+        },
+        "counts": {
+          "updateVision": 6944,
+          "hasCreatureAtForLight": 5802024,
+          "objectiveTimeBlock": 2431,
+          "updateEnvironment": 3381,
+          "collectExtensionComponents": 0,
+          "projectWholeRun": 9,
+          "recordingEventDigest": 2208,
+          "getMonsterAt": 6551356,
+          "checkpointCombatFactWorld": 0,
+          "checkpointResidentWorld": 0,
+          "light.buildLightMask": 367790,
+          "light.paintLight": 756,
+          "light.dance": 0,
+          "gas.update": 5132,
+          "extension.snapshot": 0,
+          "extension.transaction": 0,
+          "extension.settle": 0
+        }
+      },
+      "calibration": [
+        {
+          "path": "/private/tmp/phase6b4-calibration-1/classic",
+          "summarySha256": "2d884f858ca1da94babc3a91333dc8bdece2e579f9db5794c265b16f727fd9f4",
+          "sourceHash": "d22936fc07195a7f6b0009973075735b036eef15b697db14b88d9fddce4f1654",
+          "recordingHash": "651a38e00d142d91ba18b8d4fe86d4dab976750a2057815f217b8bec56917bca",
+          "events": 2208,
+          "oos": 0,
+          "elapsed": 38822.503208,
+          "command": {
+            "n": 2208,
+            "p50": 7.574500000002445,
+            "p95": 23.445292000003974,
+            "max": 1701.6401669999977,
+            "total": 38796.800160999985
+          },
+          "round": {
+            "n": 2431,
+            "p50": 4.817375999999058,
+            "p95": 13.74016699999629,
+            "max": 40.978541000000405,
+            "total": 15226.940068999884
+          },
+          "objectiveBlocks": {
+            "n": 2431,
+            "p50": 2.7679169999973965,
+            "p95": 3.3241669999988517,
+            "max": 19.145709000000352,
+            "total": 6816.411696000075
+          },
+          "memory": {
+            "rss": 1829568512,
+            "heapTotal": 1536344064,
+            "heapUsed": 1433331240,
+            "external": 21624937,
+            "arrayBuffers": 7619795
+          },
+          "semantic": {
+            "stateHash": "b099974554cdb317a829b00c8b3dd9cc53f82903d6a1611360be5bd8f5aacd70",
+            "eventDomainsHash": "3ae0c021ab4e915078c20582b5afe24f5c6ef5043bce91f5febe294e87cb372c",
+            "verifiedFullDomainsHash": "b31907bcf6306811e453c64d5a0966b2a67bd2293114b3217f589118fef5dd4d",
+            "rng": {
+              "version": 2,
+              "algorithm": "brogue-web-ranval32-uint64-level-v2",
+              "streams": [
+                {
+                  "a": 3669891280,
+                  "b": 2644049431,
+                  "c": 2417755615,
+                  "d": 2216036564
+                },
+                {
+                  "a": 3820078849,
+                  "b": 2809687634,
+                  "c": 3034455232,
+                  "d": 4046475444
+                }
+              ],
+              "currentRNG": 0,
+              "randomNumbersGenerated": 5595527,
+              "cosmeticNumbersGenerated": 556
+            },
+            "rowsHash": "e5d9b7e22d222a54659cf7b4ae088e6f6bbf68e0a62823f2154372b75c287bef",
+            "blocks": 2431,
+            "rounds": 2431,
+            "roundTicks": 241350
+          },
+          "diagnostics": {
+            "stats": {
+              "hits": 0,
+              "misses": 0
+            },
+            "maxFootprintCells": 35,
+            "maxBodyMembers": 0
+          },
+          "depth20": {
+            "n": 500,
+            "p50": 14.99141700000473,
+            "p95": 27.91791699999885,
+            "max": 1701.6401669999977,
+            "total": 13024.891877999959
+          },
+          "roundDepth20": {
+            "n": 867,
+            "p50": 6.235375000003842,
+            "p95": 14.456791999997222,
+            "max": 29.466583000001265,
+            "total": 6383.591017999934
+          },
+          "objectiveDepth20": {
+            "n": 867,
+            "p50": 2.758332999997947,
+            "p95": 2.963292000000365,
+            "max": 18.019874999998137,
+            "total": 2489.5140370000663
+          },
+          "counts": {
+            "updateVision": 6944,
+            "hasCreatureAtForLight": 5802024,
+            "objectiveTimeBlock": 2431,
+            "updateEnvironment": 3381,
+            "collectExtensionComponents": 0,
+            "projectWholeRun": 9,
+            "recordingEventDigest": 2208,
+            "getMonsterAt": 6551356,
+            "checkpointCombatFactWorld": 0,
+            "checkpointResidentWorld": 0,
+            "light.buildLightMask": 367790,
+            "light.paintLight": 756,
+            "light.dance": 0,
+            "gas.update": 5132,
+            "extension.snapshot": 0,
+            "extension.transaction": 0,
+            "extension.settle": 0
+          }
+        },
+        {
+          "path": "/private/tmp/phase6b4-paired-2/classic",
+          "summarySha256": "a2db751cba4c74fd1329f06f8aa14fba42fc63e2b1770ed6c7438d6b7ded8b7d",
+          "sourceHash": "d22936fc07195a7f6b0009973075735b036eef15b697db14b88d9fddce4f1654",
+          "recordingHash": "651a38e00d142d91ba18b8d4fe86d4dab976750a2057815f217b8bec56917bca",
+          "events": 2208,
+          "oos": 0,
+          "elapsed": 39106.420291,
+          "command": {
+            "n": 2208,
+            "p50": 7.493208000000777,
+            "p95": 24.291917000002286,
+            "max": 1732.7962079999998,
+            "total": 39079.313779000055
+          },
+          "round": {
+            "n": 2431,
+            "p50": 4.774124999996275,
+            "p95": 14.044499999996333,
+            "max": 90.01499999999214,
+            "total": 15296.072366000017
+          },
+          "objectiveBlocks": {
+            "n": 2431,
+            "p50": 2.6778339999946184,
+            "p95": 3.3219170000002123,
+            "max": 46.645958000000974,
+            "total": 6686.7017640000095
+          },
+          "memory": {
+            "rss": 1832730624,
+            "heapTotal": 1538490368,
+            "heapUsed": 1434738784,
+            "external": 21631108,
+            "arrayBuffers": 7629584
+          },
+          "semantic": {
+            "stateHash": "b099974554cdb317a829b00c8b3dd9cc53f82903d6a1611360be5bd8f5aacd70",
+            "eventDomainsHash": "3ae0c021ab4e915078c20582b5afe24f5c6ef5043bce91f5febe294e87cb372c",
+            "verifiedFullDomainsHash": "b31907bcf6306811e453c64d5a0966b2a67bd2293114b3217f589118fef5dd4d",
+            "rng": {
+              "version": 2,
+              "algorithm": "brogue-web-ranval32-uint64-level-v2",
+              "streams": [
+                {
+                  "a": 3669891280,
+                  "b": 2644049431,
+                  "c": 2417755615,
+                  "d": 2216036564
+                },
+                {
+                  "a": 3820078849,
+                  "b": 2809687634,
+                  "c": 3034455232,
+                  "d": 4046475444
+                }
+              ],
+              "currentRNG": 0,
+              "randomNumbersGenerated": 5595527,
+              "cosmeticNumbersGenerated": 556
+            },
+            "rowsHash": "e5d9b7e22d222a54659cf7b4ae088e6f6bbf68e0a62823f2154372b75c287bef",
+            "blocks": 2431,
+            "rounds": 2431,
+            "roundTicks": 241350
+          },
+          "diagnostics": {
+            "stats": {
+              "hits": 0,
+              "misses": 0
+            },
+            "maxFootprintCells": 35,
+            "maxBodyMembers": 0
+          },
+          "depth20": {
+            "n": 500,
+            "p50": 15.629249999998137,
+            "p95": 30.002166000005673,
+            "max": 1732.7962079999998,
+            "total": 13635.79858900005
+          },
+          "roundDepth20": {
+            "n": 867,
+            "p50": 6.302999999992608,
+            "p95": 15.222750000000815,
+            "max": 90.01499999999214,
+            "total": 6681.218512000123
+          },
+          "objectiveDepth20": {
+            "n": 867,
+            "p50": 2.682874999998603,
+            "p95": 3.0681250000052387,
+            "max": 46.645958000000974,
+            "total": 2540.249560000011
+          },
+          "counts": {
+            "updateVision": 6944,
+            "hasCreatureAtForLight": 5802024,
+            "objectiveTimeBlock": 2431,
+            "updateEnvironment": 3381,
+            "collectExtensionComponents": 0,
+            "projectWholeRun": 9,
+            "recordingEventDigest": 2208,
+            "getMonsterAt": 6551356,
+            "checkpointCombatFactWorld": 0,
+            "checkpointResidentWorld": 0,
+            "light.buildLightMask": 367790,
+            "light.paintLight": 756,
+            "light.dance": 0,
+            "gas.update": 5132,
+            "extension.snapshot": 0,
+            "extension.transaction": 0,
+            "extension.settle": 0
+          }
+        },
+        {
+          "path": "/private/tmp/phase6b4-paired-3/classic",
+          "summarySha256": "f3907c9f3a7c0024d611a5bc709a38fe1946031b9036a617a8a2af3445f7e6cd",
+          "sourceHash": "d22936fc07195a7f6b0009973075735b036eef15b697db14b88d9fddce4f1654",
+          "recordingHash": "651a38e00d142d91ba18b8d4fe86d4dab976750a2057815f217b8bec56917bca",
+          "events": 2208,
+          "oos": 0,
+          "elapsed": 65244.98087500001,
+          "command": {
+            "n": 2208,
+            "p50": 13.244209000004048,
+            "p95": 36.048750000001746,
+            "max": 4073.550292,
+            "total": 65186.936882999915
+          },
+          "round": {
+            "n": 2431,
+            "p50": 7.584833000000799,
+            "p95": 23.35858400000143,
+            "max": 126.87520799999766,
+            "total": 24139.10247700048
+          },
+          "objectiveBlocks": {
+            "n": 2431,
+            "p50": 3.712542000001122,
+            "p95": 9.423415999997815,
+            "max": 100.42762499999662,
+            "total": 10923.684547999976
+          },
+          "memory": {
+            "rss": 1812905984,
+            "heapTotal": 1517600768,
+            "heapUsed": 1391912400,
+            "external": 18381977,
+            "arrayBuffers": 8481651
+          },
+          "semantic": {
+            "stateHash": "b099974554cdb317a829b00c8b3dd9cc53f82903d6a1611360be5bd8f5aacd70",
+            "eventDomainsHash": "3ae0c021ab4e915078c20582b5afe24f5c6ef5043bce91f5febe294e87cb372c",
+            "verifiedFullDomainsHash": "b31907bcf6306811e453c64d5a0966b2a67bd2293114b3217f589118fef5dd4d",
+            "rng": {
+              "version": 2,
+              "algorithm": "brogue-web-ranval32-uint64-level-v2",
+              "streams": [
+                {
+                  "a": 3669891280,
+                  "b": 2644049431,
+                  "c": 2417755615,
+                  "d": 2216036564
+                },
+                {
+                  "a": 3820078849,
+                  "b": 2809687634,
+                  "c": 3034455232,
+                  "d": 4046475444
+                }
+              ],
+              "currentRNG": 0,
+              "randomNumbersGenerated": 5595527,
+              "cosmeticNumbersGenerated": 556
+            },
+            "rowsHash": "e5d9b7e22d222a54659cf7b4ae088e6f6bbf68e0a62823f2154372b75c287bef",
+            "blocks": 2431,
+            "rounds": 2431,
+            "roundTicks": 241350
+          },
+          "diagnostics": {
+            "stats": {
+              "hits": 0,
+              "misses": 0
+            },
+            "maxFootprintCells": 35,
+            "maxBodyMembers": 0
+          },
+          "depth20": {
+            "n": 500,
+            "p50": 14.47829100000672,
+            "p95": 27.188042000001587,
+            "max": 1784.6993329999968,
+            "total": 12803.00972299988
+          },
+          "roundDepth20": {
+            "n": 867,
+            "p50": 6.093874999991385,
+            "p95": 13.929042000003392,
+            "max": 26.60154099999636,
+            "total": 6148.110622000255
+          },
+          "objectiveDepth20": {
+            "n": 867,
+            "p50": 2.6124589999963064,
+            "p95": 2.758916999999201,
+            "max": 17.630583000005572,
+            "total": 2352.921511000124
+          },
+          "counts": {
+            "updateVision": 6944,
+            "hasCreatureAtForLight": 5802024,
+            "objectiveTimeBlock": 2431,
+            "updateEnvironment": 3381,
+            "collectExtensionComponents": 0,
+            "projectWholeRun": 9,
+            "recordingEventDigest": 2208,
+            "getMonsterAt": 6551356,
+            "checkpointCombatFactWorld": 0,
+            "checkpointResidentWorld": 0,
+            "light.buildLightMask": 367790,
+            "light.paintLight": 756,
+            "light.dance": 0,
+            "gas.update": 5132,
+            "extension.snapshot": 0,
+            "extension.transaction": 0,
+            "extension.settle": 0
+          }
+        }
+      ],
+      "status": "unaccepted calibration; D6 blocked; final gate not run",
+      "source": {
+        "kind": "wizard-command-route",
+        "planner": "original complete route reused; no world edits",
+        "originalRecordingHash": "fb0181b502ee693fcdd3966307884c7ff2f0ab16b60628c45fddbad813475905",
+        "source": "8d7c79974fee69d7ffdd45b286b9b6878f081be7",
+        "node": "v24.19.0",
+        "seed": "438491256",
+        "mode": "wizard",
+        "recordedAt": 1792022400000,
+        "recordingVersion": 4,
+        "codec": {
+          "wholeRun": 7,
+          "foundation": 17,
+          "origin": 2
+        },
+        "extensions": null,
+        "modules": [],
+        "coverage": {
+          "1": {
+            "settled": 48,
+            "maxMonsters": 8
+          },
+          "2": {
+            "settled": 54,
+            "maxMonsters": 10
+          },
+          "3": {
+            "settled": 58,
+            "maxMonsters": 8
+          },
+          "4": {
+            "settled": 91,
+            "maxMonsters": 12
+          },
+          "5": {
+            "settled": 41,
+            "maxMonsters": 14
+          },
+          "6": {
+            "settled": 62,
+            "maxMonsters": 17
+          },
+          "7": {
+            "settled": 91,
+            "maxMonsters": 33
+          },
+          "8": {
+            "settled": 74,
+            "maxMonsters": 20
+          },
+          "9": {
+            "settled": 40,
+            "maxMonsters": 20
+          },
+          "10": {
+            "settled": 159,
+            "maxMonsters": 33
+          },
+          "11": {
+            "settled": 54,
+            "maxMonsters": 15
+          },
+          "12": {
+            "settled": 55,
+            "maxMonsters": 32
+          },
+          "13": {
+            "settled": 82,
+            "maxMonsters": 15
+          },
+          "14": {
+            "settled": 38,
+            "maxMonsters": 19
+          },
+          "15": {
+            "settled": 77,
+            "maxMonsters": 30
+          },
+          "16": {
+            "settled": 135,
+            "maxMonsters": 21
+          },
+          "17": {
+            "settled": 71,
+            "maxMonsters": 18
+          },
+          "18": {
+            "settled": 236,
+            "maxMonsters": 22
+          },
+          "19": {
+            "settled": 66,
+            "maxMonsters": 17
+          },
+          "20": {
+            "settled": 500,
+            "maxMonsters": 35
+          }
+        },
+        "events": 2208,
+        "recordingHash": "651a38e00d142d91ba18b8d4fe86d4dab976750a2057815f217b8bec56917bca"
+      }
+    },
+    "all": {
+      "opening": {
+        "path": "/private/tmp/phase6b4-perf-before-retry/all",
+        "summarySha256": "d8622d8eea134cb48d1df0e850d87a649df7776a7d2b6ba483d48b4bd4a4ffd6",
+        "sourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "recordingHash": "e12f4c1566fc963e30154e12fe0cd4883651bf6e9f29b8d6417816f7679ce1e0",
+        "events": 2516,
+        "oos": 0,
+        "elapsed": 432987.932166,
+        "command": {
+          "n": 2516,
+          "p50": 68.247457999998,
+          "p95": 410.5502090000082,
+          "max": 3374.364207999999,
+          "total": 432948.07771200023
+        },
+        "round": {
+          "n": 2326,
+          "p50": 25.72429099999863,
+          "p95": 116.8812489999109,
+          "max": 1099.853249000007,
+          "total": 115816.52996199914
+        },
+        "objectiveBlocks": {
+          "n": 2326,
+          "p50": 1.665500000000975,
+          "p95": 3.397458000021288,
+          "max": 1020.9829590000008,
+          "total": 11045.477588999733
+        },
+        "memory": {
+          "rss": 2523955200,
+          "heapTotal": 1963081728,
+          "heapUsed": 1424127808,
+          "external": 25002264,
+          "arrayBuffers": 15101938
+        },
+        "semantic": {
+          "stateHash": "134e17b78998f032fc4584f605a97a0920109354616c314d27b4529c1eb0a3f6",
+          "eventDomainsHash": "b6762d636a2742dc499268b2490f34593ca5b0998ec90b4cdb491e926a22a901",
+          "verifiedFullDomainsHash": "1acc96af3c3674b87fc4bfa2d8368d2e2de92807375c66b760de0abc1d5e7ea9",
+          "rng": {
+            "version": 2,
+            "algorithm": "brogue-web-ranval32-uint64-level-v2",
+            "streams": [
+              {
+                "a": 2952380054,
+                "b": 870520724,
+                "c": 2833953679,
+                "d": 1538217874
+              },
+              {
+                "a": 2031807624,
+                "b": 1767882862,
+                "c": 87689012,
+                "d": 3714867979
+              }
+            ],
+            "currentRNG": 0,
+            "randomNumbersGenerated": 5852144,
+            "cosmeticNumbersGenerated": 948
+          },
+          "rowsHash": "8a89cb335cc7362620c98de08f7ead18b7d271327674e384838f7a946243b130",
+          "blocks": 2326,
+          "rounds": 2326,
+          "roundTicks": 231034
+        },
+        "diagnostics": {
+          "stats": {
+            "hits": 3521313,
+            "misses": 2564760
+          },
+          "maxFootprintCells": 80,
+          "maxBodyMembers": 9
+        },
+        "depth20": {
+          "n": 500,
+          "p50": 341.3029589999933,
+          "p95": 442.8536249999888,
+          "max": 1303.8340000000317,
+          "total": 180577.20079299994
+        },
+        "roundDepth20": {
+          "n": 501,
+          "p50": 96.80391699989559,
+          "p95": 122.64504099998157,
+          "max": 456.56200099998387,
+          "total": 50158.37334399874
+        },
+        "objectiveDepth20": {
+          "n": 501,
+          "p50": 1.9802919999929145,
+          "p95": 2.7518329999875277,
+          "max": 110.51195900002494,
+          "total": 1245.873705999751
+        },
+        "counts": {
+          "updateVision": 7234,
+          "hasCreatureAtForLight": 6663421,
+          "objectiveTimeBlock": 2326,
+          "updateEnvironment": 3276,
+          "collectExtensionComponents": 4813,
+          "projectWholeRun": 10,
+          "recordingEventDigest": 2516,
+          "getMonsterAt": 6962473,
+          "checkpointCombatFactWorld": 134,
+          "checkpointResidentWorld": 129,
+          "light.buildLightMask": 398643,
+          "light.paintLight": 2296,
+          "light.dance": 0,
+          "gas.update": 5046,
+          "extension.snapshot": 2526,
+          "extension.transaction": 5017,
+          "extension.settle": 4813
+        }
+      },
+      "pairedOriginal": {
+        "path": "/private/tmp/phase6b4-original-control/all",
+        "summarySha256": "cda878433fcaef9d9602367f4cd981d051a359f5e2fc93398e884cfd0459f8f3",
+        "sourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "recordingHash": "e12f4c1566fc963e30154e12fe0cd4883651bf6e9f29b8d6417816f7679ce1e0",
+        "events": 2516,
+        "oos": 0,
+        "elapsed": 898628.670417,
+        "command": {
+          "n": 2516,
+          "p50": 141.4163750000007,
+          "p95": 871.8245830000087,
+          "max": 6781.368875000015,
+          "total": 898534.9153369992
+        },
+        "round": {
+          "n": 2326,
+          "p50": 53.39087399998971,
+          "p95": 246.42762399997446,
+          "max": 2204.811125999957,
+          "total": 240198.92106100445
+        },
+        "objectiveBlocks": {
+          "n": 2326,
+          "p50": 3.458334000024479,
+          "p95": 7.424500000022817,
+          "max": 2028.773208000057,
+          "total": 22430.644335000972
+        },
+        "memory": {
+          "rss": 2569404416,
+          "heapTotal": 1984659456,
+          "heapUsed": 1883943008,
+          "external": 19231385,
+          "arrayBuffers": 9331059
+        },
+        "semantic": {
+          "stateHash": "134e17b78998f032fc4584f605a97a0920109354616c314d27b4529c1eb0a3f6",
+          "eventDomainsHash": "b6762d636a2742dc499268b2490f34593ca5b0998ec90b4cdb491e926a22a901",
+          "verifiedFullDomainsHash": "1acc96af3c3674b87fc4bfa2d8368d2e2de92807375c66b760de0abc1d5e7ea9",
+          "rng": {
+            "version": 2,
+            "algorithm": "brogue-web-ranval32-uint64-level-v2",
+            "streams": [
+              {
+                "a": 2952380054,
+                "b": 870520724,
+                "c": 2833953679,
+                "d": 1538217874
+              },
+              {
+                "a": 2031807624,
+                "b": 1767882862,
+                "c": 87689012,
+                "d": 3714867979
+              }
+            ],
+            "currentRNG": 0,
+            "randomNumbersGenerated": 5852144,
+            "cosmeticNumbersGenerated": 948
+          },
+          "rowsHash": "8a89cb335cc7362620c98de08f7ead18b7d271327674e384838f7a946243b130",
+          "blocks": 2326,
+          "rounds": 2326,
+          "roundTicks": 231034
+        },
+        "diagnostics": {
+          "stats": {
+            "hits": 3521313,
+            "misses": 2564760
+          },
+          "maxFootprintCells": 80,
+          "maxBodyMembers": 9
+        },
+        "depth20": {
+          "n": 500,
+          "p50": 709.8898340000305,
+          "p95": 947.6649589999579,
+          "max": 3011.019958000048,
+          "total": 377859.9430899997
+        },
+        "roundDepth20": {
+          "n": 501,
+          "p50": 199.6789160000626,
+          "p95": 285.1594169999007,
+          "max": 752.7890839999309,
+          "total": 104192.73484800209
+        },
+        "objectiveDepth20": {
+          "n": 501,
+          "p50": 4.136707999976352,
+          "p95": 6.165582999936305,
+          "max": 225.05620800005272,
+          "total": 2571.9678380006226
+        },
+        "counts": {
+          "updateVision": 7234,
+          "hasCreatureAtForLight": 6663421,
+          "objectiveTimeBlock": 2326,
+          "updateEnvironment": 3276,
+          "collectExtensionComponents": 4813,
+          "projectWholeRun": 10,
+          "recordingEventDigest": 2516,
+          "getMonsterAt": 6962473,
+          "checkpointCombatFactWorld": 134,
+          "checkpointResidentWorld": 129,
+          "light.buildLightMask": 398643,
+          "light.paintLight": 2296,
+          "light.dance": 0,
+          "gas.update": 5046,
+          "extension.snapshot": 2526,
+          "extension.transaction": 5017,
+          "extension.settle": 4813
+        }
+      },
+      "calibration": [
+        {
+          "path": "/private/tmp/phase6b4-paired-1/all",
+          "summarySha256": "51569facc760e20e22c0a1e7de0ef29f737ecca420f1136f05c74d4ea564e583",
+          "sourceHash": "d22936fc07195a7f6b0009973075735b036eef15b697db14b88d9fddce4f1654",
+          "recordingHash": "47f5d69eb48ee40681b799e5daff113e3439dce4bdc44a01af36d125dc1ac359",
+          "events": 2528,
+          "oos": 0,
+          "elapsed": 959969.142792,
+          "command": {
+            "n": 2528,
+            "p50": 168.52483400000347,
+            "p95": 850.9740829999791,
+            "max": 6836.506875000021,
+            "total": 959865.5769920002
+          },
+          "round": {
+            "n": 2391,
+            "p50": 82.55199999990873,
+            "p95": 242.48824999993667,
+            "max": 4387.415833000152,
+            "total": 270318.69168799964
+          },
+          "objectiveBlocks": {
+            "n": 2391,
+            "p50": 3.5986250000005384,
+            "p95": 7.612583999987692,
+            "max": 4182.583665999991,
+            "total": 30385.923326999393
+          },
+          "memory": {
+            "rss": 2401386496,
+            "heapTotal": 1988444160,
+            "heapUsed": 1800959792,
+            "external": 25433162,
+            "arrayBuffers": 15532836
+          },
+          "semantic": {
+            "stateHash": "d6a9a3f15e789e9ea1dda6be9dccf812568579c5841aa2099a5544e70d959b42",
+            "eventDomainsHash": "b43c578115924792f44151913aba7963802f329198f76c2bb9ef2c2591bc7e19",
+            "verifiedFullDomainsHash": "5985cfe6207471c242e93e074e594c061b977772038be40f46c6be89f2fb6fb3",
+            "rng": {
+              "version": 2,
+              "algorithm": "brogue-web-ranval32-uint64-level-v2",
+              "streams": [
+                {
+                  "a": 3357718292,
+                  "b": 357072680,
+                  "c": 318072311,
+                  "d": 2038295846
+                },
+                {
+                  "a": 3099187607,
+                  "b": 2126637236,
+                  "c": 981022258,
+                  "d": 1202236011
+                }
+              ],
+              "currentRNG": 0,
+              "randomNumbersGenerated": 5415497,
+              "cosmeticNumbersGenerated": 920
+            },
+            "rowsHash": "090ea13ba73a74247e51e2747fc5a7b1ab950eb292f4e23ee58b1e9c052fa34a",
+            "blocks": 2391,
+            "rounds": 2391,
+            "roundTicks": 237584
+          },
+          "diagnostics": {
+            "stats": {
+              "hits": 3657780,
+              "misses": 2612203
+            },
+            "maxFootprintCells": 80,
+            "maxBodyMembers": 9
+          },
+          "depth20": {
+            "n": 500,
+            "p50": 715.5085420000833,
+            "p95": 944.8709159999853,
+            "max": 3767.7725830000127,
+            "total": 376142.90037800116
+          },
+          "roundDepth20": {
+            "n": 546,
+            "p50": 190.71208299987484,
+            "p95": 249.8729990000138,
+            "max": 791.4698319999734,
+            "total": 106792.33661600028
+          },
+          "objectiveDepth20": {
+            "n": 546,
+            "p50": 3.130415999912657,
+            "p95": 5.689999999944121,
+            "max": 287.3121670000255,
+            "total": 2670.228163000429
+          },
+          "counts": {
+            "updateVision": 7296,
+            "hasCreatureAtForLight": 6719910,
+            "objectiveTimeBlock": 2391,
+            "updateEnvironment": 3341,
+            "collectExtensionComponents": 4843,
+            "projectWholeRun": 10,
+            "recordingEventDigest": 2528,
+            "getMonsterAt": 5251372,
+            "checkpointCombatFactWorld": 130,
+            "checkpointResidentWorld": 126,
+            "light.buildLightMask": 409718,
+            "light.paintLight": 2296,
+            "light.dance": 0,
+            "gas.update": 4586,
+            "extension.snapshot": 2538,
+            "extension.transaction": 5041,
+            "extension.settle": 4843
+          }
+        },
+        {
+          "path": "/private/tmp/phase6b4-paired-2/all",
+          "summarySha256": "b81676582be4c09218b3ac1d602bd06d4fa4b2366d0dbc960699c1da114a1555",
+          "sourceHash": "d22936fc07195a7f6b0009973075735b036eef15b697db14b88d9fddce4f1654",
+          "recordingHash": "47f5d69eb48ee40681b799e5daff113e3439dce4bdc44a01af36d125dc1ac359",
+          "events": 2528,
+          "oos": 0,
+          "elapsed": 955809.3012089999,
+          "command": {
+            "n": 2528,
+            "p50": 151.16504199999326,
+            "p95": 963.7787500000559,
+            "max": 12146.71412499994,
+            "total": 955715.678379
+          },
+          "round": {
+            "n": 2391,
+            "p50": 63.28012499999022,
+            "p95": 261.34612499998184,
+            "max": 3556.2623319998384,
+            "total": 260244.72586400033
+          },
+          "objectiveBlocks": {
+            "n": 2391,
+            "p50": 3.256415999989258,
+            "p95": 7.321165999979712,
+            "max": 3047.751833999995,
+            "total": 26434.620046000407
+          },
+          "memory": {
+            "rss": 2387001344,
+            "heapTotal": 1932001280,
+            "heapUsed": 1531400816,
+            "external": 23254543,
+            "arrayBuffers": 13354217
+          },
+          "semantic": {
+            "stateHash": "d6a9a3f15e789e9ea1dda6be9dccf812568579c5841aa2099a5544e70d959b42",
+            "eventDomainsHash": "b43c578115924792f44151913aba7963802f329198f76c2bb9ef2c2591bc7e19",
+            "verifiedFullDomainsHash": "5985cfe6207471c242e93e074e594c061b977772038be40f46c6be89f2fb6fb3",
+            "rng": {
+              "version": 2,
+              "algorithm": "brogue-web-ranval32-uint64-level-v2",
+              "streams": [
+                {
+                  "a": 3357718292,
+                  "b": 357072680,
+                  "c": 318072311,
+                  "d": 2038295846
+                },
+                {
+                  "a": 3099187607,
+                  "b": 2126637236,
+                  "c": 981022258,
+                  "d": 1202236011
+                }
+              ],
+              "currentRNG": 0,
+              "randomNumbersGenerated": 5415497,
+              "cosmeticNumbersGenerated": 920
+            },
+            "rowsHash": "090ea13ba73a74247e51e2747fc5a7b1ab950eb292f4e23ee58b1e9c052fa34a",
+            "blocks": 2391,
+            "rounds": 2391,
+            "roundTicks": 237584
+          },
+          "diagnostics": {
+            "stats": {
+              "hits": 3657780,
+              "misses": 2612203
+            },
+            "maxFootprintCells": 80,
+            "maxBodyMembers": 9
+          },
+          "depth20": {
+            "n": 500,
+            "p50": 701.7730000000447,
+            "p95": 1374.7191660000244,
+            "max": 12146.71412499994,
+            "total": 417766.51319900027
+          },
+          "roundDepth20": {
+            "n": 546,
+            "p50": 188.75470799976029,
+            "p95": 384.0157089999411,
+            "max": 3556.2623319998384,
+            "total": 114743.67836900032
+          },
+          "objectiveDepth20": {
+            "n": 546,
+            "p50": 3.2085840000072494,
+            "p95": 6.6708749999525025,
+            "max": 274.5109170000069,
+            "total": 2797.238876000163
+          },
+          "counts": {
+            "updateVision": 7296,
+            "hasCreatureAtForLight": 6719910,
+            "objectiveTimeBlock": 2391,
+            "updateEnvironment": 3341,
+            "collectExtensionComponents": 4843,
+            "projectWholeRun": 10,
+            "recordingEventDigest": 2528,
+            "getMonsterAt": 5251372,
+            "checkpointCombatFactWorld": 130,
+            "checkpointResidentWorld": 126,
+            "light.buildLightMask": 409718,
+            "light.paintLight": 2296,
+            "light.dance": 0,
+            "gas.update": 4586,
+            "extension.snapshot": 2538,
+            "extension.transaction": 5041,
+            "extension.settle": 4843
+          }
+        },
+        {
+          "path": "/private/tmp/phase6b4-paired-3/all",
+          "summarySha256": "8dcdbc409d13c7a9bc3b37691beeb6feb33d851adb25281470081ecb7c3aef60",
+          "sourceHash": "d22936fc07195a7f6b0009973075735b036eef15b697db14b88d9fddce4f1654",
+          "recordingHash": "47f5d69eb48ee40681b799e5daff113e3439dce4bdc44a01af36d125dc1ac359",
+          "events": 2528,
+          "oos": 0,
+          "elapsed": 2490329.474458,
+          "command": {
+            "n": 2528,
+            "p50": 138.45766600000206,
+            "p95": 1255.4742920000572,
+            "max": 955235.5134170001,
+            "total": 2490243.710218001
+          },
+          "round": {
+            "n": 2391,
+            "p50": 55.56720900001528,
+            "p95": 337.4178329999995,
+            "max": 954743.5854169999,
+            "total": 1284412.081378986
+          },
+          "objectiveBlocks": {
+            "n": 2391,
+            "p50": 3.3029999999998836,
+            "p95": 8.076916999998502,
+            "max": 2067.871832999983,
+            "total": 27089.9962660054
+          },
+          "memory": {
+            "rss": 2594619392,
+            "heapTotal": 1965539328,
+            "heapUsed": 1503806528,
+            "external": 23955861,
+            "arrayBuffers": 14055535
+          },
+          "semantic": {
+            "stateHash": "d6a9a3f15e789e9ea1dda6be9dccf812568579c5841aa2099a5544e70d959b42",
+            "eventDomainsHash": "b43c578115924792f44151913aba7963802f329198f76c2bb9ef2c2591bc7e19",
+            "verifiedFullDomainsHash": "5985cfe6207471c242e93e074e594c061b977772038be40f46c6be89f2fb6fb3",
+            "rng": {
+              "version": 2,
+              "algorithm": "brogue-web-ranval32-uint64-level-v2",
+              "streams": [
+                {
+                  "a": 3357718292,
+                  "b": 357072680,
+                  "c": 318072311,
+                  "d": 2038295846
+                },
+                {
+                  "a": 3099187607,
+                  "b": 2126637236,
+                  "c": 981022258,
+                  "d": 1202236011
+                }
+              ],
+              "currentRNG": 0,
+              "randomNumbersGenerated": 5415497,
+              "cosmeticNumbersGenerated": 920
+            },
+            "rowsHash": "090ea13ba73a74247e51e2747fc5a7b1ab950eb292f4e23ee58b1e9c052fa34a",
+            "blocks": 2391,
+            "rounds": 2391,
+            "roundTicks": 237584
+          },
+          "diagnostics": {
+            "stats": {
+              "hits": 3657780,
+              "misses": 2612203
+            },
+            "maxFootprintCells": 80,
+            "maxBodyMembers": 9
+          },
+          "depth20": {
+            "n": 500,
+            "p50": 1029.3369169998914,
+            "p95": 1422.9012500001118,
+            "max": 96353.25591700012,
+            "total": 771118.6043020007
+          },
+          "roundDepth20": {
+            "n": 546,
+            "p50": 240.18762500025332,
+            "p95": 373.8629990001209,
+            "max": 1857.9196680001915,
+            "total": 142449.5007939872
+          },
+          "objectiveDepth20": {
+            "n": 546,
+            "p50": 4.724750000052154,
+            "p95": 9.826125000137836,
+            "max": 301.15529199992307,
+            "total": 3712.371880006045
+          },
+          "counts": {
+            "updateVision": 7296,
+            "hasCreatureAtForLight": 6719910,
+            "objectiveTimeBlock": 2391,
+            "updateEnvironment": 3341,
+            "collectExtensionComponents": 4843,
+            "projectWholeRun": 10,
+            "recordingEventDigest": 2528,
+            "getMonsterAt": 5251372,
+            "checkpointCombatFactWorld": 130,
+            "checkpointResidentWorld": 126,
+            "light.buildLightMask": 409718,
+            "light.paintLight": 2296,
+            "light.dance": 0,
+            "gas.update": 4586,
+            "extension.snapshot": 2538,
+            "extension.transaction": 5041,
+            "extension.settle": 4843
+          }
+        }
+      ],
+      "status": "unaccepted calibration; D6 blocked; final gate not run",
+      "source": {
+        "kind": "wizard-command-route",
+        "planner": "omniscient BFS; no world edits",
+        "source": "8d7c79974fee69d7ffdd45b286b9b6878f081be7",
+        "node": "v24.19.0",
+        "seed": "438491256",
+        "mode": "wizard",
+        "recordedAt": 1792022400000,
+        "recordingVersion": 4,
+        "codec": {
+          "wholeRun": 7,
+          "foundation": 17,
+          "origin": 2
+        },
+        "extensions": {
+          "schema": 1,
+          "foundation": 17,
+          "modules": [
+            {
+              "id": "combat",
+              "version": "1.6.0",
+              "rules": {
+                "schema": 1,
+                "version": "1.6.0",
+                "fingerprint": "sha256:9c2be4947fa2e080890ad9ca2b6a7aca20197f0ee77648b042fc9194618587ae"
+              }
+            },
+            {
+              "id": "crafting",
+              "version": "1.0.0",
+              "rules": {
+                "schema": 1,
+                "version": "1.0.0",
+                "fingerprint": "sha256:fc1b8d11b7faf918331cf58895f135e11e67d397b5c88d1a08c5b2b679597fe1"
+              }
+            },
+            {
+              "id": "foraging",
+              "version": "1.0.0",
+              "rules": {
+                "schema": 1,
+                "version": "1.0.0",
+                "fingerprint": "sha256:d2e0803474a80f1adfc41680351199da38b7f3e8129df3d58ffd0349488d936f"
+              }
+            },
+            {
+              "id": "giants",
+              "version": "1.1.0",
+              "rules": {
+                "schema": 1,
+                "version": "1.1.0",
+                "fingerprint": "sha256:cae84fd3f67cffdfb426d0fe275a820ac330104a83221104d127f960a74fb0e5"
+              }
+            },
+            {
+              "id": "growth",
+              "version": "1.10.0",
+              "rules": {
+                "schema": 1,
+                "version": "1.10.0",
+                "fingerprint": "sha256:2599e550813f0df085701c908fe3edb88fcd29e3350870378ccbf417e20624f8"
+              }
+            },
+            {
+              "id": "loot",
+              "version": "0.5.0",
+              "rules": {
+                "schema": 1,
+                "version": "0.5.0",
+                "fingerprint": "sha256:b49c1c88ee47792ae31d59c1d9336c1a761c24d8755d70b7ee955ba14edeacb3"
+              },
+              "configuration": {
+                "presetId": "standard"
+              }
+            },
+            {
+              "id": "narrative",
+              "version": "1.5.0",
+              "rules": {
+                "schema": 1,
+                "version": "1.5.0",
+                "fingerprint": "sha256:c22c646d3b86ee57ab3d36069992e317bf355f8d105bacc92114a67176f04beb"
+              }
+            },
+            {
+              "id": "settlement",
+              "version": "1.4.0",
+              "rules": {
+                "schema": 1,
+                "version": "1.4.0",
+                "fingerprint": "sha256:7558e8ea74902c133a7210193ac113e7dc4ba36b5fc4d63921ddf10d412ae818"
+              },
+              "configuration": {
+                "raids": false
+              }
+            }
+          ]
+        },
+        "modules": [
+          "combat",
+          "crafting",
+          "foraging",
+          "giants",
+          "growth",
+          "loot",
+          "narrative",
+          "settlement"
+        ],
+        "coverage": {
+          "20": {
+            "settled": 500,
+            "maxMonsters": 34,
+            "maxTerrainLights": 212
+          }
+        },
+        "events": 2528,
+        "recordingHash": "47f5d69eb48ee40681b799e5daff113e3439dce4bdc44a01af36d125dc1ac359"
+      }
+    }
+  },
+  "relativeReview": {
+    "perf-before-retry": [
+      {
+        "metric": "p95",
+        "before": 410.5502090000082,
+        "line": 451.605229900009,
+        "values": [
+          850.9740829999791,
+          963.7787500000559,
+          1255.4742920000572
+        ],
+        "over": 3
+      },
+      {
+        "metric": "max",
+        "before": 3374.364207999999,
+        "line": 4217.955259999999,
+        "values": [
+          6836.506875000021,
+          12146.71412499994,
+          955235.5134170001
+        ],
+        "over": 3
+      },
+      {
+        "metric": "elapsed",
+        "before": 432987.932166,
+        "line": 476286.72538260004,
+        "values": [
+          959969.142792,
+          955809.3012089999,
+          2490329.474458
+        ],
+        "over": 3
+      }
+    ],
+    "original-control": [
+      {
+        "metric": "p95",
+        "before": 871.8245830000087,
+        "line": 959.0070413000096,
+        "values": [
+          850.9740829999791,
+          963.7787500000559,
+          1255.4742920000572
+        ],
+        "over": 2
+      },
+      {
+        "metric": "max",
+        "before": 6781.368875000015,
+        "line": 8476.711093750018,
+        "values": [
+          6836.506875000021,
+          12146.71412499994,
+          955235.5134170001
+        ],
+        "over": 2
+      },
+      {
+        "metric": "elapsed",
+        "before": 898628.670417,
+        "line": 988491.5374587,
+        "values": [
+          959969.142792,
+          955809.3012089999,
+          2490329.474458
+        ],
+        "over": 1
+      }
+    ]
+  },
+  "manifests": {
+    "ext-perf-budget.json": "a284205c8e8d335d52bf5aeaf1337b1770a5ba01f5f0d0cec4238d9e7dc04fba"
+  },
+  "comparablePrefix": {
+    "commands": 1714,
+    "firstDifferentObservedWorkRow": 1725,
+    "pairedOriginal": {
+      "n": 1714,
+      "p50": 117.78637499999604,
+      "p95": 674.0044169999892,
+      "max": 6781.368875000015,
+      "total": 364294.6718750002
+    },
+    "calibration": [
+      {
+        "n": 1714,
+        "p50": 132.6367920000048,
+        "p95": 817.6420839999992,
+        "max": 6836.506875000021,
+        "total": 402804.06170999946
+      },
+      {
+        "n": 1714,
+        "p50": 115.77008400001796,
+        "p95": 782.7744160000002,
+        "max": 8321.968874999962,
+        "total": 373014.57363400026
+      },
+      {
+        "n": 1714,
+        "p50": 112.78424999999697,
+        "p95": 672.3512919999994,
+        "max": 112194.43166699997,
+        "total": 585340.7765059998
+      }
+    ]
+  },
+  "runLogTimes": {
+    "original-control-classic": {
+      "log": "/private/tmp/phase6b4-original-control-classic.log",
+      "createdAt": "2026-10-16T10:18:22.402932+08:00",
+      "lastOutputAt": "2026-10-16T10:19:09.499456+08:00"
+    },
+    "original-control-all": {
+      "log": "/private/tmp/phase6b4-original-control-all.log",
+      "createdAt": "2026-10-16T10:19:45.003862+08:00",
+      "lastOutputAt": "2026-10-16T10:34:50.560482+08:00"
+    },
+    "calibration-1-classic": {
+      "log": "/private/tmp/phase6b4-calibration-1-classic.log",
+      "createdAt": "2026-10-16T10:02:20.773520+08:00",
+      "lastOutputAt": "2026-10-16T10:03:07.328183+08:00"
+    },
+    "paired-1-all": {
+      "log": "/private/tmp/phase6b4-paired-1-all.log",
+      "createdAt": "2026-10-16T10:34:50.728955+08:00",
+      "lastOutputAt": "2026-10-16T10:50:57.557475+08:00"
+    },
+    "paired-2-classic": {
+      "log": "/private/tmp/phase6b4-paired-2-classic.log",
+      "createdAt": "2026-10-16T10:50:57.716351+08:00",
+      "lastOutputAt": "2026-10-16T10:51:42.890871+08:00"
+    },
+    "paired-2-all": {
+      "log": "/private/tmp/phase6b4-paired-2-all.log",
+      "createdAt": "2026-10-16T10:51:42.985633+08:00",
+      "lastOutputAt": "2026-10-16T11:07:46.254191+08:00"
+    },
+    "paired-3-classic": {
+      "log": "/private/tmp/phase6b4-paired-3-classic.log",
+      "createdAt": "2026-10-16T11:07:46.534034+08:00",
+      "lastOutputAt": "2026-10-16T11:09:00.906286+08:00"
+    },
+    "paired-3-all": {
+      "log": "/private/tmp/phase6b4-paired-3-all.log",
+      "createdAt": "2026-10-16T11:09:01.007151+08:00",
+      "lastOutputAt": "2026-10-16T11:50:38.115194+08:00"
+    }
+  },
+  "status": "P0 pending: D6 blocked; no 6B4 manifest frozen; final gate not run",
+  "powerEvidence": {
+    "path": "/private/tmp/phase6b4-power-sleep-wake.log",
+    "clamshellAt": "2026-10-16T11:05:35+08:00",
+    "fullWakeAt": "2026-10-16T11:49:42+08:00",
+    "subsequentClamshellAt": "2026-10-16T11:53:41+08:00",
+    "note": "Filesystem log creation/output timestamps; no sleep intervals subtracted from measured times"
+  },
+  "reviewR1": {
+    "status": "blocked-by-recurring-sleep",
+    "sourceFreeze": {
+      "candidateSrc": {
+        "sha256": "650ea6258f5e5b208ab38cd99195532dc1c0ffd83bed070b54b86cac71c53479",
+        "files": 1456,
+        "encoding": "sorted repo-relative UTF-8 path + NUL + file bytes + NUL"
+      },
+      "originalSrc": {
+        "sha256": "b3e435809fc78aaaf2234936b0c73068bda90fcc687d4e99d05e0c96ff8e00c5",
+        "files": 1448,
+        "encoding": "sorted repo-relative UTF-8 path + NUL + file bytes + NUL"
+      },
+      "candidateDist": {
+        "sha256": "fb26405cb63c2bfc983dab010318e2d26f415543f74979e4e9b8401e63ccae07",
+        "files": 61,
+        "encoding": "sorted repo-relative UTF-8 path + NUL + file bytes + NUL"
+      }
+    },
+    "originalAttempt1": {
+      "timingValid": false,
+      "complete": false,
+      "classicAudit": "original-attempt-1-classic.audit.json",
+      "allExit": 130,
+      "stoppedAt": "2026-10-16T12:59:07.511171+08:00",
+      "reason": "Classic already invalid due to maintenance Sleep/DarkWake. Interrupted remaining all replay; keep raw partial log, do not use for timing or freeze."
+    },
+    "classicAudit": {
+      "label": "original-attempt-1-classic",
+      "started": "2026-10-16T12:55:24.321+08:00",
+      "ended": "2026-10-16T12:56:23.507+08:00",
+      "wallSeconds": 59.1849308013916,
+      "exit": 0,
+      "argv": [
+        "/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+        "scripts/profile-ext-perf.mjs",
+        "/private/tmp/phase6b4-perf-input/classic-438491256.recording.json",
+        "/private/tmp/p6b4-r1-perf/original-attempt-1/classic"
+      ],
+      "cwd": "/private/tmp/phase6b4",
+      "log": "/private/tmp/p6b4-r1-perf/original-attempt-1-classic.log",
+      "powerBefore": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=22675555)\t73%; discharging; (no estimate) present: true\n",
+      "powerAfter": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=22675555)\t73%; discharging; (no estimate) present: true\n",
+      "pmsetExit": 0,
+      "previousPowerEvent": {
+        "type": "DarkWake",
+        "line": "2026-10-16 12:54:46 +0800 DarkWake            \tDarkWake from Deep Idle [CDNP] : due to smc.sysState.Wake(0x70070000) wifibt SMC.OutboxNotEmpty centauri-beta/ Using BATT (Charge:73%) 45 secs   ",
+        "timestamp": 1792126486.0
+      },
+      "sleepWakeInWindow": [
+        "2026-10-16 12:55:31 +0800 Sleep               \tEntering Sleep state due to 'Maintenance Sleep':TCPKeepAlive=active Using Batt (Charge:73%) 3 secs    ",
+        "2026-10-16 12:55:34 +0800 DarkWake            \tDarkWake from Deep Idle [CDNP] : due to smc.sysState.Wake(0x70070000) wifibt SMC.OutboxNotEmpty centauri-beta/ Using BATT (Charge:73%) 45 secs   ",
+        "2026-10-16 12:56:19 +0800 Sleep               \tEntering Sleep state due to 'Maintenance Sleep':TCPKeepAlive=active Using Batt (Charge:73%) 3 secs    ",
+        "2026-10-16 12:56:22 +0800 DarkWake            \tDarkWake from Deep Idle [CDNP] : due to smc.sysState.Wake(0x70070000) wifibt SMC.OutboxNotEmpty centauri-beta/ Using BATT (Charge:73%)           "
+      ],
+      "timingValid": false
+    },
+    "acceptedOriginalRuns": 0,
+    "acceptedCandidateRounds": 0,
+    "budgetFrozen": false,
+    "finalGateRun": false,
+    "lastPowerCheck": {
+      "checkedAt": "2026-10-16T13:04:02.224562+08:00",
+      "lastEvents": [
+        "2026-10-16 13:02:08 +0800 DarkWake            \tDarkWake from Deep Idle [CDNP] : due to smc.sysState.Wake(0x70070000) wifibt SMC.OutboxNotEmpty centauri-beta/ Using BATT (Charge:72%) 45 secs   ",
+        "2026-10-16 13:02:53 +0800 Sleep               \tEntering Sleep state due to 'Maintenance Sleep':TCPKeepAlive=active Using Batt (Charge:72%) 3 secs    ",
+        "2026-10-16 13:02:56 +0800 DarkWake            \tDarkWake from Deep Idle [CDNP] : due to smc.sysState.Wake(0x70070000) wifibt SMC.OutboxNotEmpty centauri-beta/ Using BATT (Charge:72%) 45 secs   ",
+        "2026-10-16 13:03:41 +0800 Sleep               \tEntering Sleep state due to 'Maintenance Sleep':TCPKeepAlive=active Using Batt (Charge:72%) 3 secs    ",
+        "2026-10-16 13:03:44 +0800 DarkWake            \tDarkWake from Deep Idle [CDNP] : due to smc.sysState.Wake(0x70070000) wifibt SMC.OutboxNotEmpty centauri-beta/ Using BATT (Charge:72%)           "
+      ]
+    },
+    "temporaryCaffeinateReleased": true
+  }
+}

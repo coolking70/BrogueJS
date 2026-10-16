@@ -1,5 +1,6 @@
+import { itemEnhancementPreview,itemUsesEnhancement } from '../Items/ItemExtensionBindings';
 import { enchantedEquipment } from '../Items/ItemEffectFormulas';
-import { hypotheticalItemFields, statQuery, nativeRingEnchant } from '../Stats/NativeStatSources';
+import { hypotheticalEquipment, statQuery, nativeRingEnchant } from '../Stats/NativeStatSources';
 import type { Item } from '../Items/Item';
 import type { Player } from '../../entities/Player';
 import { itemKnowledge } from './ItemKnowledge';
@@ -18,6 +19,9 @@ export interface KnownEquipment {
 export interface ItemDetailContext {
     readonly statProjection?:Readonly<Record<string,number>>;
     readonly currentStatProjection?:Readonly<Record<string,number>>;
+    readonly usesEnhancement?:boolean;
+    readonly enhancementAtCap?:boolean;
+    readonly nextEnchantment?:number;
     readonly nextStatProjection?:Readonly<Record<string,number>>;
     readonly strength: number;
     readonly hp?: number;
@@ -57,7 +61,21 @@ export function createItemDetailContext(
         // a worn ring's observable negative effect and the unidentified + cap.
         bonuses[ring.identityId] = (bonuses[ring.identityId] ?? 0) + (omniscient ? ring.enchantment : nativeRingEnchant(ring));
     }
-    return Object.freeze({ ...(p.inventory.items.includes(item)&&(item.category===0||item.category===1)?{statProjection:statQuery(p).hypothetical(p.id,{equip:item.id},!omniscient),nextStatProjection:hypotheticalItemFields(p,item.id,enchantedEquipment(item.enchantment,item.strengthRequired??0),!omniscient),currentStatProjection:statQuery(p).hypothetical(p.id,{},!omniscient)}:{}), strength: p.effectiveStrength, hp: p.hp, maxHp: p.maxHp,
+    const usesEnhancement = itemUsesEnhancement(item);
+    const enhancementPreview = usesEnhancement ? itemEnhancementPreview(item) : null;
+    const fields = { enchantment: item.enchantment, strengthRequired: item.strengthRequired ?? 0 };
+    const equipment = item.category === 0 || item.category === 1;
+    return Object.freeze({
+        usesEnhancement, enhancementAtCap: usesEnhancement && enhancementPreview === null,
+        nextEnchantment: usesEnhancement ? (enhancementPreview?.enchantment ?? item.enchantment) : item.enchantment + 1,
+        ...(equipment ? {
+            statProjection: hypotheticalEquipment(p, item, fields, !omniscient),
+            nextStatProjection: hypotheticalEquipment(p, item, {
+                ...fields, ...(usesEnhancement ? enhancementPreview : enchantedEquipment(fields.enchantment, fields.strengthRequired)),
+            }, !omniscient),
+            currentStatProjection: statQuery(p).hypothetical(p.id, {}, !omniscient),
+        } : {}),
+        strength: p.effectiveStrength, hp: p.hp, maxHp: p.maxHp,
         nutrition: p.nutrition, maxNutrition: p.maxNutrition,
         carried: p.inventory.items.some(i => i.id === item.id),
         equipped: [p.equippedWeapon, p.equippedArmor, p.ringLeft, p.ringRight].some(i => i?.id === item.id),

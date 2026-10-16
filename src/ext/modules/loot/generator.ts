@@ -1,3 +1,4 @@
+import { ITEM_RUNIC_TARGETS } from '../../itemSdk';
 import { freezeLootValue } from './catalog';
 import { LootContractError } from './errors';
 import { deriveNativeFacts } from './item';
@@ -189,7 +190,7 @@ export function rollLootWithTrace(catalog: EffectiveLootCatalog, request: LootRo
             if (unique === undefined) rarity = 'rare';
             else { occupied.add(unique.id); result.newUniqueIds.push(unique.id); }
         }
-        const data: LootItemDataV1 = { v: 1, baseId, ilvl, rarity, uniqueId: unique?.id ?? null, setId: null,
+        const data: LootItemDataV1 = { v: 2, baseId, ilvl, rarity, uniqueId: unique?.id ?? null, setId: null,
             affixes: [], corrupted: false, enhancement: 0, sockets: 0, socketed: [], nameParts: null,
             origin: { source: request.source, depth: request.depth } };
         if (rarity === 'magic' || rarity === 'rare') {
@@ -215,7 +216,7 @@ export function rollLootWithTrace(catalog: EffectiveLootCatalog, request: LootRo
             }
             if (pack.corruption.eligibleRarities.includes(rarity) && random.chance(preset.corruptChanceBp)
                 && data.affixes.length < pack.corruption.maxTotalAffixes) {
-                let negative = catalog.affixes.filter(affix => affix.polarity === -1 && affix.rune === null && eligible(affix));
+                let negative = catalog.affixes.filter(affix => affix.polarity === -1 && eligible(affix));
                 if (negative.length === 0 && pack.corruption.negativeRuneFallback && pack.affixes.runeFamilyEnabled && !usedGroups.has('rune')) {
                     negative = catalog.affixes.filter(affix => affix.polarity === -1 && affix.rune !== null && eligible(affix));
                 }
@@ -239,7 +240,13 @@ export function rollLootWithTrace(catalog: EffectiveLootCatalog, request: LootRo
         if (unique !== undefined) data.affixes = unique.rows.map(row => ({ id: row.rowId, tier: 0,
             values: row.ranges.map(([lo, hi]) => random.randomInt(lo, hi)), known: false }));
         if (rarity === 'rare') data.nameParts = [random.randomInt(0, pack.rareNames.first.length - 1), random.randomInt(0, pack.rareNames.second.length - 1)];
-        result.items.push({ data, native: deriveNativeFacts(data, catalog) });
+        const native=deriveNativeFacts(data,catalog);
+        if(native.runicType==='slaying'||native.runicType==='immunity'){
+            const targets=ITEM_RUNIC_TARGETS.filter(t=>t.maxDepth<=0||request.depth<=t.maxDepth);
+            let draw=random.randomInt(0,targets.reduce((n,t)=>n+t.frequency,0)-1);
+            for(const target of targets){if(draw<target.frequency){data.targetClass=target.name;break;}draw-=target.frequency;}
+        }
+        result.items.push({ data, native });
         trace.itemDraws.push(random.endItem());
     }
     if (request.source === 'kill' || request.source === 'encounter') {

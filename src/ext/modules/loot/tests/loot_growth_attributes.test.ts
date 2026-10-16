@@ -46,7 +46,7 @@ it.each(['scarce','standard','bountiful'])('binds recommended growth+loot %s cre
 });
 function ring(g:ReturnType<typeof worldHarnessGame>,affix:string,value=1,known=false,tier=1){
  const c=resolveLootCatalog(g.extensionRuntime!.queryOptional.bind(g.extensionRuntime));
- const data:LootItemDataV1={v:1,baseId:'ring_of_regeneration',ilvl:tier===6?40:1,rarity:'magic',uniqueId:null,setId:null,affixes:[{id:affix,tier,values:[value],known}],corrupted:false,enhancement:0,sockets:0,socketed:[],nameParts:null,origin:{source:'floor',depth:1}};
+ const data:LootItemDataV1={v: 2,baseId:'ring_of_regeneration',ilvl:tier===6?40:1,rarity:'magic',uniqueId:null,setId:null,affixes:[{id:affix,tier,values:[value],known}],corrupted:false,enhancement:0,sockets:0,socketed:[],nameParts:null,origin:{source:'floor',depth:1}};
  validateLootItemData(data,c);const n=deriveNativeFacts(data,c),item=assembleDropItem({native:{kind:n.kind,category:n.category,enchantment:n.enchantment,runicType:n.runicType,isCursed:n.isCursed,identified:n.identified,familiarityRemaining:1500},moduleData:{loot:JSON.parse(JSON.stringify(data))}});
  g.player.inventory.addItem(item);g.extensionRuntime!.bindItemData(item);return item;
 }
@@ -186,12 +186,12 @@ async function walk(g:ReturnType<typeof worldHarnessGame>,target:{x:number;y:num
   if(g.grid.getCell(next.x,next.y)!.layers.includes(TerrainType.SECRET_DOOR))g.executeCommand('search');else g.executeCommand('move',{x:next.x-g.player.x,y:next.y-g.player.y});
   while(g.pendingCommandConfirmation)g.resolveCommandDecision(g.pendingCommandConfirmation.token,true);
  }
- throw Error('Loot route budget');
+ throw Error('Loot route budget '+JSON.stringify({depth:g.depth,loc:g.player.loc,target,locked:g.isInputLocked(),over:g.isGameOver,pending:g.pendingCommandConfirmation,inventory:g.isInventoryOpen}));
 }
 
 it('natural growth+loot creation, XP, allocation and attribute equipment replay and resume',async()=>{
- const h=createWorldHarness({seed:26,mode:'easy',modules:['loot','growth']});handles.push(h);const g=worldHarnessGame(h);
- g.startNewGame({seed:26,mode:'wizard',ruleSet:'extended',extensions:['growth','loot'],initialCommands:[JSON.stringify({module:'growth',action:'create-character',payload:{revision:0}}),JSON.stringify({module:'loot',action:'create',payload:{v:1,presetId:'standard'}})]});g.animationEnabled=false;
+ const h=createWorldHarness({seed:36,mode:'easy',modules:['loot','growth']});handles.push(h);const g=worldHarnessGame(h);
+ g.startNewGame({seed:36,mode:'wizard',ruleSet:'extended',extensions:['growth','loot'],initialCommands:[JSON.stringify({module:'growth',action:'create-character',payload:{revision:0}}),JSON.stringify({module:'loot',action:'create',payload:{v:1,presetId:'standard'}})]});g.animationEnabled=false;
  const progression=()=>g.extensionRuntime!.readModuleView('growth')!.components.progression as {level:number;attributePoints:number};
  let equipped=false;
  for(let floor=0;floor<6&&(!equipped||progression().attributePoints<1);floor++){
