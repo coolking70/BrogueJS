@@ -8,7 +8,7 @@ import { computeRarityWeights } from './rarity';
 import type { LootDataErrorCode } from './errors';
 import type { ItemClass, LootPack, ModifierSpec, RarityId } from './types';
 
-export const LOOT_FILE_NAMES = ['ilvl','tiers','bases','rarities','affixes','uniques','sets','runes','runewords','sockets','runeDrops','monsterClasses','dropTables','gold','presets','enhancement','identify','corruption','salvage','caps','rareNames'] as const;
+export const LOOT_FILE_NAMES = ['stationOperations','ilvl','tiers','bases','rarities','affixes','uniques','sets','runes','runewords','sockets','runeDrops','monsterClasses','dropTables','gold','presets','enhancement','identify','corruption','salvage','caps','rareNames'] as const;
 const CLASSES = ['weapon', 'armor', 'ring'] as const;
 const RARITIES = ['normal', 'magic', 'rare', 'unique', 'set', 'runeword'] as const;
 const MONSTER_CLASSES = ['none', 'fodder', 'splitter', 'standard', 'elite'] as const;
@@ -95,6 +95,7 @@ const file = (shape: Record<string,Check>): Check => object({schema:(v,p)=>{if(v
 const file2 = (shape: Record<string,Check>): Check => object({schema:literal(2),...shape});
 const fixedRows = (max:number) => array(object({rowId:id,ranges:rangeList,modifiers}),1,max);
 const schemas: Record<keyof LootPack,Check> = {
+  stationOperations:file({stationTag:literal('station.forge'),operations:array(object({id,kind:enumeration(['unsocket','reforge']),mode:nullable(enumeration(['last','all'])),workTicks:integer(1,400),shardCost:integer(1,99)}),3,3)}),
   ilvl:file({ilvlPerDepthBp:integer(0,1000000),min:integer(1,99),max:integer(1,99),siteIlvl:integer(1,99),
     sourceBonus:record([...SOURCES,'part','craft'],num),classBonus:record(MONSTER_CLASSES,num),championBonus:num}),
   tiers:file({tiers:array(object({tier:integer(1,8),minIlvl:integer(1,99),enabled:bool}),1,8),
@@ -476,6 +477,12 @@ export function assertLootPack(value: unknown, locale: unknown = zhCN): asserts 
       if(r!=='normal')safeProduct([w,10000+find],`${path}.rarityWeights.${r}`);
     }
   });
+  const rowBudget=computeEquipmentRowBudget(p);
+  if(Object.values(rowBudget.perSlot).some(n=>n>24))fail('BUDGET','pack.equipmentRows');
+  if(rowBudget.provider>256)fail('BUDGET','pack.providerRows');
+  const ops=p.stationOperations.operations;
+  if(ops.map(o=>o.id).join(',')!=='loot.work.unsocket-last,loot.work.unsocket-all,loot.work.reforge'
+    ||ops.some((o,i)=>o.kind!==(i===2?'reforge':'unsocket')||o.mode!==(['last','all',null][i])||o.workTicks!==100||o.shardCost!==10))fail('INVALID_COMBINATION','stationOperations');
   const budget=computeStaticDrawBudget(p);
   if(budget.perItem>64||budget.perEvent>512)fail('DRAW_BUDGET','pack.drawBudget',`${budget.perItem}/${budget.perEvent}`);
   validateLootLocale(p,locale);
@@ -485,4 +492,29 @@ export function deepFreeze<T>(value: T): T {
     Object.freeze(value); Object.values(value).forEach(child=>deepFreeze(child));
   }
   return value;
+}
+
+/** Conservative admission bound, including every cumulative set bonus on its anchor.
+ * Local damage expands into two native rows; an adept variant is still one row.
+ * Ignoring position quotas and runic suppression only increases this bound. */
+export function computeEquipmentRowBudget(p:LootPack){
+ const clsFor=(id:string):ItemClass=>p.bases.weapons.some(b=>b.baseId===id)?'weapon':p.bases.armors.some(b=>b.baseId===id)?'armor':'ring';
+ const mods=(rows:ModifierSpec[])=>rows.reduce((n,m)=>n+(m.stat==='loot.local.damage'&&m.category==='local-increased'?2:1),0);
+ const fixed=(rows:{modifiers:ModifierSpec[]}[])=>rows.reduce((n,r)=>n+mods(r.modifiers),0);
+ const perSlot:Record<ItemClass,number>={weapon:0,armor:0,ring:0};
+ for(const cls of CLASSES){
+  const enhancement=(rarity:keyof LootPack['enhancement']['caps'])=>p.enhancement.caps[rarity]>0?(cls==='weapon'?3:cls==='armor'?2:0):0,groups=new Map<string,number>();
+  for(const a of p.affixes.affixes.filter(a=>a.itemClasses.includes(cls)))groups.set(a.group,Math.max(groups.get(a.group)??0,mods(a.modifiers)));
+  const ranked=[...groups.values()].sort((a,b)=>b-a);
+  const random=Math.max(...(['magic','rare'] as const).map(rarity=>{
+   const limits=p.rarities.rarities.find(r=>r.id===rarity)!.affixes!;
+   const count=Math.min(6,limits.prefixMax+limits.suffixMax+(p.corruption.eligibleRarities.includes(rarity)?1:0));
+   return ranked.slice(0,count).reduce((n,v)=>n+v,0)+enhancement(rarity);
+  }));
+  const uniques=p.uniques.uniques.filter(u=>clsFor(u.baseId)===cls).map(u=>fixed(u.rows)+enhancement('unique'));
+  const sets=p.sets.sets.flatMap(s=>s.pieces.filter(piece=>clsFor(piece.baseId)===cls).map(piece=>fixed(piece.rows)+s.bonuses.reduce((n,b)=>n+fixed(b.rows),0)+enhancement('set')));
+  const sockets=cls==='ring'?0:Math.max(0,...p.runes.runes.filter(r=>r.itemClasses.includes(cls)).map(r=>fixed(r.rows)*4),...p.runewords.words.filter(w=>w.baseClasses.includes(cls)).map(w=>fixed(w.rows)));
+  perSlot[cls]=Math.max(enhancement('normal'),random,...uniques,...sets,sockets);
+ }
+ return {perSlot,provider:perSlot.weapon+perSlot.armor+2*perSlot.ring+p.caps.caps.filter(c=>c.scope==='final').length};
 }

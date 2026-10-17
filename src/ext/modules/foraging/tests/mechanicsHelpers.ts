@@ -28,7 +28,7 @@ import { logger } from '../../../../engine/Systems/Logger';
 export { worldHarnessGame as game, knowledgeState, rng, logger };
 /** Independent test-only heat provider, never discovered as a production module. */
 const heatDefinitions: WorldDefinitionPack = {
-  schema: 1, worldSdk: 1, items: [{ owner: 'fgheat', id: 'fgheat.stone', nameKey: 'ext.fgheat.stone.name', descriptionKey: 'ext.fgheat.stone.description', category: 'material', glyph: '*', color: '#aaaaaa', maxStack: 99, nativeTemplate: null, tags: [], tool: null }], resourceNodes: [], recipes: [], startupItems: null,
+  schema: 1, worldSdk: 2, items: [{ owner: 'fgheat', id: 'fgheat.stone', nameKey: 'ext.fgheat.stone.name', descriptionKey: 'ext.fgheat.stone.description', category: 'material', glyph: '*', color: '#aaaaaa', maxStack: 99, nativeTemplate: null, tags: [], tool: null }], resourceNodes: [], recipes: [], startupItems: null,
   stations: [{ owner: 'fgheat', id: 'fgheat.hearth', nameKey: 'ext.fgheat.hearth.name',
     descriptionKey: 'ext.fgheat.hearth.description', glyph: 'H', color: '#aaaaaa',
     interactionDistance: 1, stationTags: ['station.hearth'], placementCost: [{ itemDefinitionId: 'fgheat.stone', count: 1 }],
@@ -36,7 +36,7 @@ const heatDefinitions: WorldDefinitionPack = {
 };
 const heatRules = { schema: 1, version: '1.0.0', fingerprint: extensionDataFingerprint(heatDefinitions) };
 const heatDescriptor: ModuleDescriptor = {
-  id: 'fgheat', version: '1.0.0', foundation: FOUNDATION_PROTOCOL, worldSdk: 1, rules: heatRules,
+  id: 'fgheat', version: '1.0.0', foundation: FOUNDATION_PROTOCOL, worldSdk: 2, rules: heatRules,
   labelKey: 'ext.fgheat.label',
   locales: { zh_CN: { 'ext.fgheat.label': '测试热源', 'ext.fgheat.stone.name': '测试石料', 'ext.fgheat.stone.description': '测试石料', 'ext.fgheat.hearth.name': '测试火炉', 'ext.fgheat.hearth.description': '独立测试热源' } },
   create: () => registerWorld5Fixture({ id: 'fgheat', version: '1.0.0', rules: heatRules,

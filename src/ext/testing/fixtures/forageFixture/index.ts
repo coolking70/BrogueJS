@@ -95,7 +95,7 @@ const node = (id: string, raw: string) => ({
 });
 export const definitions: WorldDefinitionPack = {
   schema: 1,
-  worldSdk: 1,
+  worldSdk: 2,
   items: [],
   resourceNodes: [node('node-a', 'raw'), node('node-b', 'sample0')],
   stations: [],
@@ -391,7 +391,7 @@ export const descriptor: ModuleDescriptor = {
   id: owner,
   version: '1.0.0',
   foundation: FOUNDATION_PROTOCOL,
-  worldSdk: 1,
+  worldSdk: 2,
   rules,
   create: createForageFixture,
   labelKey: 'ext.fgfixture.label',

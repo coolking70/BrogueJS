@@ -128,12 +128,14 @@
       ]
     ],
     "data": {
-      "v": 4,
+      "v": 5,
       "baseId": "mace",
       "ilvl": 60,
       "rarity": "rare",
       "uniqueId": null,
       "setId": null,
+      "pieceId": null,
+      "identityKnown": false,
       "affixes": [
         {
           "id": "loot.affix.brutal",
@@ -180,9 +182,7 @@
       "origin": {
         "source": "floor",
         "depth": 40
-      },
-      "pieceId": null,
-      "identityKnown": false
+      }
     },
     "native": {
       "kind": "mace",
@@ -243,12 +243,14 @@
       ]
     ],
     "data": {
-      "v": 4,
+      "v": 5,
       "baseId": "war_axe",
       "ilvl": 60,
       "rarity": "magic",
       "uniqueId": null,
       "setId": null,
+      "pieceId": null,
+      "identityKnown": false,
       "affixes": [
         {
           "id": "loot.affix.rune-w-paralyzing",
@@ -267,9 +269,7 @@
       "origin": {
         "source": "floor",
         "depth": 40
-      },
-      "pieceId": null,
-      "identityKnown": false
+      }
     },
     "native": {
       "kind": "war_axe",
@@ -335,12 +335,14 @@
       ]
     ],
     "data": {
-      "v": 4,
+      "v": 5,
       "baseId": "plate_mail",
       "ilvl": 60,
       "rarity": "magic",
       "uniqueId": null,
       "setId": null,
+      "pieceId": null,
+      "identityKnown": false,
       "affixes": [
         {
           "id": "loot.affix.rune-a-multiplicity",
@@ -359,9 +361,7 @@
       "origin": {
         "source": "floor",
         "depth": 40
-      },
-      "pieceId": null,
-      "identityKnown": false
+      }
     },
     "native": {
       "kind": "plate_mail",
@@ -522,12 +522,14 @@
       ]
     ],
     "data": {
-      "v": 4,
+      "v": 5,
       "baseId": "rapier",
       "ilvl": 60,
       "rarity": "rare",
       "uniqueId": null,
       "setId": null,
+      "pieceId": null,
+      "identityKnown": false,
       "affixes": [
         {
           "id": "loot.affix.brutal",
@@ -582,9 +584,7 @@
       "origin": {
         "source": "floor",
         "depth": 40
-      },
-      "pieceId": null,
-      "identityKnown": false
+      }
     },
     "native": {
       "kind": "rapier",
@@ -665,12 +665,14 @@
       ]
     ],
     "data": {
-      "v": 4,
+      "v": 5,
       "baseId": "spear",
       "ilvl": 60,
       "rarity": "magic",
       "uniqueId": null,
       "setId": null,
+      "pieceId": null,
+      "identityKnown": false,
       "affixes": [
         {
           "id": "loot.affix.rune-w-confusion",
@@ -697,9 +699,7 @@
       "origin": {
         "source": "floor",
         "depth": 40
-      },
-      "pieceId": null,
-      "identityKnown": false
+      }
     },
     "native": {
       "kind": "spear",
@@ -785,12 +785,14 @@
       ]
     ],
     "data": {
-      "v": 4,
+      "v": 5,
       "baseId": "scale_mail",
       "ilvl": 60,
       "rarity": "magic",
       "uniqueId": null,
       "setId": null,
+      "pieceId": null,
+      "identityKnown": false,
       "affixes": [
         {
           "id": "loot.affix.rune-a-immunity",
@@ -818,9 +820,7 @@
         "source": "floor",
         "depth": 40
       },
-      "targetClass": "abomination",
-      "pieceId": null,
-      "identityKnown": false
+      "targetClass": "abomination"
     },
     "native": {
       "kind": "scale_mail",
@@ -901,12 +901,14 @@
       ]
     ],
     "data": {
-      "v": 4,
+      "v": 5,
       "baseId": "splint_mail",
       "ilvl": 60,
       "rarity": "magic",
       "uniqueId": null,
       "setId": null,
+      "pieceId": null,
+      "identityKnown": false,
       "affixes": [
         {
           "id": "loot.affix.warding",
@@ -933,9 +935,7 @@
       "origin": {
         "source": "floor",
         "depth": 40
-      },
-      "pieceId": null,
-      "identityKnown": false
+      }
     },
     "native": {
       "kind": "splint_mail",
@@ -1106,12 +1106,14 @@
       ]
     ],
     "data": {
-      "v": 4,
+      "v": 5,
       "baseId": "scale_mail",
       "ilvl": 60,
       "rarity": "rare",
       "uniqueId": null,
       "setId": null,
+      "pieceId": null,
+      "identityKnown": false,
       "affixes": [
         {
           "id": "loot.affix.plated",
@@ -1173,9 +1175,7 @@
       "origin": {
         "source": "floor",
         "depth": 40
-      },
-      "pieceId": null,
-      "identityKnown": false
+      }
     },
     "native": {
       "kind": "scale_mail",
@@ -1306,12 +1306,14 @@
       ]
     ],
     "data": {
-      "v": 4,
+      "v": 5,
       "baseId": "mace",
       "ilvl": 60,
       "rarity": "rare",
       "uniqueId": null,
       "setId": null,
+      "pieceId": null,
+      "identityKnown": false,
       "affixes": [
         {
           "id": "loot.affix.keen",
@@ -1357,9 +1359,7 @@
       "origin": {
         "source": "floor",
         "depth": 40
-      },
-      "pieceId": null,
-      "identityKnown": false
+      }
     },
     "native": {
       "kind": "mace",
@@ -1490,12 +1490,14 @@
       ]
     ],
     "data": {
-      "v": 4,
+      "v": 5,
       "baseId": "chain_mail",
       "ilvl": 60,
       "rarity": "rare",
       "uniqueId": null,
       "setId": null,
+      "pieceId": null,
+      "identityKnown": false,
       "affixes": [
         {
           "id": "loot.affix.reinforced",
@@ -1541,9 +1543,7 @@
       "origin": {
         "source": "floor",
         "depth": 40
-      },
-      "pieceId": null,
-      "identityKnown": false
+      }
     },
     "native": {
       "kind": "chain_mail",
@@ -1674,12 +1674,14 @@
       ]
     ],
     "data": {
-      "v": 4,
+      "v": 5,
       "baseId": "axe",
       "ilvl": 60,
       "rarity": "rare",
       "uniqueId": null,
       "setId": null,
+      "pieceId": null,
+      "identityKnown": false,
       "affixes": [
         {
           "id": "loot.affix.precise",
@@ -1725,9 +1727,7 @@
       "origin": {
         "source": "floor",
         "depth": 40
-      },
-      "pieceId": null,
-      "identityKnown": false
+      }
     },
     "native": {
       "kind": "axe",
@@ -1858,12 +1858,14 @@
       ]
     ],
     "data": {
-      "v": 4,
+      "v": 5,
       "baseId": "banded_mail",
       "ilvl": 60,
       "rarity": "rare",
       "uniqueId": null,
       "setId": null,
+      "pieceId": null,
+      "identityKnown": false,
       "affixes": [
         {
           "id": "loot.affix.plated",
@@ -1909,9 +1911,7 @@
       "origin": {
         "source": "floor",
         "depth": 40
-      },
-      "pieceId": null,
-      "identityKnown": false
+      }
     },
     "native": {
       "kind": "banded_mail",
@@ -2057,12 +2057,14 @@
       ]
     ],
     "data": {
-      "v": 4,
+      "v": 5,
       "baseId": "war_pike",
       "ilvl": 60,
       "rarity": "rare",
       "uniqueId": null,
       "setId": null,
+      "pieceId": null,
+      "identityKnown": false,
       "affixes": [
         {
           "id": "loot.affix.titan",
@@ -2114,9 +2116,7 @@
       "origin": {
         "source": "floor",
         "depth": 40
-      },
-      "pieceId": null,
-      "identityKnown": false
+      }
     },
     "native": {
       "kind": "war_pike",
@@ -2182,12 +2182,14 @@
       ]
     ],
     "data": {
-      "v": 4,
+      "v": 5,
       "baseId": "whip",
       "ilvl": 60,
       "rarity": "magic",
       "uniqueId": null,
       "setId": null,
+      "pieceId": null,
+      "identityKnown": false,
       "affixes": [
         {
           "id": "loot.affix.rune-w-force",
@@ -2206,9 +2208,7 @@
       "origin": {
         "source": "floor",
         "depth": 40
-      },
-      "pieceId": null,
-      "identityKnown": false
+      }
     },
     "native": {
       "kind": "whip",
@@ -2279,12 +2279,14 @@
       ]
     ],
     "data": {
-      "v": 4,
+      "v": 5,
       "baseId": "axe",
       "ilvl": 60,
       "rarity": "magic",
       "uniqueId": null,
       "setId": null,
+      "pieceId": null,
+      "identityKnown": false,
       "affixes": [
         {
           "id": "loot.affix.rune-w-slaying",
@@ -2304,9 +2306,7 @@
         "source": "floor",
         "depth": 40
       },
-      "targetClass": "abomination",
-      "pieceId": null,
-      "identityKnown": false
+      "targetClass": "abomination"
     },
     "native": {
       "kind": "axe",
@@ -2372,12 +2372,14 @@
       ]
     ],
     "data": {
-      "v": 4,
+      "v": 5,
       "baseId": "banded_mail",
       "ilvl": 60,
       "rarity": "magic",
       "uniqueId": null,
       "setId": null,
+      "pieceId": null,
+      "identityKnown": false,
       "affixes": [
         {
           "id": "loot.affix.rune-a-dampening",
@@ -2396,9 +2398,7 @@
       "origin": {
         "source": "floor",
         "depth": 40
-      },
-      "pieceId": null,
-      "identityKnown": false
+      }
     },
     "native": {
       "kind": "banded_mail",
@@ -2479,12 +2479,14 @@
       ]
     ],
     "data": {
-      "v": 4,
+      "v": 5,
       "baseId": "chain_mail",
       "ilvl": 60,
       "rarity": "magic",
       "uniqueId": null,
       "setId": null,
+      "pieceId": null,
+      "identityKnown": false,
       "affixes": [
         {
           "id": "loot.affix.warding",
@@ -2511,9 +2513,7 @@
       "origin": {
         "source": "floor",
         "depth": 40
-      },
-      "pieceId": null,
-      "identityKnown": false
+      }
     },
     "native": {
       "kind": "chain_mail",
@@ -2659,12 +2659,14 @@
       ]
     ],
     "data": {
-      "v": 4,
+      "v": 5,
       "baseId": "splint_mail",
       "ilvl": 60,
       "rarity": "rare",
       "uniqueId": null,
       "setId": null,
+      "pieceId": null,
+      "identityKnown": false,
       "affixes": [
         {
           "id": "loot.affix.shadow",
@@ -2716,9 +2718,7 @@
       "origin": {
         "source": "floor",
         "depth": 40
-      },
-      "pieceId": null,
-      "identityKnown": false
+      }
     },
     "native": {
       "kind": "splint_mail",
@@ -2869,12 +2869,14 @@
       ]
     ],
     "data": {
-      "v": 4,
+      "v": 5,
       "baseId": "chain_mail",
       "ilvl": 60,
       "rarity": "rare",
       "uniqueId": null,
       "setId": null,
+      "pieceId": null,
+      "identityKnown": false,
       "affixes": [
         {
           "id": "loot.affix.warding",
@@ -2926,9 +2928,7 @@
       "origin": {
         "source": "floor",
         "depth": 40
-      },
-      "pieceId": null,
-      "identityKnown": false
+      }
     },
     "native": {
       "kind": "chain_mail",
@@ -3089,12 +3089,14 @@
       ]
     ],
     "data": {
-      "v": 4,
+      "v": 5,
       "baseId": "chain_mail",
       "ilvl": 60,
       "rarity": "rare",
       "uniqueId": null,
       "setId": null,
+      "pieceId": null,
+      "identityKnown": false,
       "affixes": [
         {
           "id": "loot.affix.radiant",
@@ -3154,9 +3156,7 @@
       "origin": {
         "source": "floor",
         "depth": 40
-      },
-      "pieceId": null,
-      "identityKnown": false
+      }
     },
     "native": {
       "kind": "chain_mail",
@@ -3227,12 +3227,14 @@
       ]
     ],
     "data": {
-      "v": 4,
+      "v": 5,
       "baseId": "rapier",
       "ilvl": 60,
       "rarity": "magic",
       "uniqueId": null,
       "setId": null,
+      "pieceId": null,
+      "identityKnown": false,
       "affixes": [
         {
           "id": "loot.affix.leech",
@@ -3257,9 +3259,7 @@
       "origin": {
         "source": "floor",
         "depth": 40
-      },
-      "pieceId": null,
-      "identityKnown": false
+      }
     },
     "native": {
       "kind": "rapier",

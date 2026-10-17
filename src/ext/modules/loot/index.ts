@@ -1,3 +1,4 @@
+import { lootWorkProvider } from './work';
 import { lootEnhancement } from './enhancement';
 import type { ExtensionModule, Json } from '../../types';
 import type { WorldDefinitionPack } from '../../worldSdk';
@@ -11,15 +12,18 @@ import { lootCommands, revealLoot } from './commands';
 import { lootStatSources } from './statSources';
 import { lootPresentation } from './presentation';
 import type { LootItemDataV1 } from './types';
-export const shardDefinitions:WorldDefinitionPack={schema:1,worldSdk:1,items:[...loadLootPack().runes.runes.map(r=>({owner:'loot',id:r.id,nameKey:r.nameKey,descriptionKey:r.descriptionKey,category:'material' as const,glyph:'*',color:'#aaaaaa',maxStack:99,nativeTemplate:null,tags:[],tool:null})),{owner:'loot',id:'loot.shard',nameKey:'ext.loot.shard.name',descriptionKey:'ext.loot.ui.integration.shard-description',category:'material',glyph:'*',color:'#aaaaaa',maxStack:99,nativeTemplate:null,tags:[],tool:null}],resourceNodes:[],stations:[],recipes:[],startupItems:null};
+export const shardDefinitions:WorldDefinitionPack={schema:1,worldSdk:2,items:[...loadLootPack().runes.runes.map(r=>({owner:'loot',id:r.id,nameKey:r.nameKey,descriptionKey:r.descriptionKey,category:'material' as const,glyph:'*',color:'#aaaaaa',maxStack:99,nativeTemplate:null,tags:[],tool:null})),{owner:'loot',id:'loot.shard',nameKey:'ext.loot.shard.name',descriptionKey:'ext.loot.ui.integration.shard-description',category:'material',glyph:'*',color:'#aaaaaa',maxStack:99,nativeTemplate:null,tags:[],tool:null}],resourceNodes:[],stations:[],recipes:[],startupItems:null};
 export function createLootModule(configuration:Json=DEFAULT_CONFIGURATION):ExtensionModule {
  if(!validConfiguration(configuration))throw new Error('Invalid loot configuration');
  const presetId=(configuration as {presetId:string}).presetId;
  let catalog=buildEffectiveLootCatalog(loadLootPack(),{combat:null,growth:null,giants:null});
  const getCatalog=()=>catalog;
+ let craftRecipes=new Set<string>();
  return {id:'loot',version:LOOT_MODULE_VERSION,rules:lootRules(configuration),worldDefinitions:shardDefinitions,
-  projectView:ctx=>{const read=ctx.worldWork?.readWorkContext({kind:'inventory'});return {containerItemIds:read?.ok?read.value.containers.filter(c=>c.inReach).flatMap(c=>c.items.map(i=>i.id)):[]};},
-  prepareItemSession:query=>{catalog=resolveLootCatalog(query);},
+  workItemProviders:{'loot.item-roll.v1':lootWorkProvider(getCatalog,presetId),'loot.item-operation.v1':lootWorkProvider(getCatalog,presetId)},
+  worldWorkCommands:{'item-operation':{prepare:(payload,sdk)=>{if(!payload||typeof payload!=='object'||Array.isArray(payload)||'kind' in payload)return {ok:false,code:'C5_BAD_PAYLOAD',field:null};return sdk.planTimedWork({kind:'item-operation',...payload} as import('../../worldSdk').TimedWorkRequest);}}},
+  projectView:ctx=>{const read=ctx.worldWork?.readWorkContext({kind:'inventory'});return {work:read?.ok?read.value as unknown as Json:null,containerItemIds:read?.ok?read.value.containers.filter(c=>c.inReach).flatMap(c=>c.items.map(i=>i.id)):[]};},
+  prepareItemSession:query=>{catalog=resolveLootCatalog(query);const recipes=query('crafting.recipe-catalog.v1',{});if(recipes.status!=='available'&&recipes.reason!=='absent')throw Error('Unsupported recipe catalog');craftRecipes=new Set(recipes.status==='available'?(recipes.value as unknown as {recipes:{id:string;lootRoll?:unknown}[]}).recipes.filter(r=>r.lootRoll).map(r=>r.id):[]);},
   initialState:()=>initialLootState(presetId,catalog.fingerprint),validateState:(value):value is Json=>validLootState(value,presetId,catalog.fingerprint),
   initialCommand:{action:'create',payload:{v:1,presetId}},validateInitialCommand:(action,payload)=>action==='create'&&!!payload&&typeof payload==='object'&&!Array.isArray(payload)&&Object.keys(payload).sort().join(',')==='presetId,v'&&payload.v===1&&payload.presetId===presetId,
   initializationReady:ctx=>stateOf(ctx.state).created,
@@ -31,6 +35,7 @@ export function createLootModule(configuration:Json=DEFAULT_CONFIGURATION):Exten
   itemDataValidators:{loot:(data,{item,phase})=>{
    if(!validateLootItemData(data,catalog)||item.quantity!==1||item.kindKey!==data.baseId
     ||item.category!==({weapon:0,armor:1,ring:8}[lootItemClass(data.baseId,catalog)!])||item.identified!==data.identityKnown)return false;
+   if(data.origin.source==='craft'&&!craftRecipes.has(data.origin.recipeId))return false;
    const native=deriveNativeFacts(data,catalog);
    if(item.runicType!==null&&item.runicType!==undefined&&item.runicType!==native.runicType)return false;
    if(data.targetClass!==undefined&&item.vorpalEnemy!==data.targetClass)return false;

@@ -22,10 +22,10 @@ export interface CraftingLimits {
 }
 
 export interface CraftingPack {
-  schema: 1;
+  schema: 2;
   moduleId: 'crafting';
-  moduleVersion: '1.0.0';
-  rulesVersion: '1.0.0';
+  moduleVersion: '1.1.0';
+  rulesVersion: '1.1.0';
   materials: ItemDefinitionContribution[];
   tools: ItemDefinitionContribution[];
   resourceNodes: ResourceDefinition[];

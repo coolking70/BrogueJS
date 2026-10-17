@@ -21,7 +21,7 @@ export function toWorldDefinitionPack(pack: ForagingPack): ForagingWorldPack {
   assertForagingPack(pack);
   return structuredClone({
     schema: 1 as const,
-    worldSdk: 1 as const,
+    worldSdk: 2 as const,
     items: [],
     resourceNodes: pack.resourceNodes,
     stations: [],

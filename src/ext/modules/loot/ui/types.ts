@@ -17,6 +17,7 @@ export type LootKnownAffix =
       readonly targetClass?: string; readonly polarity: 1 | -1; readonly tier: number; readonly values: readonly number[] }
   | { readonly known: false; readonly position: LootAffixPosition };
 export interface LootKnownItem {
+  readonly crafted?: true;
   readonly v: 1;
   readonly location: LootUiLocation;
   readonly itemClass: ItemClass;

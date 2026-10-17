@@ -494,11 +494,13 @@ export function itemAppearance(item: Item, ctx: EntityAppearanceContext): Entity
     if (ctx.cellVisible) {
         const halledChar = ctx.hallucinating && ctx.cosmetic.percent(30);
         const halledColor = ctx.hallucinating && ctx.cosmetic.percent(30);
-        return {
+        const visual = {
             char: halledChar ? '!' : item.char,
-            color: halledColor ? ctx.cosmetic.pick(HALLUCINATION_COLORS) : ctx.hallucinating ? item.color : itemExtensionColor(item) ?? item.color,
+            color: halledColor ? ctx.cosmetic.pick(HALLUCINATION_COLORS) : item.color,
             interactive: true,
         };
+        if (!ctx.hallucinating) visual.color = itemExtensionColor(item) ?? visual.color;
+        return visual;
     }
     if (ctx.cellHasMemory) {
         return { char: item.char, color: '#666666', interactive: false };

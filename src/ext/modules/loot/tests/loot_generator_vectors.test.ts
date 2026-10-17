@@ -39,7 +39,7 @@ describe('literal deterministic loot tapes', () => {
             [1, 10000, 9000], [0, 31, 5], [0, 31, 17], [1, 10000, 7000],
         ]);
         expect(result).toEqual({ v: 1, converted: true, materials: [], items: [{ data: {
-            v: 4, baseId: 'war_axe', ilvl: 16, rarity: 'rare', uniqueId: null, setId: null, pieceId: null, identityKnown: false,
+            v: 5, baseId: 'war_axe', ilvl: 16, rarity: 'rare', uniqueId: null, setId: null, pieceId: null, identityKnown: false,
             affixes: [affix('keen', 3, [5200]), affix('precise', 2, [1500]), affix('brutal', 2, [2, 4])],
             corrupted: false, enhancement: 0, sockets: 0, socketed: [], nameParts: [5, 17], origin: { source: 'kill', depth: 10 },
         }, native: { kind: 'war_axe', category: 'weapon', enchantment: 0, runicType: null, runicStrength: null, isCursed: false, identified: false } }],
@@ -49,7 +49,7 @@ describe('literal deterministic loot tapes', () => {
         const { result } = tapeRoll({ ...common, source: 'floor', itemClass: 'ring' }, [
             [1, 80, 25], [1, 1004, 800], [1, 100, 20], [0, 1, 1], [1, 7750, 2000], [5, 9, 7], [1, 10000, 10000],
         ]);
-        expect(result.items[0]!.data).toEqual({ v: 4, baseId: 'ring_of_regeneration', ilvl: 1, rarity: 'magic', uniqueId: null, setId: null, pieceId: null, identityKnown: false,
+        expect(result.items[0]!.data).toEqual({ v: 5, baseId: 'ring_of_regeneration', ilvl: 1, rarity: 'magic', uniqueId: null, setId: null, pieceId: null, identityKnown: false,
             affixes: [affix('vital', 1, [7])], corrupted: false, enhancement: 0, sockets: 0, socketed: [], nameParts: null, origin: { source: 'floor', depth: 1 } });
         expect(result.items[0]!.native.enchantment).toBe(1);
         expect(result.converted).toBe(true); expect(result.gold).toBe(0);

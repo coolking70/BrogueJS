@@ -29,7 +29,7 @@ describe('crafting configuration examples read directly from the manual', () => 
     // Production first installs the example locale in zh_CN.json. Here it stays local to the test.
     assertCraftingPack(pack, locale);
     const sdkPack = {
-      schema: 1, worldSdk: 1, items: [...pack.materials, ...pack.tools],
+      schema: 1, worldSdk: 2, items: [...pack.materials, ...pack.tools],
       resourceNodes: pack.resourceNodes, stations: pack.stations, recipes: pack.recipes,
       startupItems: pack.startupItems
     };

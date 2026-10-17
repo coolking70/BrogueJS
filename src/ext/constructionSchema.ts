@@ -50,7 +50,7 @@ export function assertConstructionPack(
         .map((k) => ',' + k)
         .join('')
   );
-  if (pack.schema !== 1 || pack.worldSdk !== 1) fail('version');
+  if (pack.schema !== 1 || pack.worldSdk !== 2) fail('version');
   for (const key of ['items', 'resourceNodes', 'stations', 'recipes'] as const)
     list(pack[key], 0, 128);
   if (pack.items.length + pack.stations.length > 128) fail('definitions');
@@ -190,7 +190,7 @@ export function assertConstructionPack(
   for (const d of pack.recipes) {
     record(
       d,
-      'owner,id,nameKey,descriptionKey,inputs,outputs,stationTags,toolTag,workTicks,offlineEligible'
+      'owner,id,nameKey,descriptionKey,inputs,outputs,stationTags,toolTag,workTicks,offlineEligible'+(d.lootRoll!==undefined?',lootRoll':'')
     );
     define(d);
     if (owner === "settlement" && d.id === "settlement.hunt" && Array.isArray(d.inputs) && d.inputs.length === 0) {}
@@ -198,6 +198,7 @@ export function assertConstructionPack(
     amounts(d.outputs);
     tags(d.stationTags);
     int(d.workTicks, 1, 10000);
+    validateRecipeLootRoll(d, pack.items);
     if (typeof d.offlineEligible !== 'boolean' || (d.toolTag !== null && !validId(d.toolTag)))
       fail('recipe');
   }
@@ -340,4 +341,12 @@ export function assertCampPolicy(
       seen.add(a.itemDefinitionId);
     }
   }
+}
+
+/** Optional loot production is limited to one fixed native equipment output. */
+export function validateRecipeLootRoll(d: import('./worldSdk').RecipeDefinition, items: readonly import('./worldSdk').ItemDefinitionContribution[]): void {
+  if(d.lootRoll===undefined)return;
+  const out=d.outputs[0], item=items.find(i=>i.id===out?.itemDefinitionId);
+  if(!d.lootRoll||Object.keys(d.lootRoll).join(',')!=='maxRarity'||!['normal','magic'].includes(d.lootRoll.maxRarity)
+    ||d.outputs.length!==1||out?.count!==1||item?.category!=='native'||!['dagger','leather_armor'].includes(item.nativeTemplate??'')||d.offlineEligible)fail('recipe.lootRoll');
 }

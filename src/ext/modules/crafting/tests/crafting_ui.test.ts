@@ -253,10 +253,10 @@ async function panel() {
 }
 
 describe('crafting client SFCs through the shared harness', () => {
-  it('renders all four tabs, seven recipes, placement directions and recent work', async () => {
+  it('renders all four tabs, nine recipes, placement directions and recent work', async () => {
     const f = await panel(); expect(text(body)).toContain('金属矿脉'); expect(all(body).filter(n => n.props['data-tab'])).toHaveLength(4);
-    await f.tab('craft'); expect(all(body).filter(n => n.props['data-recipe'])).toHaveLength(7); expect(text(body)).toContain('需 2 / 拥有 20');
-    await f.tab('station'); expect(all(body).filter(n => n.props['data-placement'])).toHaveLength(2); expect(all(body).filter(n => n.props['data-direction'])).toHaveLength(16);
+    await f.tab('craft'); expect(all(body).filter(n => n.props['data-recipe'])).toHaveLength(9); expect(text(body)).toContain('需 2 / 拥有 20');
+    await f.tab('station'); expect(all(body).filter(n => n.props['data-placement'])).toHaveLength(3); expect(all(body).filter(n => n.props['data-direction'])).toHaveLength(24);
     await f.tab('work'); expect(text(body)).toContain('最近记录'); expect(text(body)).toContain('第 2/5 批'); expect(text(body)).toContain('完成：金属矿脉');
   });
   it('renders batch bounds, replay disabled controls, safe error text and actual hidden root', async () => {

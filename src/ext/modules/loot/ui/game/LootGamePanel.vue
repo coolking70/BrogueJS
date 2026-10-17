@@ -9,7 +9,7 @@ import LootSalvagePanel from '../LootSalvagePanel.vue';
 import type { LootGameView } from '../../gameView';
 import type { LootPickupFilterDraft } from '../types';
 const props=defineProps<{view:LootGameView|null;tab:string;comparing:boolean;selectedIds:readonly number[];submitting:boolean;feedback:string;readOnly:boolean;presentationHidden?:boolean}>();
-const emit=defineEmits<{close:[];back:[];compare:[value:boolean];tab:[value:string];select:[id:number];batch:[ids:number[]];filter:[draft:LootPickupFilterDraft];salvage:[];identify:[];enchant:[];socket:[runeItemId:number];equip:[unequip:boolean,replace?:'left'|'right']}>();
+const emit=defineEmits<{close:[];back:[];compare:[value:boolean];tab:[value:string];select:[id:number];batch:[ids:number[]];filter:[draft:LootPickupFilterDraft];salvage:[];identify:[];enchant:[];socket:[runeItemId:number];work:[operationId:string,rowId?:string];equip:[unequip:boolean,replace?:'left'|'right']}>();
 const {t}=useTranslation();
 const filter=ref('all');
 const entries=computed(()=>props.view?.entries.filter(e=>filter.value==='all'||e.itemClass===filter.value)??[]);
@@ -47,6 +47,12 @@ function back(){emit('back');}
      <p v-if="view.socketAvailable&&!view.socketChoices.length">{{ t('ext.loot.ui.socket.no-material') }}</p>
      <details><summary>{{ t('ext.loot.ui.socket.recipes') }}</summary><section v-for="word in view.wordPreviews" :key="word.id"><h4>{{ t(word.name.nameKey) }}</h4><p>{{ t('ext.loot.ui.socket.recipe',{count:word.sockets,sequence:word.sequence.map(r=>t(r.nameKey)).join(' → ')}) }}</p><ul><LootAffixRow v-for="row in word.rows" :key="row.key" :row="row" /></ul></section></details>
     </section>
+    <section v-if="view.selected.location==='pack'&&view.selected.owned">
+     <p>{{ t('ext.loot.ui.work.rules') }}</p>
+     <p v-if="!view.workAvailable">{{ t('ext.loot.ui.work.unavailable') }}</p>
+     <button v-for="choice in view.workChoices" :key="`${choice.operationId}.${choice.rowId}`" :disabled="disabled||view.shards<choice.count*10" @click="emit('work',choice.operationId,choice.rowId)">{{ t(choice.operationId==='loot.work.reforge'?'ext.loot.ui.work.reforge':choice.operationId==='loot.work.unsocket-last'?'ext.loot.ui.work.last':'ext.loot.ui.work.all',{name:choice.rowName?t(choice.rowName.nameKey,choice.rowName.params):'',cost:choice.count*10,ticks:choice.count*100}) }}</button>
+    </section>
+    <p v-if="view.selected.location==='container'">{{ t('ext.loot.ui.work.container') }}</p>
     <LootItemCard v-if="view.card&&!comparing" :view="view.card" />
     <LootComparePanel v-if="view.compare&&comparing" :view="view.compare" @close="emit('compare',false)" />
     <p>{{ t('ext.loot.ui.live.unknown') }}</p><p>{{ t('ext.loot.ui.live.runic') }}</p>

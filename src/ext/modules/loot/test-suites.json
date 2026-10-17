@@ -35,7 +35,9 @@
     "tests/loot_sets.test.ts",
     "tests/loot_sets_growth.test.ts",
     "tests/loot_sockets.test.ts",
-    "tests/loot_socket_journey.test.ts"
+    "tests/loot_socket_journey.test.ts",
+    "tests/loot_work.test.ts",
+    "tests/loot_work_container.test.ts"
   ],
   "drift": []
 }

@@ -1,3 +1,5 @@
+import { workOperationInput, workItemStamp } from './WorldWorkItems';
+import { outputSlots } from './WorldWorkWorld';
 import { validateRaidReferences } from './SettlementRaids';
 import { validateResidentOrderReferences } from './ResidentOrderValidation';
 import { validateResidentReferences } from './ResidentValidation';
@@ -41,7 +43,7 @@ export function validateWorldWorkReferences(game: Game): void {
           : t.kind === 'station'
             ? pack?.stations
             : undefined;
-    if (!definitions?.some((d) => d.id === t.definitionId && d.owner === t.owner))
+    if (t.kind==='item-operation'?!runtime.hasWorkOperation(t.owner,t.definitionId):!definitions?.some((d) => d.id === t.definitionId && d.owner === t.owner))
       fail('terminal definition');
   }
   const auto = (game as unknown as { autoAction: unknown }).autoAction as any;
@@ -219,7 +221,7 @@ export function validateWorldWorkReferences(game: Game): void {
     uint(f.completionOrdinal, 'completionOrdinal');
     uint(f.completedBatches, 'completedBatches');
     if (
-      !['harvest', 'craft-batch', 'place-station', 'cancel', 'startup'].includes(f.operation) ||
+      !['harvest', 'craft-batch', 'place-station', 'cancel', 'startup','item-operation'].includes(f.operation) ||
       !['accepted', 'completed', 'interrupted', 'skipped'].includes(f.result) ||
       (f.reason !== null && typeof f.reason !== 'string')
     )
@@ -235,7 +237,7 @@ export function validateWorldWorkReferences(game: Game): void {
             : f.operation === 'place-station'
               ? pack.stations
               : [...pack.resourceNodes, ...pack.recipes, ...pack.stations];
-    if (!definition.some((d) => d.id === f.definitionId && d.owner === f.owner))
+    if (f.operation==='item-operation' ? !runtime.hasWorkOperation(f.owner,f.definitionId) : !definition.some((d) => d.id === f.definitionId && d.owner === f.owner)&&!(f.operation==='cancel'&&runtime.hasWorkOperation(f.owner,f.definitionId)))
       fail('workFact definition');
     if (
       f.result === 'accepted' &&
@@ -281,7 +283,7 @@ export function validateWorldWorkReferences(game: Game): void {
     );
     if (
       !pack ||
-      (t.kind === 'craft'
+      (t.kind==='item-operation'?!runtime.hasWorkOperation(t.owner,t.definitionId):t.kind === 'craft'
         ? !pack.recipes.some((r) => r.id === t.definitionId)
         : t.kind === 'harvest'
           ? !pack.resourceNodes.some((r) => r.id === t.definitionId)
@@ -318,7 +320,7 @@ export function validateWorldWorkReferences(game: Game): void {
       const items = containerItemsForValidation(game, t.inputEscrowId);
       const amounts = new Map<string, number>();
       for (const i of items) {
-        if (!i.worldItem) fail('escrow native');
+        if (!i.worldItem) {if(t.itemOperation?.targetItemId!==i.id||i.quantity!==1)fail('escrow native');continue;}
         const id = i.worldItem!.definitionId;
         amounts.set(id, (amounts.get(id) ?? 0) + i.quantity);
       }
@@ -327,6 +329,22 @@ export function validateWorldWorkReferences(game: Game): void {
         t.refundReservation.counts.some((a) => amounts.get(a.itemDefinitionId) !== a.count)
       )
         fail('escrow amounts');
+    }
+    if(t.itemOperation){
+      const op=t.itemOperation,items=containerItemsForValidation(game,t.inputEscrowId!),target=items.find(i=>i.id===op.targetItemId),detail=game.worldWorkDetails!.find(d=>d.ticketId===t.ticketId)!;
+      if(!target||workItemStamp(target)!==op.targetStamp||t.actorId!==game.player.id||items.filter(i=>!i.worldItem).length!==1)fail('operation target');
+      const prep={inputs:t.refundReservation!.counts,outputs:t.outputReservation!.counts,workTicks:detail.workTicks};
+      if(target!.worldItem||target!.quantity!==1||![0,1,8].includes(target!.category)||!runtime.validateStoredWorkItem(`${t.owner}.item-operation.v1`,workOperationInput(t.owner,op.operationId,target!,op.rowId),prep))fail('operation contract');
+      if(t.outputReservation!.slots!==1+outputSlots(game,game.player.inventory.items,prep.outputs)||t.refundReservation!.slots!==1+outputSlots(game,game.player.inventory.items,prep.inputs)
+        ||t.outputReservation!.destination.kind!=='inventory'||t.refundReservation!.destination.kind!=='inventory')fail('operation reservation');
+      const station=w.stations.find(s=>s.interactableId===t.stationId);
+      if(!packs.flatMap(p=>p.stations).find(s=>s.id===station?.definitionId)?.stationTags.includes('station.forge'))fail('operation station');
+    }
+    if(t.kind==='craft'){
+      const recipe=pack!.recipes.find(r=>r.id===t.definitionId)!;
+      if(!!recipe.lootRoll!==!!t.workRoll)fail('workRoll missing');
+      if(t.workRoll){const b=t.workRoll,base=definitions.find(d=>d.id===recipe.outputs[0]!.itemDefinitionId)?.nativeTemplate;
+        if(b.providerIdentity!==runtime.workItemIdentity(b.capability)||b.baseId!==base||b.maxRarity!==recipe.lootRoll!.maxRarity||b.depth!==(t.levelRef as {depth:number}).depth)fail('workRoll identity');}
     }
     const bundle = game.actorActions?.bundles.find((b) => b.actionId === t.bundleActionId);
     if (

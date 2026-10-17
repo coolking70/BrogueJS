@@ -26,7 +26,7 @@ function entries(value: unknown, path: Path = []): { path: Path; value: unknown 
 }
 
 const invalid: [string, unknown][] = [
-  ['schema', 2], ['moduleId', 'other'], ['moduleVersion', '1.0.1'], ['rulesVersion', '1.0.1'],
+  ['schema', 3], ['moduleId', 'other'], ['moduleVersion', '1.0.1'], ['rulesVersion', '1.0.1'],
   ['materials', null], ['tools', {}], ['recipes', 'recipes'], ['stations', false], ['resourceNodes', 1],
   ['materials.0.owner', 'other'], ['materials.0.id', 'other.wood'], ['materials.0.id', 'crafting.Wood'],
   ['materials.0.id', 'crafting.'], ['materials.0.id', 'crafting.' + 'a'.repeat(120)],
@@ -61,7 +61,7 @@ const invalid: [string, unknown][] = [
   ['resourceNodes.0.placement.dungeon.maxPerDepth', 0], ['resourceNodes.0.placement.dungeon.maxPerDepth', 33],
   ['resourceNodes.0.placement.dungeon.maxPerRun', 0], ['resourceNodes.0.placement.dungeon.maxPerRun', 513],
   ['resourceNodes.0.placement.dungeon.onNoSpace', 'retry'],
-  ['stations.0.stationTags', []], ['stations.0.kitDefinitionId', null], ['stations.0.kitDefinitionId', 'crafting.wood'],
+  ['stations.0.stationTags', []], ['stations.0.kitDefinitionId', 0], ['stations.0.kitDefinitionId', 'crafting.wood'],
   ['stations.0.placementCost.0.itemDefinitionId', 'crafting.kit-table'],
   ['stations.0.placementTicks', 0], ['stations.0.placementTicks', 10001],
   ['stations.0.interactionDistance', -1], ['stations.0.interactionDistance', 17],
@@ -108,7 +108,7 @@ describe('crafting schema rejects malformed data before registration (T1)', () =
     }
   });
   it('allows stricter limits when all static data still fits them', () => {
-    const value = clone(); set(value, ['limits', 'recipes'], 7); set(value, ['limits', 'stationsPerLevel'], 1);
+    const value = clone(); set(value, ['limits', 'recipes'], 9); set(value, ['limits', 'stationsPerLevel'], 1);
     expect(() => assertCraftingPack(value)).not.toThrow();
   });
   it('checks aggregate node budgets at every depth and across the run', () => {
@@ -175,7 +175,7 @@ describe('crafting pack identity (T2)', () => {
     const a = loadCraftingPack(), b = loadCraftingPack();
     expect(a).not.toBe(b); expect(a.materials).not.toBe(b.materials);
     expect(getCraftingPackIdentity(a)).toEqual(getCraftingPackIdentity(b));
-    expect(getCraftingPackIdentity(a)).toEqual({ schema: 1, version: '1.0.0', fingerprint: extensionDataFingerprint(a) });
+    expect(getCraftingPackIdentity(a)).toEqual({ schema: 2, version: '1.1.0', fingerprint: extensionDataFingerprint(a) });
   });
   it('covers the order of every reorderable mechanical array', () => {
     const fingerprint = extensionDataFingerprint(data);

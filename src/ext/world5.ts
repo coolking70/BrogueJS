@@ -122,7 +122,7 @@ export interface WorldReceipt {
   reason: string | null;
 }
 export interface World5Snapshot {
-  schema: 5;
+  schema: 6;
   raidAdmissionCursor: number;
   raidCamps: import("./settlementRaids").CampRaidState[];
   residentJobs:import("./residentSdk").ResidentWork[];
@@ -155,7 +155,7 @@ export interface World5Snapshot {
 }
 export function createWorld5(): World5Snapshot {
   return {
-    schema: 5,
+    schema: 6,
     raidCamps: [],
     raidAdmissionCursor: 0,
     residentJobs:[],
@@ -256,7 +256,7 @@ export function validateWorld5(
     'world5'
   );
   const w = value as unknown as World5Snapshot;
-  if (w.schema !== 5) throw new World5Error('C5_BAD_VERSION', 'world5.schema');
+  if (w.schema !== 6) throw new World5Error('C5_BAD_VERSION', 'world5.schema');
   for (const name of ['revision', 'simulationTicks', 'nextWorldId', 'nextPlanId'] as const)
     uint(w[name], name, name.startsWith('next') ? 1 : 0);
   validateRaidRoots(w, context.owners);

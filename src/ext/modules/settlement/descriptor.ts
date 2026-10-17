@@ -7,7 +7,7 @@ export const descriptor: ModuleDescriptor = {
   id: 'settlement',
   version: '1.4.0',
   foundation: FOUNDATION_PROTOCOL,
-  worldSdk: 1,
+  worldSdk: 2,
   rules: raidIdentity({ raids: false }, getSettlementIdentity()),
   runConfiguration: {
     controls: [

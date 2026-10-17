@@ -45,7 +45,7 @@ describe('crafting deterministic real-world projection', () => {
     expect(first.recipes.find(r => r.recipeId === 'crafting.make-dagger')).toMatchObject({
       stationId: null, stationRevision: null, maxBatch: 0, reason: 'C5_GATE'
     });
-    expect(first.placements.map(p => p.source)).toEqual(['materials', null]);
+    expect(first.placements.map(p => p.source)).toEqual(['materials', null, null]);
     const before = { world: h.world5(), digest: h.digest(), rng: rng.getState(), id: getNextEntityId() };
     for (let n = 0; n < 20; n++) expect(view(h)).toEqual(first);
     expect({ world: h.world5(), digest: h.digest(), rng: rng.getState(), id: getNextEntityId() }).toEqual(before);

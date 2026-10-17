@@ -39,7 +39,7 @@ import {TerrainType} from '../../../../engine/Map/Grid';
 const c=buildEffectiveLootCatalog(loadLootPack(),{combat:null,growth:null,giants:null});
 const rune=(id:string)=>`loot.rune.${id}`;
 function base(sockets=2,baseId='leather_armor',sequence:string[]=[]):LootItemDataV1 {
- return {v:4,baseId,ilvl:20,rarity:matchRuneword(c,baseId==='leather_armor'?'armor':'weapon',sockets,sequence.map(rune))?'runeword':'normal',uniqueId:null,setId:null,pieceId:null,identityKnown:false,affixes:[],corrupted:false,enhancement:0,sockets,socketed:sequence.map(rune),nameParts:null,origin:{source:'floor',depth:14}};
+ return {v:5,baseId,ilvl:20,rarity:matchRuneword(c,baseId==='leather_armor'?'armor':'weapon',sockets,sequence.map(rune))?'runeword':'normal',uniqueId:null,setId:null,pieceId:null,identityKnown:false,affixes:[],corrupted:false,enhancement:0,sockets,socketed:sequence.map(rune),nameParts:null,origin:{source:'floor',depth:14}};
 }
 const facts={v:1 as const,location:'pack' as const,ringKindKnown:true,magicPolarity:'unknown' as const,curseRevealed:false,hallucinating:false,familiarity:{unit:'turns' as const,remaining:999}};
 const noDraw={randomInt:()=>{throw Error('Unexpected draw');}};

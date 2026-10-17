@@ -58,7 +58,7 @@ describe('crafting approved golden data tables (T3)', () => {
     expect(pack.resourceNodes.reduce((sum, node) => sum + node.placement.dungeon!.maxPerDepth, 0)).toBe(8);
     expect(pack.resourceNodes.reduce((sum, node) => sum + node.placement.dungeon!.maxPerRun, 0)).toBe(144);
   });
-  it('freezes both stations, ordered placement costs and kit references', () => {
+  it('freezes all three stations, ordered placement costs and kit references', () => {
     expect(loadCraftingPack().stations).toEqual([
       {
         ...identity('station', 'table'), glyph: '桌', color: '#B08D57', interactionDistance: 1,
@@ -69,6 +69,11 @@ describe('crafting approved golden data tables (T3)', () => {
         ...identity('station', 'hearth'), glyph: '炉', color: '#E0703A', interactionDistance: 1,
         stationTags: ['station.hearth'], placementCost: amounts(['stone', 6], ['wood', 2]),
         placementTicks: 300, workPositionPolicy: 'adjacent-passable', kitDefinitionId: 'crafting.kit-hearth'
+      },
+      {
+        owner:'crafting',id:'crafting.forge',nameKey:'ext.crafting.forge.name',descriptionKey:'ext.crafting.forge.description',
+        glyph:'桌',color:'#B08D57',interactionDistance:1,stationTags:['station.forge'],
+        placementCost:amounts(['stone',6],['metal',4]),placementTicks:300,workPositionPolicy:'adjacent-passable',kitDefinitionId:null
       }
     ]);
   });
@@ -84,7 +89,11 @@ describe('crafting approved golden data tables (T3)', () => {
       recipe('make-dagger', [['metal', 4], ['wood', 1]], 'plain-dagger', 1000, true, false),
       recipe('make-leather-armor', [['fiber', 6], ['leather', 4]], 'plain-leather-armor', 1500, true, false),
       recipe('make-bed-kit', [['wood', 4], ['fiber', 2]], 'kit-bed', 500, true, true),
-      recipe('make-chest-kit', [['wood', 6]], 'kit-chest', 500, true, true)
+      recipe('make-chest-kit', [['wood', 6]], 'kit-chest', 500, true, true),
+      ...[['forge-dagger',[['metal',4],['wood',1]],'plain-dagger',1000],['forge-leather-armor',[['fiber',6],['leather',4]],'plain-leather-armor',1500]].map(([id,inputs,output,ticks])=>({
+        owner:'crafting',id:`crafting.${id}`,nameKey:`ext.crafting.${id}.name`,descriptionKey:`ext.crafting.${id}.description`,
+        inputs:amounts(...inputs as [string,number][]),outputs:amounts([output as string,1]),stationTags:['station.forge'],toolTag:null,workTicks:ticks,offlineEligible:false,lootRoll:{maxRarity:'magic'}
+      }))
     ]);
   });
   it('freezes startup declaration, all twelve limits, root metadata and SDK projection', () => {
@@ -93,7 +102,7 @@ describe('crafting approved golden data tables (T3)', () => {
       'schema', 'moduleId', 'moduleVersion', 'rulesVersion', 'materials', 'tools',
       'resourceNodes', 'stations', 'recipes', 'startupItems', 'limits'
     ].sort());
-    expect([pack.schema, pack.moduleId, pack.moduleVersion, pack.rulesVersion]).toEqual([1, 'crafting', '1.0.0', '1.0.0']);
+    expect([pack.schema, pack.moduleId, pack.moduleVersion, pack.rulesVersion]).toEqual([2, 'crafting', '1.1.0', '1.1.0']);
     expect(pack.startupItems).toEqual({ instanceKey: 'crafting.startup', items: amounts(['wood', 6], ['stone', 4], ['fiber', 2]), overflow: 'floor-then-skip' });
     expect(pack.limits).toEqual({
       recipes: 128, itemAndStationDefinitions: 128, nodeDefinitions: 128,
@@ -101,7 +110,7 @@ describe('crafting approved golden data tables (T3)', () => {
       startupReceipts: 1, placementReceipts: 512, workHistory: 128, batchMax: 16, stack: 99
     });
     expect(toWorldDefinitionPack(pack)).toEqual({
-      schema: 1, worldSdk: 1, items: [...pack.materials, ...pack.tools],
+      schema: 1, worldSdk: 2, items: [...pack.materials, ...pack.tools],
       resourceNodes: pack.resourceNodes, stations: pack.stations, recipes: pack.recipes,
       startupItems: pack.startupItems
     });
@@ -112,8 +121,8 @@ describe('crafting approved golden data tables (T3)', () => {
     const rows = [...pack.materials, ...pack.tools, ...pack.resourceNodes, ...pack.stations, ...pack.recipes];
     expect(rows.map(row => locale[row.nameKey])).toEqual([
       '木材', '石料', '金属块', '植物纤维', '皮革', '床铺套件', '储物箱套件', '工作桌套件', '火炉套件', '匕首', '皮甲', '矿镐',
-      '朽木堆', '碎石堆', '洞穴苇丛', '金属矿脉', '皮革存料', '工作桌', '火炉',
-      '制作矿镐', '制作工作桌套件', '制作火炉套件', '打制匕首', '缝制皮甲', '制作床铺套件', '制作储物箱套件'
+      '朽木堆', '碎石堆', '洞穴苇丛', '金属矿脉', '皮革存料', '工作桌', '火炉', '锻造工位',
+      '制作矿镐', '制作工作桌套件', '制作火炉套件', '打制匕首', '缝制皮甲', '制作床铺套件', '制作储物箱套件', '锻造匕首', '锻造皮甲'
     ]);
     expect(rows.every(row => typeof locale[row.descriptionKey] === 'string' && locale[row.descriptionKey]!.length > 0)).toBe(true);
     expect(rows.map(row => row.id).join(',')).not.toMatch(/fungus|ration|food/);

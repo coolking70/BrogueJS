@@ -1,3 +1,4 @@
+import { workItemStamp, prepareWorkOperation, bindCraftRoll, completeWorkOperation, completeCraftRoll } from './WorldWorkItems';
 import { cancelResidentOrder } from './ResidentOrders';
 import { isIncapacitated } from '../Status/Incapacitation';
 import { markItemStatsDirty } from '../Items/ItemStatInvalidation';
@@ -92,12 +93,13 @@ interface Plan {
   refundSlots: number;
   risks: readonly 'tool-break'[];
   canonical: string;
+  workRoll?: import('../../ext/worldSdk').WorkRollBinding;
 }
 const scopes = new WeakMap<
   object,
   { game: Game; world: Game['world5']; owner: string; actorId: number; kind: string; active: boolean }
 >();
-const handles = new WeakMap<object, { game: Game; world: Game['world5']; plan: Plan; used: boolean; epoch: number }>();
+const handles = new WeakMap<object, { game: Game; world: Game['world5']; plan: Plan; used: boolean; epoch: number; target?: Item }>();
 const errors = new WeakMap<Game, { runtime: Game['extensionRuntime']; code: WorldErrorCode | null }>();
 const validErrors = new Set<string>([
   'C5_BAD_PAYLOAD',
@@ -325,6 +327,8 @@ function preparePlan(
     destinationId: number | null = null,
     batches = 1,
     tag: string | null = null,
+    workRoll: import('../../ext/worldSdk').WorkRollBinding|undefined,
+    targetId:number|null=null,
     casKeys: WorldPlanHandle['casKeys'] = [];
   if (request.kind === 'cancel-work') {
     strict(request, ['kind', 'ticketId', 'ticketRevision']);
@@ -352,7 +356,22 @@ function preparePlan(
       (request.kind !== 'harvest' || request.destinationId === null)
     )
       reject('C5_UNSUPPORTED');
-    if (request.kind === 'harvest') {
+    if(request.kind==='item-operation') {
+      strict(request,['kind','operationId','itemId','itemRevision','stationId','stationRevision','inventoryStamp',...(request.rowId===undefined?[]:['rowId'])]);
+      int(request.itemId,1);int(request.stationId,1);int(request.stationRevision);
+      if(request.rowId!==undefined&&(typeof request.rowId!=='string'||! /^[a-z][a-z0-9.-]{0,127}$/.test(request.rowId)))reject('C5_BAD_PAYLOAD');
+      if(typeof request.operationId!=='string'||!request.operationId.startsWith(owner+'.work.')||typeof request.itemRevision!=='string')reject('C5_BAD_PAYLOAD');
+      const item=game.player.inventory.items.find(i=>i.id===request.itemId);
+      if(!item||[game.player.equippedWeapon,game.player.equippedArmor,game.player.ringLeft,game.player.ringRight].includes(item))reject('C5_BAD_OWNERSHIP');
+      if(workItemStamp(item)!==request.itemRevision)reject('C5_STALE');
+      const station=queryStations(game,owner).find(s=>s.interactableId===request.stationId);
+      if(!station||!station.tags.includes('station.forge'))reject('C5_UNKNOWN_TARGET');
+      if(station.revision!==request.stationRevision)reject('C5_STALE');
+      if(!station.workPositions.some(p=>p.x===a.x&&p.y===a.y))reject('C5_DISTANCE');
+      const prep=prepareWorkOperation(game,owner,request.operationId,item,request.rowId);
+      inputs=structuredClone(prep.inputs) as ItemAmount[];outputs=structuredClone(prep.outputs) as ItemAmount[];workTicks=prep.workTicks;targetId=item.id;
+      casKeys=[...casKeys,{kind:'station',interactableId:station.interactableId,revision:station.revision}];
+    } else if (request.kind === 'harvest') {
       strict(request, [
         'kind',
         'nodeId',
@@ -409,6 +428,7 @@ function preparePlan(
       inputs = structuredClone(d.inputs) as ItemAmount[];
       outputs = structuredClone(d.outputs) as ItemAmount[];
       workTicks = d.workTicks;
+      workRoll = bindCraftRoll(game,d);
       tag = d.toolTag;
       sourceId = request.sourceContainerId;
       if (request.stationId !== null) {
@@ -464,11 +484,11 @@ function preparePlan(
   const selectedTool = tool(game, tag, actorId),
     source = sourceId === null ? game.player.inventory.items : containerItems(game, sourceId);
   if (!continuing) amountsEnough(game, source, inputs, batches);
-  const after = afterEscrow(source, inputs, batches),
+  const after = afterEscrow(source, inputs, batches).filter(i=>i.id!==targetId),
     outputBase = sourceId === null ? after : game.player.inventory.items;
-  // Reserve a standalone fallback for each material stack, even when it can merge.
-  const output = outputSlots(game, [], outputs, batches);
-  const refund = inputs.length ? outputSlots(game, [], inputs, batches) : 0;
+  // Equipment work reserves the actual remaining stack capacity; other C5 recipes retain their standalone fallback.
+  const output = outputSlots(game, targetId===null?[]:outputBase, outputs, batches)+(targetId===null?0:1);
+  const refund = (inputs.length ? outputSlots(game, targetId===null?[]:outputBase, inputs, batches) : 0)+(targetId===null?0:1);
   if (!continuing) {
     if (
       destinationId === null &&
@@ -483,8 +503,7 @@ function preparePlan(
               : i.quantity),
           0
         ) +
-          output +
-          (sourceId === null ? refund : 0) +
+          (targetId===null?output+(sourceId===null?refund:0):Math.max(output,refund)) +
           reservedInventorySlots(game)
     )
       reject('C5_CAPACITY');
@@ -520,6 +539,7 @@ function preparePlan(
     outputSlots: output,
     refundSlots: refund,
     risks,
+    ...(workRoll?{workRoll}:{}),
     canonical: ''
   };
   const { canonical: _canonical, ...mechanics } = plan;
@@ -535,7 +555,7 @@ function issue(game: Game, plan: Plan): WorldPlanHandle {
     operation: plan.request.kind,
     casKeys: casFor(plan)
   }) as unknown as WorldPlanHandle;
-  handles.set(handle, { game, world: game.world5, plan, used: false, epoch: game.worldWorkCommandEpoch });
+  handles.set(handle, { game, world: game.world5, plan, used: false, epoch: game.worldWorkCommandEpoch, ...(plan.request.kind==='item-operation'?{target:game.player.inventory.items.find(i=>i.id===(plan.request as Extract<Request,{kind:'item-operation'}>).itemId)}:{}) });
   return handle;
 }
 function casFor(p: Plan): WorldPlanHandle['casKeys'] {
@@ -554,6 +574,7 @@ function casFor(p: Plan): WorldPlanHandle['casKeys'] {
         revision: r.destinationRevision!
       });
   }
+  if(r.kind==='item-operation')keys.push({kind:'station',interactableId:r.stationId,revision:r.stationRevision});
   if (r.kind === 'craft') {
     if (r.stationId !== null)
       keys.push({ kind: 'station', interactableId: r.stationId, revision: r.stationRevision! });
@@ -573,6 +594,7 @@ export function prepareWorldWorkCommand(
   outcome: WorldResult<WorldPlanHandle>;
   canonical: string | null;
   risks: readonly 'tool-break'[];
+  confirmation?: {ticks:number;cost:number};
 } {
   let active = true;
   let owner = '';
@@ -622,7 +644,7 @@ export function prepareWorldWorkCommand(
     const row = handles.get(outcome.value);
     if (!row || row.game !== game || row.plan.owner !== owner) reject('C5_SCOPE');
     if (row.plan.request.kind !== e.action) reject('C5_BAD_PAYLOAD');
-    return { outcome, canonical: row.plan.canonical, risks: row.plan.risks };
+    return { outcome, canonical: row.plan.canonical, risks: row.plan.risks,...(row.plan.request.kind==='item-operation'?{confirmation:{ticks:row.plan.workTicks,cost:row.plan.inputs.reduce((n,a)=>n+a.count,0)}}:{}) };
   } catch (error) {
     return {
       outcome: {
@@ -653,7 +675,7 @@ export function transactWorldWork<T>(game: Game, work: () => T): T {
   }
 }
 function escrowInputs(game: Game, plan: Plan, batches: number, ticketId: number): number | null {
-  if (!plan.inputs.length) return null;
+  if (!plan.inputs.length&&plan.request.kind!=='item-operation') return null;
   const w = game.world5!,
     id = allocateWorldId(game),
     source =
@@ -688,6 +710,10 @@ function escrowInputs(game: Game, plan: Plan, batches: number, ticketId: number)
       remaining -= count;
     }
     if (remaining) reject('C5_INPUT');
+  }
+  if(plan.request.kind==='item-operation'){
+    const item=game.player.inventory.items.find(i=>i.id===(plan.request as Extract<Request,{kind:'item-operation'}>).itemId)!;
+    game.player.inventory.removeItem(item);ids.push(item.id);game.worldContainerItems!.set(item.id,item);
   }
   w.containers.push({
     id,
@@ -724,7 +750,7 @@ export function commitWorldWork(
   entry.used = true;
   return result(() => {
     const plan = preparePlan(game, entry.plan.owner, entry.plan.actorId, entry.plan.request);
-    if (plan.canonical !== entry.plan.canonical) reject('C5_STALE');
+    if (plan.canonical !== entry.plan.canonical || (entry.target && !game.player.inventory.items.includes(entry.target))) reject('C5_STALE');
     return transactWorldWork(game, () => {
       const request = plan.request;
       if (request.kind === 'cancel-work') {
@@ -765,16 +791,18 @@ export function commitWorldWork(
         levelRef: { kind: 'dungeon', depth: game.depth },
         kind: request.kind === 'place-station' ? 'station' : request.kind,
         nodeId: request.kind === 'harvest' ? request.nodeId : null,
-        stationId: request.kind === 'craft' ? request.stationId : null,
+        stationId: request.kind === 'craft'||request.kind==='item-operation' ? request.stationId : null,
         sourceContainerId: plan.sourceId,
         definitionId:
           request.kind === 'harvest'
             ? w.nodes.find((n) => n.interactableId === request.nodeId)!.definitionId
             : request.kind === 'craft'
               ? request.recipeId
-              : request.definitionId,
+              : request.kind==='item-operation'?request.operationId:request.definitionId,
         inputEscrowId,
-        outputReservation: plan.outputs.length
+        ...(request.kind==='item-operation'?{itemOperation:{operationId:request.operationId,targetItemId:request.itemId,targetStamp:request.itemRevision,...(request.rowId===undefined?{}:{rowId:request.rowId})}}:{}),
+        ...(plan.workRoll?{workRoll:plan.workRoll}:{}),
+        outputReservation: plan.outputs.length||request.kind==='item-operation'
           ? {
               destination:
                 plan.destinationId === null
@@ -785,7 +813,7 @@ export function commitWorldWork(
               counts: counts(plan.outputs)
             }
           : null,
-        refundReservation: plan.inputs.length
+        refundReservation: plan.inputs.length||request.kind==='item-operation'
           ? {
               destination: source,
               slots: plan.refundSlots,
@@ -1131,10 +1159,11 @@ export function worldMessage(
     .extensionRuntime!.worldDefinitionPacks()
     .flatMap((p) => [...p.items, ...p.resourceNodes, ...p.stations, ...p.recipes])
     .find((d) => d.id === id);
-  if (!d) return;
+  const operation=!d&&game.extensionRuntime!.hasWorkOperation(id.split('.')[0]!,id);
+  if (!d&&!operation) return;
   const disturbed = game.disturbed;
   logger.log(
-    i18next.t(`ext.foundation.world.message.${kind}`, { name: worldText(d.nameKey) }),
+    operation?i18next.t(kind==='completed'?'ext.foundation.world.message.equipment-completed':'ext.foundation.world.message.equipment-interrupted'):i18next.t(`ext.foundation.world.message.${kind}`, { name: worldText(d!.nameKey) }),
     '#bbbbbb'
   );
   game.disturbed = disturbed;
@@ -1149,7 +1178,9 @@ function completeBatch(
       const pack = worldPack(game, t.owner);
       let inputs: readonly ItemAmount[] = [],
         outputs: readonly ItemAmount[] = [];
-      if (t.kind === 'craft') {
+      if(t.kind==='item-operation'){
+        inputs=t.refundReservation!.counts;outputs=t.outputReservation!.counts;completeWorkOperation(game,t);
+      } else if (t.kind === 'craft') {
         const r = pack.recipes.find((r) => r.id === t.definitionId)!;
         inputs = r.inputs;
         outputs = r.outputs;
@@ -1190,7 +1221,7 @@ function completeBatch(
         inputs = t.refundReservation!.counts;
       }
       consumeEscrow(game, t, inputs);
-      createOutputs(
+      if(!completeCraftRoll(game,t))createOutputs(
         game,
         outputs,
         t.outputReservation?.destination.kind === 'container'
@@ -1226,7 +1257,7 @@ function completeBatch(
         ticketId: t.ticketId,
         completionOrdinal: t.lastCompletionOrdinal,
         operation:
-          t.kind === 'craft' ? 'craft-batch' : t.kind === 'harvest' ? 'harvest' : 'place-station',
+          t.kind === 'item-operation'?'item-operation':t.kind === 'craft' ? 'craft-batch' : t.kind === 'harvest' ? 'harvest' : 'place-station',
         definitionId: t.definitionId,
         actorId: t.actorId,
         completedBatches: t.completedBatches,

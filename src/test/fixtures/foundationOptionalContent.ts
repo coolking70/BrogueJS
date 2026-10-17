@@ -15,7 +15,7 @@ import { prepare } from '../../ext/testing/fixtures/craftingSkeleton';
 const item = (id: string, category: 'material' | 'kit') => ({owner:'crafting',id:'crafting.foundation-'+id,
  nameKey:'ext.crafting.foundation.'+id+'.name',descriptionKey:'ext.crafting.foundation.'+id+'.description',
  category,glyph:'*',color:'#bbbbbb',maxStack:99,nativeTemplate:null,tags:[],tool:null});
-const pack: WorldDefinitionPack = {schema:1,worldSdk:1,
+const pack: WorldDefinitionPack = {schema:1,worldSdk:2,
  items:[item('wood','material'),item('stone','material'),item('kit-chest','kit'),item('kit-table','kit')],resourceNodes:[],
  stations:[{owner:'crafting',id:'crafting.foundation-table',nameKey:'ext.crafting.foundation.table.name',descriptionKey:'ext.crafting.foundation.table.description',
  glyph:'T',color:'#bb9966',interactionDistance:1,stationTags:['station.table'],placementCost:[{itemDefinitionId:'crafting.foundation-wood',count:4},{itemDefinitionId:'crafting.foundation-stone',count:2}],
@@ -32,7 +32,7 @@ function validCounter(v:unknown):v is Json {
  const count=(s.totals as {craftBatches:unknown}).craftBatches;
  return Number.isSafeInteger(count)&&Number(count)>=0;
 }
-const craft: ModuleDescriptor={id:'crafting',version:'0.0.1',foundation:FOUNDATION_PROTOCOL,worldSdk:1,rules,labelKey:'ext.crafting.foundation.label',
+const craft: ModuleDescriptor={id:'crafting',version:'0.0.1',foundation:FOUNDATION_PROTOCOL,worldSdk:2,rules,labelKey:'ext.crafting.foundation.label',
  locales:{zh_CN:Object.fromEntries([['ext.crafting.foundation.label','底座制作合同样本'],...[...pack.items,...pack.stations,...pack.recipes].flatMap(d=>[[d.nameKey,'底座合同样本 '+d.id],[d.descriptionKey,'独立测试声明。']])])},
  create:():ExtensionModule=>({id:'crafting',version:'0.0.1',rules,worldDefinitions:pack,
  initialState:()=>({totals:{craftBatches:0},history:[]}),validateState:validCounter,

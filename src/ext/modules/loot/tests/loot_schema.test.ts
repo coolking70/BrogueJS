@@ -148,7 +148,7 @@ describe('set admission includes class-specific expanded enhancement rows',()=>{
     const catalog=buildEffectiveLootCatalog(loadLootPack(raw),availability),set=catalog.pack.sets.sets[0]!;
     const slots=['weapon','armor','left-ring','right-ring'] as const;
     const equipment=set.pieces.map((piece,i):EquippedStatItem=>{
-      const data:LootItemDataV1={v: 4,baseId:piece.baseId,ilvl:20,rarity:'set',uniqueId:null,setId:set.id,pieceId:piece.id,identityKnown:true,
+      const data:LootItemDataV1={v: 5,baseId:piece.baseId,ilvl:20,rarity:'set',uniqueId:null,setId:set.id,pieceId:piece.id,identityKnown:true,
         affixes:piece.rows.map(r=>({id:r.rowId,tier:0,values:r.ranges.map(v=>v[0]),known:true})),
         corrupted:false,enhancement:0,sockets:0,socketed:[],nameParts:null,origin:{source:'floor',depth:14}};
       expect(validateLootItemData(data,catalog)).toBe(true);

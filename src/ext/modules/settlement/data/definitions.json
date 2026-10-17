@@ -4,7 +4,7 @@
   "rulesVersion": "1.4.0",
   "world": {
     "schema": 1,
-    "worldSdk": 1,
+    "worldSdk": 2,
     "items": [
       {
         "owner": "settlement",

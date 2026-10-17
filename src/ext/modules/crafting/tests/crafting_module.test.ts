@@ -27,8 +27,8 @@ describe('crafting module contract', () => {
   it('discovers a foundation-only descriptor with matching rules and world SDK', () => {
     expect(validateModuleDescriptors([descriptor])).toHaveLength(1);
     expect(descriptor).toMatchObject({
-      id: 'crafting', version: '1.0.0', foundation: FOUNDATION_PROTOCOL,
-      worldSdk: 1, defaultEnabled: false, rules: getCraftingPackIdentity(pack)
+      id: 'crafting', version: '1.1.0', foundation: FOUNDATION_PROTOCOL,
+      worldSdk: 2, defaultEnabled: false, rules: getCraftingPackIdentity(pack)
     });
     const module = createCraftingModule();
     expect(Object.keys(module).sort()).toEqual([
@@ -42,7 +42,7 @@ describe('crafting module contract', () => {
   });
   it('preserves item and definition order and excludes private limits from SDK definitions', () => {
     expect(toWorldDefinitionPack(pack)).toEqual({
-      schema: 1, worldSdk: 1, items: [...pack.materials, ...pack.tools],
+      schema: 1, worldSdk: 2, items: [...pack.materials, ...pack.tools],
       resourceNodes: pack.resourceNodes, stations: pack.stations,
       recipes: pack.recipes, startupItems: pack.startupItems
     });
@@ -55,7 +55,7 @@ describe('crafting module contract', () => {
     const module = createCraftingModuleFromPack(input);
     input.recipes[0]!.workTicks = 600;
     expect(module.worldDefinitions!.recipes[0]!.workTicks).toBe(500);
-    expect(() => createCraftingModuleFromPack({ ...pack, schema: 2 } as never)).toThrow();
+    expect(() => createCraftingModuleFromPack({ ...pack, schema: 3 } as never)).toThrow();
   });
   it('initializes only versioned empty history and counters with fresh arrays', () => {
     const state = initialCraftingState();

@@ -3,12 +3,12 @@ import type { ExtensionModule, ExtensionRulesIdentity } from './types';
 import { ExtensionRegistry } from './registry';
 import { isJson, validId } from './json';
 
-export const FOUNDATION_PROTOCOL = 18 as const;
+export const FOUNDATION_PROTOCOL = 19 as const;
 
 /** Pure installed-package metadata. Discovery never creates a module or a run.
  * UI has a separate discovered declaration so engine imports never initialize Vue. */
 export interface ModuleDescriptor {
-  readonly worldSdk?: 1;
+  readonly worldSdk?: 2;
   readonly id: string;
   readonly version: string;
   readonly foundation: typeof FOUNDATION_PROTOCOL;

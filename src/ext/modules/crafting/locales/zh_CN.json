@@ -116,5 +116,11 @@
   "ext.crafting.ui.container.inventory": "背包",
   "ext.crafting.ui.container.chest": "箱 {{id}}（{{x}},{{y}}）· 余 {{free}} 格",
   "ext.crafting.ui.collapse": "收起",
-  "ext.crafting.ui.expand": "展开"
+  "ext.crafting.ui.expand": "展开",
+  "ext.crafting.forge.name": "锻造工位",
+  "ext.crafting.forge.description": "用于拆卸符文、重铸词缀和锻造装备。",
+  "ext.crafting.forge-dagger.name": "锻造匕首",
+  "ext.crafting.forge-dagger.description": "打造一把已知匕首；战利品能力可用时最高为魔法品质。",
+  "ext.crafting.forge-leather-armor.name": "锻造皮甲",
+  "ext.crafting.forge-leather-armor.description": "打造一件已知皮甲；战利品能力可用时最高为魔法品质。"
 }

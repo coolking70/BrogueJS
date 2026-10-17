@@ -11,7 +11,7 @@ assert.equal(parseOptions(args).rounds,3);
 assert.equal(parseOptions([...args,'--base-identity','6b4','--head-identity','6c1']).headIdentity,'6c1');
 assert.equal(parseOptions([...args,'--base-identity','6c1','--head-identity','6c2']).headIdentity,'6c2');
 assert.equal(parseOptions([...args,'--base-identity','6c2']).baseIdentity,'6c2');
-for(const extra of [['--base-identity','6c3'],['--head-identity','6c3'],['--base-identity','6b4','--head-identity','6b4'],['--head-identity','6c1','--head-identity','6c1']])assert.throws(()=>parseOptions([...args,...extra]));
+for(const extra of [['--base-identity','6c4'],['--head-identity','6c4'],['--base-identity','6b4','--head-identity','6b4'],['--head-identity','6c1','--head-identity','6c1']])assert.throws(()=>parseOptions([...args,...extra]));
 for(const extra of [['--rounds','0'],['--rounds','4'],['--rounds','1.5'],['--case','unknown'],['--limit','-1'],['--limit','1715'],['--unknown','x'],['--rounds','1','--rounds','3'],['--case']])assert.throws(()=>parseOptions([...args,...extra]));
 const sample=()=>({mode:'wall',oos:0,recordingHash:'hash',events:3,node:'node',machine:{cpu:'cpu'},sourceHash:'src',semantic:{stateHash:'state',rng:[1],blocks:3,rounds:3,roundTicks:300,rowsHash:'rows'},diagnostics:{stats:{hits:1}},segments:{counter:{calls:2}},elapsed:100,
  command:{n:3,p50:1,p95:10,max:20},round:{p95:10,p99:20,max:20},depth:{20:{p95:10,max:20}},roundDepth:{20:{p95:10,p99:20,max:20}}});
@@ -148,3 +148,14 @@ try {
  assert.notEqual(recalculate(artifactResult).status,0,'Missing raw P99 evidence fails closed');
 } finally {rmSync(dir,{recursive:true,force:true});}
 console.log('A/B options, hard gates, 1ms thresholds, 2-of-3 verdict, freeze eligibility P99/workload policy and budget negatives passed');
+
+const {sourceSnapshot,assertCandidateSnapshot}=await import('./ext-perf-source-snapshot.mjs');
+const candidateOptions=parseOptions([...args,'--base-identity','6c2','--head-identity','6c3','--rounds','1','--head-source-hash','a'.repeat(64)]);
+assertCandidateSnapshot(candidateOptions,{hash:'a'.repeat(64)},{});
+assert.throws(()=>assertCandidateSnapshot(candidateOptions,{hash:'b'.repeat(64)},{}));
+assert.throws(()=>assertCandidateSnapshot(candidateOptions,{hash:'a'.repeat(64)},{GITHUB_ACTIONS:'true'}));
+assertCandidateSnapshot({...candidateOptions,limit:257},{hash:'a'.repeat(64)},{});
+for(const change of [{rounds:3},{limit:-1},{limit:1715},{cases:['classic']}])assert.throws(()=>assertCandidateSnapshot({...candidateOptions,...change},{hash:'a'.repeat(64)},{}));
+assert.equal(canFreeze({...ready,options:{...ready.options,headSourceHash:'a'.repeat(64)}}),false);
+const witness=mkdtempSync(resolve(tmpdir(),'c3-source-'));
+try {mkdirSync(resolve(witness,'src'));writeFileSync(resolve(witness,'src','a.ts'),'first');const before=sourceSnapshot(witness);writeFileSync(resolve(witness,'src','a.ts'),'second');assert.notEqual(sourceSnapshot(witness).hash,before.hash);writeFileSync(resolve(witness,'src','new.ts'),'untracked');assert.equal(sourceSnapshot(witness).files.length,2);} finally {rmSync(witness,{recursive:true,force:true});}

@@ -536,7 +536,8 @@
     },
     "src/ext/modules/loot/tests/loot_game_sfc.test.ts": {
       "required": [
-        "growth"
+        "growth",
+        "crafting"
       ],
       "optional": []
     },
@@ -565,6 +566,19 @@
     "src/ext/modules/loot/tests/loot_sets_growth.test.ts": {
       "required": [
         "growth"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/loot/tests/loot_work.test.ts": {
+      "required": [
+        "crafting"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/loot/tests/loot_work_container.test.ts": {
+      "required": [
+        "crafting",
+        "settlement"
       ],
       "optional": []
     }

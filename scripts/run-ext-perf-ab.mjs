@@ -1,3 +1,4 @@
+import {sourceSnapshot,assertCandidateSnapshot} from './ext-perf-source-snapshot.mjs';
 /** Same-runner A1/B1/A2/B2/A3/B3. No timing against historical machines.
  * node scripts/run-ext-perf-ab.mjs --base CHECKOUT --head CHECKOUT --out NEW_DIR
  * Optional --rounds 1..3 --case classic|all|both --limit EVENTS (smoke only).
@@ -25,7 +26,7 @@ const git=(root,...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8'}).tr
 const result={version:1,status:'running',hard:'pending',options,startedAt:new Date().toISOString(),
  runner:{node:process.version,cpu:cpus()[0]?.model,cpus:cpus().length,memoryBytes:totalmem(),platform:platform(),arch:arch(),heapMiB:3072,runId:process.env.GITHUB_RUN_ID??null,attempt:process.env.GITHUB_RUN_ATTEMPT??null},
  identities:{},steps:[],runs:[],gates:[],
- scope:'Registered A/B complete classic/all routes and an outcome-verified identical all prefix. Prefix length is derived from production captures; it is NOT a D20 calibration.',
+ scope:options.limit?`Local diagnostic: first ${options.limit} production events of both registered routes, plus bounded feature scenes. This is not full-route timing or D20 calibration.`:'Registered A/B complete classic/all routes and an outcome-verified identical all prefix. Prefix length is derived from production captures; it is NOT a D20 calibration.',
  policyVersion,policy:timingPolicy};
 const fmt=v=>typeof v==='number'?v.toFixed(2):'—';
 const triple=s=>s?['p50','p95','p99','max'].map(k=>fmt(s[k])).join(' / '):'—';
@@ -78,8 +79,8 @@ try {
  assert.equal(instrumentationHash,original.instrumentationHash,'Observer drift');
  for(const [side,root]of Object.entries(roots)){
   const sourceDiff=execFileSync('git',['diff','HEAD','--','src'],{cwd:root,encoding:'utf8'});
-  assert.equal(sourceDiff,'','Engine checkout must be clean');
-  assert.equal(git(root,'ls-files','--others','--exclude-standard','src'),'','Untracked engine source');
+  if(side==='B'&&options.headSourceHash){const snapshot=sourceSnapshot(root);assertCandidateSnapshot(options,snapshot);result.candidateSnapshot=snapshot;}
+  else {assert.equal(sourceDiff,'','Engine checkout must be clean');assert.equal(git(root,'ls-files','--others','--exclude-standard','src'),'','Untracked engine source');}
   result.identities[side]={commit:git(root,'rev-parse','HEAD'),srcTree:git(root,'rev-parse','HEAD:src'),sourceHash:hash(sourceDiff),lockHash:hash(readFileSync(resolve(root,'package-lock.json'),'utf8'))};
   // The workflow stages the dispatched planner into both historical checkouts;
   // retain exact byte guards for generation, capture, observer and comparison.
@@ -88,7 +89,7 @@ try {
  }
  result.identities.control={commit:git(control,'rev-parse','HEAD'),srcTree:git(control,'rev-parse','HEAD:src'),sourceHash:hash(execFileSync('git',['diff','HEAD','--','scripts','.github'],{cwd:control,encoding:'utf8'}))};
  result.instrumentationHash=instrumentationHash;
- result.toolHashes=Object.fromEntries(['run-ext-perf-ab.mjs','generate-ext-perf.mjs','ext-perf-route-recovery.mjs','profile-ext-6c1.mjs','ext-perf-selection.mjs','ext-perf-ab-policy.mjs','capture-ext-perf-prefix.mjs','regenerate-ext-perf.mjs','profile-ext-perf.mjs','ext-perf-common.mjs','compare-ext-perf.mjs','ext-perf-budget.mjs'].map(n=>[n,hash(readFileSync(resolve(control,'scripts',n),'utf8'))]));
+ result.toolHashes=Object.fromEntries(['ext-perf-source-snapshot.mjs','run-ext-perf-ab.mjs','generate-ext-perf.mjs','ext-perf-route-recovery.mjs','profile-ext-6c1.mjs','profile-ext-6c3.mjs','ext-perf-selection.mjs','ext-perf-ab-policy.mjs','capture-ext-perf-prefix.mjs','regenerate-ext-perf.mjs','profile-ext-perf.mjs','ext-perf-common.mjs','compare-ext-perf.mjs','ext-perf-budget.mjs'].map(n=>[n,hash(readFileSync(resolve(control,'scripts',n),'utf8'))]));
  const inputs={},routePaths={},sourcePaths={};
  for(const id of options.cases){
   routePaths[`A-${id}`]=resolve(control,baseline.entry.route(id));
@@ -146,8 +147,10 @@ try {
   const args=options.cases.map(id=>`${id}=${resolve(out,`round-${round}`,`A-${id}-full`)}`);
   run(`original-budget-${round}`,roots.A,'ext-perf-budget.mjs',['check',resolve(control,baseline.entry.manifest),...args]);
  }
- if(generated&&!options.limit){run('C1-bounded-supplement',roots.B,'profile-ext-6c1.mjs',[resolve(out,'c1-scenes.json')]);result.c1Scenes=read(resolve(out,'c1-scenes.json'));}
+ if(generated){run('C1-bounded-supplement',roots.B,'profile-ext-6c1.mjs',[resolve(out,'c1-scenes.json')]);result.c1Scenes=read(resolve(out,'c1-scenes.json'));}
+ if(options.headIdentity==='6c3'){run('C3-bounded-supplement',roots.B,'profile-ext-6c3.mjs',[resolve(out,'c3-scenes.json')]);result.c3Scenes=read(resolve(out,'c3-scenes.json'));}
  result.hard='pass';
+ if(options.headSourceHash)assertCandidateSnapshot(options,sourceSnapshot(roots.B));
  result.status=overallStatus(result);
  if(result.status==='pass'){
   result.status='verifying';publish();

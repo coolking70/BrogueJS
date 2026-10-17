@@ -4432,6 +4432,10 @@ export class Game {
         setWorldWorkError(this,null);const first=prepareWorldWorkCommand(this,data);
         if(!first.outcome.ok){setWorldWorkError(this,first.outcome.code);return;}
         let plan=first;
+        if(first.confirmation){
+            if(!(yield* this.requestConfirm(i18next.t('ext.foundation.world.confirm.item-operation',first.confirmation))))return;
+            plan=prepareWorldWorkCommand(this,data);if(!plan.outcome.ok||plan.canonical!==first.canonical){setWorldWorkError(this,'C5_STALE');return;}
+        }
         if(first.risks.length){
             const message=i18next.t('ext.foundation.world.confirm.tool-break');
             if(!this.replayRecording){const yes=yield {message,recordDecision:false};
@@ -14409,15 +14413,15 @@ export class Game {
         // native actor clock pointers shallowly and only traverse the explicit C5 write set.
         const actors=[this.player,...this.monsters],runtime=this.extensionRuntime!;
         const roots=()=>({shallow:[this,...actors],
-            deep:[this.world5,this.actorActions,this.worldContainerItems,this.worldWorkFacts,this.worldWorkDetails,
+            deep:[rng,this.world5,this.actorActions,this.worldContainerItems,this.worldWorkFacts,this.worldWorkDetails,
                 this.player.inventory,this.items,this.autoAction,...actors.map(a=>a instanceof Monster?a.carriedItem:null)],
             references:[runtime]});
         const restore=captures?(()=>{const receipts=[roots,...(additional?[additional]:[])].map(select=>captures.capture(select));return()=>receipts.forEach(apply=>apply());})()
             :additional?checkpointGenerationWorldGroups([roots,additional]):checkpointGenerationWorld(roots);
-        const actions=checkpointProductionActorActions(this),log=logger.checkpoint(),id=getNextEntityId(),random=rng.getState(),tick=timeSystem.currentTick;
+        const actions=checkpointProductionActorActions(this),log=logger.checkpoint(),id=getNextEntityId(),tick=timeSystem.currentTick;
         const invalid=isProductionActorActionRunInvalid(this),origin=recordingState(this).origin;
         return()=>{restore();actions();log();restoreProductionActorActionValidity(this,invalid);recordingState(this).origin=origin;
-            restoreNextEntityId(id);rng.setState(random);timeSystem.currentTick=tick;};
+            restoreNextEntityId(id);timeSystem.currentTick=tick;};
     }
     private stopAutoTravel(reason='input') {
         if(this.autoAction?.kind==='rest_point'){if(!this.executingRecordedCommand){this.disturbed=true;return;}this.stopFoundationRestPoint(reason);}

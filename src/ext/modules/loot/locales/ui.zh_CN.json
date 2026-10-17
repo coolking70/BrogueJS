@@ -232,7 +232,7 @@
   "ext.loot.ui.stat.native-move-speed": "移动耗时",
   "ext.loot.ui.socket.sequence": "孔位 {{used}}/{{total}}：{{sequence}}",
   "ext.loot.ui.socket.empty": "空",
-  "ext.loot.ui.socket.rules": "按顺序消耗 1 枚符文与 100 tick。镶嵌后不能强化；本阶段无法拆卸或取回。",
+  "ext.loot.ui.socket.rules": "按顺序嵌入一枚符文，消耗 100 tick；取回需要锻造工位和碎片。",
   "ext.loot.ui.socket.unavailable": "仅背包内未装备、未强化且有空孔的白装可镶嵌。",
   "ext.loot.ui.socket.action": "镶嵌 {{name}}（持有 {{count}}）",
   "ext.loot.ui.socket.forms": "将形成「{{name}}」",
@@ -242,5 +242,12 @@
   "ext.loot.ui.socket.confirm": "镶嵌「{{rune}}」后顺序为 {{sequence}}，结果：{{result}}。消耗 1 枚符文与 100 tick，不能强化，本阶段无法取回。确认？",
   "ext.loot.ui.socket.salvage-loss": "分解将永久销毁装备和其中的全部符文，不返还符文。",
   "ext.loot.ui.socket.no-word": "单符文效果（未成词）",
-  "ext.loot.ui.socket.enhance-blocked": "已镶嵌符文，不能强化或精炼。"
+  "ext.loot.ui.socket.enhance-blocked": "已镶嵌符文，不能强化或精炼。",
+  "ext.loot.ui.work.last": "拆卸末枚 · {{cost}} 碎片 / {{ticks}} tick",
+  "ext.loot.ui.work.all": "拆卸全部 · {{cost}} 碎片 / {{ticks}} tick",
+  "ext.loot.ui.work.reforge": "重铸「{{name}}」 · {{cost}} 碎片 / {{ticks}} tick",
+  "ext.loot.ui.work.rules": "拆卸保留符文。重铸只替换已鉴定装备的一条正面非符文随机行，可能变差或不变。工作中装备与材料托管，中断不退已耗时间。",
+  "ext.loot.ui.work.unavailable": "需要在锻造工位相邻的合法工作位操作。",
+  "ext.loot.ui.work.container": "箱内装备仅供查看；先按原容器流程取回，再到工位改造。",
+  "ext.loot.ui.work.crafted": "来源：工位合成（初始最高魔法品质）。"
 }

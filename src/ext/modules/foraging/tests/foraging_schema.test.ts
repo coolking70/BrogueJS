@@ -107,7 +107,7 @@ describe('foraging complete mechanical identity (T1)', () => {
   });
   it('deep-copies exactly the SDK arrays in original order and omits module-only rules', () => {
     const pack = loadForagingPack(), world = toWorldDefinitionPack(pack);
-    expect(world).toEqual({ schema: 1, worldSdk: 1, items: [], resourceNodes: pack.resourceNodes, stations: [], recipes: [], startupItems: null, edibleItems: pack.edibleItems, knowledgeGroups: pack.knowledgeGroups, placementGroups: pack.placementGroups, actorNeeds: pack.actorNeeds });
+    expect(world).toEqual({ schema: 1, worldSdk: 2, items: [], resourceNodes: pack.resourceNodes, stations: [], recipes: [], startupItems: null, edibleItems: pack.edibleItems, knowledgeGroups: pack.knowledgeGroups, placementGroups: pack.placementGroups, actorNeeds: pack.actorNeeds });
     for (const key of ['resourceNodes', 'edibleItems', 'knowledgeGroups', 'placementGroups', 'actorNeeds'] as const) { expect(world[key]).not.toBe(pack[key]); expect(world[key]![0]).not.toBe(pack[key][0]); }
     pack.edibleItems[0]!.satiety = 999; expect(world.edibleItems![0]!.satiety).toBe(200);
   });

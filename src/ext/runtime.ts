@@ -399,7 +399,7 @@ export class ExtensionRuntime {
             if(m.itemPresentation && ['project','name','appearance'].some(k=>typeof (m.itemPresentation as unknown as Record<string,unknown>)[k]!=='function'))throw new ItemDataError('C6_DATA');
             if(m.itemCommands)for(const [action,p] of Object.entries(m.itemCommands)){
                 if(!validId(action)||!p||!['create','filter','salvage','identify','socket'].includes(p.kind)||typeof p.prepare!=='function'
-                  ||m.commands?.[action]||m.worldWorkCommands?.[action as import('./worldSdk').CraftingAction]
+                  ||m.commands?.[action]||m.worldWorkCommands?.[action as import('./worldSdk').CraftingAction|'item-operation']
                   ||p.kind==='identify'&&(!p.materialDefinitionId||!m.worldDefinitions?.items.some(d=>d.id===p.materialDefinitionId&&d.owner===m.id&&d.category==='material'&&d.tool===null)))throw new ItemDataError('C6_DATA');
             }
         }
@@ -1293,7 +1293,7 @@ export class ExtensionRuntime {
             if(module?.residentPolicy&&(RESIDENT_ACTIONS as readonly string[]).includes(input.action))return true;
             if(module?.campPolicy&&[...STRUCTURE_ACTIONS,'repair'].includes(input.action))return true;
             if(module?.itemCommands?.[input.action])return true;
-            if(module?.worldWorkCommands?.[input.action as import('./worldSdk').CraftingAction]||module?.edibleCommands?.[input.action as 'feed'|'roast'])return true;
+            if(module?.worldWorkCommands?.[input.action as import('./worldSdk').CraftingAction|'item-operation']||module?.edibleCommands?.[input.action as 'feed'|'roast'])return true;
             return !!module?.commands && Object.prototype.hasOwnProperty.call(module.commands, input.action)
                 && typeof module.commands[input.action] === 'function';
         } catch { return false; }
@@ -1932,7 +1932,43 @@ export class ExtensionRuntime {
     isWorldWorkFixture(owner:string):boolean { const module=this.modules.find(m=>m.id===owner);return !!module&&isWorld5WorkFixture(module); }
     worldDefinitionPacks(): readonly import('./structureTypes').WorldDefinitionPack[] { return this.modules.flatMap(m=>m.worldDefinitions?[m.worldDefinitions]:[]); }
     worldDefinitionFingerprints():Record<string,string> {return Object.fromEntries(this.modules.filter(m=>m.worldDefinitions).map(m=>[m.id,`sha256:${c5Hash(hasEdibleDeclarations(m.worldDefinitions)?{pack:m.worldDefinitions,foundationEdibleRules:FOUNDATION_EDIBLE_RULES,...(m.worldDefinitions!.structures!==undefined||m.worldDefinitions!.restPoints!==undefined?{foundationStructureRules:FOUNDATION_STRUCTURE_RULES}:{})}:m.worldDefinitions!.structures!==undefined||m.worldDefinitions!.restPoints!==undefined?{pack:m.worldDefinitions,foundationStructureRules:FOUNDATION_STRUCTURE_RULES}:m.worldDefinitions)}`]));}
-    worldWorkCommand(owner:string,action:string): import('./worldSdk').WorldWorkCommand | undefined { return this.modules.find(m=>m.id===owner)?.worldWorkCommands?.[action as import('./worldSdk').CraftingAction]; }
+    hasWorkOperation(owner:string,id:string):boolean {return this.modules.find(m=>m.id===owner)?.workItemProviders?.[`${owner}.item-operation.v1`]?.operationIds?.includes(id)===true;}
+    workItemIdentity(capability:string):string|null {
+        const entries=this.modules.filter(m=>m.workItemProviders?.[capability]);
+        if(entries.length>1)throw new World5Error('C5_PROVIDER');
+        const m=entries[0];if(!m)return null;
+        const p=m.workItemProviders![capability]!;
+        if(typeof p.prepare!=='function'||typeof p.commit!=='function'||typeof p.validateProposal!=='function'||!capability.startsWith(m.id+'.'))throw new World5Error('C5_PROVIDER');
+        return `${m.id}:${m.version}:${c5Hash(m.rules??null)}`;
+    }
+    prepareWorkItem(capability:string,input:import('./worldSdk').WorkItemInput):import('./worldSdk').WorkItemPreparation {
+        if(!this.workItemIdentity(capability))throw new World5Error('C5_PROVIDER');
+        const m=this.modules.find(m=>m.workItemProviders?.[capability])!;
+        const result=this.ediblePure(()=>m.workItemProviders![capability]!.prepare(freezeItemValue(copyItemValue(input))));
+        assertItemJson(result);return freezeItemValue(copyItemValue(result));
+    }
+    validateStoredWorkItem(capability:string,input:import('./worldSdk').WorkItemInput,preparation:import('./worldSdk').WorkItemPreparation):boolean {
+        const m=this.modules.find(m=>m.workItemProviders?.[capability]),validate=m?.workItemProviders?.[capability]?.validateStored;
+        if(!validate)return false;
+        return this.ediblePure(()=>validate(freezeItemValue(copyItemValue(input)),freezeItemValue(copyItemValue(preparation))))===true;
+    }
+    commitWorkItem(capability:string,identity:string,input:import('./worldSdk').WorkItemInput):import('./worldSdk').WorkItemProposal {
+        if(identity!==this.workItemIdentity(capability))throw new World5Error('C5_PROVIDER');
+        const m=this.modules.find(m=>m.workItemProviders?.[capability])!;
+        let active=true,draws=0,begun=false;
+        try {
+            const result=this.ediblePure(()=>m.workItemProviders![capability]!.commit(freezeItemValue(copyItemValue(input)),Object.freeze({
+                beginItem:(index:number)=>{if(!active||begun||index!==0)throw new World5Error('C5_PROVIDER');begun=true;},
+                randomInt:(lo:number,hi:number)=>{if(!active||!begun||!Number.isSafeInteger(lo)||!Number.isSafeInteger(hi)||lo>hi||hi-lo>2147483646)throw new World5Error('C5_PROVIDER');if(lo===hi)return lo;if(++draws>64)throw new World5Error('C5_BUDGET');return this.ports.randomInt(lo,hi);}
+            })));
+            assertItemJson(result);
+            active=false;
+            const proposal=freezeItemValue(copyItemValue(result));
+            if(this.ediblePure(()=>m.workItemProviders![capability]!.validateProposal(freezeItemValue(copyItemValue(input)),proposal))!==true)throw new World5Error('C5_PROVIDER');
+            return proposal;
+        } finally {active=false;}
+    }
+    worldWorkCommand(owner:string,action:string): import('./worldSdk').WorldWorkCommand | undefined { return this.modules.find(m=>m.id===owner)?.worldWorkCommands?.[action as import('./worldSdk').CraftingAction|'item-operation']; }
     edibleCommand(owner:string,action:string) { return this.modules.find(m=>m.id===owner)?.edibleCommands?.[action as 'feed'|'roast']; }
     edibleModule(owner:string) { return this.modules.find(m=>m.id===owner); }
     edibleDirty(actorId?:number):void {cleanEdibleState(this);markRecordingRoot(this);this.invalidateStats();if(actorId!==undefined)this.reconcileMaterialized(actorId);}
@@ -2201,7 +2237,7 @@ export class ExtensionRuntime {
         return()=>{restoreSession();statSessions.set(this,session);restoreBindings();
             if(query)statQueries.set(this,query);else statQueries.delete(this);};
     }
-    worldWorkTransaction<T>(work:()=>T):T { return this.transaction(work); }
+    worldWorkTransaction<T>(work:()=>T):T { return this.itemCommandTransaction(work); }
     itemCommandTransaction<T>(work:()=>T):T {
         const restore=checkpointGenerationWorld(()=>({shallow:[this],deep:[this.states,this.components,this.world,this.deaths,this.pendingStoryFacts,this.causality],references:[this.ports,...this.modules,...this.creatures]}));
         const restoreStats=this.checkpointNativeStatSession();

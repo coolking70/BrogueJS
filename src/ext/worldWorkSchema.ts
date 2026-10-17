@@ -66,9 +66,10 @@ export function validateWorldWorkRoots(w: World5Snapshot, owners: readonly strin
     uint(t.lastCompletionOrdinal, 'completionOrdinal', 1);
     if (
       t.totalBatches > 16 ||
+      (t.kind==='item-operation'&&(t.totalBatches!==1||t.residentOutput!==undefined)) ||
       t.completedBatches > t.totalBatches ||
       !['completed', 'cancelled'].includes(t.status) ||
-      !['harvest', 'craft', 'station', 'build'].includes(t.kind) ||
+      !['harvest', 'craft', 'station', 'build','item-operation'].includes(t.kind) ||
       typeof t.definitionId !== 'string' ||
       (t.stopReason !== null && typeof t.stopReason !== 'string') ||
       (t.status === 'completed' && t.completedBatches !== t.totalBatches)
@@ -180,9 +181,17 @@ export function validateWorldWorkRoots(w: World5Snapshot, owners: readonly strin
   for (const t of w.tickets) {
     exact(
       t,
-      'ticketId,owner,actorId,levelRef,kind,nodeId,stationId,sourceContainerId,definitionId,inputEscrowId,outputReservation,refundReservation,resourceReservation,totalBatches,completedBatches,remainingTicks,laborCreditTicks,bundleActionId,revision,status,stopReason,lastCompletionOrdinal',
+      'ticketId,owner,actorId,levelRef,kind,nodeId,stationId,sourceContainerId,definitionId,inputEscrowId,outputReservation,refundReservation,resourceReservation,totalBatches,completedBatches,remainingTicks,laborCreditTicks,bundleActionId,revision,status,stopReason,lastCompletionOrdinal'+(t.itemOperation!==undefined?',itemOperation':'')+(t.workRoll!==undefined?',workRoll':''),
       'ticket'
     );
+    if((t.kind==='item-operation')!==(t.itemOperation!==undefined)||(t.itemOperation!==undefined&&!t.itemOperation))fail('itemOperation');
+    if(t.itemOperation){
+      const op=t.itemOperation;exact(op,'operationId,targetItemId,targetStamp'+(op.rowId!==undefined?',rowId':''),'itemOperation');
+      uint(op.targetItemId,'target',1);if(typeof op.operationId!=='string'||op.operationId!==t.definitionId||typeof op.targetStamp!=='string'||!/^[a-f0-9]{64}$/.test(op.targetStamp)||t.totalBatches!==1||t.completedBatches!==0||t.stationId===null||t.sourceContainerId!==null||t.nodeId!==null||t.resourceReservation!==null||!t.inputEscrowId||!t.outputReservation||!t.refundReservation||new TextEncoder().encode(JSON.stringify(op)).length>1024)fail('itemOperation');
+      if(op.rowId!==undefined&&(typeof op.rowId!=='string'||! /^[a-z][a-z0-9.-]{0,127}$/.test(op.rowId)))fail('rowId');
+    }
+    if(t.workRoll!==undefined){if(!t.workRoll)fail('workRoll');const b=t.workRoll;exact(b,'capability,providerIdentity,depth,recipeId,baseId,maxRarity','workRoll');uint(b.depth,'depth',1);
+      if(t.kind!=='craft'||b.capability!=='loot.item-roll.v1'||b.recipeId!==t.definitionId||b.depth>99||typeof b.baseId!=='string'||!['normal','magic'].includes(b.maxRarity)||(b.providerIdentity!==null&&(typeof b.providerIdentity!=='string'||b.providerIdentity.length>256)))fail('workRoll');}
     identity(t);
     wid(t.ticketId);
     uint(t.actorId, 'actor', 1);
@@ -200,7 +209,7 @@ export function validateWorldWorkRoots(w: World5Snapshot, owners: readonly strin
       t.totalBatches > 16 ||
       t.completedBatches > t.totalBatches ||
       t.remainingTicks > 10000 ||
-      !['harvest', 'craft', 'station', 'build'].includes(t.kind) ||
+      !['harvest', 'craft', 'station', 'build','item-operation'].includes(t.kind) ||
       !['working', 'suspended'].includes(t.status) ||
       (t.stopReason !== null && typeof t.stopReason !== 'string')
     )

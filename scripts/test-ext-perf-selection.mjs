@@ -10,7 +10,7 @@ const {tmpdir}=await import('node:os');
 const {resolve,dirname}=await import('node:path');
 assert.equal(selectExtPerf(['i','o','--identity=6c1']).manifest,'scripts/ext-perf-6c1-budget.json');
 assert.equal(selectExtPerf(['i','o','--identity=6c2']).manifest,'scripts/ext-perf-6c2-budget.json');
-for(const flags of [['--identity=6c3'],['--identity=unknown'],['--identity=p0','--phase6b4'],['--identity=p0','--identity=6b4']])assert.throws(()=>selectExtPerf(['i','o',...flags]));
+for(const flags of [['--identity=6c4'],['--identity=unknown'],['--identity=p0','--phase6b4'],['--identity=p0','--identity=6b4']])assert.throws(()=>selectExtPerf(['i','o',...flags]));
 const frozen=loadPerfIdentity(process.cwd(),'6c1');
 assert.equal(frozen.entry.accepted,true);
 assert.equal(frozen.sources.all.source,'e27648489953069b9aca4c9cf2b8a5ed5162a372');
@@ -38,3 +38,6 @@ try{
  assert.throws(()=>comparablePrefix({events},{events:[]}));
 }finally{rmSync(temp,{recursive:true,force:true});}
 console.log('C1/C2 finite selection, all artifact omissions, conflicting/unknown identities, hash drift and derived prefix passed');
+
+assert.equal(selectExtPerf(['i','o','--identity=6c3']).manifest,'scripts/ext-perf-6c3-budget.json');
+assert.equal(perfIdentity('6c3').accepted,false);

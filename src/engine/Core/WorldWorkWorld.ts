@@ -1,3 +1,4 @@
+import { workItemStamp } from '../Items/ItemRevision';
 import { ownsWorldWorkDefinitions } from './WorldWorkOwner';
 import { edibleDefinition, edibleItemAdapter } from './KindKnowledge';
 import { composedCellFlags } from '../Map/CellProperties';
@@ -224,6 +225,7 @@ export function itemRead(game: Game, item: Item): ItemRead {
   ] as const;
   return {
     id: item.id,
+    ...(!d&&item.moduleData&&[0,1,8].includes(item.category)?{itemRevision:workItemStamp(item)}:{}),
     category: d?.category ?? 'native',
     nativeCategory: d ? null : (names[item.category] ?? null),
     definitionId: d?.id ?? null,
@@ -305,7 +307,7 @@ export function reservedInventorySlots(game: Game): number {
       n +
       (publishing.get(game) === t.ticketId
         ? 0
-        : [t.outputReservation, t.refundReservation].reduce(
+        : t.kind==='item-operation'?Math.max(t.outputReservation?.slots??0,t.refundReservation?.slots??0):[t.outputReservation, t.refundReservation].reduce(
             (v, r) =>
               v +
               (r?.destination.kind === 'inventory' && r.destination.actorId === game.player.id
@@ -712,7 +714,7 @@ export function worldWorkReadSDK(game: Game, owner: string): WorldWorkReadSDK | 
     return;
   return deepFreeze({
     contractVersion: '1.0.0' as const,
-    worldSdk: 1 as const,
+    worldSdk: 2 as const,
     owner,
     lastCommandError: () => worldWorkLastError(game),
     // Project elapsed regeneration without committing it; CAS uses the live revision.

@@ -6,23 +6,23 @@ on:
       base_ref:
         description: A revision (latest reviewed candidate)
         required: true
-        default: 'e27648489953069b9aca4c9cf2b8a5ed5162a372'
+        default: '33d7aba6e458529ae126dee2d889c7b2c24507bd'
         type: string
       head_ref:
-        description: B revision (6C2 candidate)
+        description: B revision (6C3 candidate; set the committed candidate SHA)
         required: true
-        default: 'feb33b030f74949a2e0af001362b53f2f6e0eea3'
+        default: 'ext/phase6'
         type: string
       base_identity:
         description: Reviewed A benchmark
         type: choice
-        default: 6c1
-        options: [p0, 6b4, 6c1]
+        default: 6c2
+        options: [p0, 6b4, 6c1, 6c2]
       head_identity:
         description: B benchmark (fresh classic with frozen BFS; all with bounded recovery)
         type: choice
-        default: 6c2
-        options: [6b4, 6c1, 6c2]
+        default: 6c3
+        options: [6b4, 6c1, 6c2, 6c3]
       rounds:
         description: 'Paired rounds: 1/2 are diagnostic only; 3 required for D6/freeze'
         required: true

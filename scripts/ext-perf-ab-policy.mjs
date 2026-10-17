@@ -27,10 +27,11 @@ export function parseOptions(args) {
  const options={rounds:3,cases:['classic','all'],limit:0,baseIdentity:'p0',headIdentity:'6b4'};
  const seen=new Set();
  for(let i=0;i<args.length;i+=2){
-  const key=args[i];assert.ok(['--base','--head','--out','--rounds','--case','--limit','--base-identity','--head-identity'].includes(key)&&!seen.has(key),`Unknown/duplicate option ${key}`);
+  const key=args[i];assert.ok(['--base','--head','--out','--rounds','--case','--limit','--base-identity','--head-identity','--head-source-hash'].includes(key)&&!seen.has(key),`Unknown/duplicate option ${key}`);
   seen.add(key);assert.ok(args[i+1]&&!args[i+1].startsWith('--'),`Missing ${key}`);
   if(key==='--case'){assert.ok(['classic','all','both'].includes(args[i+1]));options.cases=args[i+1]==='both'?['classic','all']:[args[i+1]];}
   else if(key==='--base-identity'||key==='--head-identity'){perfIdentity(args[i+1]);options[key==='--base-identity'?'baseIdentity':'headIdentity']=args[i+1];}
+  else if(key==='--head-source-hash')options.headSourceHash=args[i+1];
   else options[key.slice(2)]=['--rounds','--limit'].includes(key)?Number(args[i+1]):args[i+1];
  }
  assert.notEqual(options.baseIdentity,options.headIdentity,'Conflicting A/B identities');
@@ -38,6 +39,7 @@ export function parseOptions(args) {
  assert.ok(options.base&&options.head&&options.out,'Expected --base --head --out');
  assert.ok(Number.isSafeInteger(options.rounds)&&options.rounds>=1&&options.rounds<=3,'rounds must be 1..3; only 3 can pass D6');
  assert.ok(Number.isSafeInteger(options.limit)&&options.limit>=0&&options.limit<=1714,'limit must be 0..1714 (0 = complete)');
+ if(options.headSourceHash!==undefined){assert.match(options.headSourceHash,/^[a-f0-9]{64}$/);assert.equal(options.rounds,1);assert.deepEqual(options.cases,['classic','all']);}
  return options;
 }
 
@@ -84,6 +86,7 @@ export function decide(pairs) {
 }
 
 export function canFreeze({options,gates,hard}) {
+ if(options.headSourceHash!==undefined)return false;
  return hard==='pass'&&options.rounds===3&&options.limit===0&&options.cases.join(',')==='classic,all'
   &&gates.length===3&&['classic/full','all/full','all/prefix'].every(key=>gates.some(g=>`${g.id}/${g.kind}`===key
    &&g.pairs?.length===3

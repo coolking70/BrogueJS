@@ -88,12 +88,12 @@ const META = [
 const parseRanges=(text:string)=>text ? text.split(',').map(pair=>pair.split(':').map(Number)) : [];
 const pack=loadLootPack();
 describe('loot data double transcription',()=>{
-  it('loads exactly twenty-one rule files and recursively freezes every object',()=>{
-    expect(Object.keys(pack)).toEqual(['ilvl','tiers','bases','rarities','affixes','uniques','sets','runes','runewords','sockets','runeDrops','monsterClasses','dropTables','gold','presets','enhancement','identify','corruption','salvage','caps','rareNames']);
+  it('loads exactly twenty-two rule files and recursively freezes every object',()=>{
+    expect(Object.keys(pack)).toEqual(['stationOperations','ilvl','tiers','bases','rarities','affixes','uniques','sets','runes','runewords','sockets','runeDrops','monsterClasses','dropTables','gold','presets','enhancement','identify','corruption','salvage','caps','rareNames']);
     const check=(v:unknown):void=>{if(v&&typeof v==='object'){expect(Object.isFrozen(v)).toBe(true);Object.values(v).forEach(check);}};check(pack);
-    expect(LOOT_VERSION).toBe('0.4.0');expect(getLootPackIdentity()).toEqual({schema:3,version:'0.4.0',fingerprint:extensionDataFingerprint({pack,targets:ITEM_RUNIC_TARGETS})});
+    expect(LOOT_VERSION).toBe('0.5.0');expect(getLootPackIdentity()).toEqual({schema:4,version:'0.5.0',fingerprint:extensionDataFingerprint({pack,targets:ITEM_RUNIC_TARGETS})});
     // v1.1 four-field data patch; regenerated independently alongside the literal tapes.
-    expect(getLootPackIdentity().fingerprint).toBe('sha256:ddf001ce3ec90674daca0cf553498728d8d75ccd11636f02bdb7c4cfed511dab');
+    expect(getLootPackIdentity().fingerprint).toBe('sha256:c24a7b78a83a2fd7d3d5589f2c8eda41fec3ca058951fe49e561cda7d85108e6');
   });
   it('independently transcribes all 35 ordinary affix rows, exact intervals, metadata and dependencies',()=>{
     expect(pack.affixes.affixes).toHaveLength(56);expect(pack.affixes.runeFamilyEnabled).toBe(true);

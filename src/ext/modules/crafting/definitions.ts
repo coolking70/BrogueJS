@@ -4,7 +4,7 @@ import type { WorldDefinitionPack } from '../../worldSdk';
 import { assertCraftingPack } from './schema';
 import type { CraftingPack } from './types';
 
-export const CRAFTING_VERSION = '1.0.0' as const;
+export const CRAFTING_VERSION = '1.1.0' as const;
 
 export function loadCraftingPack(): CraftingPack {
   const pack = structuredClone(data);
@@ -15,7 +15,7 @@ export function loadCraftingPack(): CraftingPack {
 export function getCraftingPackIdentity(pack: CraftingPack = loadCraftingPack()) {
   assertCraftingPack(pack);
   return {
-    schema: 1,
+    schema: 2,
     version: CRAFTING_VERSION,
     fingerprint: extensionDataFingerprint(pack)
   };
@@ -26,7 +26,7 @@ export function toWorldDefinitionPack(pack: CraftingPack): WorldDefinitionPack {
   assertCraftingPack(pack);
   return {
     schema: 1,
-    worldSdk: 1,
+    worldSdk: 2,
     items: [...pack.materials, ...pack.tools],
     resourceNodes: pack.resourceNodes,
     stations: pack.stations,

@@ -66,7 +66,7 @@ export type WorldResult<T> =
   | Readonly<{ ok: true; value: DeepReadonly<T> }>
   | Readonly<{ ok: false; code: WorldErrorCode; field: string | null }>;
 export const C5_CONTRACT_VERSION = '1.0.0' as const;
-export const WORLD_SDK_VERSION = 1 as const;
+export const WORLD_SDK_VERSION = 2 as const;
 export { levelKey, compareLevelRefs } from './worldBasics';
 
 declare const scopeBrand: unique symbol;
@@ -159,6 +159,8 @@ export interface ContainerRecord {
 }
 export interface ItemRead {
   id: EntityId;
+  /** Opaque full native/data signature for equipment work; contains no hidden values. */
+  itemRevision?: string;
   category: 'material' | 'tool' | 'kit' | 'native';
   nativeCategory: NativeItemCategoryName | null;
   definitionId: DefinitionId | null;
@@ -269,6 +271,7 @@ export interface RecipeDefinition {
   toolTag: string | null;
   workTicks: Tick;
   offlineEligible: boolean;
+  lootRoll?: Readonly<{maxRarity: 'normal' | 'magic'}>;
 }
 export interface OutputReservation {
   destination: ItemOwnerRef;
@@ -281,7 +284,9 @@ export interface WorkTicket {
   owner: ModuleId;
   actorId: EntityId;
   levelRef: LevelRef;
-  kind: 'harvest' | 'craft' | 'station' | 'build';
+  kind: 'harvest' | 'craft' | 'station' | 'build' | 'item-operation';
+  itemOperation?: WorkItemOperation;
+  workRoll?: WorkRollBinding;
   nodeId: EntityId | null;
   stationId: EntityId | null;
   sourceContainerId: WorldId | null;
@@ -307,7 +312,7 @@ export interface StartupItemsDeclaration {
 }
 export interface WorldDefinitionPack {
   schema: 1;
-  worldSdk: 1;
+  worldSdk: 2;
   items: readonly ItemDefinitionContribution[];
   resourceNodes: readonly ResourceDefinition[];
   stations: readonly StationDefinition[];
@@ -355,6 +360,7 @@ export interface RecipePreview {
   toolTag: string | null;
 }
 export type TimedWorkRequest =
+  | Readonly<{kind:'item-operation';operationId:string;itemId:number;itemRevision:string;stationId:number;stationRevision:number;inventoryStamp:string;rowId?:string}>
   | Readonly<{
       kind: 'harvest';
       nodeId: EntityId;
@@ -398,7 +404,7 @@ export interface CommittedWorkFact {
   factId: number;
   ticketId: WorldId | null;
   completionOrdinal: number;
-  operation: 'harvest' | 'craft-batch' | 'place-station' | 'cancel' | 'startup';
+  operation: 'harvest' | 'craft-batch' | 'place-station' | 'cancel' | 'startup' | 'item-operation';
   definitionId: DefinitionId;
   actorId: EntityId;
   completedBatches: number;
@@ -429,7 +435,7 @@ export interface WorldWorkParticipant {
 }
 export interface WorldWorkReadSDK {
   readonly contractVersion: '1.0.0';
-  readonly worldSdk: 1;
+  readonly worldSdk: 2;
   readonly owner: ModuleId;
   /** Session-only diagnostic, never saved or included in a mechanical digest. */
   lastCommandError?(): WorldErrorCode | null;
@@ -446,8 +452,9 @@ export interface WorldWorkReadSDK {
 }
 export type CraftingAction = 'harvest' | 'craft' | 'place-station' | 'cancel-work';
 export interface WorldModuleFields {
+  workItemProviders?: Readonly<Record<string, WorkItemProvider>>;
   worldDefinitions?: WorldDefinitionPack;
-  worldWorkCommands?: Readonly<Partial<Record<CraftingAction, WorldWorkCommand>>>;
+  worldWorkCommands?: Readonly<Partial<Record<CraftingAction | 'item-operation', WorldWorkCommand>>>;
   worldWorkParticipant?: WorldWorkParticipant;
 }
 export interface WorldProjectionFields {
@@ -456,7 +463,7 @@ export interface WorldProjectionFields {
   readonly worldWork?: WorldWorkReadSDK;
 }
 export interface WorldDescriptorFields {
-  readonly worldSdk: 1;
+  readonly worldSdk: 2;
 }
 export type CraftingCommand =
   | Readonly<{
@@ -525,4 +532,41 @@ export interface WorldHarness {
   seek(recording: string, afterCommand: number): void;
   digest(): string;
   dispose(): void;
+}
+
+/** C3 detached, synchronous work completion proposals. No live Item/Game authority. */
+export interface WorkItemOperation {
+  operationId: string;
+  targetItemId: number;
+  targetStamp: string;
+  /** Module-owned unique row identity, bound to targetStamp; never a display ordinal. */
+  rowId?: string;
+}
+export interface WorkRollBinding {
+  capability: 'loot.item-roll.v1';
+  providerIdentity: string | null;
+  depth: number;
+  recipeId: string;
+  baseId: string;
+  maxRarity: 'normal' | 'magic';
+}
+export type WorkItemInput =
+  | Readonly<{kind:'operation'; operationId:string; rowId?:string; data:JsonValue}>
+  | Readonly<{kind:'craft'; baseId:string; recipeId:string; depth:number; maxRarity:'normal'|'magic'; rarityFindBp:number}>;
+export interface WorkItemPreparation {
+  inputs: readonly ItemAmount[];
+  outputs: readonly ItemAmount[];
+  workTicks: number;
+}
+export type WorkItemProposal =
+  | Readonly<{kind:'update'; data:JsonValue}>
+  | Readonly<{kind:'create'; native:import('./itemSdk').NativeAssembly; data:JsonValue}>;
+export interface WorkItemProvider {
+  operationIds?: readonly string[];
+  prepare(input:WorkItemInput): WorkItemPreparation;
+  /** Pure admission against the bound request, before any proposal is published. */
+  validateProposal(input:WorkItemInput, proposal:WorkItemProposal): boolean;
+  /** Pure load admission; must not accept a ticket, issue a handle, or roll. */
+  validateStored?(input:WorkItemInput, preparation:WorkItemPreparation): boolean;
+  commit(input:WorkItemInput, random:Readonly<{beginItem(index:number):void;randomInt(lo:number,hi:number):number}>): WorkItemProposal;
 }

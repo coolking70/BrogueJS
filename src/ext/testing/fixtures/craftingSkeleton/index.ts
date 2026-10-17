@@ -29,7 +29,7 @@ const item = (
 });
 export const definitions: WorldDefinitionPack = {
   schema: 1,
-  worldSdk: 1,
+  worldSdk: 2,
   items: [
     item('fiber', 'material'),
     item('knife', 'tool'),
@@ -162,7 +162,7 @@ export const descriptor: ModuleDescriptor = {
   id: owner,
   version: '1.0.0',
   foundation: FOUNDATION_PROTOCOL,
-  worldSdk: 1,
+  worldSdk: 2,
   rules,
   create: createCraftingSkeleton,
   labelKey: 'ext.craftskel.label',

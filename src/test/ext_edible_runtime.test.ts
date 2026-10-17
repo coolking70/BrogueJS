@@ -494,7 +494,7 @@ it('empty-items harvest preserves terminal tickets and work facts through save/l
 });
 it('only edibleItems supplies context.worldWork while an absent owner has no projection', () => {
   const pack: WorldDefinitionPack = {
-    schema: 1, worldSdk: 1, items: [], resourceNodes: [], stations: [], recipes: [], startupItems: null,
+    schema: 1, worldSdk: 2, items: [], resourceNodes: [], stations: [], recipes: [], startupItems: null,
     edibleItems: [forageDefinitions.edibleItems![2]!]
   };
   const h = forage([], [workProjectionFixture(pack)]), g = h.game(), before = h.save(), random = rng.getState();

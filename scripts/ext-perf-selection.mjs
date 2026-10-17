@@ -6,6 +6,7 @@ const identities=Object.freeze({
  p0:{manifest:'scripts/ext-perf-budget.json',stem:'ext-late',accepted:true},
  '6b4':{manifest:'scripts/ext-perf-6b4-budget.json',stem:'ext-6b4-late',accepted:true},
  '6c1':{manifest:'scripts/ext-perf-6c1-budget.json',stem:'ext-6c1-late',accepted:true,generate:true},
+ '6c3':{manifest:'scripts/ext-perf-6c3-budget.json',stem:'ext-6c3-late',accepted:false,generate:true},
  '6c2':{manifest:'scripts/ext-perf-6c2-budget.json',stem:'ext-6c2-late',accepted:true,generate:true},
 });
 export function perfIdentity(id){

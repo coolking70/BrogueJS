@@ -111,11 +111,11 @@ function minimumRarity(a: RarityId | null, b: RarityId | null): RarityId | null 
     if (b === null) return a;
     return ROLLED_RARITIES.indexOf(a as 'normal') >= ROLLED_RARITIES.indexOf(b as 'normal') ? a : b;
 }
-function unlockedTiers(catalog: EffectiveLootCatalog, affix: AffixDefinition, ilvl: number): number[] {
+export function unlockedTiers(catalog: EffectiveLootCatalog, affix: AffixDefinition, ilvl: number): number[] {
     return catalog.pack.tiers.tiers.filter(tier => tier.enabled && tier.minIlvl <= ilvl && tier.tier <= affix.maxTier)
         .map(tier => tier.tier);
 }
-function rollAffix(catalog: EffectiveLootCatalog, affix: AffixDefinition, ilvl: number, random: CountedLootRandom): LootAffixRoll {
+export function rollAffix(catalog: EffectiveLootCatalog, affix: AffixDefinition, ilvl: number, random: CountedLootRandom): LootAffixRoll {
     const weights = catalog.pack.tiers.window.weightsHighToLow;
     const window = unlockedTiers(catalog, affix, ilvl).slice(-catalog.pack.tiers.window.size);
     const tier = weightedPick(window, candidate => weights[window.length - 1 - window.indexOf(candidate)]!, random)!;
@@ -195,7 +195,7 @@ export function rollLootWithTrace(catalog: EffectiveLootCatalog, request: LootRo
             if(!member)rarity='rare';
             else {occupied.add(member.piece.id);result.newUniqueIds.push(member.piece.id);}
         }
-        const data: LootItemDataV1 = { v: 4, baseId, ilvl, rarity, uniqueId: unique?.id ?? null, setId: member?.setId ?? null, pieceId: member?.piece.id ?? null, identityKnown: false,
+        const data: LootItemDataV1 = { v: 5, baseId, ilvl, rarity, uniqueId: unique?.id ?? null, setId: member?.setId ?? null, pieceId: member?.piece.id ?? null, identityKnown: false,
             affixes: [], corrupted: false, enhancement: 0, sockets: 0, socketed: [], nameParts: null,
             origin: { source: request.source, depth: request.depth } };
         if (rarity === 'magic' || rarity === 'rare') {

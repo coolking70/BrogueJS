@@ -49,6 +49,11 @@ export function useLootUi(host:ModuleUiHost):ModuleUiSession {
   pending={revision,events:game.recordedInputEvents.length,cancelled:false};submitting.value=true;feedback.value=i18next.t('ext.loot.ui.live.pending');
   try{game.executeCommand('ext:command',JSON.stringify({module:'loot',action,payload:{v:1,revision,...payload}}));}catch{feedback.value=i18next.t('ext.loot.ui.live.rejected');pending=null;submitting.value=false;}refresh();
  }
+ function work(operationId:string,rowId?:string){
+  if(!live()||!opened.value||readOnly()||submitting.value||game.isAdvancing||game.isInputLocked()||host.isPresentationBusy?.())return;
+  const choice=view.value?.workChoices.find(c=>c.operationId===operationId&&c.rowId===rowId);if(!choice)return;
+  close();game.executeCommand('ext:command',JSON.stringify({module:'loot',action:'item-operation',payload:choice.payload}));
+ }
  function enchant(){
   if(!live()||!opened.value||readOnly()||submitting.value||game.isAdvancing||game.isInputLocked()||host.isPresentationBusy?.())return;
   const target=game.player.inventory.items.find(i=>i.id===selected.value),scroll=game.player.inventory.items.find(i=>i.consumableId==='scroll_of_enchantment');
@@ -78,5 +83,5 @@ export function useLootUi(host:ModuleUiHost):ModuleUiSession {
   // The shared host tick / presentation-settled callback retries refresh.
   panel:computed(()=>opened.value?{component:Panel,props:{view:view.value,tab:tab.value,comparing:comparing.value,onCompare:(value:boolean)=>{comparing.value=value;},selectedIds:batch.value,submitting:submitting.value,feedback:feedback.value,readOnly:readOnly(),
    onClose:close,onBack:back,onTab:(value:string)=>{tab.value=value;selected.value=null;comparing.value=false;refresh();},onSelect:(id:number)=>{selected.value=id;refresh();},onBatch:(ids:number[])=>{batch.value=ids;refresh();},
-   onFilter:(draft:LootPickupFilterDraft)=>submit('set-filter',{...draft}),onSalvage:()=>submit('salvage',{itemIds:batch.value}),onIdentify:()=>submit('identify-shards',{itemId:selected.value}),onEnchant:enchant,onSocket:(runeItemId:number)=>submit('socket',{itemId:selected.value,runeItemId}),onEquip:equip}}:null),refresh,close};
+   onFilter:(draft:LootPickupFilterDraft)=>submit('set-filter',{...draft}),onSalvage:()=>submit('salvage',{itemIds:batch.value}),onIdentify:()=>submit('identify-shards',{itemId:selected.value}),onWork:work,onEnchant:enchant,onSocket:(runeItemId:number)=>submit('socket',{itemId:selected.value,runeItemId}),onEquip:equip}}:null),refresh,close};
 }

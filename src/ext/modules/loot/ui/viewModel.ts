@@ -189,6 +189,7 @@ export function buildLootItemView(item: LootKnownItem, catalog: EffectiveLootCat
   const order = { prefix: 0, suffix: 1, row: 2 };
   const rows = item.affixes.map((row, i) => affixRow(row, i, catalog, options)).sort((a, b) => order[a.position] - order[b.position]);
   const notices: LootTextRef[] = [];
+  if(item.crafted)notices.push({nameKey:'ext.loot.ui.work.crafted',params:{}});
   if (item.location === 'floor') notices.push({ nameKey: 'ext.loot.ui.notice.floor-count-hidden', params: {} });
   if (item.location !== 'floor' && unknownCount(item)) notices.push({ nameKey: 'ext.loot.ui.notice.unknown-active', params: {} });
   if (item.polarity === 'malevolent' && item.corrupted !== true) notices.push({ nameKey: 'ext.loot.ui.notice.malevolent', params: {} });
@@ -276,6 +277,7 @@ export function buildLootCompareView(candidate: LootKnownItem, equipped: readonl
     return { slot, equipped: item ? buildLootChipView(item, catalog) : null, rows };
   });
   const notices: LootTextRef[] = [];
+
   const unknown = unknownCount(candidate) + equipped.reduce((n, item) => n + (item ? unknownCount(item) : 0), 0);
   if (unknown) notices.push({ nameKey: 'ext.loot.ui.compare.unknown-excluded', params: { count: unknown } });
   const strength = afterBase.find(row => row.key === 'strength')?.values?.[0] ?? 0;

@@ -43,7 +43,7 @@ function transactions() {
 describe('foraging module and state contract', () => {
   it('is a discovered foundation-only module with exactly the specified capabilities', () => {
     expect(validateModuleDescriptors([descriptor])).toHaveLength(1);
-    expect(descriptor).toMatchObject({ id: 'foraging', version: '1.0.0', foundation: FOUNDATION_PROTOCOL, worldSdk: 1, defaultEnabled: false,
+    expect(descriptor).toMatchObject({ id: 'foraging', version: '1.0.0', foundation: FOUNDATION_PROTOCOL, worldSdk: 2, defaultEnabled: false,
       rules: getForagingPackIdentity(pack) });
     const module = createForagingModule();
     expect(Object.keys(module).sort()).toEqual(['id', 'version', 'rules', 'worldDefinitions', 'worldWorkCommands', 'edibleCommands', 'edibleParticipant',
@@ -56,7 +56,7 @@ describe('foraging module and state contract', () => {
   });
   it('deep-copies world definitions in package order and does not expose private policy fields', () => {
     const world = toWorldDefinitionPack(pack);
-    expect(world).toEqual({ schema: 1, worldSdk: 1, items: [], resourceNodes: pack.resourceNodes, stations: [], recipes: [], startupItems: null,
+    expect(world).toEqual({ schema: 1, worldSdk: 2, items: [], resourceNodes: pack.resourceNodes, stations: [], recipes: [], startupItems: null,
       edibleItems: pack.edibleItems, knowledgeGroups: pack.knowledgeGroups, placementGroups: pack.placementGroups, actorNeeds: pack.actorNeeds });
     expect(world.edibleItems).not.toBe(pack.edibleItems);
     expect(world.edibleItems![0]).not.toBe(pack.edibleItems[0]);

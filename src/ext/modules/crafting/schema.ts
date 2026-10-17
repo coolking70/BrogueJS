@@ -100,7 +100,7 @@ export function assertCraftingPack(
     fail('locale');
   record(value, 'schema,moduleId,moduleVersion,rulesVersion,materials,tools,resourceNodes,stations,recipes,startupItems,limits', 'pack');
   const pack = value as CraftingPack;
-  if (pack.schema !== 1 || pack.moduleId !== 'crafting' || pack.moduleVersion !== '1.0.0' || pack.rulesVersion !== '1.0.0')
+  if (pack.schema !== 2 || pack.moduleId !== 'crafting' || pack.moduleVersion !== '1.1.0' || pack.rulesVersion !== '1.1.0')
     fail('version');
   record(pack.limits, Object.keys(MAX_LIMITS).join(','), 'limits');
   for (const key of Object.keys(MAX_LIMITS) as (keyof CraftingLimits)[])
@@ -206,10 +206,10 @@ export function assertCraftingPack(
     amounts(row.placementCost, 'station.placementCost', ['material']);
     integer(row.placementTicks, 1, 10000, 'station.placementTicks');
     integer(row.interactionDistance, 0, 16, 'station.interactionDistance');
-    if (row.workPositionPolicy !== 'adjacent-passable' || byId.get(row.kitDefinitionId!)?.category !== 'kit') fail('station');
+    if (row.workPositionPolicy !== 'adjacent-passable' || row.kitDefinitionId!==null && byId.get(row.kitDefinitionId)?.category !== 'kit') fail('station');
   }
   for (const row of pack.recipes) {
-    record(row, 'owner,id,nameKey,descriptionKey,inputs,outputs,stationTags,toolTag,workTicks,offlineEligible', 'recipe');
+    record(row, 'owner,id,nameKey,descriptionKey,inputs,outputs,stationTags,toolTag,workTicks,offlineEligible'+(row.lootRoll!==undefined?',lootRoll':''), 'recipe');
     define(row);
     amounts(row.inputs, 'recipe.inputs', ['material', 'kit']);
     amounts(row.outputs, 'recipe.outputs');
@@ -219,6 +219,11 @@ export function assertCraftingPack(
       fail('recipe.stationTags');
     toolTag(row.toolTag, 'recipe.toolTag');
     integer(row.workTicks, 100, 10000, 'recipe.workTicks');
+    if(row.lootRoll!==undefined){
+      record(row.lootRoll,'maxRarity','lootRoll');
+      if(!['normal','magic'].includes(row.lootRoll.maxRarity)||row.offlineEligible||row.outputs.length!==1||row.outputs[0]?.count!==1
+        ||!items.some(i=>i.id===row.outputs[0]!.itemDefinitionId&&i.category==='native'&&['dagger','leather_armor'].includes(i.nativeTemplate??'')))fail('recipe.lootRoll');
+    }
     if (typeof row.offlineEligible !== 'boolean') fail('recipe.offlineEligible');
   }
   record(pack.startupItems, 'instanceKey,items,overflow', 'startupItems');

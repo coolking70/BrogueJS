@@ -327,7 +327,7 @@ export function validateEdibleModule(m: ExtensionModule, worldSdk: number | unde
       m.edibleCommands ||
       m.edibleParticipant ||
       m.actorNeedParticipant) &&
-    (!m.worldDefinitions || worldSdk !== 1)
+    (!m.worldDefinitions || worldSdk !== 2)
   )
     fail('C5_BAD_VERSION', 'edible');
   for (const [action, c] of Object.entries(m.edibleCommands ?? {}))

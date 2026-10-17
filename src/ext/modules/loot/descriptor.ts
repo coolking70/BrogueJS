@@ -4,7 +4,7 @@ import { DEFAULT_CONFIGURATION, LOOT_MODULE_VERSION, lootRules, validConfigurati
 import zhCN from './locales/zh_CN.json';
 import uiZhCN from './locales/ui.zh_CN.json';
 export const descriptor: ModuleDescriptor = {
-  id:'loot',version:LOOT_MODULE_VERSION,foundation:FOUNDATION_PROTOCOL,worldSdk:1,
+  id:'loot',version:LOOT_MODULE_VERSION,foundation:FOUNDATION_PROTOCOL,worldSdk:2,
   rules:lootRules(),create:createLootModule,defaultEnabled:false,recommends:['growth'],
   runConfiguration:{default:DEFAULT_CONFIGURATION,validate:validConfiguration,identity:lootRules},
   labelKey:'ext.loot.module.name',descriptionKey:'ext.loot.module.description',

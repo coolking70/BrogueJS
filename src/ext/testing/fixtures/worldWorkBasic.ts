@@ -7,7 +7,7 @@ import { extensionDataFingerprint } from '../../fingerprint';
 const owner = 'c5fixture';
 export const definitions: WorldDefinitionPack = {
   schema: 1,
-  worldSdk: 1,
+  worldSdk: 2,
   items: [
     {
       owner,
@@ -85,7 +85,7 @@ export const descriptor: ModuleDescriptor = {
   id: owner,
   version: '1.0.0',
   foundation: FOUNDATION_PROTOCOL,
-  worldSdk: 1,
+  worldSdk: 2,
   rules,
   create: createWorldWorkBasic,
   labelKey: 'ext.c5fixture.label',

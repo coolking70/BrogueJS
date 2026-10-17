@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "stationTag": "station.forge",
+  "operations": [
+    {"id":"loot.work.unsocket-last","kind":"unsocket","mode":"last","workTicks":100,"shardCost":10},
+    {"id":"loot.work.unsocket-all","kind":"unsocket","mode":"all","workTicks":100,"shardCost":10},
+    {"id":"loot.work.reforge","kind":"reforge","mode":null,"workTicks":100,"shardCost":10}
+  ]
+}

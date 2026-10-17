@@ -1,3 +1,4 @@
+import { reforgeCandidates } from './work';
 import { lootItemClass } from './item';
 import { matchRuneword } from './sockets';
 import { enhancementCap } from './economy';
@@ -58,6 +59,17 @@ export function readLootGameView(game:Game,selectedId:number|null,selectedIds:re
   const word=matchRuneword(catalog,cls,socketData!.sockets,[...socketData!.socketed,rune.id]);
   return [{id:item.id,name:text(rune.nameKey),quantity:item.quantity,word:word?text(word.nameKey):null}];
  }):[];
+ const workRead=runtime.readModuleView('loot')?.state.work as unknown as import('../../worldSdk').WorkContext|null;
+ const station=workRead?workRead.stations.find(s=>s.tags.includes('station.forge')&&s.workPositions.some(p=>p.x===game.player.x&&p.y===game.player.y)):undefined;
+ const workChoices:{operationId:string;rowId?:string;rowName?:LootTextRef;count:number;labelKey:string;payload:Record<string,unknown>}[]=[];
+ if(station&&socketData&&selectedRaw?.location==='pack'&&!game.player.hasStatus('hallucinating')&&workRead){
+  const payload={itemId:selectedRaw.item.id,itemRevision:workRead.inventory.find(i=>i.id===selectedRaw.item.id)?.itemRevision,stationId:station.interactableId,stationRevision:station.revision,inventoryStamp:workRead.inventoryStamp};
+  if(socketData.socketed.length)for(const mode of ['last','all'] as const){const operationId=`loot.work.unsocket-${mode}`;workChoices.push({operationId,count:mode==='all'?socketData.socketed.length:1,labelKey:mode==='last'?'ext.loot.ui.work.last':'ext.loot.ui.work.all',payload:{...payload,operationId}});}
+  // Match the detail's prefix/suffix order; the command binds the unique affix ID and item stamp.
+  socketData.affixes.map((row,index)=>({row,index,definition:catalog.affixes.find(a=>a.id===row.id)}))
+   .sort((a,b)=>(a.definition?.position==='prefix'?0:1)-(b.definition?.position==='prefix'?0:1))
+   .forEach(({row,index,definition})=>{if(reforgeCandidates(socketData,index,catalog).length){const operationId='loot.work.reforge';workChoices.push({operationId,rowId:row.id,rowName:text(definition!.nameKey),count:1,labelKey:'ext.loot.ui.work.reforge',payload:{...payload,operationId,rowId:row.id}});}});
+ }
  const wordPreviews=selectedRaw&&!game.player.hasStatus('hallucinating')?catalog.pack.runewords.words.filter(w=>w.baseClasses.includes(selectedRaw.item.category===0?'weapon':'armor')&&selectedRaw.item.category!==8).map(w=>({id:w.id,name:text(w.nameKey),sequence:w.sequence.map(id=>text(catalog.runesById[id]!.nameKey)),sockets:w.sockets,
   rows:buildLootItemView({v:1,location:'pack',itemClass:selectedRaw.item.category===0?'weapon':'armor',baseId:selectedRaw.item.identityId!,rarity:'runeword',ilvl:1,enhancement:0,affixCount:w.rows.length,affixes:w.rows.map(r=>({known:true,id:r.rowId,position:'row',polarity:1,tier:0,values:r.ranges.map(v=>v[0])})),sockets:{count:w.sockets,sequence:w.sequence},setId:null,pieceId:null,uniqueId:null,rareName:null,corrupted:false,identified:true,polarity:'benign',familiarity:null},catalog,options).rows})):[];
  const liveRows=(id:number,rows:readonly LootAffixRowView[]):readonly LootAffixRowView[]=>reachable.find(r=>r.item.id===id)?.item.runicType?rows:rows.map(row=>({...row,lines:row.lines.map(line=>line.runic?{...line,value:i18next.t('ext.loot.ui.runic.inactive',{value:line.value}),tone:'neutral' as const}:line)}));
@@ -82,7 +94,7 @@ export function readLootGameView(game:Game,selectedId:number|null,selectedIds:re
    return {label:s.label,name:source?.name??'',value:row.category==='increased'||row.category==='more'?`${lootSigned(row.value/100)}%`:lootSigned(row.value/(s.divisor??1)),category:row.category};
   }).filter(row=>row.name);
  });
- return {socketAvailable,socketChoices,wordPreviews,revision:state.revision,presetId:state.presetId,filter:structuredClone(state.filter),defaults:defaultLootPickupFilter(state.presetId),
+ return {workChoices,workAvailable:!!station,socketAvailable,socketChoices,wordPreviews,revision:state.revision,presetId:state.presetId,filter:structuredClone(state.filter),defaults:defaultLootPickupFilter(state.presetId),
   presetName:text(catalog.pack.presets.presets.find(p=>p.id===state.presetId)!.nameKey),entries,selected,card,compare,salvage,sources,sourceItems,sourceSets,
   shards:game.player.inventory.items.filter(i=>i.worldItem?.definitionId==='loot.shard').reduce((n,i)=>n+i.quantity,0)};
 }

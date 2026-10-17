@@ -1,3 +1,4 @@
+import {arena,add,place,harness,game} from '../../crafting/tests/runtimeHelpers';
 import {ItemLoader} from '../../../../engine/Items/ItemLoader';
 import {logger} from '../../../../engine/Systems/Logger';
 import '../../../../i18n';
@@ -207,7 +208,7 @@ it('C2 mounted socket choices submit through the host, cancel without cost and r
  const {loadLootPack}=await import('../definitions');const {buildEffectiveLootCatalog}=await import('../catalog');const {deriveNativeFacts}=await import('../item');
  const h=createWorldHarness({seed:42,mode:'easy',modules:['loot']}),g=worldHarnessGame(h),scope=Vue.effectScope();
  const catalog=buildEffectiveLootCatalog(loadLootPack(),{combat:null,growth:null,giants:null});
- const data:import('../types').LootItemDataV1={v:4,baseId:'leather_armor',ilvl:20,rarity:'normal',uniqueId:null,setId:null,pieceId:null,identityKnown:false,affixes:[],corrupted:false,enhancement:0,sockets:2,socketed:[],nameParts:null,origin:{source:'floor',depth:14}};
+ const data:import('../types').LootItemDataV1={v:5,baseId:'leather_armor',ilvl:20,rarity:'normal',uniqueId:null,setId:null,pieceId:null,identityKnown:false,affixes:[],corrupted:false,enhancement:0,sockets:2,socketed:[],nameParts:null,origin:{source:'floor',depth:14}};
  const n=deriveNativeFacts(data,catalog),item=assembleDropItem({native:{kind:n.kind,category:n.category,enchantment:n.enchantment,runicType:n.runicType,isCursed:n.isCursed,identified:n.identified,familiarityRemaining:999},moduleData:{loot:data as unknown as import('../../../types').Json}});g.extensionRuntime!.bindItemData(item);expect(g.player.inventory.addItem(item)).toBe(true);
  const materials=['ka','ul'].map(id=>{const m=assembleWorldItem(itemDefinition(g,`loot.rune.${id}`),1);expect(g.player.inventory.addItem(m)).toBe(true);return m;});
  const session=scope.run(()=>useLootUi({game:()=>g,tick:Vue.ref(0),immersive:Vue.ref(false),canOpenPanel:()=>true,beforeOpenPanel(){},afterClosePanel(){},beforeOpenItemPanel:()=>true}))!;
@@ -223,4 +224,36 @@ it('C2 mounted socket choices submit through the host, cancel without cost and r
   await click('镶嵌 乌尔');await decide(true);expect(timeSystem.currentTick-tick).toBe(200);expect(item.moduleData!.loot).toMatchObject({rarity:'runeword',identityKnown:false,socketed:['loot.rune.ka','loot.rune.ul']});
   expect(item.identified).toBe(false);expect(all(body).filter(n=>n.tag==='button'&&text(n).startsWith('镶嵌'))).toEqual([]);expect(text(body)).toContain('余烬');expect(text(body)).toContain('20');
  }finally{app.unmount();scope.stop();h.dispose();body.children=[];}
+});
+
+it('C3 R1 mounted reforge button names the sorted row and submits its stable ID exactly once',async()=>{
+ const {assembleDropItem}=await import('../../../../engine/Items/FixedItemAssembly');
+ const h=harness({seed:51020001,mode:'easy',modules:['loot','crafting']}),g=game(h),scope=Vue.effectScope();
+ arena(g);add(g,'stone',6);add(g,'metal',4);add(g,'loot.shard',10);expect(place(h,'forge').error).toBeNull();
+ const data={v:5,baseId:'dagger',ilvl:20,rarity:'magic',uniqueId:null,setId:null,pieceId:null,identityKnown:true,
+  affixes:[{id:'loot.affix.precise',tier:1,values:[1200],known:true},{id:'loot.affix.keen',tier:1,values:[2500],known:true}],
+  corrupted:false,enhancement:0,sockets:0,socketed:[],nameParts:null,origin:{source:'floor',depth:14}};
+ const item=assembleDropItem({native:{kind:'dagger',category:'weapon',enchantment:0,runicType:null,isCursed:false,identified:true,familiarityRemaining:0},moduleData:{loot:data}});
+ expect(g.player.inventory.addItem(item)).toBe(true);g.extensionRuntime!.bindItemData(item);
+ const session=scope.run(()=>useLootUi({game:()=>g,tick:Vue.ref(0),immersive:Vue.ref(false),canOpenPanel:()=>true,beforeOpenPanel(){},afterClosePanel(){},beforeOpenItemPanel:()=>true}))!;
+ session.itemActions!(item.id)[0]!.invoke();
+ const app=renderer.createApp({setup:()=>()=>session.panel.value?Vue.h(Panel,session.panel.value.props):null});app.use(I18NextVue,{i18next});app.mount(node());
+ const execute=vi.spyOn(g,'executeCommand');
+ try {
+  const buttons=all(body).filter(n=>n.tag==='button'&&text(n).startsWith('重铸'));
+  expect(buttons).toHaveLength(2);
+  expect(text(buttons[0]!)).toContain(i18next.t('ext.loot.affix.keen'));
+  expect(text(buttons[1]!)).toContain(i18next.t('ext.loot.affix.precise'));
+  expect(text(buttons[0]!)).not.toContain('第 1 行');
+  const tick=timeSystem.currentTick,click=buttons[0]!.props.onClick;
+  while(logger.pendingAcknowledgment)logger.acknowledgeNext();
+  click();click();await Vue.nextTick();
+  const submitted=execute.mock.calls.filter(call=>call[0]==='ext:command').map(call=>JSON.parse(call[1] as string));
+  expect(submitted).toHaveLength(1);expect(submitted[0].payload.rowId).toBe('loot.affix.keen');
+  expect(submitted[0].payload).not.toHaveProperty('rowIndex');
+  if(g.pendingCommandConfirmation)g.resolveCommandDecision(g.pendingCommandConfirmation.token,true);
+  expect(timeSystem.currentTick-tick).toBe(100);
+  expect((item.moduleData!.loot as any).affixes[0]).toEqual(data.affixes[0]);
+  expect((item.moduleData!.loot as any).affixes[1]).not.toEqual(data.affixes[1]);
+ }finally{app.unmount();scope.stop();body.children=[];}
 });

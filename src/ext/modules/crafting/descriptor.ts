@@ -7,7 +7,7 @@ export const descriptor: ModuleDescriptor = {
   id: 'crafting',
   version: CRAFTING_VERSION,
   foundation: FOUNDATION_PROTOCOL,
-  worldSdk: 1,
+  worldSdk: 2,
   rules: getCraftingPackIdentity(),
   create: createCraftingModule,
   defaultEnabled: false,

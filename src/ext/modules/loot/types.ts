@@ -73,6 +73,7 @@ export interface RunewordDefinition {
   sockets: number; sequence: string[]; rows: UniqueDefinition['rows'];
 }
 export interface LootPack {
+  stationOperations:{schema:1;stationTag:'station.forge';operations:{id:string;kind:'unsocket'|'reforge';mode:'last'|'all'|null;workTicks:number;shardCost:number}[]};
   runes: {schema:1; runes: RuneDefinition[]};
   runewords: {schema:1; words: RunewordDefinition[]};
   sockets: {schema:1; bases: {baseId:string; bands:{minIlvl:number;maxIlvl:number;weights:number[]}[]}[]};
@@ -116,9 +117,9 @@ export interface LootPack {
 export type LootRawFiles = { [K in keyof LootPack]: unknown };
 export interface LootAffixRoll { id: string; tier: number; values: number[]; known: boolean }
 export interface LootItemDataV1 {
-  v: 4; targetClass?: string; baseId: string; ilvl: number; rarity: RarityId; uniqueId: string | null; setId: string | null; pieceId: string | null; identityKnown: boolean;
+  v: 5; targetClass?: string; baseId: string; ilvl: number; rarity: RarityId; uniqueId: string | null; setId: string | null; pieceId: string | null; identityKnown: boolean;
   affixes: LootAffixRoll[]; corrupted: boolean; enhancement: number; sockets: number; socketed: string[];
-  nameParts: [number, number] | null; origin: { source: LootSource; depth: number };
+  nameParts: [number, number] | null; origin: { source: LootSource; depth: number } | {source: 'craft'; depth:number; recipeId:string};
 }
 export interface LootNativeFacts {
   kind: string; category: ItemClass; enchantment: number;

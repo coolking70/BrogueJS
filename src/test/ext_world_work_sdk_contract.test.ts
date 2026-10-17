@@ -41,7 +41,7 @@ const request = (g: ReturnType<typeof workGame>, count = 1) => {
 };
 afterEach(() => vi.restoreAllMocks());
 describe('C5 SDK construction, expiry and real publication failures', () => {
-  it.each([undefined, 2])(
+  it.each([undefined, 1])(
     'worldSdk %s refuses a world module before construction publication',
     (sdk) => {
       const r = new ExtensionRegistry();
@@ -68,7 +68,7 @@ describe('C5 SDK construction, expiry and real publication failures', () => {
           return m;
         },
         rules,
-        1
+        2
       );
       const before = { id: getNextEntityId(), rng: rng.getState() };
       expect(() => r.create(r.manifest(['craftskel']))).toThrow('C5_BAD_DEFINITION');
@@ -258,13 +258,13 @@ it.each(['items', 'resourceNodes', 'stations', 'recipes', 'edibleItems'] as cons
   'owner lookup recognizes %s and rejects an absent owner',
   (kind) => {
     const pack: WorldDefinitionPack = {
-      schema: 1, worldSdk: 1, items: [], resourceNodes: [], stations: [], recipes: [], startupItems: null
+      schema: 1, worldSdk: 2, items: [], resourceNodes: [], stations: [], recipes: [], startupItems: null
     };
     const owner = kind === 'edibleItems' ? 'fgfixture' : 'craftskel';
     if (kind === 'edibleItems') pack.edibleItems = [forageDefinitions.edibleItems![2]!];
     else Object.assign(pack, { [kind]: definitions[kind] });
     const g = { world5: {}, extensionRuntime: { worldDefinitionPacks: () => [pack] } } as unknown as Game;
-    expect(publication.worldWorkReadSDK(g, owner)).toMatchObject({ owner, worldSdk: 1 });
+    expect(publication.worldWorkReadSDK(g, owner)).toMatchObject({ owner, worldSdk: 2 });
     expect(publication.worldWorkReadSDK(g, 'missing')).toBeUndefined();
     if (kind === 'resourceNodes' || kind === 'stations' || kind === 'recipes') {
       // Costs/outputs must resolve: recognizing a list's owner does not validate a pack.
@@ -284,3 +284,16 @@ it.each(['resourceNodes', 'edibleItems'] as const)(
     }
   }
 );
+
+it('worldSdk2 exposes neutral equipment work DTOs and no client cost, result, or live object authority',()=>{
+  const request:import('../ext/worldSdk').TimedWorkRequest={kind:'item-operation',operationId:'example.work.reforge',itemId:7,itemRevision:'a'.repeat(64),stationId:9,stationRevision:2,inventoryStamp:'opaque',rowId:'example.affix.keen'};
+  expect(Object.keys(request).sort()).toEqual(['inventoryStamp','itemId','itemRevision','kind','operationId','rowId','stationId','stationRevision']);
+  const provider:import('../ext/worldSdk').WorkItemProvider={
+    operationIds:['example.work.reforge'],prepare:()=>({inputs:[{itemDefinitionId:'example.shard',count:10}],outputs:[],workTicks:100}),validateStored:()=>true,validateProposal:()=>true,
+    commit:(input,random)=>{random.beginItem(0);random.randomInt(0,1);return {kind:'update',data:input.kind==='operation'?input.data:{}};}
+  };
+  expect(provider.prepare({kind:'operation',operationId:'example.work.reforge',data:{}}).workTicks).toBe(100);
+  // @ts-expect-error client costs are never part of the public request
+  const forged:import('../ext/worldSdk').TimedWorkRequest={...request,cost:0};
+  void forged;
+});

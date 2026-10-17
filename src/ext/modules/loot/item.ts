@@ -35,15 +35,17 @@ function rollShape(value: unknown): value is LootAffixRoll {
     && typeof value.known === 'boolean' && denseArray(value.values) && value.values.every(v => Number.isSafeInteger(v));
 }
 
-/** Strict V4 trust boundary. Malformed data is rejected without mutation or RNG. */
+/** Strict V5 trust boundary. Malformed data is rejected without mutation or RNG. */
 export function validateLootItemData(value: unknown, catalog: EffectiveLootCatalog): value is LootItemDataV1 {
-  if (!object(value) || !exact(value, 'targetClass'in value?[...itemKeys,'targetClass']:itemKeys) || value.v !== 4 || typeof value.baseId !== 'string') return false;
+  if (!object(value) || !exact(value, 'targetClass'in value?[...itemKeys,'targetClass']:itemKeys) || value.v !== 5 || typeof value.baseId !== 'string') return false;
   const itemClass = lootItemClass(value.baseId, catalog);
   if (!itemClass || !integer(value.ilvl, 1, 99) || !['normal', 'magic', 'rare', 'unique', 'set', 'runeword'].includes(value.rarity as string)) return false;
   if (typeof value.corrupted !== 'boolean' || typeof value.identityKnown !== 'boolean' || !integer(value.sockets,0,4) || !denseArray(value.socketed) || value.socketed.length > value.sockets) return false;
   if (!denseArray(value.affixes) || !value.affixes.every(rollShape)) return false;
-  if (!object(value.origin) || !exact(value.origin, ['source', 'depth']) || !['floor', 'kill', 'encounter', 'vault'].includes(value.origin.source as string) || !integer(value.origin.depth, 1, 99)) return false;
+  if (!object(value.origin) || !exact(value.origin, value.origin.source==='craft'?['source','depth','recipeId']:['source', 'depth']) || !['floor', 'kill', 'encounter', 'vault','craft'].includes(value.origin.source as string) || value.origin.source==='craft' && (typeof value.origin.recipeId!=='string'||!/^crafting\.[a-z0-9.-]+$/.test(value.origin.recipeId)) || !integer(value.origin.depth, 1, 99)) return false;
   const rarity = catalog.pack.rarities.rarities.find(r => r.id === value.rarity);
+  // A crafted normal base can later become a runeword through player socketing.
+  if(value.origin.source==='craft'&&(!['normal','magic','runeword'].includes(value.rarity as string)||!value.identityKnown||value.corrupted))return false;
   if (!rarity || !integer(value.enhancement, 0, rarity.enhancementCap)) return false;
   const socketBase=value.rarity==='normal'||value.rarity==='runeword';
   if(!socketBase&&(value.sockets!==0||value.socketed.length!==0))return false;
