@@ -1,5 +1,7 @@
 # 6Z 收口报告
 
+> **2026-10-18 创建阻断修复见 §4.2。** 维护者浏览器发现的全模块无法开局已在真实 MainMenu SFC 流程复现并修复；最小触发集是 settlement 单模块。新增 UI 创建流程组合冒烟覆盖精选七组合（含全部 8 模块）及重试，原 engine-only 七组合通过不代表此路径已覆盖。
+
 > 性能补录（2026-10-17）见§5.1：6C3排除路线工作量差异，保留D6 regression并按已知尾部风险采纳；6C4计时pass、离线采纳。两份预算及完整route/source已冻结；无完整第四轮独立云端验证。下列旧性能待办为历史。
 
 > **当前清理结果见 §4.1：原22个失败文件已关闭。** 74项由当前版本重录/前提修正关闭；另64项按维护者授权从短战斗矩阵排除loot组合，不能计作重跑通过。限定25文件首批227pass/3fail，修正后仅3个失败文件补验10pass；boundary、依赖、vue-tsc、build通过。其余章节保留原6Z/CI阶段记录，原138项清单为历史状态；人工/性能待办不因本轮自动关闭。
@@ -143,6 +145,41 @@ R2仅改`settlement_review.test.ts`：夹具手工改光照状态后，在两处
 boundary、静态依赖、`vue-tsc -b`及Vite build均exit0。它们在导入声明和links修正后执行；此后只补自然战斗的不透明JSON夹具，没有生产/测试代码变化。补验期间源码/夹具逐文件SHA完全稳定；补验通过后，仅把自然夹具改为每条trace一行的紧凑JSON（1,261,804→720,396字节，解析值完全相同），不为纯空白重跑测试。最终依赖检查再次exit0；build仍只有原有chunk体积提示。未启动全量、CE、组合smoke或性能任务。
 
 本轮差量为7个测试源码、29个当前夹具、本报告§4.1及顶部状态提示，另新增[清理证据](evidence/phase6z-cleanup.json)；逐文件SHA、两批真实结果、门禁命令/退出码及前提修正说明均在证据中。开工时既有生产/测试/CI改动保持，只有原`settlement_review`追加本次键盘修正；本作者未执行commit/push或其它Git写入。原始138项清单及报告其它章节逐字节保留。仓外原始捕获、日志和脚本位于`/private/tmp/phase6z-cleanup/`，没有新增>1MB原始证据到仓库。捕获阶段的名称筛选运行不冒充最终整文件验收；原失败日志均保留。
+
+## 4.2 UI 创建流程组合冒烟与发布阻断修复（2026-10-18）
+
+本次基于 `ext/phase6` / `cbeb1b4`，开工工作区干净；按维护者要求在 Node/SFC 环境定位，未启动浏览器、全量/CE/drift、性能或删除矩阵，未 commit。维护者原始复现为 vite dev、800×900：全选 8 模块，growth 卫士/人类/无信仰确认后，在 loot「确认预设」处显示 `ext.creation.unavailable`，未发出 `new-game`。
+
+**二分与根因。** 用客户端编译的真实 MainMenu、GrowthCreationStep/Panel 和 LootCreationStep/PresetPicker，保留实际模块发现、推荐勾选、创建计划、命令合并、配置桥及 registry。只替换 Node 下的 SFC 加载方式和无关标题特效/图鉴。在生产文件未修改时得到：
+
+| 选择集 | MainMenu 提交结果 |
+| --- | --- |
+| 全部 8 模块 | 失败，`DataCloneError` |
+| combat + crafting + foraging + giants | 成功 |
+| growth + loot + narrative + settlement | 失败，同上 |
+| growth + loot | 成功 |
+| narrative + settlement | 失败，同上 |
+| narrative | 成功 |
+| settlement | 失败，同上；无需任何创建弹窗 |
+| 空集 | 成功 |
+
+最小触发集是 **settlement 单模块**。`configurationDrafts` 是深响应式 `ref`；`buildModuleCreationConfigurations` 的 `Object.entries(drafts)` 保留了营地配置 `{ raids: false }` 的 Vue Proxy，`ExtensionRegistry.manifest()` 在 `structuredClone(configuration)` 处抛 `DataCloneError: #<Object> could not be cloned.`。loot 的配置被 `configurationFromCreation` 替换成普通 `{ presetId }`，所以 growth+loot 正常。此缺陷不是配置键冲突、命令所有者/顺序或模块规则冲突。旧 submit 在配置构造之前锁定 `creationSubmitting`，catch 又不复位，异常后还会阻断重试。
+
+生产修复仅在 `MainMenu.vue`：以 `structuredClone(toRaw(configurationDrafts.value))` 将 UI 自有草稿快照化后传入配置桥；全部创建数据构造成功后才锁定提交。catch 输出带模块列表、当前步骤和原始 Error/stack 的 console 诊断（开发和生产均保留），复位提交锁；无创建步骤时退出 creationContext，使「进入地牢」可重试。保留原 i18n 错误提示，不修改 registry 校验、引擎规则、命令边界、RNG、manifest/存录格式或黄金基线。
+
+**原冒烟为什么漏检。** `scripts/check-module-composition-smoke.mjs` 直接 `registry.manifest(ids)` 使用普通默认配置，从 `registry.create(manifest)` 获取 `initialCommand`，再调用 `game.startNewGame` / `executeCommand`；完全没有 MainMenu 的响应式草稿与配置桥。旧真实创建 UI 用例仅覆盖 growth+loot，foundation UI 用例使用无营地配置的合成模块。因此先前「七组合 engine passed」结论仍是引擎范围，不能代替创建 UI 验收。
+
+新增 `src/test/ext_creation_combinations_ui.test.ts`（登记常规套件及 8 个 required 模块依赖），共 **11 项**：
+
+- 精选七组合：全开、全关、loot+growth、loot、growth、全开去 loot、全开去 growth。全开即全部 8 模块，不重复计数；另加 settlement 最小触发集。
+- 全部模块下实际修改 `raids=true` 与 `scarce` 非默认预设，确认合并值没有丢失。
+- 含创建步骤的 loot 与无步骤的 settlement 各注入一次配置构造错误，断言原始 Error 和上下文诊断、显示错误、可重试、保留选项且只发出一次新局。
+
+每个成功路径通过真实菜单控件选择模块（loot 自动推荐 growth；需要 loot-only/去 growth 时显式取消），UI 输入 seed 42，点击实际创建控件。MainMenu 原样载荷进入真实 `Game.startNewGame`，核对 D1、存活、runtime `readyToSave`、完整 manifest 与录像 manifest、初始命令 owner/顺序及实际记录的逐条输入；growth 同时核对卫士/人类/无信仰，loot 预设与 manifest 配置一致。测试设置 800×900 的宿主窗口值，但 Node renderer 不验证布局/真实浏览器，不能据此关闭人工视口清单。
+
+**限定验收。** 修复前七组合中全开/去 loot/去 growth 三项失败，均未发出新局；另四项成功。修复后相关整文件批次 6 文件 **62/62 通过、exit0**：新增组合 UI、`ext_module_creation_ui`、`ext_module_ui`、`main_menu_replay_seek`、`loot_game_sfc`、`ext_growth_creation_ui`，命令为 `npx vitest run <上述六文件完整路径> --maxWorkers=2`（13.61s）。boundary 与测试依赖检查通过，后者 678 文件、errors=[]；首次 vue-tsc 发现新增测试 tuple union 的 `includes` 参数被推断为 never，仅给用例 ids 增加 `readonly string[]` 类型注解后 `npx vue-tsc -b` exit0。未修改任何旧测试或守卫，也未改失败断言求绿。随后补强 loot 自动推荐 growth 的明确断言，新增 UI 文件定向复验 **11/11 通过、exit0**，不与 62 项重复相加。单独 `npx vue-tsc -b` 后直接执行 `npx vite build`，构建 exit0（3.39s），仅原有 >500kB chunk 提示，未重复调用含 types 的 npm build。
+
+本次原始日志保存在仓外 `/private/tmp/creation-{bisection,prefixed,fixed,related,ui-final,boundary,dependencies,types,types-final,build}.log`，二分逐组合错误栈在 `/private/tmp/creation-bisection.jsonl`；不提交大体积依赖清单。探针首次两次被现有测试登记/依赖守卫拒绝，补正确套件登记及实际全模块 manifest 前置断言后运行，没有修改守卫。前述历史失败和本次定位失败均保留，不能把定位阶段称为一次全绿。
 
 ## 5 既有性能预算与云端状态
 

@@ -10,6 +10,19 @@
     "settlement"
   ],
   "tests": {
+    "src/test/ext_creation_combinations_ui.test.ts": {
+      "required": [
+        "combat",
+        "crafting",
+        "foraging",
+        "giants",
+        "growth",
+        "loot",
+        "narrative",
+        "settlement"
+      ],
+      "optional": []
+    },
     "src/ext/modules/combat/tests/combat2_combinations.test.ts": {
       "required": [],
       "optional": [

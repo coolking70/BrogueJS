@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, shallowRef, computed, watch, onMounted, onUnmounted, nextTick, type Component } from "vue";
+import { ref, shallowRef, computed, watch, onMounted, onUnmounted, nextTick, toRaw, type Component } from "vue";
 import { useTranslation } from "i18next-vue";
 import { inputManager } from "../engine/Input";
 import MapTileLegend from './MapTileLegend.vue';
@@ -173,15 +173,28 @@ function submitCreation() {
   if (!creationContext.value || !creationRun.value || creationSubmitting.value) return;
   try {
     const initialCommands = buildModuleCreationCommands(creationContext.value, creationSelections), session = creationSession;
+    // Snapshot the UI-owned draft before crossing the JSON/manifest boundary.
+    // Object.entries on the reactive ref would retain nested Vue proxies, which
+    // cannot be structuredCloned by the registry (e.g. settlement's raids).
+    const extensionConfigurations = buildModuleCreationConfigurations(
+      creationContext.value, creationSelections, structuredClone(toRaw(configurationDrafts.value)));
     // Latch before emitting: repeated clicks/Enter cannot create a second run.
     creationSubmitting.value = true;
-    emit('new-game', { ...creationRun.value, ruleSet: 'extended', extensions: creationContext.value.extensions, extensionConfigurations:buildModuleCreationConfigurations(creationContext.value,creationSelections,configurationDrafts.value), initialCommands,
+    emit('new-game', { ...creationRun.value, ruleSet: 'extended', extensions: creationContext.value.extensions, extensionConfigurations, initialCommands,
       onRejected: () => {
         if (session !== creationSession) return;
         creationSubmitting.value = false; creationError.value = 'ext.creation.start_failed';
         if (!activeCreationStep.value) creationContext.value = null;
       } });
-  } catch { creationError.value = 'ext.creation.unavailable'; }
+  } catch (error) {
+    console.error('[MainMenu] Module creation submission failed', {
+      extensions: creationContext.value.extensions,
+      step: activeCreationStep.value?.moduleId ?? null,
+    }, error);
+    creationSubmitting.value = false;
+    creationError.value = 'ext.creation.unavailable';
+    if (!activeCreationStep.value) creationContext.value = null;
+  }
 }
 function completeCreationStep(session: number, index: number, moduleId: string, commands: readonly string[]) {
   if (session !== creationSession || index !== creationStep.value || moduleId !== activeCreationStep.value?.moduleId

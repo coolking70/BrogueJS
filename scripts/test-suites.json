@@ -88,6 +88,7 @@
     "src/test/ext_kind_knowledge_runtime.test.ts",
     "src/test/ext_module_boundaries.test.ts",
     "src/test/ext_module_composition.test.ts",
+    "src/test/ext_creation_combinations_ui.test.ts",
     "src/test/ext_module_creation_ui.test.ts",
     "src/test/ext_module_removal.test.ts",
     "src/test/ext_module_ui.test.ts",
