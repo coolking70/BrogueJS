@@ -34,7 +34,7 @@ export function parseOptions(args) {
   else if(key==='--head-source-hash')options.headSourceHash=args[i+1];
   else options[key.slice(2)]=['--rounds','--limit'].includes(key)?Number(args[i+1]):args[i+1];
  }
- assert.notEqual(options.baseIdentity,options.headIdentity,'Conflicting A/B identities');
+ assert.ok(options.baseIdentity!==options.headIdentity||options.baseIdentity==='6c4','Conflicting A/B identities (same-identity regression supports 6c4)');
  assert.ok(perfIdentity(options.baseIdentity).accepted||pendingPerfBaseline(options.baseIdentity,options.headIdentity),'A must be a reviewed identity or the explicit pending C3/C4 comparison');
  assert.ok(options.base&&options.head&&options.out,'Expected --base --head --out');
  assert.ok(Number.isSafeInteger(options.rounds)&&options.rounds>=1&&options.rounds<=3,'rounds must be 1..3; only 3 can pass D6');

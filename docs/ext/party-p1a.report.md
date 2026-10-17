@@ -1,6 +1,6 @@
 # Party P1a 实施报告
 
-本文保留首轮实现证据；**当前交付以文末“R2 最后一轮审查处理与作者同类自查（2026-10-18）”为准**。首轮性能和物理全删结果对应修复前身份，本轮按维护者指定范围没有重跑它们。
+本文保留首轮实现证据；生产实现以“R2 最后一轮审查处理与作者同类自查（2026-10-18）”为准，已提交为 `18070b2`。最新性能工具补丁、两条云端派发命令及本地冒烟见文末“云端性能派发修复（2026-10-18）”；该补丁未提交。首轮性能和物理全删结果仍对应修复前身份。
 
 ## 范围与裁定
 
@@ -315,3 +315,58 @@ node scripts/merge-ext-perf-ab.mjs /tmp/party-merged /tmp/party-1 /tmp/party-2 /
 
 
 只运行相关测试、boundary、测试依赖检查、vue-tsc、build。没有完整 npm test/drift/full/gen、物理删除、组合穷举、性能基准、云端 A/B 或浏览器操作；首轮交付的云端工具/参数及浏览器待验清单保持。未 commit/push。
+
+
+## 云端性能派发修复（2026-10-18）
+
+本轮开工为 `ext/party-p1a` / `18070b2562a3272154d3b28b97e1b79171035e59`，工作区干净。仅修改 workflow、性能脚本、相关脚本测试与本报告；未改引擎、冻结路线、历史预算、黄金 trace 或测试依赖守卫。未 commit、push 或派发云端任务。
+
+### 两条精确的云端命令
+
+**先由维护者将本次工具补丁提交并推送至 `ext/party-p1a`，再执行以下命令。** `--ref` 选择更新后的 workflow/测量工具；`head_ref` 固定测量已提交的 P1a `18070b2`，两者用途不同。当前远端旧 workflow 仍不支持新增输入，不能在补丁发布前执行。
+
+(a) 非 party 回归：同一 6c4 身份、冻结命令路线，A 为已发布 phase6，B 为 P1a；三轮，D6 原口径。
+
+```bash
+gh workflow run ext-perf.yml --repo coolking70/BrogueJS --ref ext/party-p1a \
+  -f suite=phase6 -f mode=ab \
+  -f base_ref=e3ec8f49f8a7c6f827ecb04dac7304a441c960e6 \
+  -f head_ref=18070b2562a3272154d3b28b97e1b79171035e59 \
+  -f base_identity=6c4 -f head_identity=6c4 -f rounds=3
+```
+
+(b) P1a 首次校准：只测 B 的 party-only / party+all，各 1/2/4 人；每场 2049 条固定 ready-actor-wait 命令，三轮。**省略 `base_ref`**，不占用、检出或安装 A；phase6 两个 identity 参数不参与 party 分支。
+
+```bash
+gh workflow run ext-perf.yml --repo coolking70/BrogueJS --ref ext/party-p1a \
+  -f suite=party -f mode=calibration-only \
+  -f head_ref=18070b2562a3272154d3b28b97e1b79171035e59 \
+  -f rounds=3
+```
+
+party 沿用三分片名 `classic / all-full / all-prefix`，分别对应 1/2/4 人，每片包含两种配置。三轮共18次 B 观测，无 A 观测、无 A/B 判定。汇总仅在六场景、三轮、2049命令全部齐全且逐轮输入/规则摘要/RNG/机器/源码一致、回放零 OOS 时输出 `party-perf-budget.suggested.json`。状态仍为 `measured-no-budget`，建议文件为 `suggested-only`；不自动采用为冻结预算，不标性能 pass，无第四轮验证。建议值保留三轮原值与中位数，时间上限候选取三轮最大值加 `max(1ms, 10%)`（P50/P95）或 `max(1ms, 25%)`（P99/max），体积/内存取观测最大值；均仅供 P1b 审定。完整 Worker、体积和内存数据仍保留在原始观测中。
+
+### 实际修改与兼容边界
+
+- workflow 增加 `base_identity=6c4`、`mode=ab|calibration-only`；A/B 仍必须提供 `base_ref`，校准只允许 party 且拒绝附带 A。校准的 npm cache 路径不依赖不存在的 A。
+- phase6 参数解析仅为 `6c4/6c4` 开放同身份回归。两侧都执行 control 中同一冻结命令路线，不再为 B 生成不同路线；classic 和八旧模块 all 均不启用 party。
+- 冻结 6c4 原始录像来自 `07d7c97` / loot 0.9.0，而本轮 A/B 都是 loot 0.9.1。新分支通过真实命令入口重新捕获当前 header，保留所有命令、配置和字段，登记路线 hash、候选 SHA、录像 hash 与实际 D20 wait/settled 数；不改旧录像头来伪造兼容。完整跑仍要求原路线事件数、D20 至少500 settled、零 OOS，A/B 捕获录像逐字 hash 相等，并在运行与汇总时复检事件域/full域/最终状态和 semantic/RNG 相等。旧 0.9.0 的历史 A 预算不套到新 A；其它历史身份间 A/B 保持原重建 hash 与预算检查。D6 阈值、1ms 噪声带、三轮至少两轮越线裁决和 phase6 第四轮验证均不变。
+- 首次冒烟在 C1 补充场景失败：脚本只认识 loot 0.9.0。核对当前 `LootItemDataV1.v=6` 后补 `0.9.1 → 6` 映射，仍拒绝未知版本，没有改守卫或生产 schema。失败证据保留在 `phase6-classic/005-C1-bounded-supplement.log`；后续两组补充场景均通过。
+- party CLI 新增 `--calibration-only`，只产生 B 的来源与观测；旧 party A/B 报告模式继续支持。汇总校验完整有序槽位、混合模式、工具 hash、原始文件 hash/内容、候选身份和跨轮稳定性；缺片/失败/漂移时保留失败 JSON/Markdown，不输出建议预算。
+
+### 本地验证
+
+所有原始证据：`/private/tmp/party-p1a/perf-workflow-fix/`，不入仓库。Node **v24.19.0**；A/B 是该目录下独立本地克隆，分别 detach 于上述两个 SHA；引擎源码均干净。工具来自本工作树未提交补丁。`run-smokes.py` 保留完整本地命令，`smoke-exits.json` 记录六片及两次汇总的退出码，全部为0。两套测量分片按序执行；本机短样本仅验证执行链，不作云端时间或预算结论。
+
+| 检查 | 实际结果 |
+|---|---|
+| phase6：三个分片 `--rounds 1 --limit 8 --base-identity 6c4 --head-identity 6c4`，随后 merge | `final-phase6-{classic,all-full,all-prefix}` + `final-phase6-merged` 全部 exit0；6侧次，OOS全部0，A/B逐字段比较无差异；汇总 `hard=pass / status=incomplete`，三组均0/1越线，无建议 manifest，不能宣称D6通过 |
+| party：三个分片 `--party --calibration-only --rounds 1 --steps 8`，随后 merge | `final-party-{classic,all-full,all-prefix}` + `final-party-merged` 全部 exit0；六场景各1次B观测，OOS全部0，来源仅B；汇总 `mode=calibration-only / status=smoke-only / budget=null / comparisons=[]` |
+| `node scripts/test-ext-perf-ab.mjs` | exit0；含6c4同身份参数与原D6阈值/缺轮/冻结条件回归 |
+| `node scripts/test-ext-perf-split.mjs` | exit0；含同身份汇总与A/B最终状态漂移拒绝，以及原三轮冻结/独立验证/缺片/回归用例 |
+| `node scripts/test-ext-perf-selection.mjs` | exit0；旧C1–C4来源/预算身份及历史限制保持 |
+| `node node_modules/vitest/vitest.mjs run src/test/party_perf_tools.test.mjs --maxWorkers=1 --no-file-parallelism` | 1文件/11项通过；合成三轮证据验证六场景建议预算，1/2轮不出预算，旧party A/B保持，并拒绝缺槽/混合模式/身份漂移/重排/重复/跨轮摘要及机器漂移/OOS |
+| `npm run check:test-dependencies` | exit0；688测试文件，9模块，errors=[] |
+| workflow YAML解析、`git diff --check` | 通过 |
+
+正式云端三轮、完整D20路线及2049命令party校准均未运行；完整场景中的性能结论与建议数值待维护者执行上述命令取得。未运行完整 npm test、drift/full/gen、types/build、组合矩阵或额外游戏测试。此前首轮/R1/R2证据及遗留仍按原节解释。

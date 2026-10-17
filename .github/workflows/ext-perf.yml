@@ -1,20 +1,24 @@
-name: ext phase6 performance A/B
+name: ext performance regression and calibration
 
 on:
   workflow_dispatch:
     inputs:
       suite:
-        description: 'phase6 keeps D6; party measures separate 1/2/4 actor scenes without a budget'
+        description: 'phase6 keeps D6; party measures separate 1/2/4 actor scenes'
         type: choice
         default: phase6
         options: [phase6, party]
+      mode:
+        description: 'ab compares revisions; calibration-only measures party B without A'
+        type: choice
+        default: ab
+        options: [ab, calibration-only]
       base_ref:
-        description: A revision (latest reviewed candidate)
-        required: true
-        default: '33d7aba6e458529ae126dee2d889c7b2c24507bd'
+        description: 'A revision (required for ab; omit for party calibration-only)'
+        required: false
         type: string
       head_ref:
-        description: B revision (6C3 candidate; set the committed candidate SHA)
+        description: B revision (set the committed candidate SHA)
         required: true
         default: 'ext/phase6'
         type: string
@@ -22,14 +26,14 @@ on:
         description: Reviewed A benchmark
         type: choice
         default: 6c2
-        options: [p0, 6b4, 6c1, 6c2, 6c3]
+        options: [p0, 6b4, 6c1, 6c2, 6c3, 6c4]
       head_identity:
         description: B benchmark (fresh classic with frozen BFS; all with bounded recovery)
         type: choice
         default: 6c3
         options: [6b4, 6c1, 6c2, 6c3, 6c4]
       rounds:
-        description: 'Paired rounds: 1/2 are diagnostic only; 3 required for D6/freeze'
+        description: 'Rounds: 1/2 diagnostic only; 3 required for D6 or party budget suggestions'
         required: true
         default: '3'
         type: choice
@@ -44,7 +48,7 @@ jobs:
       fail-fast: false
       matrix:
         shard: [classic, all-full, all-prefix]
-    name: A/B ${{ matrix.shard }}
+    name: ${{ inputs.suite }} ${{ inputs.mode }} ${{ matrix.shard }}
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     env:
@@ -61,11 +65,18 @@ jobs:
         env:
           PERF_BASE: ${{ inputs.base_ref }}
           PERF_HEAD: ${{ inputs.head_ref }}
+          PERF_SUITE: ${{ inputs.suite }}
+          PERF_MODE: ${{ inputs.mode }}
         run: |
           node --input-type=module <<'JS'
           import {execFileSync} from 'node:child_process';
           import {appendFileSync} from 'node:fs';
-          for (const [name, ref] of [['base', process.env.PERF_BASE], ['head', process.env.PERF_HEAD]]) {
+          const calibration = process.env.PERF_MODE === 'calibration-only';
+          if (calibration && process.env.PERF_SUITE !== 'party') throw Error('calibration-only requires party suite');
+          if (calibration && process.env.PERF_BASE) throw Error('Omit base_ref for calibration-only');
+          if (!calibration && !process.env.PERF_BASE) throw Error('ab requires base_ref');
+          const refs = calibration ? [['head', process.env.PERF_HEAD]] : [['base', process.env.PERF_BASE], ['head', process.env.PERF_HEAD]];
+          for (const [name, ref] of refs) {
             let sha;
             for (const candidate of [ref, `refs/remotes/origin/${ref}`]) {
               try {
@@ -78,6 +89,7 @@ jobs:
           }
           JS
       - name: Checkout A
+        if: inputs.mode != 'calibration-only'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ steps.refs.outputs.base }}
@@ -96,13 +108,14 @@ jobs:
           cache: npm
           cache-dependency-path: |
             control/package-lock.json
-            base/package-lock.json
             head/package-lock.json
-      - name: Install tools and both revisions
+      - name: Install tools and B
         run: |
           npm ci --prefix control
-          npm ci --prefix base
           npm ci --prefix head
+      - name: Install A
+        if: inputs.mode != 'calibration-only'
+        run: npm ci --prefix base
       - name: Stage frozen classic planner and all-only recovery on both historical checkouts
         if: inputs.suite != 'party'
         run: |
@@ -114,15 +127,18 @@ jobs:
             }
           }
           JS
-      - name: Party A/B (both refs must support party; no budget verdict)
+      - name: Party measurements (calibration-only needs B only; no A/B verdict)
         if: inputs.suite == 'party'
         env:
           PERF_ROUNDS: ${{ inputs.rounds }}
           PERF_SHARD: ${{ matrix.shard }}
-        run: >-
-          node control/scripts/run-ext-perf-ab.mjs --party
-          --base "$GITHUB_WORKSPACE/base" --head "$GITHUB_WORKSPACE/head"
-          --out "$RUNNER_TEMP/ext-perf" --shard "$PERF_SHARD" --rounds "$PERF_ROUNDS"
+          PERF_MODE: ${{ inputs.mode }}
+        run: |
+          args=(--base "$GITHUB_WORKSPACE/base")
+          if [ "$PERF_MODE" = calibration-only ]; then args=(--calibration-only); fi
+          node control/scripts/run-ext-perf-ab.mjs --party "${args[@]}" \
+            --head "$GITHUB_WORKSPACE/head" --out "$RUNNER_TEMP/ext-perf" \
+            --shard "$PERF_SHARD" --rounds "$PERF_ROUNDS"
       - name: Interleaved A/B and B calibration
         if: inputs.suite != 'party'
         timeout-minutes: 345
@@ -162,7 +178,7 @@ jobs:
           compression-level: 6
 
   summary:
-    name: Aggregate D6 verdict
+    name: Aggregate measurements and budget suggestions
     needs: ab
     if: always()
     runs-on: ubuntu-24.04

@@ -11,6 +11,8 @@ assert.equal(parseOptions(args).rounds,3);
 assert.equal(parseOptions([...args,'--base-identity','6b4','--head-identity','6c1']).headIdentity,'6c1');
 assert.equal(parseOptions([...args,'--base-identity','6c1','--head-identity','6c2']).headIdentity,'6c2');
 assert.equal(parseOptions([...args,'--base-identity','6c2']).baseIdentity,'6c2');
+const sameIdentity=parseOptions([...args,'--base-identity','6c4','--head-identity','6c4']);
+assert.equal(sameIdentity.baseIdentity,'6c4');assert.equal(sameIdentity.headIdentity,'6c4');
 for(const extra of [['--base-identity','6c5'],['--head-identity','6c5'],['--base-identity','6b4','--head-identity','6b4'],['--head-identity','6c1','--head-identity','6c1']])assert.throws(()=>parseOptions([...args,...extra]));
 for(const extra of [['--rounds','0'],['--rounds','4'],['--rounds','1.5'],['--case','unknown'],['--limit','-1'],['--limit','1715'],['--unknown','x'],['--rounds','1','--rounds','3'],['--case']])assert.throws(()=>parseOptions([...args,...extra]));
 const sample=()=>({mode:'wall',oos:0,recordingHash:'hash',events:3,node:'node',machine:{cpu:'cpu'},sourceHash:'src',semantic:{stateHash:'state',rng:[1],blocks:3,rounds:3,roundTicks:300,rowsHash:'rows'},diagnostics:{stats:{hits:1}},segments:{counter:{calls:2}},elapsed:100,

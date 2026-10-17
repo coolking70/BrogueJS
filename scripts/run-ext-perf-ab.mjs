@@ -16,6 +16,7 @@ import {parseOptions,kindsFor,validateRun,withObjectiveP99,evaluateGates,overall
 
 if(process.argv.includes('--party')){const {runPartyAb}=await import('./run-party-perf-ab.mjs');await runPartyAb(process.argv.slice(2).filter(a=>a!=='--party'));process.exit(0);}
 const options=parseOptions(process.argv.slice(2));
+const sameIdentity=options.baseIdentity===options.headIdentity;
 const control=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const roots={A:realpathSync(options.base),B:realpathSync(options.head)};
 assert.notEqual(roots.A,roots.B,'Separate A/B checkout directories required');
@@ -28,7 +29,7 @@ const git=(root,...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8'}).tr
 const result={version:1,status:'running',hard:'pending',options,startedAt:new Date().toISOString(),
  runner:{invocation:randomUUID(),job:process.env.GITHUB_JOB??null,shard:options.shard??null,node:process.version,cpu:cpus()[0]?.model,cpus:cpus().length,memoryBytes:totalmem(),platform:platform(),arch:arch(),heapMiB:3072,runId:process.env.GITHUB_RUN_ID??null,attempt:process.env.GITHUB_RUN_ATTEMPT??null},
  identities:{},steps:[],runs:[],gates:[],
- scope:options.limit?`Local diagnostic: first ${options.limit} production events of both registered routes, plus bounded feature scenes. This is not full-route timing or D20 calibration.`:'Registered A/B complete classic/all routes and an outcome-verified identical all prefix. Prefix length is derived from production captures; it is NOT a D20 calibration.',
+ scope:options.limit?`Local diagnostic: first ${options.limit} production events of both registered routes, plus bounded feature scenes. This is not full-route timing or D20 calibration.`:sameIdentity?'Same-identity regression: both revisions recapture the frozen 6c4 commands with current codec headers; A/B recording, semantic/RNG/domain/final-state equality required. Historical budget is not applied to the new A. D6 thresholds unchanged.':'Registered A/B complete classic/all routes and an outcome-verified identical all prefix. Prefix length is derived from production captures; it is NOT a D20 calibration.',
  policyVersion,policy:timingPolicy};
 const fmt=v=>typeof v==='number'?v.toFixed(2):'—';
 const triple=s=>s?['p50','p95','p99','max'].map(k=>fmt(s[k])).join(' / '):'—';
@@ -111,7 +112,12 @@ try {
  const inputs={},routePaths={},sourcePaths={};
  for(const id of options.cases){
   routePaths[`A-${id}`]=resolve(control,baseline.entry.route(id));
-  if(generated){
+  if(sameIdentity){
+   // Regression on one frozen workload: both revisions execute the exact same
+   // registered commands. Recapture current headers; compare A/B exact bytes.
+   routePaths[`B-${id}`]=routePaths[`A-${id}`];
+   sourcePaths[id]=resolve(control,baseline.entry.source(id));
+  }else if(generated){
    const dir=resolve(out,'candidate-artifacts',id),stem=resolve(dir,`${id}-438491256`);
    run(`generate-B-${id}`,roots.B,'generate-ext-perf.mjs',[dir,id,'438491256','500']);
    routePaths[`B-${id}`]=stem+'.route.json';sourcePaths[id]=stem+'.source.json';
@@ -119,14 +125,17 @@ try {
   const recordings={};
   for(const side of ['A','B']){
    const route=routePaths[`${side}-${id}`],full=resolve(out,'inputs',`${side}-${id}-full.json`);
-   run(`capture-${side}-${id}-full`,roots[side],options.limit?'capture-ext-perf-prefix.mjs':'regenerate-ext-perf.mjs',[route,full,...(options.limit?[String(options.limit)]:[])]);
+   run(`capture-${side}-${id}-full`,roots[side],options.limit||sameIdentity?'capture-ext-perf-prefix.mjs':'regenerate-ext-perf.mjs',[route,full,...(options.limit||sameIdentity?[String(options.limit||read(route).commands.length)]:[])]);
    const data=read(full);recordings[side]=data;inputs[`${side}-${id}-full`]={path:full,recordingHash:hash(data),events:data.events.length};
+   if(sameIdentity&&side==='B')sourcePaths[id]=full+'.source.json';
    if(!options.limit){
-    const source=side==='A'?baseline.sources[id]:read(sourcePaths[id]);
+    const source=sameIdentity?read(full+'.source.json'):side==='A'?baseline.sources[id]:read(sourcePaths[id]);
     assert.equal(hash(data),source.recordingHash);assert.equal(data.events.length,source.events);
     assert.ok(source.events>2049&&source.coverage[20]?.settled>=500,'Missing complete D20 source');
+    if(sameIdentity){assert.equal(source.events,baseline.sources[id].events);assert.equal(source.routeHash,hash(read(route)));assert.equal(source.source,result.identities[side].commit);}
    }
   }
+  if(sameIdentity)assert.equal(hash(recordings.A),hash(recordings.B),'Same-identity A/B recording drift');
   if(id==='classic')assert.deepEqual(read(routePaths[`A-${id}`]).commands,read(routePaths[`B-${id}`]).commands,'Classic route changed');
   if(id==='all'&&options.shard!=='all-full'){
    const n=comparablePrefix(recordings.A,recordings.B);
@@ -161,10 +170,11 @@ try {
   for(const side of ['A','B']){
    for(const kind of kindsFor(options,id))pair[side+kind]=measure(round,id,side,kind);
   }
+  if(sameIdentity)for(const kind of kindsFor(options,id))run(`compare-AB-${round}-${id}-${kind}`,roots.B,'compare-ext-perf.mjs',[pair['A'+kind].prefix,pair['B'+kind].prefix,resolve(out,`compare-AB-${round}-${id}-${kind}.json`)]);
   result.gates=evaluateGates(result.runs,options);
   publish();
  }
- if(!pendingBase&&!options.limit&&options.cases.length===2)for(let round=1;round<=options.rounds;round++){
+ if(!sameIdentity&&!pendingBase&&!options.limit&&options.cases.length===2)for(let round=1;round<=options.rounds;round++){
   const args=options.cases.map(id=>`${id}=${resolve(out,`round-${round}`,`A-${id}-full`)}`);
   run(`original-budget-${round}`,roots.A,'ext-perf-budget.mjs',['check',resolve(control,baseline.entry.manifest),...args]);
  }

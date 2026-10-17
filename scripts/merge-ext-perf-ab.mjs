@@ -13,7 +13,7 @@ import {parseOptions,kindsFor,validateRun,withObjectiveP99,evaluateGates,overall
 
 const [output,...inputs]=process.argv.slice(2);
 assert.ok(output&&inputs.length===3,'Expected NEW_OUT CLASSIC_DIR ALL_FULL_DIR ALL_PREFIX_DIR');
-if(inputs.every(path=>JSON.parse(readFileSync(resolve(path,'result.json'),'utf8')).identity==='party-v1')){const {mergePartyAb}=await import('./merge-party-perf-ab.mjs');mergePartyAb(output,inputs);process.exit(0);}
+if(inputs.some(path=>{try{return JSON.parse(readFileSync(resolve(path,'result.json'),'utf8')).identity==='party-v1';}catch{return false;}})){const {mergePartyAb}=await import('./merge-party-perf-ab.mjs');mergePartyAb(output,inputs);process.exit(0);}
 const out=resolve(output),root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 assert.ok(!existsSync(out),'Use a fresh output directory; never overwrite evidence');
 for(const input of inputs){const p=relative(resolve(input),out);assert.ok(p==='..'||p.startsWith('../'),'Output must be outside input artifacts');}
@@ -95,7 +95,12 @@ try {
  }
  result.prefixEvidence=prefixResult.prefixEvidence;
  result.gates=evaluateGates(result.runs,result.options);
- if(!result.options.limit&&!pendingPerfBaseline(result.options.baseIdentity,result.options.headIdentity))for(let round=1;round<=result.options.rounds;round++)cli(`original-budget-${round}`,'ext-perf-budget.mjs',['check',resolve(root,perfIdentity(result.options.baseIdentity).manifest),...['classic','all'].map(id=>`${id}=${resolve(dirs[id==='classic'?'classic':'all-full'],`round-${round}`,`A-${id}-full`)}`)]);
+ if(result.options.baseIdentity===result.options.headIdentity){
+  for(const b of result.runs.filter(r=>r.side==='B'&&r.round!=='verify')){
+   const a=result.runs.find(r=>r.side==='A'&&r.round===b.round&&r.id===b.id&&r.kind===b.kind);
+   cli(`compare-AB-${b.round}-${b.id}-${b.kind}`,'compare-ext-perf.mjs',[a.prefix,b.prefix,resolve(out,`comparison-AB-${b.round}-${b.id}-${b.kind}.json`)]);
+  }
+ }else if(!result.options.limit&&!pendingPerfBaseline(result.options.baseIdentity,result.options.headIdentity))for(let round=1;round<=result.options.rounds;round++)cli(`original-budget-${round}`,'ext-perf-budget.mjs',['check',resolve(root,perfIdentity(result.options.baseIdentity).manifest),...['classic','all'].map(id=>`${id}=${resolve(dirs[id==='classic'?'classic':'all-full'],`round-${round}`,`A-${id}-full`)}`)]);
  result.hard='pass';result.status=overallStatus(result);
  if(result.status==='pass'){
   const candidate=resolve(out,`ext-perf-${result.options.headIdentity}-budget.candidate.json`);

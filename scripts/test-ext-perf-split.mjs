@@ -50,6 +50,15 @@ try {
  const good=merge();assert.equal(good.run.status,0,good.run.stderr);assert.equal(good.result.status,'pass');assert.ok(existsSync(resolve(good.out,good.result.manifest)));assert.equal(read(resolve(good.out,good.result.manifest)).provenance.independentHeldOutReplay,true);
  assert.ok(good.result.runs.every(r=>!r.prefix.startsWith('/')),'Aggregate paths are portable');
  const one=merge(r=>{r.options.rounds=1;r.runs=r.runs.filter(r=>r.round===1);});assert.equal(one.run.status,0,one.run.stderr);assert.equal(one.result.status,'incomplete');assert.equal(one.result.manifest,undefined);
+ // Same 6c4 workload uses the freshly captured A, not an older codec header or
+ // historical budget. Still recheck A/B complete observer states on merge.
+ const sameIdentity=(r,name)=>{
+  r.options.rounds=1;r.options.limit=8;r.options.baseIdentity='6c4';r.options.headIdentity='6c4';r.runs=r.runs.filter(row=>row.round===1);
+  if(name!=='all-prefix')for(const stage of ['c1','c4']){r[stage+'Scenes']={status:'pass'};write(resolve(shards[name].path,stage+'-scenes.json'),r[stage+'Scenes']);r.steps.push({label:stage.toUpperCase()+'-bounded-supplement',status:'pass'});}
+ };
+ const same=merge(sameIdentity);assert.equal(same.run.status,0,same.run.stderr);assert.equal(same.result.status,'incomplete');assert.equal(same.result.steps.filter(s=>s.label.startsWith('compare-AB-')).length,3);assert.equal(same.result.manifest,undefined);
+ const stateFile=resolve(shards.classic.path,'round-1/B-classic-full.state.json'),beforeState=readFileSync(stateFile);
+ write(stateFile,{state:'changed'});const sameDrift=merge(sameIdentity);assert.notEqual(sameDrift.run.status,0);assert.equal(sameDrift.result.status,'failed');writeFileSync(stateFile,beforeState);
  for(const mutate of [
   (r,n)=>{if(n==='all-full')r.hard='failed';},
   (r,n)=>{if(n==='all-full')r.finishedAt=undefined;},
