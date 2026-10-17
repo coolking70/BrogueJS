@@ -1,5 +1,5 @@
 {
-  "seed": 2,
+  "seed": 24,
   "mode": "normal",
   "modules": [
     "foraging"
@@ -8,7 +8,7 @@
     {
       "action": "move",
       "data": {
-        "x": -1,
+        "x": 1,
         "y": 0
       },
       "expect": {
@@ -18,7 +18,7 @@
     {
       "action": "move",
       "data": {
-        "x": -1,
+        "x": 1,
         "y": 0
       },
       "expect": {
@@ -28,7 +28,7 @@
     {
       "action": "move",
       "data": {
-        "x": -1,
+        "x": 1,
         "y": 0
       },
       "expect": {
@@ -38,7 +38,7 @@
     {
       "action": "move",
       "data": {
-        "x": -1,
+        "x": 1,
         "y": 0
       },
       "expect": {
@@ -48,7 +48,7 @@
     {
       "action": "move",
       "data": {
-        "x": -1,
+        "x": 1,
         "y": 0
       },
       "expect": {
@@ -58,7 +58,7 @@
     {
       "action": "move",
       "data": {
-        "x": -1,
+        "x": 1,
         "y": 0
       },
       "expect": {
@@ -68,8 +68,8 @@
     {
       "action": "move",
       "data": {
-        "x": -1,
-        "y": -1
+        "x": 1,
+        "y": 0
       },
       "expect": {
         "recorded": true
@@ -78,8 +78,168 @@
     {
       "action": "move",
       "data": {
-        "x": -1,
-        "y": -1
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
       },
       "expect": {
         "recorded": true
@@ -95,7 +255,7 @@
     },
     {
       "action": "ext:command",
-      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":2,\"inventoryStamp\":\"3d4191efc7d238b7\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":2,\"inventoryStamp\":\"1ce50196ecab4b95\",\"destinationId\":null,\"destinationRevision\":null}}",
       "expect": {
         "recorded": true,
         "error": null
@@ -103,7 +263,7 @@
     },
     {
       "action": "ext:command",
-      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":4,\"inventoryStamp\":\"ac69ac4f57004163\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":4,\"inventoryStamp\":\"60a00ad1950c9978\",\"destinationId\":null,\"destinationRevision\":null}}",
       "expect": {
         "recorded": true,
         "error": null
@@ -139,534 +299,16 @@
     {
       "action": "mouse_travel",
       "data": {
-        "x": 29,
-        "y": 23
+        "x": 62,
+        "y": 25
       },
       "expect": {
         "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 0,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 0,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 0,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 0,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 0,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 0,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 0,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 0,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 1,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "ext:command",
-      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":21,\"nodeRevision\":0,\"inventoryStamp\":\"3d4191efc7d238b7\",\"destinationId\":null,\"destinationRevision\":null}}",
-      "expect": {
-        "recorded": true,
-        "error": null
       }
     },
     {
       "action": "item:execute",
-      "data": "call|f|旅途之星",
+      "data": "call|e|旅途之星",
       "expect": {
         "recorded": true
       }
@@ -674,77 +316,7 @@
     {
       "action": "move",
       "data": {
-        "x": 0,
-        "y": 1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 0,
-        "y": 1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 0,
-        "y": 1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 0,
-        "y": 1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 0,
-        "y": 1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
+        "x": 1,
         "y": 0
       },
       "expect": {
@@ -754,7 +326,7 @@
     {
       "action": "move",
       "data": {
-        "x": -1,
+        "x": 1,
         "y": 0
       },
       "expect": {
@@ -764,7 +336,7 @@
     {
       "action": "move",
       "data": {
-        "x": -1,
+        "x": 1,
         "y": 0
       },
       "expect": {
@@ -774,657 +346,7 @@
     {
       "action": "move",
       "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 0,
-        "y": 1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 0,
-        "y": 1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 0,
-        "y": 1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 0,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 0,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 0,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 0,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 0,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 0,
-        "y": 1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": 0,
-        "y": 1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": -1
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
+        "x": 1,
         "y": -1
       },
       "expect": {
@@ -1462,7 +384,27 @@
       "action": "move",
       "data": {
         "x": 1,
-        "y": 1
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
       },
       "expect": {
         "recorded": true
@@ -1470,7 +412,7 @@
     },
     {
       "action": "ext:command",
-      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":49,\"nodeRevision\":0,\"inventoryStamp\":\"50173fed1278402c\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":53,\"nodeRevision\":0,\"inventoryStamp\":\"1ce50196ecab4b95\",\"destinationId\":null,\"destinationRevision\":null}}",
       "expect": {
         "recorded": true,
         "error": null
@@ -1496,12 +438,12 @@
         "quantity": 1
       },
       {
-        "displayName": "蚀骨菌",
+        "displayName": "逆影菌（吃过，无明显效果）（叫作：旅途之星）",
         "quantity": 1
       },
       {
-        "displayName": "回响菌（叫作：旅途之星）",
-        "quantity": 2
+        "displayName": "烟缕菌",
+        "quantity": 1
       }
     ],
     "knowledge": {
@@ -1564,8 +506,8 @@
         },
         {
           "definitionId": "foraging.mend",
-          "state": "unknown",
-          "title": null
+          "state": "tasted",
+          "title": "旅途之星"
         },
         {
           "definitionId": "foraging.mend-patch",
@@ -1640,7 +582,7 @@
         {
           "definitionId": "foraging.upheave",
           "state": "unknown",
-          "title": "旅途之星"
+          "title": null
         },
         {
           "definitionId": "foraging.upheave-patch",
@@ -1669,7 +611,7 @@
         },
         {
           "definitionId": "foraging.venom",
-          "state": "known",
+          "state": "unknown",
           "title": null
         },
         {
@@ -1690,7 +632,7 @@
       "totals": {
         "eaten": 1,
         "fed": 0,
-        "revealed": 1,
+        "revealed": 0,
         "roasted": 0,
         "charred": 0,
         "burned": 0,
@@ -1701,11 +643,11 @@
         {
           "factId": 7,
           "kind": "eat",
-          "result": "revealed",
-          "tick": 1100
+          "result": "tasted",
+          "tick": 2700
         }
       ]
     },
-    "digest": "f902993fb3c8b50bccd19c5a757e94119de8979636693f33a30f6a066453b30d"
+    "digest": "416b4c28b803dd60eec63d6acfe3c04ee53ca3f3c0f99b94747e681a5d16ebc9"
   }
 }

@@ -2,7 +2,7 @@
   "seed": 28,
   "actorId": 25,
   "events": 956,
-  "provenance": "self-route-astra sole fresh normal seed28 exact956 input replay; core/day-food per formal6.3, old starvation/refund semantics migrated to controlled test; b820733 two-ration recapture: same public actions/data presence/decisions and checkpoint timing; historical hashes above/below identify the original capture, not this recapture",
+  "provenance": "self-route-astra sole fresh normal seed28 exact956 input replay; core/day-food per formal6.3, old starvation/refund semantics migrated to controlled test; b820733 two-ration recapture: same public actions/data presence/decisions and checkpoint timing; historical hashes above/below identify the original capture, not this recapture; phase6 foundation20 current-source digest recapture (same commands and semantic checkpoints)",
   "fixedCaptureSourceManifestSha256": "5f93299d42b510641c2f67b3550aee547602eb482a6fd1ba92ac2d9481c8cba7",
   "originalRecordingSha256": "cb4c5db0bbe8484622ad128d73bef1ef21811bef9392862cec131971ec257710",
   "continuedRecordingSha256": "25a618817b07960fbbe7b0eeb7eaab53ccb0a3c801a0327a358602a21ca66f6a",
@@ -40,7 +40,7 @@
       "events": 0,
       "depth": 1,
       "tick": 0,
-      "digest": "845cb546c1445479d490bda17a8649d0e1b2a140a5b7483b38220a20c8326309",
+      "digest": "4b3286542ec4f7e8a978cc0093059418ad01050bef0923ad70ebffa26c190144",
       "actorLocation": {
         "x": 37,
         "y": 25
@@ -66,7 +66,7 @@
       "events": 387,
       "depth": 1,
       "tick": 39900,
-      "digest": "f4b8da557f6d847d7c628d2dd663a3be6911a980515d3e0ed5c93f6b0293725d",
+      "digest": "337db31837394c73dd9600105d72ca1cd9ffd4d81b467cebd2fb40b51d47a548",
       "actorLocation": {
         "x": 32,
         "y": 20
@@ -79,7 +79,7 @@
       "events": 388,
       "depth": 1,
       "tick": 40000,
-      "digest": "53164bc0abf1bc9ab73f60c67a70c94764d9865d1d77021d389639ec82950176",
+      "digest": "178be17ac5315eed7fec3e175fc748a2891ea11e1878e75a679a029d6aa968ea",
       "actorLocation": {
         "x": 31,
         "y": 20
@@ -92,7 +92,7 @@
       "events": 399,
       "depth": 1,
       "tick": 41000,
-      "digest": "7c0ce594769ac00a7b8fd6848465f2f7c972320103c1c6a457df5ebb187d6e5a",
+      "digest": "b51251e73c495cb47f807e1cb7dc5e9ddde4cdd66143b018c469b0bea951cd80",
       "actorLocation": {
         "x": 29,
         "y": 23
@@ -105,7 +105,7 @@
       "events": 430,
       "depth": 1,
       "tick": 44100,
-      "digest": "9bafaeebce088317baefa889ef4c0bffa3a7f6d192c02f6dd2efdfdf97344dbb",
+      "digest": "a76ee3116d8e924464d39b9f2c050ed7dbb84134eb00d6d05d3d1da672a3e410",
       "actorLocation": {
         "x": 25,
         "y": 20
@@ -118,7 +118,7 @@
       "events": 444,
       "depth": 1,
       "tick": 45700,
-      "digest": "b03305a7cc55531233f3d61ce80e54905844f1ae10caf4c53215d9712ac947a7",
+      "digest": "1842ee6a6550e624152f446efcb34b194fef0d79fb17c7df5fe95e04d2bc41f7",
       "actorLocation": {
         "x": 29,
         "y": 23
@@ -131,7 +131,7 @@
       "events": 456,
       "depth": 1,
       "tick": 46800,
-      "digest": "b76895e8cc6f457157e30c09799c481f52a858843446d46ebb93b0403b7e586b",
+      "digest": "dccd57a03f8ca8f360558f8303b0b280c02860f23b0e002672b329359ebac42e",
       "actorLocation": {
         "x": 29,
         "y": 23
@@ -144,7 +144,7 @@
       "events": 628,
       "depth": 1,
       "tick": 64000,
-      "digest": "877b03e5e62a70be8413524c43ac3223574cfa3255a3a5a8b30b72e6e49ee685",
+      "digest": "7fb8edb2d4b33a779564300641c6d5fbde2fe674827eb0cd11bc524d3250d1b1",
       "actorLocation": {
         "x": 38,
         "y": 18
@@ -157,7 +157,7 @@
       "events": 654,
       "depth": 1,
       "tick": 66600,
-      "digest": "89441328bea2faff170b948a4ebfe0dd59936cd1ce29e163d6fdec641ac99212",
+      "digest": "6b4a8186053f222b2cf675e453cad1dcd56f9cff20d03d2b531d57d9777daf89",
       "actorLocation": {
         "x": 38,
         "y": 19
@@ -170,7 +170,7 @@
       "events": 785,
       "depth": 1,
       "tick": 79300,
-      "digest": "fc7f435f3675a0605d8b72b21562c257a9562a59e2d35bdbc83e916740e69052",
+      "digest": "e397e380eb11e12142d2af444b163715e4b8b6866b0382a6d1bf5bde944dd1c6",
       "actorLocation": {
         "x": 25,
         "y": 20
@@ -183,7 +183,7 @@
       "events": 786,
       "depth": 1,
       "tick": 79400,
-      "digest": "60f6fd39fdc49d749562f67a89a39f8b7b8574ddb1e3383a0ea1dc34cc8ee6a4",
+      "digest": "db131152a6916c857f107abf48bb7d25ce8f15a8ea768db639be96e5ec088676",
       "actorLocation": {
         "x": 26,
         "y": 20
@@ -196,7 +196,7 @@
       "events": 787,
       "depth": 1,
       "tick": 79500,
-      "digest": "adf90d65cfcb4823ec7c754362ab6fb5ae02b1f5be0505456eef9a9d5c533b94",
+      "digest": "f3cf1a7430c8cd2cc98a8739c52685547f3dc282906ab2448e2000c482f894c1",
       "actorLocation": {
         "x": 27,
         "y": 20
@@ -209,7 +209,7 @@
       "events": 789,
       "depth": 1,
       "tick": 79700,
-      "digest": "244e80235d357312aa9bbb3d23597d82f483b012fe4ec08dd276a27759d7335d",
+      "digest": "08be0eb2f9ce0b3776f142acbfbc3d28a99fbd5a2acdbc2b398c3b5385c17d98",
       "actorLocation": {
         "x": 28,
         "y": 20
@@ -222,7 +222,7 @@
       "events": 808,
       "depth": 1,
       "tick": 81500,
-      "digest": "6e9212debaa84a835e9587a618a058a7ce1860256c92a217bcde5cd522e55f64",
+      "digest": "699cb50d51805b6822174a4c748e2d4db876f21038530698ed9b53ce43cdf314",
       "actorLocation": {
         "x": 29,
         "y": 23
@@ -235,7 +235,7 @@
       "events": 873,
       "depth": 1,
       "tick": 88000,
-      "digest": "e5b0cef1954cc4c862b978508dcf6fdffe5faf7be36e5984dd95679e388509e6",
+      "digest": "5fd7d084e2aae1999bb1fc27f8ef9ac22fd6185f1ee9524abafa53fce5445f79",
       "actorLocation": {
         "x": 29,
         "y": 22
@@ -248,7 +248,7 @@
       "events": 874,
       "depth": 1,
       "tick": 88100,
-      "digest": "097bdf9abde2cce90722b1d574054754d78d365ebdaa599f1f9ebb8af37b89d8",
+      "digest": "c3183cc5c35247081d3d5a9013d0de7dcdf854945bda5ae86af7a63848137b13",
       "actorLocation": {
         "x": 29,
         "y": 22
@@ -261,7 +261,7 @@
       "events": 876,
       "depth": 1,
       "tick": 88200,
-      "digest": "a0076a9aa8af8764bf50f3fe5fd7a21e0cb25c19cd0326f1dbbd85f946147385",
+      "digest": "f76b055e822e748a2eafe9a4f528a2dc14742b4ad49460cf0498102c0cb9637f",
       "actorLocation": {
         "x": 29,
         "y": 22
@@ -274,7 +274,7 @@
       "events": 908,
       "depth": 1,
       "tick": 91300,
-      "digest": "688a204b72e58f052f6cc6a7bc78be81de505e79c071d0304f7168ecc464254b",
+      "digest": "7ad586420cd8535d07ddd8340c98d0d9733839460156e01fad720bed786e37dc",
       "actorLocation": {
         "x": 34,
         "y": 4
@@ -287,7 +287,7 @@
       "events": 910,
       "depth": 2,
       "tick": 91400,
-      "digest": "f73cb4a816a6d7e3ab850fb4a7026e685582e9736ca28a1fd2b0c4fa9f56ce3c",
+      "digest": "70527e280b701efa3e8aa9a9a87e8a39cfd85aaa0d6a800dd530ac3fd1456dd4",
       "actorLocation": {
         "x": 33,
         "y": 3
@@ -300,7 +300,7 @@
       "events": 913,
       "depth": 2,
       "tick": 91700,
-      "digest": "36cd6d3c3335b099a2ecc9e792d88691d5808f31c5b777fc6208484908ac15f7",
+      "digest": "39577a69ee2da9a0558e62310af64d53be1e902489cefad84d9cc7bb31cd1e10",
       "actorLocation": {
         "x": 35,
         "y": 4
@@ -313,7 +313,7 @@
       "events": 914,
       "depth": 2,
       "tick": 91800,
-      "digest": "03829d79d31f0f179c40fcf46b19182e498bf5aa765734e983e784eeb1ad2d66",
+      "digest": "ec7e4486dfc7bb409e3fd4f032f1d057ebc66fb058817ce193f2411ba0fb67af",
       "actorLocation": {
         "x": 35,
         "y": 4
@@ -326,7 +326,7 @@
       "events": 916,
       "depth": 2,
       "tick": 91900,
-      "digest": "a8067a71c79aaa8d6368b494e85c446797d38a9448207c7e661724720cd3a681",
+      "digest": "7a59e08df67be7b43eee22c3b467cf1836391192de91490fcb88f6f4c29b6392",
       "actorLocation": {
         "x": 34,
         "y": 4
@@ -339,7 +339,7 @@
       "events": 917,
       "depth": 1,
       "tick": 91900,
-      "digest": "c5f625f27a0e6c9fe0a3ddd8173c295c0acece190b512a5a641e7eee54e55fd6",
+      "digest": "e9ccaedcfcf2832c69f1032f24d3bb214846707ffdb7f73545b39c4dbe988415",
       "actorLocation": {
         "x": 34,
         "y": 4
@@ -352,7 +352,7 @@
       "events": 956,
       "depth": 1,
       "tick": 95500,
-      "digest": "2125234c402935837c7a9fc50746efb443d0577508a4399c0b005ee971f42cd2",
+      "digest": "fcb4c94444fdf29905d454605178b49f4ed63129cd77d69009c48a24555845ca",
       "actorLocation": {
         "x": 31,
         "y": 23

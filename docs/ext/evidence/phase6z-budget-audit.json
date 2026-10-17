@@ -1,0 +1,205 @@
+{
+  "status": "pass",
+  "newPerformanceRuns": 0,
+  "rows": [
+    {
+      "id": "6b4",
+      "accepted": true,
+      "manifestSha256": "c659a3788e4f53aa8ea20e7a050950b3bb39f990f2fd92863a3f7eecc0ea2e38",
+      "cases": {
+        "classic": {
+          "events": 2208,
+          "source": "8d7c79974fee69d7ffdd45b286b9b6878f081be7",
+          "recordingHash": "651a38e00d142d91ba18b8d4fe86d4dab976750a2057815f217b8bec56917bca",
+          "routeSha256": "0e6a5b454ecde9c687b2c6ed08822ccaab3a3b9f9f5be3b1ab8f04777e8e6f0b",
+          "sourceSha256": "a17ab72442c3d32f66f7ef29333a97109042d50b249909a9ba9753cb78e33063",
+          "completeD20": {
+            "settled": 500,
+            "maxMonsters": 35
+          }
+        },
+        "all": {
+          "events": 2528,
+          "source": "8d7c79974fee69d7ffdd45b286b9b6878f081be7",
+          "recordingHash": "47f5d69eb48ee40681b799e5daff113e3439dce4bdc44a01af36d125dc1ac359",
+          "routeSha256": "8fef64902e7b2f664a06e331e0fe1d57a14607dd6faee0c9ef52131564baf92e",
+          "sourceSha256": "e7a22e2fd5b67985bee4e07f9397ba2458d6043e76339fa69760c4951bd88f1a",
+          "completeD20": {
+            "settled": 500,
+            "maxMonsters": 34,
+            "maxTerrainLights": 212
+          }
+        }
+      },
+      "resultHashVerified": true,
+      "run": "38860207834",
+      "acceptance": "Maintainer ruling 2026-10-16: B4-5 accepted under revised D6.",
+      "limitations": [
+        "Offline checks reuse calibration runs; no independent fourth replay.",
+        "Absolute timings are report-only and specific to this cloud runner.",
+        "all complete routes have different workloads; A/B timing verdict uses identical 1714-command prefix, not a D20 comparison.",
+        "No browser/mobile/D22+ or maximum-resident/structure load coverage."
+      ],
+      "independentPostFreezeReplay": false
+    },
+    {
+      "id": "6c1",
+      "accepted": true,
+      "manifestSha256": "d2734c8d7c2930d3db0549289e9eb165ff89505c2e95c5db43035b343fb53ab3",
+      "cases": {
+        "classic": {
+          "events": 2208,
+          "source": "e27648489953069b9aca4c9cf2b8a5ed5162a372",
+          "recordingHash": "651a38e00d142d91ba18b8d4fe86d4dab976750a2057815f217b8bec56917bca",
+          "routeSha256": "0e6a5b454ecde9c687b2c6ed08822ccaab3a3b9f9f5be3b1ab8f04777e8e6f0b",
+          "sourceSha256": "48026902d857ae32fa0a08e6287541afc7cc677b24ec6ae6a07189ac473eb5de",
+          "completeD20": {
+            "settled": 500,
+            "maxMonsters": 35,
+            "maxTerrainLights": 174
+          }
+        },
+        "all": {
+          "events": 2528,
+          "source": "e27648489953069b9aca4c9cf2b8a5ed5162a372",
+          "recordingHash": "d58661280caee0fa16fb6f8b9c62eb1e579b582669d7f701adba71aa9b735246",
+          "routeSha256": "cca34e4177a6ab70ac13851178bcfbcafda8bfac537beb0d89211bb294568e45",
+          "sourceSha256": "15fcfc2f57b77f6827b1a2115ea2b771ff3ed991a70b7e5ea0ebc846e57193d2",
+          "completeD20": {
+            "settled": 500,
+            "maxMonsters": 34,
+            "maxTerrainLights": 212
+          }
+        }
+      },
+      "originalResultStatus": "pass",
+      "resultHashVerified": true,
+      "run": "38920592958",
+      "acceptance": "pass",
+      "limitations": [
+        "Absolute timing is report-only and specific to this cloud runner.",
+        "Wizard omniscient route; not human gameplay or browser/mobile acceptance.",
+        "D20 with 500 settled actions; no D22+ or maximum-resident/structure load claim.",
+        "6C1 source e276484 only; not a 6C2 acceptance or budget."
+      ],
+      "independentPostFreezeReplay": true
+    },
+    {
+      "id": "6c2",
+      "accepted": true,
+      "manifestSha256": "63f210adef8608b9b048f3ae07ec3188251a7be7f879522084d9fa7c6f6e563f",
+      "cases": {
+        "classic": {
+          "events": 2208,
+          "source": "feb33b030f74949a2e0af001362b53f2f6e0eea3",
+          "recordingHash": "fd4fe3cc3d5051cdf5090358d64a52054fc6e6fad7c3d3083d51771e1f0a5128",
+          "routeSha256": "122214f800f89b0d7fb58e3077ad89a8a9cef8c6b45103c316f41f17965fd7e1",
+          "sourceSha256": "c6d6b50cb2c201885f825eab57a075af70e09f77ef22946b68d985d9fa0983a8",
+          "completeD20": {
+            "settled": 500,
+            "maxMonsters": 35,
+            "maxTerrainLights": 174
+          }
+        },
+        "all": {
+          "events": 2423,
+          "source": "feb33b030f74949a2e0af001362b53f2f6e0eea3",
+          "recordingHash": "cdcb13635af4c1a29bc4bb529bf662d34e6f5e420d07f2dc9f2c4044834475c9",
+          "routeSha256": "037cd4197249316b215fc4607cbb9813e6f13c4a6d025f8c59e36367132aa6eb",
+          "sourceSha256": "7859d6b39583df0252dc37ac4e327fd578af837bd84a846264654ce7a94bb5d3",
+          "completeD20": {
+            "settled": 500,
+            "maxMonsters": 28,
+            "maxTerrainLights": 188
+          }
+        }
+      },
+      "rawFrozenHashVerified": true,
+      "originalResultStatus": "regression",
+      "originalResultSha256": "81925519ad5bca1a839ed3f3c94f30e5026bb713bcc37e15eb60bfab82e1a965",
+      "routeSourceByteEqualOriginal": true,
+      "run": "https://github.com/coolking70/BrogueJS/actions/runs/38960940396",
+      "acceptance": "known-prefix-overhead",
+      "limitations": [
+        "Historical cloud A/B remains regression; automatic canFreeze/overallStatus and D6 thresholds are unchanged.",
+        "47 D1 inputs do not establish D20 same-work timing.",
+        "Detailed CPU shares describe total local cost, not an allocation of the cloud 11–14% increment."
+      ],
+      "independentPostFreezeReplay": {
+        "runner": "Apple M5 / darwin arm64 / Node v24.19.0",
+        "source": "c1f68d0, same src tree as B",
+        "cases": {
+          "classic": {
+            "events": 2208,
+            "oos": 0,
+            "hard": "pass"
+          },
+          "all": {
+            "events": 2423,
+            "oos": 0,
+            "hard": "pass"
+          }
+        },
+        "scope": "Independent complete native replay after freezing; exact semantic/RNG/work checks. Local times report-only; not a fourth cloud timing run."
+      }
+    },
+    {
+      "id": "6c3",
+      "accepted": false,
+      "manifestPresent": false,
+      "pendingMaintainer": true,
+      "run": null,
+      "acceptance": null,
+      "limitations": [],
+      "independentPostFreezeReplay": null,
+      "queriedRun": "38996836519",
+      "job": 117291147218,
+      "cloudStatus": "completed",
+      "cloudConclusion": "failure",
+      "incompleteAt": "330 minute step timeout during 3-A-all-full",
+      "controlSha": "0d2e98a91e238e9c988017e87c7a51fb31569691",
+      "baseSha": "33d7aba6e458529ae126dee2d889c7b2c24507bd",
+      "headSha": "0d2e98a91e238e9c988017e87c7a51fb31569691",
+      "artifact": {
+        "id": 12095515952,
+        "name": "ext-perf-38996836519-1",
+        "size_in_bytes": 32642435,
+        "digest": "sha256:ba2607d7d34ea1c05e5d1342e014bd0e9a11f18fd02274e0167a88d7f50cfe07",
+        "expires_at": "2026-10-24T08:26:52Z"
+      },
+      "jobLogSha256": "7f866706a205375f891499cd2cfe3bda3a413c4fada36c5f803edf09aeff48e5",
+      "zipLocallyArchived": false,
+      "artifactLimitation": "Connector produced file reference; local DNS rejected ZIP download. Job logs and artifact metadata obtained; no new benchmark or run."
+    },
+    {
+      "id": "6c4",
+      "accepted": false,
+      "manifestPresent": false,
+      "pendingMaintainer": true,
+      "run": null,
+      "acceptance": null,
+      "limitations": [],
+      "independentPostFreezeReplay": null,
+      "queriedRun": "39006896716",
+      "job": 117321092332,
+      "cloudStatus": "completed",
+      "cloudConclusion": "cancelled",
+      "incompleteAt": "Cancelled during 1-B-all-prefix; generated pending C3 baseline",
+      "controlSha": "07d7c97cdbe3f49ed58ae5137d145fceb02fcfbb",
+      "baseSha": "0d2e98a91e238e9c988017e87c7a51fb31569691",
+      "headSha": "07d7c97cdbe3f49ed58ae5137d145fceb02fcfbb",
+      "artifact": {
+        "id": 12094918558,
+        "name": "ext-perf-39006896716-1",
+        "size_in_bytes": 14538993,
+        "digest": "sha256:55ba7dace9efe4eb3a370530975ed9e5bd340ba6220ed0c17d150f89a0f011a3",
+        "expires_at": "2026-10-24T08:39:05Z"
+      },
+      "jobLogSha256": "7e0f26a2537628a9946b10486552e9951df21f9601d16677c3df8d2df1f878a0",
+      "zipLocallyArchived": false,
+      "artifactLimitation": "Connector produced file reference; local DNS rejected ZIP download. Job logs and artifact metadata obtained; no new benchmark or run."
+    }
+  ],
+  "auditScope": "Existing accepted B4/C1/C2 file identity audit; C3/C4 have incomplete runs, no accepted final performance verdict.",
+  "cloudCheckedAt": "2026-10-17T09:15:42Z"
+}

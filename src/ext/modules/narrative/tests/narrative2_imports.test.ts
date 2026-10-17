@@ -151,18 +151,18 @@ describe('N2-IMPORT exhaustive narrative production ownership', () => {
         expect(audit(file, "import type { Json as Value } from '../../types';")).toEqual([]);
     });
     it('preserves the baseline Game field set and narrative-facing shared protocol declarations', () => {
-        // Fixed code baseline 59b9ba691daf66819eeea0299a0539f3641ad208,
-        // Game fields retain that baseline; descriptor/recording declarations pin
-        // C6-1 foundation15/whole-run7 and explicit item contribution declarations.
+        // Phase6 current declaration baseline (maintainer recapture),
+        // Game fields include phase6 runtime/cache additions; declarations pin
+        // foundation20/whole-run7 and explicit item contribution declarations.
         // No git process is needed in CI.
         // This bounded guard is not a hash of whole shared implementations;
         // the final explicit repository scope audit covers all remaining files.
-        expect(gameFieldFingerprint(readFileSync('src/engine/Core/Game.ts', 'utf8'))).toBe('fa8757e4632cfa4085e696dce03db57f03df78b717d1d3336a962a77c5386c64');
+        expect(gameFieldFingerprint(readFileSync('src/engine/Core/Game.ts', 'utf8'))).toBe('846e034a5de13e61feb4952f82e22c62c0face460c191392ab8d7366f595790a');
         const contracts: [string, string][] = [
-            ['src/ext/descriptor.ts', 'd7c563cb37b921a8234d789f71e273678d71ee324105b5fe0467fce897f25912'],
-            ['src/ext/types.ts', 'ccdd2ae378404f8acaa4b28654b35f3aa270e4736f59b77b58080b76acb51b6a'],
+            ['src/ext/descriptor.ts', 'd1367d93e523ed14ada75d523396b1c8494087e5fe94ca9c164d34dcab6a0f39'],
+            ['src/ext/types.ts', 'd48487db043031606f3b900bf2b96ae2b13b4369eafb6f92ad75caa5e6144994'],
             ['src/ext/world.ts', 'a6d6092d9b31fc7d8f12de633efa92fcca1a59bb61763d1fb28ec356906cbc9d'],
-            ['src/ext/ui/types.ts', '9f5d30861987256c91b64c4e1de3588e1b15c08f3cec15a5364382e470bf55f2'],
+            ['src/ext/ui/types.ts', '0bef99ef738eca4a28bbaa7b716865e82f66db53903a12367e07df63679fba1c'],
             ['src/engine/Core/WholeRunSnapshot.ts', 'bdde1113622aecdfa5ef0e3d4e910b3920613cf0eef6dd2cc9bfa908de2a74e0'],
             ['src/engine/Core/RecordingV4.ts', '858c712a875024b46445e638d8b589563ea67d7974efe1691e18b4ae4e868305'],
         ];

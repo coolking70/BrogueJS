@@ -71,7 +71,7 @@ it.each(['build', 'camp', 'residents'])('selection tab %s claims inventory/drop/
   s.commands.value[0]!.invoke();
   (s.panel.value!.props as any).onTab(tab);
   const before={at:{...g.player.loc},events:g.recordedInputEvents.length,turn:g.absoluteTurnNumber,inventory:g.player.inventory.items.map(i=>i.id)};
-  for(const key of ['i','d','a','j','.','x','Tab','Enter','ArrowDown']) {
+  for(const key of ['i','d','a','j','k','.','x','Tab','Enter','ArrowDown']) {
    const stop=vi.fn();
    (input as unknown as {handleKeyDown(e:KeyboardEvent):void}).handleKeyDown({key,code:key,preventDefault(){},stopImmediatePropagation:stop} as unknown as KeyboardEvent);
    expect(stop).toHaveBeenCalled(); s.refresh();

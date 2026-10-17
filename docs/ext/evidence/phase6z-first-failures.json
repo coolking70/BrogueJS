@@ -1,0 +1,1348 @@
+{
+  "candidate": "06682d538084d552e40ba192c9f1e2e896b3e13d",
+  "firstRun": "05-impact",
+  "exit": 1,
+  "reportSha256": "60329cdaddc09f0d1a64159f0eb463fc12e0845dd0f42235cba440190c123123",
+  "reported": {
+    "numTotalTests": 12566,
+    "numPassedTests": 12365,
+    "numFailedTests": 160,
+    "numPendingTests": 19,
+    "numTodoTests": 1
+  },
+  "warning": "Vitest JSON passed labels do not prove file completion: b2_transcription has 21 pending assertions after worker heap OOM. main_menu_replay_seek has suite setup failure and ten skipped assertions. Keep separate from historical skips.",
+  "rows": [
+    {
+      "file": "src/test/b2_transcription.test.ts",
+      "status": "passed",
+      "failures": [],
+      "other": [
+        {
+          "name": "B2 production census observes committed CE71 machines and their actual occupants on 34 seed × D1–D26",
+          "status": "pending"
+        },
+        {
+          "name": "B2 literal transcription and registered deferrals CE 31/F1 has personalSpace 5",
+          "status": "pending"
+        },
+        {
+          "name": "B2 literal transcription and registered deferrals CE 39/F0 has personalSpace 2",
+          "status": "pending"
+        },
+        {
+          "name": "B2 literal transcription and registered deferrals CE 44/F3 has personalSpace 2",
+          "status": "pending"
+        },
+        {
+          "name": "B2 literal transcription and registered deferrals CE 40/F0 has personalSpace 2",
+          "status": "pending"
+        },
+        {
+          "name": "B2 literal transcription and registered deferrals CE 40/F1 has personalSpace 2",
+          "status": "pending"
+        },
+        {
+          "name": "B2 literal transcription and registered deferrals CE 40/F2 has personalSpace 2",
+          "status": "pending"
+        },
+        {
+          "name": "B2 literal transcription and registered deferrals CE 40/F3 has personalSpace 2",
+          "status": "pending"
+        },
+        {
+          "name": "B2 literal transcription and registered deferrals CE 40/F4 has personalSpace 2",
+          "status": "pending"
+        },
+        {
+          "name": "B2 literal transcription and registered deferrals retains CE40 F5/F6=1 and fills CE31 hallway flag, CE10 weight, CE71 exact monster id",
+          "status": "pending"
+        },
+        {
+          "name": "B2 literal transcription and registered deferrals CE55 MAXIMIZE is present and U19f restores its closed tunnel consumer",
+          "status": "pending"
+        },
+        {
+          "name": "B2 literal transcription and registered deferrals CE 6/F2 starts U17e DF 141; full-room drops consume the generated pipes",
+          "status": "pending"
+        },
+        {
+          "name": "B2 literal transcription and registered deferrals CE 7/F2 now starts the closed U17c DF 144",
+          "status": "pending"
+        },
+        {
+          "name": "B2 literal transcription and registered deferrals CE 22/F0 now starts the closed U17c DF 152",
+          "status": "pending"
+        },
+        {
+          "name": "B2 literal transcription and registered deferrals CE 28/F1 now starts the closed U17c DF 152",
+          "status": "pending"
+        },
+        {
+          "name": "B2 literal transcription and registered deferrals CE15 fungus follows tile, promote/fire, propagation and subsequentDF edges without deferred promotion",
+          "status": "pending"
+        },
+        {
+          "name": "B2 layer semantics and CE71 materialization adversary CE 16/F0 layer contract and actual production carrier are distinguished",
+          "status": "pending"
+        },
+        {
+          "name": "B2 layer semantics and CE71 materialization adversary CE 17/F0 layer contract and actual production carrier are distinguished",
+          "status": "pending"
+        },
+        {
+          "name": "B2 layer semantics and CE71 materialization adversary CE 27/F0 layer contract and actual production carrier are distinguished",
+          "status": "pending"
+        },
+        {
+          "name": "B2 layer semantics and CE71 materialization adversary CE 27/F1 layer contract and actual production carrier are distinguished",
+          "status": "pending"
+        },
+        {
+          "name": "B2 layer semantics and CE71 materialization adversary the same CE71 machine realizes zero sentinels with the old id, and three living grid occupants with the real id",
+          "status": "pending"
+        }
+      ],
+      "suiteError": ""
+    },
+    {
+      "file": "src/test/dialog_d4_blink.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "D4 blink command continuation and protocol answer false loaded step, playing, restart/seek and save continuation have zero OOS and no UI",
+          "error": "AssertionError: expected 7 to be 6 // Object.is equality",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/test/dialog_d4_blink.test.ts:95:65"
+        },
+        {
+          "name": "D4 blink command continuation and protocol answer true loaded step, playing, restart/seek and save continuation have zero OOS and no UI",
+          "error": "AssertionError: expected 7 to be 6 // Object.is equality",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/test/dialog_d4_blink.test.ts:95:65"
+        },
+        {
+          "name": "D4 blink command continuation and protocol production has no native confirmation call, and App delegates to the mounted Host",
+          "error": "AssertionError: /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/loot/ui/LootPresetPicker.vue: expected [ 'confirm()' ] to deeply equal []",
+          "location": "AssertionError: /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/loot/ui/LootPresetPicker.vue: expected [ 'confirm()' ] to deeply equal []"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/test/dialog_host.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "browser R-UI02 actual inventory names preserves production unknown names and details through load identity replacement",
+          "error": "AssertionError: expected '温石菌' to be '镜面菌' // Object.is equality",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/test/dialog_host.test.ts:679:42"
+        },
+        {
+          "name": "browser R-UI02 actual inventory names preserves production called names and details through load identity replacement",
+          "error": "AssertionError: expected '温石菌' to be '镜面菌' // Object.is equality",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/test/dialog_host.test.ts:679:42"
+        },
+        {
+          "name": "browser R-UI02 actual inventory names preserves production tasted names and details through load identity replacement",
+          "error": "AssertionError: expected '温石菌' to be '镜面菌' // Object.is equality",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/test/dialog_host.test.ts:679:42"
+        },
+        {
+          "name": "browser R-UI02 actual inventory names preserves production tasted-called names and details through load identity replacement",
+          "error": "AssertionError: expected '温石菌' to be '镜面菌' // Object.is equality",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/test/dialog_host.test.ts:679:42"
+        },
+        {
+          "name": "browser R-UI02 actual inventory names preserves production known names and details through load identity replacement",
+          "error": "AssertionError: expected '温石菌' to be '镜面菌' // Object.is equality",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/test/dialog_host.test.ts:679:42"
+        },
+        {
+          "name": "browser R-UI02 actual inventory names keeps roasted prefix and roast knowledge note (raw known: false)",
+          "error": "AssertionError: expected '烤温石菌' to be '烤镜面菌' // Object.is equality",
+          "location": "at assertPureNameAndDetail (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/test/dialog_host.test.ts:653:34)"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/test/ext_foundation_contracts.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "EXT-1a0 foundation versions and retained data binds complete data identity and foundation version before invoking any factory",
+          "error": "AssertionError: expected 20 to be 16 // Object.is equality",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/test/ext_foundation_contracts.test.ts:28:35"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/test/ext_placement_group_runtime.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "module protocol/action collisions and locale placeholders refused",
+          "error": "AssertionError: expected [Function] to throw error including 'C5_BAD_DEFINITION' but got 'C5_BAD_VERSION: edible'",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/test/ext_placement_group_runtime.test.ts:99:44"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/test/ext_recording_v4_digest.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "C5 recording v4 digest contract freezes tagged empty domains, Unicode/finite native leaves and independent Merkle/chain vectors",
+          "error": "AssertionError: expected '17de152d4f7f33a5cbeccfd708d3a6b802b3e…' to be '1b536dc901b91f43f545295d272d678641471…' // Object.is equality",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/test/ext_recording_v4_digest.test.ts:160:53"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/test/ext_structure_geometry.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "C5 work positions and every interaction ray match the pre-migration baseline",
+          "error": "AssertionError: expected [ { seed: 51020001, …(2) }, …(2) ] to deeply equal [ { seed: 51020001, …(2) }, …(2) ]",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/test/ext_structure_geometry.test.ts:43:20"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/test/ext_structure_performance.test.ts",
+      "status": "passed",
+      "failures": [],
+      "other": [
+        {
+          "name": "observes zero and 3072-cell/12288-component budget fixture",
+          "status": "skipped"
+        }
+      ],
+      "suiteError": ""
+    },
+    {
+      "file": "src/test/main_menu_replay_seek.test.ts",
+      "status": "failed",
+      "failures": [],
+      "other": [
+        {
+          "name": "MainMenu mounted replay seek review M3: keeps incompatible saves visible with a reason and exposes legacy recovery controls",
+          "status": "skipped"
+        },
+        {
+          "name": "MainMenu mounted replay seek review M3: incompatible save replacement requires an affirmative answer, including cancellation",
+          "status": "skipped"
+        },
+        {
+          "name": "MainMenu mounted replay seek review M3: legacy JSON survives dismissal and remains available for exact export after restart",
+          "status": "skipped"
+        },
+        {
+          "name": "MainMenu mounted replay seek seeks a six-command recording through the numeric input and button, preserving engine clamping",
+          "status": "skipped"
+        },
+        {
+          "name": "MainMenu mounted replay seek does not dispatch invalid or empty input \"\"",
+          "status": "skipped"
+        },
+        {
+          "name": "MainMenu mounted replay seek does not dispatch invalid or empty input \" \"",
+          "status": "skipped"
+        },
+        {
+          "name": "MainMenu mounted replay seek does not dispatch invalid or empty input \"not-a-number\"",
+          "status": "skipped"
+        },
+        {
+          "name": "MainMenu mounted replay seek does not dispatch invalid or empty input \"Infinity\"",
+          "status": "skipped"
+        },
+        {
+          "name": "MainMenu mounted replay seek does not dispatch invalid or empty input \"-Infinity\"",
+          "status": "skipped"
+        },
+        {
+          "name": "MainMenu mounted replay seek accepts string or number model values without changing parseInt truncation and range forwarding",
+          "status": "skipped"
+        }
+      ],
+      "suiteError": "Unresolved replay menu import: ../ext/selection"
+    },
+    {
+      "file": "src/test/p2_1_tick_architecture.test.ts",
+      "status": "passed",
+      "failures": [],
+      "other": [
+        {
+          "name": "P2-1 A: 与 p2_baseline 逐项一致（零行为变化） 4 seed × D1-D26：地形指纹 / 怪物数 / 物种集合 / 物品数 全部一致",
+          "status": "skipped"
+        },
+        {
+          "name": "P2-1 A: 与 p2_baseline 逐项一致（零行为变化） 4 seed × 400 回合玩法状态：玩家坐标 HP / 所在层 / 全部怪物位置与 HP 一致",
+          "status": "skipped"
+        },
+        {
+          "name": "P2-1 B: ticksUntilTurn 真实驱动调度（对抗性） B1 字段存在且初始口径正确：怪物满 TICKS_PER_TURN、玩家 0",
+          "status": "skipped"
+        },
+        {
+          "name": "P2-1 B: ticksUntilTurn 真实驱动调度（对抗性） B3 恒速口径：一个玩家动作后每只存活怪物恰好行动一次、ticks 归满、玩家归零",
+          "status": "skipped"
+        }
+      ],
+      "suiteError": ""
+    },
+    {
+      "file": "src/test/p2_2_real_speed.test.ts",
+      "status": "passed",
+      "failures": [],
+      "other": [
+        {
+          "name": "P2-2 F: p2_2_baseline 一致性 4 seed × D1-D26 生成期指标与 p2_2_baseline 一致，且与 P2-1 旧基线 levels 段相同（速度未泄漏进生成）",
+          "status": "skipped"
+        },
+        {
+          "name": "P2-2 F: p2_2_baseline 一致性 4 seed × 400 回合玩法状态与 p2_2_baseline 一致",
+          "status": "skipped"
+        }
+      ],
+      "suiteError": ""
+    },
+    {
+      "file": "src/test/p2_3_objective_time.test.ts",
+      "status": "passed",
+      "failures": [],
+      "other": [
+        {
+          "name": "P2-3 F: p2_3_baseline 一致性 4 seed × D1-D26 生成期指标与 p2_3_baseline 一致，且与 P2-1/P2-2 旧基线 levels 段相同（本轮不触碰生成）",
+          "status": "skipped"
+        },
+        {
+          "name": "P2-3 F: p2_3_baseline 一致性 4 seed × 400 回合玩法状态与 p2_3_baseline 一致（本轮后的新基准）——P1-26 退役：相位快照当回归闸门会拦住一切有意改动，见上方注释",
+          "status": "skipped"
+        }
+      ],
+      "suiteError": ""
+    },
+    {
+      "file": "src/test/phase3a0_actor_action.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "3a0 engine actor preparation and synchronous authority never exports an active fixture as a supported production save",
+          "error": "AssertionError: expected 7 to be 6 // Object.is equality",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/test/phase3a0_actor_action.test.ts:199:71"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/test/phase4a0_spatial_differential.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "4a0 no-capability full-graph baseline exact pre-migration graph: empty",
+          "error": "AssertionError: expected { …(13) } to deeply equal { …(13) }",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/test/phase4a0_spatial_differential.test.ts:141:31"
+        },
+        {
+          "name": "4a0 no-capability full-graph baseline exact pre-migration graph: growth",
+          "error": "AssertionError: expected { …(13) } to deeply equal { …(13) }",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/test/phase4a0_spatial_differential.test.ts:141:31"
+        },
+        {
+          "name": "4a0 no-capability full-graph baseline exact pre-migration graph: narrative",
+          "error": "AssertionError: expected { …(13) } to deeply equal { …(13) }",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/test/phase4a0_spatial_differential.test.ts:141:31"
+        },
+        {
+          "name": "4a0 no-capability full-graph baseline exact pre-migration graph: growth+narrative",
+          "error": "AssertionError: expected { …(13) } to deeply equal { …(13) }",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/test/phase4a0_spatial_differential.test.ts:141:31"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/test/phase4a2_body_effects.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "4a-2 public targeting and native body perception 2-square light has one stable central source and its whole footprint blocks light",
+          "error": "AssertionError: expected [] to have a length of 1 but got +0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/test/phase4a2_body_effects.test.ts:260:24"
+        },
+        {
+          "name": "4a-2 public targeting and native body perception 3-square light has one stable central source and its whole footprint blocks light",
+          "error": "AssertionError: expected [] to have a length of 1 but got +0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/test/phase4a2_body_effects.test.ts:260:24"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/test/presentation_timeline.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "D3 observation and ordered projection all 21 unchanged ACK sources share the archive-before-observation seam",
+          "error": "AssertionError: expected [ 'runic.hint.weapon', …(21) ] to have a length of 21 but got 22",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/test/presentation_timeline.test.ts:72:55"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/test/replay_import_ui.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "public replay import with mounted App accepts the newly captured foundation15 39-event file, settles reactive rendering and preserves seek/load/continuation",
+          "error": "Error: Missing replay item e",
+          "location": "at Game.applyCommandBodyStages (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/engine/Core/Game.ts:4312:83)"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/test/smoke.test.ts",
+      "status": "passed",
+      "failures": [],
+      "other": [
+        {
+          "name": "headless 冒烟 c-placeholder 红灯占位：待 P1-2 重新提取 hordes.json 后转为正式断言（加固为每层非水栖怪数 > 0 之类的形态）",
+          "status": "todo"
+        }
+      ],
+      "suiteError": ""
+    },
+    {
+      "file": "src/test/u_05_machine_items.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "U05 CE rejection and failsafe boundaries each retry redraws the entire category/kind/resource request",
+          "error": "AssertionError: expected [ [ 'WEAPON|ARMOR', …(5) ], …(1) ] to deeply equal [ [ 'WEAPON|ARMOR', …(4) ], …(1) ]",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/test/u_05_machine_items.test.ts:91:33"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/test/u_15a_shattering.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "U15a real inventory read + U01 v2 JSON round trip protected machine and ordinary wall behave identically after reload=true",
+          "error": "AssertionError: expected 7 to be 6 // Object.is equality",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/test/u_15a_shattering.test.ts:184:38"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/test/u_r4_trace.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "UR4 objective block trace matches HEAD for complete snapshots, events, tick, both RNG streams and command log",
+          "error": "AssertionError: expected { Object (slowed-environment, hasted, ...) } to deeply equal { Object (slowed-environment, hasted, ...) }",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/test/u_r4_trace.test.ts:91:29"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_content.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "C2-DATA authoritative transcription and frozen identity loads the full schema and production factory with one exact descriptor identity",
+          "error": "AssertionError: expected 20 to be 15 // Object.is equality",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat2_content.test.ts:51:39"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_evasion.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "C2-NAT an original seed3 public prefix evades a new warning and preserves its complete origin",
+          "error": "AssertionError: expected '7729250f3f587b7a58a127813190bb8e4db1e…' to be 'c4869f405772b1b72eace8e0d428a19c2721e…' // Object.is equality",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat2_evasion.test.ts:86:52"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_integrated_natural.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "C2-INTEGRATED seed118 original safe prefix and attempted new attack deal positive natural giant damage with full persistence",
+          "error": "AssertionError: expected { schema: 1, foundation: 20, …(1) } to deeply equal { schema: 1, foundation: 14, …(1) }",
+          "location": "at fixed (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat2_integrated_natural.test.ts:20:44)"
+        },
+        {
+          "name": "C2-INTEGRATED natural seven-pack nonempty cached NPC combat rows freeze while active-world time advances",
+          "error": "AssertionError: expected 462 to be 463 // Object.is equality",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat2_integrated_natural.test.ts:58:97"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_links.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "C2-NAT optional giants target and public growth skill share a genuine origin and complete persistence",
+          "error": "AssertionError: expected { schema: 1, foundation: 20, …(1) } to deeply equal { schema: 1, foundation: 14, …(1) }",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat2_links.test.ts:31:47"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_natural.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "C2-NAT bounded original-world capture or complete compact-trace replay",
+          "error": "AssertionError: expected { schema: 1, foundation: 20, …(1) } to deeply equal { schema: 1, foundation: 14, …(1) }",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat2_natural.test.ts:55:51"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_revisit.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "C2-PERSIST fixed original seed1 walks to real stairs and revisits the cached level",
+          "error": "AssertionError: expected { schema: 1, foundation: 20, …(1) } to deeply equal { schema: 1, foundation: 14, …(1) }",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat2_revisit.test.ts:20:63"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_combinations.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+giants+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+giants+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+giants+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+giants+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+growth+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+growth+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+growth+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+growth+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+giants+growth+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+giants+growth+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+giants+growth+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+giants+growt…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+loot+narrative': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+loot+narrative': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+loot+narrative': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+loot+narrati…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+giants+loot+narrative': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+giants+loot+narrative': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+giants+loot+narrative': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+giants+loot+…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+growth+loot+narrative': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+growth+loot+narrative': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+growth+loot+narrative': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+growth+loot+…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+giants+growth+loot+narrative': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+giants+growth+loot+na…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+giants+growth+loot+na…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+giants+growt…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+loot+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+loot+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+loot+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+loot+settlem…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+giants+loot+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+giants+loot+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+giants+loot+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+giants+loot+…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+growth+loot+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+growth+loot+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+growth+loot+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+growth+loot+…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+giants+growth+loot+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+giants+growth+loot+se…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+giants+growth+loot+se…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+giants+growt…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+loot+narrative+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+loot+narrative+settle…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+loot+narrative+settle…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+loot+narrati…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+giants+loot+narrative+settleme…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+giants+loot+narrative…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+giants+loot+narrative…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+giants+loot+…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+growth+loot+narrative+settleme…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+growth+loot+narrative…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+growth+loot+narrative…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+growth+loot+…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+giants+growth+loot+narrative+s…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+giants+growth+loot+na…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+giants+growth+loot+na…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+giants+growt…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "error": "AssertionError: expected 0 to be greater than 0",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/combat/tests/combat_combinations.test.ts:171:46"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/crafting/tests/crafting_trace.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "crafting T15 natural public-command golden trace reproduces every command receipt and exact final inventory, nodes, module state and digest",
+          "error": "AssertionError: expected { inventory: [ …(9) ], …(3) } to deeply equal { inventory: [ …(9) ], …(3) }",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/crafting/tests/crafting_trace.test.ts:68:30"
+        },
+        {
+          "name": "crafting T15 natural public-command golden trace preserves the natural run through save/load and full v4 replay",
+          "error": "AssertionError: expected { inventory: [ …(9) ], …(3) } to deeply equal { inventory: [ …(9) ], …(3) }",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/crafting/tests/crafting_trace.test.ts:110:30"
+        },
+        {
+          "name": "crafting T15 natural public-command golden trace seeks to the initial, intermediate and final boundaries and continues the authentic prefix",
+          "error": "AssertionError: expected { inventory: [ …(9) ], …(3) } to deeply equal { inventory: [ …(9) ], …(3) }",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/crafting/tests/crafting_trace.test.ts:127:32"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_combinations.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "foraging T-COMBO optional heat and composite interactions crafting real heat provider cooks without changing its rules identity",
+          "error": "AssertionError: expected 'sha256:6c92dced97fb2f6f192be73ceb432c…' to be 'sha256:fc1b8d11b7faf918331cf58895f135…' // Object.is equality",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/foraging/tests/foraging_combinations.test.ts:57:91"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_trace.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "foraging T-TRACE natural public-command evidence A reproduces exact commands, decisions and final state",
+          "error": "AssertionError: command 9: expected { recorded: true, …(1) } to deeply equal { recorded: true, error: null }",
+          "location": "at run (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/foraging/tests/foraging_trace.test.ts:14:53)"
+        },
+        {
+          "name": "foraging T-TRACE natural public-command evidence B reproduces exact commands, decisions and final state",
+          "error": "AssertionError: command 6: expected { recorded: true, error: 'C5_STALE' } to deeply equal { recorded: true, error: null }",
+          "location": "at run (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/foraging/tests/foraging_trace.test.ts:14:53)"
+        },
+        {
+          "name": "foraging T-TRACE natural public-command evidence natural-trace.json save/load, seek and authentic continued recording",
+          "error": "AssertionError: command 9: expected { recorded: true, …(1) } to deeply equal { recorded: true, error: null }",
+          "location": "at run (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/foraging/tests/foraging_trace.test.ts:14:53)"
+        },
+        {
+          "name": "foraging T-TRACE natural public-command evidence natural-trace-hearth.json save/load, seek and authentic continued recording",
+          "error": "AssertionError: command 6: expected { recorded: true, error: 'C5_STALE' } to deeply equal { recorded: true, error: null }",
+          "location": "at run (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/foraging/tests/foraging_trace.test.ts:14:53)"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants2_contract.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "G2-DATA historical content oracle under the current protocol exactly appends the entire dispatch subpackage to immutable original prefixes",
+          "error": "AssertionError: expected 20 to be 15 // Object.is equality",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/giants/tests/giants2_contract.test.ts:127:33"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants2_persistence.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "giants2 lantern natural persistence continues damaged/phase checkpoints with exact complete world and recording prefix/suffix",
+          "error": "AssertionError: initial: expected 'f3fcb90efe855ca581945df5f6780a39ee22c…' to be '55de34537ed682319f283b40c15cab10a827b…' // Object.is equality",
+          "location": "at capture (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/giants/tests/giants2_persistence.test.ts:72:65)"
+        },
+        {
+          "name": "giants2 lantern natural persistence replays every real event and nonmonotonically seeks full snapshots and historical HUD including zero",
+          "error": "AssertionError: initial: expected 'f3fcb90efe855ca581945df5f6780a39ee22c…' to be '55de34537ed682319f283b40c15cab10a827b…' // Object.is equality",
+          "location": "at capture (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/giants/tests/giants2_persistence.test.ts:72:65)"
+        },
+        {
+          "name": "giants2 lantern natural persistence rejects corrupt spatial closure and manifest, or actually missing module, without retiring or changing the current run",
+          "error": "AssertionError: initial: expected 'f3fcb90efe855ca581945df5f6780a39ee22c…' to be '55de34537ed682319f283b40c15cab10a827b…' // Object.is equality",
+          "location": "at capture (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/giants/tests/giants2_persistence.test.ts:72:65)"
+        },
+        {
+          "name": "giants2 lantern natural persistence retains damage, broken slots and phase spent through real stairs, and defeated encounters never respawn",
+          "error": "AssertionError: initial: expected 'f3fcb90efe855ca581945df5f6780a39ee22c…' to be '55de34537ed682319f283b40c15cab10a827b…' // Object.is equality",
+          "location": "at capture (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/giants/tests/giants2_persistence.test.ts:72:65)"
+        },
+        {
+          "name": "giants2 copper natural persistence continues damaged/phase checkpoints with exact complete world and recording prefix/suffix",
+          "error": "AssertionError: initial: expected '85617314cb68f6d73b74d3fe50a8de4c1ea82…' to be '68e7045d817ad223b732211af443541fdfb76…' // Object.is equality",
+          "location": "at capture (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/giants/tests/giants2_persistence.test.ts:72:65)"
+        },
+        {
+          "name": "giants2 copper natural persistence replays every real event and nonmonotonically seeks full snapshots and historical HUD including zero",
+          "error": "AssertionError: initial: expected '85617314cb68f6d73b74d3fe50a8de4c1ea82…' to be '68e7045d817ad223b732211af443541fdfb76…' // Object.is equality",
+          "location": "at capture (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/giants/tests/giants2_persistence.test.ts:72:65)"
+        },
+        {
+          "name": "giants2 copper natural persistence rejects corrupt spatial closure and manifest, or actually missing module, without retiring or changing the current run",
+          "error": "AssertionError: initial: expected '85617314cb68f6d73b74d3fe50a8de4c1ea82…' to be '68e7045d817ad223b732211af443541fdfb76…' // Object.is equality",
+          "location": "at capture (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/giants/tests/giants2_persistence.test.ts:72:65)"
+        },
+        {
+          "name": "giants2 copper natural persistence retains damage, broken slots and phase spent through real stairs, and defeated encounters never respawn",
+          "error": "AssertionError: initial: expected '85617314cb68f6d73b74d3fe50a8de4c1ea82…' to be '68e7045d817ad223b732211af443541fdfb76…' // Object.is equality",
+          "location": "at capture (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/giants/tests/giants2_persistence.test.ts:72:65)"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants2_trace.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "fixed lantern natural public-command trace matches all mechanical checkpoint hashes",
+          "error": "AssertionError: expected 'f3fcb90efe855ca581945df5f6780a39ee22c…' to be '55de34537ed682319f283b40c15cab10a827b…' // Object.is equality",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/giants/tests/giants2_trace.test.ts:59:33"
+        },
+        {
+          "name": "fixed copper natural public-command trace matches all mechanical checkpoint hashes",
+          "error": "AssertionError: expected '85617314cb68f6d73b74d3fe50a8de4c1ea82…' to be '68e7045d817ad223b732211af443541fdfb76…' // Object.is equality",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/giants/tests/giants2_trace.test.ts:59:33"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_spine_trace.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "naturally recreates spine seed, commands, both RNGs and original sample trace",
+          "error": "AssertionError: expected { schema: 1, seed: 7309, …(9) } to deeply equal { schema: 1, seed: 7309, …(9) }",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/giants/tests/giants_spine_trace.test.ts:18:20"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_trace.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "giants fixed natural command trace naturally recreates seed 7328 D3 world, encounter, bindings and both RNG streams",
+          "error": "AssertionError: expected { schema: 1, seed: 7328, …(9) } to deeply equal { schema: 1, seed: 7328, …(9) }",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/giants/tests/giants_trace.test.ts:65:20"
+        },
+        {
+          "name": "giants fixed natural command trace naturally recreates the D7 colossus world, command route, bindings and both RNG streams",
+          "error": "AssertionError: expected { schema: 1, seed: 7309, …(10) } to deeply equal { schema: 1, seed: 7309, …(10) }",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/giants/tests/giants_trace.test.ts:72:20"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_combat_stats.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "EXT-3g growth combat provider actual commands and reconstruction queries actual allocation and respec without mutation and restores exact results on repeated load and replay",
+          "error": "AssertionError: expected '1.10.0' to be '1.9.0' // Object.is equality",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/growth/tests/ext_growth_combat_stats.test.ts:170:32"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_creation_view.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "EXT-1e pure new-character projection projects only confirmed player identity fields with frozen public choices, no NPC build or receipt/source ledger",
+          "error": "TypeError: Cannot add property 0, object is not extensible",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/growth/tests/ext_growth_creation_view.test.ts:134:46"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_loot_receipts.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "capped XP never commits a scholar receipt, including repeated rewards and load",
+          "error": "LootUiError: INVALID_ITEM: data",
+          "location": "at projectLootKnowledge (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/loot/ui/knowledge.ts:29:51)"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_combinations.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "N2-COMBO 'combo-empty' installed NPC/persistence lifecycle",
+          "error": "AssertionError: initial: expected 'ec307091ddcfc32d3da9ae99a4a7d408c113d…' to be '25d3b644343e31e556b8029253d8902272e9c…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-COMBO 'combo-narrative' installed NPC/persistence lifecycle",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-COMBO 'combo-narrative-growth' installed NPC/persistence lifecycle",
+          "error": "AssertionError: initial: expected 'c1eed0516def8af24af1651176b64cce43125…' to be '64dff8cebba1bf352341eff20aa4ae35108e8…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-COMBO 'combo-narrative-combat' installed NPC/persistence lifecycle",
+          "error": "AssertionError: initial: expected '2faaff5218956cbd68e951df97678419c6900…' to be '7edf9f684f5f38ac16a33d0828fd5e7ec2c9e…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-COMBO 'combo-narrative-giants' installed NPC/persistence lifecycle",
+          "error": "AssertionError: initial: expected '9aab7d293791a563c8bb6690f6a8785392ce7…' to be 'b2a452630181030ba6aeb157e059df05abbd1…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-COMBO 'combo-narrative-crafting' installed NPC/persistence lifecycle",
+          "error": "AssertionError: initial: expected 'cb6ef2e85e7461468f82fdd1897cbb0bebcb4…' to be 'f41764bcadaf8f118e679255effcc364374fe…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-COMBO 'combo-narrative-foraging' installed NPC/persistence lifecycle",
+          "error": "AssertionError: initial: expected 'db1392e2268c9348bd73f059292a98c3fc552…' to be '4875b07219c687a2cfe43444eaf9eeb688fca…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-COMBO 'combo-narrative-settlement' installed NPC/persistence lifecycle",
+          "error": "AssertionError: initial: expected '81d8580f57a44fed6169ed2a14f70c577a492…' to be '7791d18af78e7698e1e64949c2b6cf199c27e…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-COMBO 'combo-narrative-growth-combat-giants-…' installed NPC/persistence lifecycle",
+          "error": "AssertionError: expected 57 to be 58 // Object.is equality",
+          "location": "at execute (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:76:43)"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_imports.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "N2-IMPORT exhaustive narrative production ownership preserves the baseline Game field set and narrative-facing shared protocol declarations",
+          "error": "AssertionError: expected '846e034a5de13e61feb4952f82e22c62c0fac…' to be 'fa8757e4632cfa4085e696dce03db57f03df7…' // Object.is equality",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_imports.test.ts:160:87"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_persistence.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "N2-PERSIST genuine zero save resumes the full five-NPC route and recording",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-PERSIST cord.mender continues arrival/open/decision/ending/close/recall saves and keeps recording origin and prefix",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-PERSIST cord.mender replays and nonmonotonically seeks every full checkpoint including initial zero",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-PERSIST cord.mender branches B from the genuine decision save, closes and recalls without duplicate rewards",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-PERSIST cistern.listener continues arrival/open/decision/ending/close/recall saves and keeps recording origin and prefix",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-PERSIST cistern.listener replays and nonmonotonically seeks every full checkpoint including initial zero",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-PERSIST cistern.listener branches B from the genuine decision save, closes and recalls without duplicate rewards",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-PERSIST bone.clerk continues arrival/open/decision/ending/close/recall saves and keeps recording origin and prefix",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-PERSIST bone.clerk replays and nonmonotonically seeks every full checkpoint including initial zero",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-PERSIST bone.clerk branches B from the genuine decision save, closes and recalls without duplicate rewards",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-PERSIST salt.warden continues arrival/open/decision/ending/close/recall saves and keeps recording origin and prefix",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-PERSIST salt.warden replays and nonmonotonically seeks every full checkpoint including initial zero",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-PERSIST salt.warden branches B from the genuine decision save, closes and recalls without duplicate rewards",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-PERSIST letter.carrier continues arrival/open/decision/ending/close/recall saves and keeps recording origin and prefix",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-PERSIST letter.carrier replays and nonmonotonically seeks every full checkpoint including initial zero",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-PERSIST letter.carrier branches B from the genuine decision save, closes and recalls without duplicate rewards",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-PERSIST 'cord.mender' cross-floor revisit preserves stationary bindings, outcomes and all reward receipts",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-PERSIST 'cistern.listener' cross-floor revisit preserves stationary bindings, outcomes and all reward receipts",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-PERSIST 'bone.clerk' cross-floor revisit preserves stationary bindings, outcomes and all reward receipts",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-PERSIST 'salt.warden' cross-floor revisit preserves stationary bindings, outcomes and all reward receipts",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-PERSIST 'letter.carrier' cross-floor revisit preserves stationary bindings, outcomes and all reward receipts",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-PERSIST rejects genuine old1.4 save/replay, tampered identity/state and absent module atomically",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_trace.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "N2-TRACE 'five-wizard': fixed real public commands retain full mechanical and message checkpoints",
+          "error": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        },
+        {
+          "name": "N2-TRACE 'cord-normal': fixed real public commands retain full mechanical and message checkpoints",
+          "error": "AssertionError: initial: expected '51368ba5ff88b5e470a49a5c3f3e8100da530…' to be 'e62c65929c13628a55f30ce7958bd9ae6a274…' // Object.is equality",
+          "location": "at reconstruct (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/narrative/tests/narrative2_naturalFixture.ts:512:57)"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_captive_natural.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "normal seed3 current-source UI route rescues the natural D3 original goblin, builds a paid camp/bed and recruits No/Yes with replay/continuation",
+          "error": "AssertionError: expected '6c7c88e955beaca6d71cd35dd2154c10f87ab…' to be '02bfc292e026c6552360c6be33a2a63531a96…' // Object.is equality",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/settlement/tests/resident_captive_natural.test.ts:33:66"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_natural.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "normal new-game core/day-food: original956, same actor/crop carry, guard, stairs, home and persistence",
+          "error": "AssertionError: expected '4b3286542ec4f7e8a978cc0093059418ad010…' to be '845cb546c1445479d490bda17a8649d0e1b2a…' // Object.is equality",
+          "location": "at checkPoint (/Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/settlement/tests/resident_natural.test.ts:36:31)"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_review.test.ts",
+      "status": "failed",
+      "failures": [
+        {
+          "name": "collapsed selection does not claim movement, while expanded selection consumes only arrows",
+          "error": "AssertionError: expected true to be false // Object.is equality",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/settlement/tests/settlement_review.test.ts:82:60"
+        },
+        {
+          "name": "unseen actual marker/build requests deny generically, surrounding hidden machines reveal no detail",
+          "error": "AssertionError: expected 'C5_BLOCKED' to be null",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/settlement/tests/settlement_review.test.ts:93:62"
+        },
+        {
+          "name": "a boundary that cuts a hidden work footprint reports only a generic denial",
+          "error": "AssertionError: expected 'C5_BLOCKED' to be 'C5_PROTECTED' // Object.is equality",
+          "location": "at /Users/coolking70/Documents/同步空间/BrogueJS-p6/src/ext/modules/settlement/tests/settlement_review.test.ts:139:62"
+        }
+      ],
+      "other": [],
+      "suiteError": ""
+    }
+  ]
+}

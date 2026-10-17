@@ -11,7 +11,7 @@ const preset=ref('standard'),root=ref<HTMLElement|null>(null),sent=ref(false);
 const disabled=computed(()=>props.submitting||sent.value);
 const options=buildLootPresetOptions(loadLootPack());
 function focusSelected(){void nextTick(()=>{if(!disabled.value)root.value?.querySelector<HTMLButtonElement>(`[data-preset="${preset.value}"]`)?.focus({preventScroll:true});});}
-function confirm(presetId:string){
+function submitPreset(presetId:string){
  if(disabled.value||!options.some(o=>o.id===presetId))return;
  // Lock synchronously: parent props update on the next Vue render.
  sent.value=true;emit('complete',[JSON.stringify({module:'loot',action:'create',payload:{v:1,presetId}})]);
@@ -28,7 +28,7 @@ function keydown(event:KeyboardEvent){
   buttons[index<0?(event.shiftKey?buttons.length-1:0):(index+(event.shiftKey?-1:1)+buttons.length)%buttons.length]!.focus();return;
  }
  if((event.key==='Enter'||event.key===' ')&&(event.target as HTMLElement|null)?.matches?.('[data-preset]')){
-  event.preventDefault();event.stopPropagation();if(!event.repeat)confirm(preset.value);
+  event.preventDefault();event.stopPropagation();if(!event.repeat)submitPreset(preset.value);
  }else if(event.repeat&&(event.key==='Enter'||event.key===' '))event.preventDefault();
 }
 watch(()=>props.submitting,(value,previous)=>{if(!value&&previous){sent.value=false;focusSelected();}});
@@ -42,7 +42,7 @@ onMounted(focusSelected);
   <section class="loot-creation-dialog" role="dialog" aria-modal="true" :aria-label="t('ext.loot.ui.preset.title')">
    <header class="loot-creation-header"><button type="button" data-action="cancel" :disabled="disabled" @click="cancel">{{ t('ext.creation.cancel') }}</button></header>
    <p v-if="error" role="alert">{{ t(error === 'ext.creation.start_failed' ? 'ext.creation.start_failed' : 'ext.creation.unavailable') }}</p>
-   <LootPresetPicker v-model="preset" :options="options" :disabled="disabled" @confirm="confirm" />
+   <LootPresetPicker v-model="preset" :options="options" :disabled="disabled" @confirm="submitPreset" />
   </section>
  </div></Teleport>
 </template>

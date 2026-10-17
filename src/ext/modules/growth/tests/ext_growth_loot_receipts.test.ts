@@ -20,7 +20,7 @@ it('capped XP never commits a scholar receipt, including repeated rewards and lo
  const rules={schema:1,version:raw.rulesVersion,fingerprint:extensionDataFingerprint(raw)};
  const h=createWorldHarness({seed:42,mode:'easy',modules:['growth','loot']},[{...descriptor,rules,create:()=>createGrowthGameplay(pack,rules)}]);handles.push(h);
  const g=worldHarnessGame(h),r=g.extensionRuntime!;
- const item=assembleDropItem({native:{kind:'ring_of_regeneration',category:'ring',enchantment:1,runicType:null,isCursed:false,identified:false,familiarityRemaining:1500},moduleData:{loot:{v:1,baseId:'ring_of_regeneration',ilvl:1,rarity:'magic',uniqueId:null,setId:null,affixes:[{id:'loot.affix.scholar',tier:1,values:[600],known:false}],corrupted:false,enhancement:0,sockets:0,socketed:[],nameParts:null,origin:{source:'floor',depth:1}}}});
+ const item=assembleDropItem({native:{kind:'ring_of_regeneration',category:'ring',enchantment:1,runicType:null,isCursed:false,identified:false,familiarityRemaining:1500},moduleData:{loot:{v:6,baseId:'ring_of_regeneration',ilvl:1,rarity:'magic',uniqueId:null,setId:null,pieceId:null,identityKnown:false,affixes:[{id:'loot.affix.scholar',tier:1,values:[600],known:false}],corrupted:false,enhancement:0,sockets:0,socketed:[],nameParts:null,origin:{source:'floor',depth:1}}}});
  g.player.inventory.addItem(item);r.bindItemData(item);g.executeItemCommand('equip',item);
  const known=()=>JSON.stringify(item.moduleData!.loot).includes('"known":true');expect(known()).toBe(false);
  for(let i=0;i<2;i++)r.emit('simulationSettled',{knownKinds:[{id:'b3-cap-fixture',category:'potion'}],reachableIds:[g.player.id,...g.monsters.map(m=>m.id)],sourceIds:[]});
@@ -34,7 +34,7 @@ it('character and allocation projections filter an unknown attribute before down
  const pack=parseGrowthDefinitionPack(raw,{moduleVersion:raw.moduleVersion,hasText:()=>true}),rules={schema:1,version:raw.rulesVersion,fingerprint:extensionDataFingerprint(raw)};
  const h=createWorldHarness({seed:42,mode:'easy',modules:['growth','loot']},[{...descriptor,rules,create:()=>createGrowthGameplay(pack,rules)}]);handles.push(h);
  const g=worldHarnessGame(h),r=g.extensionRuntime!,before=readGrowthCharacterView(g)!;
- const item=assembleDropItem({native:{kind:'ring_of_regeneration',category:'ring',enchantment:1,runicType:null,isCursed:false,identified:false,familiarityRemaining:1500},moduleData:{loot:{v:1,baseId:'ring_of_regeneration',ilvl:1,rarity:'magic',uniqueId:null,setId:null,affixes:[{id:'loot.affix.adept.growth.attribute.constitution',tier:1,values:[1],known:false}],corrupted:false,enhancement:0,sockets:0,socketed:[],nameParts:null,origin:{source:'floor',depth:1}}}});
+ const item=assembleDropItem({native:{kind:'ring_of_regeneration',category:'ring',enchantment:1,runicType:null,isCursed:false,identified:false,familiarityRemaining:1500},moduleData:{loot:{v:6,baseId:'ring_of_regeneration',ilvl:1,rarity:'magic',uniqueId:null,setId:null,pieceId:null,identityKnown:false,affixes:[{id:'loot.affix.adept.growth.attribute.constitution',tier:1,values:[1],known:false}],corrupted:false,enhancement:0,sockets:0,socketed:[],nameParts:null,origin:{source:'floor',depth:1}}}});
  g.player.inventory.addItem(item);r.bindItemData(item);g.player.equip(item);
  const audit=auditFullObjectGraph([g,rng]),view=readGrowthCharacterView(g)!;
  expect(view.preview.maxHp.current).toBe(before.preview.maxHp.current);expect(g.player.maxHp).toBe(view.preview.maxHp.current+3);

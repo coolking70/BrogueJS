@@ -10,14 +10,15 @@ import { rng } from '../engine/Random';
 import { getNextEntityId } from '../entities/Creature';
 import { createSfcHarness } from './support/sfcHarness';
 
-// The original foundation10 export is immutable rejection evidence. Capture
-// mode reexecutes its public commands once; normal gates use the current raw export.
+// Historical exports remain immutable rejection evidence. Capture reexecutes
+// the current natural foraging route; normal gates use its actual raw export.
 const previousRaw = readFileSync(new URL('./fixtures/foraging-foundation12-import.json', import.meta.url), 'utf8');
 const previous14Raw = readFileSync(new URL('./fixtures/foraging-foundation14-import.json', import.meta.url), 'utf8');
 const previous13Raw = readFileSync(new URL('./fixtures/foraging-foundation13-import.json', import.meta.url), 'utf8');
 const historicalRaw = readFileSync(new URL('./fixtures/foraging-ui2-import.json', import.meta.url), 'utf8');
 const historicalRecording = JSON.parse(historicalRaw) as GameRecording;
-const raw = process.env.FORAGING_IMPORT_CAPTURE ? historicalRaw
+const captureTrace = JSON.parse(readFileSync(new URL('../ext/modules/foraging/data/natural-trace.json', import.meta.url), 'utf8'));
+const raw = process.env.FORAGING_IMPORT_CAPTURE ? JSON.stringify({seed: captureTrace.seed, events: captureTrace.commands.map((c: {action: string; data: unknown; answers?: boolean[]}) => ({action: c.action, data: c.data, decisions: c.answers ?? []}))})
     : readFileSync(new URL('./fixtures/foraging-foundation15-import.json', import.meta.url), 'utf8');
 const recording = JSON.parse(raw) as GameRecording;
 const saved = (game: Game) => ({ ...game.toSaveSnapshot(), savedAt: 0 });
@@ -73,16 +74,16 @@ afterEach(() => { app?.unmount(); app = undefined; logger.presentAcknowledgments
 afterAll(async () => { (await import('../ui/dialogInput')).dialogInput.dispose(); vi.unstubAllGlobals(); });
 
 describe('public replay import with mounted App', () => {
-    it('accepts the newly captured foundation15 39-event file, settles reactive rendering and preserves seek/load/continuation', async () => {
+    it('accepts the newly captured foundation20 natural-route file, settles reactive rendering and preserves seek/load/continuation', async () => {
         if (!process.env.FORAGING_IMPORT_CAPTURE) {
-            expect(Buffer.byteLength(raw)).toBe(59162);
-            expect(createHash('sha256').update(raw).digest('hex')).toBe('f1b284e4bd1ae84d85c1cd091b66b91f87d77d42e42142e18576e49b7c255f3f');
+            expect(Buffer.byteLength(raw)).toBe(66264);
+            expect(createHash('sha256').update(raw).digest('hex')).toBe('d917320cdb899ea78d4eff0206c82d26e71b093317dae010a70e1aae52ff9517');
         }
-        expect(recording.events).toHaveLength(39);
+        expect(recording.events).toHaveLength(captureTrace.commands.length);
         const game = new Game({ seed: 2 }); gameModule.activeGame = game;
         const root = node('root'); body.children.push(root); root.parent = body;
         app = renderer.createApp(App).use(I18NextVue, { i18next }); app.mount(root); await Vue.nextTick();
-        menu.onNewGame({ seed: '2', mode: 'normal', ruleSet: 'extended', extensions: ['foraging'] }); await Vue.nextTick();
+        menu.onNewGame({ seed: String(recording.seed), mode: 'normal', ruleSet: 'extended', extensions: ['foraging'] }); await Vue.nextTick();
         // Reconstruct the real pre-import live run through public commands. Only
         // the confirmation presenter is replaced with the file's observed answers.
         for (const event of recording.events) {
@@ -93,9 +94,9 @@ describe('public replay import with mounted App', () => {
         }
         if (process.env.FORAGING_IMPORT_CAPTURE) {
             const captured = game.exportRecording();
-            expect(captured.codec).toEqual({ wholeRun: 7, foundation: 15, origin: 2 });
-            expect(captured.events.map(({ action, data, decisions }) => ({ action, data, decisions })))
-                .toEqual(historicalRecording.events.map(({ action, data, decisions }) => ({ action, data, decisions })));
+            expect(captured.codec).toEqual({ wholeRun: 7, foundation: 20, origin: 2 });
+            expect(captured.events.map(({action, data, decisions}) => ({action, data, decisions})))
+                .toEqual(recording.events.map(({action, data, decisions}) => ({action, data, decisions})));
             writeFileSync(process.env.FORAGING_IMPORT_CAPTURE, JSON.stringify(captured, null, 2) + '\n');
             return; // Capture only; normal mode below supplies the actual import gate.
         }
@@ -107,21 +108,21 @@ describe('public replay import with mounted App', () => {
         const baseline = saved(game), random = rng.getState(), nextId = getNextEntityId(), archive = logger.peekState();
         for (let i = 0; i < 5; i++) { vi.advanceTimersByTime(100); await Vue.nextTick(); }
         expect(saved(game)).toEqual(baseline); expect(rng.getState()).toEqual(random); expect(getNextEntityId()).toBe(nextId); expect(logger.peekState()).toEqual(archive);
-        game.replaySeek(39); expect(game.replayCursor).toBe(39); expect(game.replayError).toBeNull();
-        expect(rng.getState()).toEqual(recording.events[38]!.rng);
+        game.replaySeek(recording.events.length); expect(game.replayCursor).toBe(recording.events.length); expect(game.replayError).toBeNull();
+        expect(rng.getState()).toEqual(recording.events[recording.events.length - 1]!.rng);
         const end = saved(game), endRng = rng.getState();
-        game.replaySeek(0); expect(game.replayCursor).toBe(0); game.replaySeek(39);
+        game.replaySeek(0); expect(game.replayCursor).toBe(0); game.replaySeek(recording.events.length);
         expect(game.replayError).toBeNull(); expect(saved(game)).toEqual(end); expect(rng.getState()).toEqual(endRng);
         expect(game.loadSnapshot(end)).toBe(true); expect(game.replayRecording).toBeNull(); expect(game.hasCompleteRecording).toBe(true);
         vi.advanceTimersByTime(100); await Vue.nextTick(); expect(rng.getState()).toEqual(endRng);
         game.executeCommand('escape'); const continued = game.exportRecording(), continuedSave = saved(game), continuedRng = rng.getState();
-        expect(continued.events).toHaveLength(40);
-        expect(game.loadReplay(continued)).toBe(true); game.replaySeek(40);
+        expect(continued.events).toHaveLength(recording.events.length + 1);
+        expect(game.loadReplay(continued)).toBe(true); game.replaySeek(recording.events.length + 1);
         // Export's public header may carry a fresh recordedAt. The loaded
         // origin must use that exact header; all world/prefix fields stay equal.
         const expected = structuredClone(continuedSave);
         expected.run.recordingOrigin!.header.recordedAt = continued.recordedAt;
-        expect(game.replayCursor).toBe(40); expect(game.replayError).toBeNull(); expect(saved(game)).toEqual(expected); expect(rng.getState()).toEqual(continuedRng);
+        expect(game.replayCursor).toBe(recording.events.length + 1); expect(game.replayError).toBeNull(); expect(saved(game)).toEqual(expected); expect(rng.getState()).toEqual(continuedRng);
         vi.advanceTimersByTime(100); await Vue.nextTick();
     });
 

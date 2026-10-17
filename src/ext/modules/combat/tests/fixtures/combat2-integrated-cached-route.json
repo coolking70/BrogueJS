@@ -3618,7 +3618,7 @@
     },
     {
       "action": "ext:command",
-      "data": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":42,\"targetEntityId\":249}}",
+      "data": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":42,\"targetEntityId\":247}}",
       "decisions": []
     },
     {
@@ -3653,7 +3653,7 @@
     },
     {
       "action": "ext:command",
-      "data": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":49,\"targetEntityId\":249}}",
+      "data": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":49,\"targetEntityId\":247}}",
       "decisions": []
     },
     {
@@ -12776,7 +12776,7 @@
     },
     {
       "action": "ext:command",
-      "data": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":56,\"targetEntityId\":370}}",
+      "data": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":56,\"targetEntityId\":369}}",
       "decisions": []
     },
     {
@@ -12811,7 +12811,7 @@
     },
     {
       "action": "ext:command",
-      "data": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":63,\"targetEntityId\":370}}",
+      "data": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":63,\"targetEntityId\":369}}",
       "decisions": []
     },
     {

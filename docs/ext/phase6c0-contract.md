@@ -1,5 +1,7 @@
 # 6C0 共同合同与冻结候选
 
+> 6Z 当前索引（2026-10-17，候选 `06682d5`）：当前身份 foundation20/itemSdk4/worldSdk2/world schema6/edibleSdk1；loot0.9.0、pack0.6.0/schema5、实例6/state2，crafting1.1.0/definitions schema2、growth1.10.0，whole-run7/recording4/origin2。现行增量见 [loot配置](loot-config.md) 与 [合同差异](phase6z-contract-delta.md)；以下有日期的旧章节是冻结历史，不追改数值或历史通过数。6Z实绩见[报告](phase6z.report.md)，浏览器/性能不因功能提交自动关闭。
+
 2026-10-16，`ext/phase6` / `057abf2`。依据 [6C任务单 §3.1](phase6c.task.md#31-c0-交付) 和维护者 C-D1..C-D8 全采纳裁定。**本文件是待维护者冻结的具体合同；本步只交文档，不注册目录、改运行版本或接通玩法。** 下面的新增字段、配置和接口都是后续 C1–C4 的实施目标，不是当前 SDK 已有能力。原设计示例不能覆盖本表；所有新增数值为 C0 起步配置，未做平衡验收。
 
 ## 1 当前事实、优先级和交付边界

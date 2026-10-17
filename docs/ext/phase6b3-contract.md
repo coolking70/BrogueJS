@@ -1,5 +1,7 @@
 # 6B3 实施合同
 
+> 6Z 当前索引（2026-10-17，候选 `06682d5`）：当前身份 foundation20/itemSdk4/worldSdk2/world schema6/edibleSdk1；loot0.9.0、pack0.6.0/schema5、实例6/state2，crafting1.1.0/definitions schema2、growth1.10.0，whole-run7/recording4/origin2。现行增量见 [loot配置](loot-config.md) 与 [合同差异](phase6z-contract-delta.md)；以下有日期的旧章节是冻结历史，不追改数值或历史通过数。6Z实绩见[报告](phase6z.report.md)，浏览器/性能不因功能提交自动关闭。
+
 本合同落实 [任务单](phase6b3.task.md) 的 B3-D1..D7 A 裁定。版本为 foundation16、growth module/rules1.9.0、loot module/rules0.4.0；数据包 schema1、loot pack0.1.1/state1、whole-run7/recording4/origin2 保持。数值平衡、符文重塑与强化分别延后；符文/强化归6B4。
 
 ## 新局选择

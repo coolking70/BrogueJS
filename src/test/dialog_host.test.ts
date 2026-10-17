@@ -676,7 +676,7 @@ describe('browser R-UI02 actual inventory names', () => {
                 const h = forage(['foraging']), game = h.game(); gameModule.activeGame = game;
                 const food = assembleEdibleItem(game, 'foraging.mend', 3);
                 expect(game.player.inventory.addItem(food)).toBe(true);
-                expect(food.displayName).toBe('镜面菌'); expect(knowledgeState(game, 'foraging.mend')).toBe('unknown');
+                expect(food.displayName).toBe('温石菌'); expect(knowledgeState(game, 'foraging.mend')).toBe('unknown');
                 game.player.nutrition = 1000; game.player.hp = game.player.maxHp;
                 const called = state === 'called' || state === 'tasted-called' || state === 'known';
                 if (called) game.executeItemCommand('call', food, '月下回声');
@@ -690,7 +690,7 @@ describe('browser R-UI02 actual inventory names', () => {
                 }
                 expect(game.isAdvancing).toBe(false); expect(game.hasPendingConfirmation).toBe(false);
                 const expected = state === 'known' ? '愈合菌'
-                    : `镜面菌${state.startsWith('tasted') ? '（吃过，无明显效果）' : ''}${called ? '（叫作：月下回声）' : ''}`;
+                    : `温石菌${state.startsWith('tasted') ? '（吃过，无明显效果）' : ''}${called ? '（叫作：月下回声）' : ''}`;
                 if (called) expect(knowledgeView(game, 'foraging', 'foraging.mushrooms').rows.find(r => r.definitionId === 'foraging.mend')?.title).toBe('月下回声');
                 game.executeCommand('toggle_inventory'); mount(true); await Vue.nextTick();
                 await assertPureNameAndDetail(game, food, expected);
@@ -715,7 +715,7 @@ describe('browser R-UI02 actual inventory names', () => {
             const roasted = assembleEdibleItem(game, 'foraging.mend-roasted'); game.player.inventory.addItem(roasted);
             expect(knowledgeState(game, 'foraging.mend-roasted')).toBe('unknown');
             game.executeCommand('toggle_inventory'); mount(true); await Vue.nextTick();
-            await assertPureNameAndDetail(game, roasted, rawKnown ? '烤愈合菌（烤后效果未知）' : '烤镜面菌');
+            await assertPureNameAndDetail(game, roasted, rawKnown ? '烤愈合菌（烤后效果未知）' : '烤温石菌');
         });
         it('keeps actual production charcoal named and edible by its public definition', async () => {
             addProductionLocale();

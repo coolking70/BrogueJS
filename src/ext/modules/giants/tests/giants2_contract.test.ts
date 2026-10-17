@@ -124,7 +124,7 @@ describe('G2-DATA historical content oracle under the current protocol', () => {
       '1.1.0'
     ]);
     // C6遭遇声明统一升至foundation15；内容数组保持历史字节对应。
-    expect(FOUNDATION_PROTOCOL).toBe(15);
+    expect(FOUNDATION_PROTOCOL).toBe(20);
     expect(descriptor.defaultEnabled).toBe(false);
     expect(createGiantsModuleFromPack(expected).dependencies ?? []).toEqual([]);
   });

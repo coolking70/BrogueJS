@@ -1,5 +1,5 @@
 import { installedModuleSubsets } from './support/installedExtensions';
-/** Captured BEFORE production migration. Hash the complete reachable object
+/** Current phase6 baseline, recaptured under the ext maintainer policy. Hash the complete reachable object
  * graph (including descriptors, aliases, cycles, maps, sets and typed bytes),
  * not EntitySnapshot's field whitelist. Compact SHA-256 fixtures keep the raw
  * multi-MB graph outside the repository. Capture is an explicit manual action. */
@@ -131,7 +131,7 @@ function scenarios(ids: string[]) {
     return out;
 }
 describe('4a0 no-capability full-graph baseline', () => {
-    for (const ids of sets) it(`exact pre-migration graph: ${ids.join('+') || 'empty'}`, () => {
+    for (const ids of sets) it(`exact current-version graph: ${ids.join('+') || 'empty'}`, () => {
         const actual = scenarios(ids), key = ids.join('+') || 'empty';
         if (process.env.P4A0_CAPTURE === '1') {
             let fixture: Record<string, unknown> = {};

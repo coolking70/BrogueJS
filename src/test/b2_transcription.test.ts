@@ -131,6 +131,8 @@ describe('B2 production census', () => {
                         fp:terrainFingerprint(game.grid),n:game.monsters.length,
                         species:[...new Set(game.monsters.map(m=>m.name))].sort().join(','),items:game.items.length});
                     handoff.mockClear();
+                    // Assertions above consumed this level; release spy-held Grid arguments.
+                    stairs.mockClear();
                 }
             }
         } finally {handoff.mockRestore();stairs.mockRestore();}

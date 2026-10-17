@@ -1,5 +1,7 @@
 # 5A2 任务书：物品/容器/资源点/工位/工作票据、中立动作根与冻结 WorldWork SDK
 
+> 6Z 当前索引（2026-10-17，候选 `06682d5`）：当前身份 foundation20/itemSdk4/worldSdk2/world schema6/edibleSdk1；loot0.9.0、pack0.6.0/schema5、实例6/state2，crafting1.1.0/definitions schema2、growth1.10.0，whole-run7/recording4/origin2。现行增量见 [loot配置](loot-config.md) 与 [合同差异](phase6z-contract-delta.md)；以下有日期的旧章节是冻结历史，不追改数值或历史通过数。6Z实绩见[报告](phase6z.report.md)，浏览器/性能不因功能提交自动关闭。
+
 > 基线：**5A1 + 5A1-R 完整交付并合入后的 `ext/phase5`（维护者开工时填写确切 commit：`c3319ae`（5A1 含审查修复 b2547d6 + foundation 收尾补丁 + 设计更新））**。工作分支 `ext/phase5`。
 > 依据（均已批准）：`docs/ext/phase5-settlement-world.md`（P5-D01–D14 全 A；本步重点 §7、§12、§14.1）、`docs/ext/phase5a-contract.md`（**C5-1/1.0.0 文档修订 r2**；本步读 §0–§2、§4、§5、§8、§9、§10、§11，§3 只读与 ticket/离线相关处）、`docs/ext/phase5a0.report.md`（§4 拆分表 5A2 行、§5.3–5.6 已批准数值、**§7 r2 修订记录**）、`docs/ext/phase5a1.report.md`（实际版本表、`FOUNDATION_PROTOCOL` 用法、`actorActions` 摘要域约定）。合同与本任务书冲突时以合同为准并在报告中指出；合同未定、本任务书 §1 已裁定的细节以本任务书为准。
 > 本步交付 **冻结给 dot 的 5B SDK 基线**：§9 全部真实 TS 导出 + 无头 harness + crafting 骨架示例模块。**统一属性管线不在本步**，它是独立的 5A2-S（`docs/ext/phase5a2s.task.md`），本步不得预先改任何属性读取点。开发期门禁按 P5-D14=A（相关功能门禁；完整/组合/删除矩阵留 5Z）。**不要 commit。**

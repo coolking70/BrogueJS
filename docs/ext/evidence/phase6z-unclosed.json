@@ -1,0 +1,848 @@
+{
+  "status": "blocked",
+  "roundsUsed": 2,
+  "unclosedFiles": 22,
+  "unclosedOriginalAssertions": 138,
+  "closedOriginalAssertions": 22,
+  "closedWholeFiles": [
+    {
+      "file": "src/test/dialog_d4_blink.test.ts",
+      "firstFailedAssertions": 3,
+      "suiteErrorClosed": false,
+      "finalWholeFilePassed": 29
+    },
+    {
+      "file": "src/test/ext_foundation_contracts.test.ts",
+      "firstFailedAssertions": 1,
+      "suiteErrorClosed": false,
+      "finalWholeFilePassed": 8
+    },
+    {
+      "file": "src/test/ext_placement_group_runtime.test.ts",
+      "firstFailedAssertions": 1,
+      "suiteErrorClosed": false,
+      "finalWholeFilePassed": 30
+    },
+    {
+      "file": "src/test/ext_recording_v4_digest.test.ts",
+      "firstFailedAssertions": 1,
+      "suiteErrorClosed": false,
+      "finalWholeFilePassed": 20
+    },
+    {
+      "file": "src/test/ext_structure_geometry.test.ts",
+      "firstFailedAssertions": 1,
+      "suiteErrorClosed": false,
+      "finalWholeFilePassed": 1
+    },
+    {
+      "file": "src/test/main_menu_replay_seek.test.ts",
+      "firstFailedAssertions": 0,
+      "suiteErrorClosed": true,
+      "finalWholeFilePassed": 10
+    },
+    {
+      "file": "src/test/phase3a0_actor_action.test.ts",
+      "firstFailedAssertions": 1,
+      "suiteErrorClosed": false,
+      "finalWholeFilePassed": 18
+    },
+    {
+      "file": "src/test/phase4a2_body_effects.test.ts",
+      "firstFailedAssertions": 2,
+      "suiteErrorClosed": false,
+      "finalWholeFilePassed": 29
+    },
+    {
+      "file": "src/test/presentation_timeline.test.ts",
+      "firstFailedAssertions": 1,
+      "suiteErrorClosed": false,
+      "finalWholeFilePassed": 25
+    },
+    {
+      "file": "src/test/u_05_machine_items.test.ts",
+      "firstFailedAssertions": 1,
+      "suiteErrorClosed": false,
+      "finalWholeFilePassed": 16
+    },
+    {
+      "file": "src/test/u_15a_shattering.test.ts",
+      "firstFailedAssertions": 1,
+      "suiteErrorClosed": false,
+      "finalWholeFilePassed": 19
+    },
+    {
+      "file": "src/test/u_r4_trace.test.ts",
+      "firstFailedAssertions": 1,
+      "suiteErrorClosed": false,
+      "finalWholeFilePassed": 1
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_content.test.ts",
+      "firstFailedAssertions": 1,
+      "suiteErrorClosed": false,
+      "finalWholeFilePassed": 30
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_combinations.test.ts",
+      "firstFailedAssertions": 1,
+      "suiteErrorClosed": false,
+      "finalWholeFilePassed": 13
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants2_contract.test.ts",
+      "firstFailedAssertions": 1,
+      "suiteErrorClosed": false,
+      "finalWholeFilePassed": 21
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_combat_stats.test.ts",
+      "firstFailedAssertions": 1,
+      "suiteErrorClosed": false,
+      "finalWholeFilePassed": 9
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_creation_view.test.ts",
+      "firstFailedAssertions": 1,
+      "suiteErrorClosed": false,
+      "finalWholeFilePassed": 11
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_loot_receipts.test.ts",
+      "firstFailedAssertions": 1,
+      "suiteErrorClosed": false,
+      "finalWholeFilePassed": 2
+    }
+  ],
+  "note": "Counts trace original failures to closure; not a new full test run. 18 first-failed files closed; settlement closes2 of3; b2 original21 pending and main-menu10 setup-skipped separately restored by complete file passes. Remaining failures are not all proven product defects or all proven format-only. No new waiver.",
+  "rows": [
+    {
+      "file": "src/test/dialog_host.test.ts",
+      "count": 6,
+      "assertions": [
+        {
+          "name": "browser R-UI02 actual inventory names preserves production unknown names and details through load identity replacement",
+          "firstError": "AssertionError: expected '温石菌' to be '镜面菌' // Object.is equality"
+        },
+        {
+          "name": "browser R-UI02 actual inventory names preserves production called names and details through load identity replacement",
+          "firstError": "AssertionError: expected '温石菌' to be '镜面菌' // Object.is equality"
+        },
+        {
+          "name": "browser R-UI02 actual inventory names preserves production tasted names and details through load identity replacement",
+          "firstError": "AssertionError: expected '温石菌' to be '镜面菌' // Object.is equality"
+        },
+        {
+          "name": "browser R-UI02 actual inventory names preserves production tasted-called names and details through load identity replacement",
+          "firstError": "AssertionError: expected '温石菌' to be '镜面菌' // Object.is equality"
+        },
+        {
+          "name": "browser R-UI02 actual inventory names preserves production known names and details through load identity replacement",
+          "firstError": "AssertionError: expected '温石菌' to be '镜面菌' // Object.is equality"
+        },
+        {
+          "name": "browser R-UI02 actual inventory names keeps roasted prefix and roast knowledge note (raw known: false)",
+          "firstError": "AssertionError: expected '烤温石菌' to be '烤镜面菌' // Object.is equality"
+        }
+      ],
+      "status": "unclosed; not waived",
+      "owner": "Maintainer-assigned follow-up; 6Z author retains evidence"
+    },
+    {
+      "file": "src/test/phase4a0_spatial_differential.test.ts",
+      "count": 4,
+      "assertions": [
+        {
+          "name": "4a0 no-capability full-graph baseline exact pre-migration graph: empty",
+          "firstError": "AssertionError: expected { …(13) } to deeply equal { …(13) }"
+        },
+        {
+          "name": "4a0 no-capability full-graph baseline exact pre-migration graph: growth",
+          "firstError": "AssertionError: expected { …(13) } to deeply equal { …(13) }"
+        },
+        {
+          "name": "4a0 no-capability full-graph baseline exact pre-migration graph: narrative",
+          "firstError": "AssertionError: expected { …(13) } to deeply equal { …(13) }"
+        },
+        {
+          "name": "4a0 no-capability full-graph baseline exact pre-migration graph: growth+narrative",
+          "firstError": "AssertionError: expected { …(13) } to deeply equal { …(13) }"
+        }
+      ],
+      "status": "unclosed; not waived",
+      "owner": "Maintainer-assigned follow-up; 6Z author retains evidence"
+    },
+    {
+      "file": "src/test/replay_import_ui.test.ts",
+      "count": 1,
+      "assertions": [
+        {
+          "name": "public replay import with mounted App accepts the newly captured foundation15 39-event file, settles reactive rendering and preserves seek/load/continuation",
+          "firstError": "Error: Missing replay item e"
+        }
+      ],
+      "status": "unclosed; not waived",
+      "owner": "Maintainer-assigned follow-up; 6Z author retains evidence"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_evasion.test.ts",
+      "count": 1,
+      "assertions": [
+        {
+          "name": "C2-NAT an original seed3 public prefix evades a new warning and preserves its complete origin",
+          "firstError": "AssertionError: expected '7729250f3f587b7a58a127813190bb8e4db1e…' to be 'c4869f405772b1b72eace8e0d428a19c2721e…' // Object.is equality"
+        }
+      ],
+      "status": "unclosed; not waived",
+      "owner": "Maintainer-assigned follow-up; 6Z author retains evidence"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_integrated_natural.test.ts",
+      "count": 2,
+      "assertions": [
+        {
+          "name": "C2-INTEGRATED seed118 original safe prefix and attempted new attack deal positive natural giant damage with full persistence",
+          "firstError": "AssertionError: expected { schema: 1, foundation: 20, …(1) } to deeply equal { schema: 1, foundation: 14, …(1) }"
+        },
+        {
+          "name": "C2-INTEGRATED natural seven-pack nonempty cached NPC combat rows freeze while active-world time advances",
+          "firstError": "AssertionError: expected 462 to be 463 // Object.is equality"
+        }
+      ],
+      "status": "unclosed; not waived",
+      "owner": "Maintainer-assigned follow-up; 6Z author retains evidence"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_links.test.ts",
+      "count": 1,
+      "assertions": [
+        {
+          "name": "C2-NAT optional giants target and public growth skill share a genuine origin and complete persistence",
+          "firstError": "AssertionError: expected { schema: 1, foundation: 20, …(1) } to deeply equal { schema: 1, foundation: 14, …(1) }"
+        }
+      ],
+      "status": "unclosed; not waived",
+      "owner": "Maintainer-assigned follow-up; 6Z author retains evidence"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_natural.test.ts",
+      "count": 1,
+      "assertions": [
+        {
+          "name": "C2-NAT bounded original-world capture or complete compact-trace replay",
+          "firstError": "AssertionError: expected { schema: 1, foundation: 20, …(1) } to deeply equal { schema: 1, foundation: 14, …(1) }"
+        }
+      ],
+      "status": "unclosed; not waived",
+      "owner": "Maintainer-assigned follow-up; 6Z author retains evidence"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_revisit.test.ts",
+      "count": 1,
+      "assertions": [
+        {
+          "name": "C2-PERSIST fixed original seed1 walks to real stairs and revisits the cached level",
+          "firstError": "AssertionError: expected { schema: 1, foundation: 20, …(1) } to deeply equal { schema: 1, foundation: 14, …(1) }"
+        }
+      ],
+      "status": "unclosed; not waived",
+      "owner": "Maintainer-assigned follow-up; 6Z author retains evidence"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_combinations.test.ts",
+      "count": 64,
+      "assertions": [
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+giants+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+giants+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+giants+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+giants+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+growth+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+growth+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+growth+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+growth+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+giants+growth+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+giants+growth+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+giants+growth+loot': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+giants+growt…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+loot+narrative': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+loot+narrative': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+loot+narrative': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+loot+narrati…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+giants+loot+narrative': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+giants+loot+narrative': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+giants+loot+narrative': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+giants+loot+…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+growth+loot+narrative': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+growth+loot+narrative': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+growth+loot+narrative': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+growth+loot+…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+giants+growth+loot+narrative': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+giants+growth+loot+na…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+giants+growth+loot+na…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+giants+growt…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+loot+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+loot+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+loot+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+loot+settlem…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+giants+loot+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+giants+loot+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+giants+loot+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+giants+loot+…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+growth+loot+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+growth+loot+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+growth+loot+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+growth+loot+…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+giants+growth+loot+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+giants+growth+loot+se…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+giants+growth+loot+se…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+giants+growt…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+loot+narrative+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+loot+narrative+settle…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+loot+narrative+settle…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+loot+narrati…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+giants+loot+narrative+settleme…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+giants+loot+narrative…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+giants+loot+narrative…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+giants+loot+…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+growth+loot+narrative+settleme…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+growth+loot+narrative…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+growth+loot+narrative…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+growth+loot+…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+giants+growth+loot+narrative+s…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+giants+growth+loot+na…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+giants+growth+loot+na…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        },
+        {
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+giants+growt…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation",
+          "firstError": "AssertionError: expected 0 to be greater than 0"
+        }
+      ],
+      "status": "unclosed; not waived",
+      "owner": "Maintainer-assigned follow-up; 6Z author retains evidence"
+    },
+    {
+      "file": "src/ext/modules/crafting/tests/crafting_trace.test.ts",
+      "count": 3,
+      "assertions": [
+        {
+          "name": "crafting T15 natural public-command golden trace reproduces every command receipt and exact final inventory, nodes, module state and digest",
+          "firstError": "AssertionError: expected { inventory: [ …(9) ], …(3) } to deeply equal { inventory: [ …(9) ], …(3) }"
+        },
+        {
+          "name": "crafting T15 natural public-command golden trace preserves the natural run through save/load and full v4 replay",
+          "firstError": "AssertionError: expected { inventory: [ …(9) ], …(3) } to deeply equal { inventory: [ …(9) ], …(3) }"
+        },
+        {
+          "name": "crafting T15 natural public-command golden trace seeks to the initial, intermediate and final boundaries and continues the authentic prefix",
+          "firstError": "AssertionError: expected { inventory: [ …(9) ], …(3) } to deeply equal { inventory: [ …(9) ], …(3) }"
+        }
+      ],
+      "status": "unclosed; not waived",
+      "owner": "Maintainer-assigned follow-up; 6Z author retains evidence"
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_trace.test.ts",
+      "count": 4,
+      "assertions": [
+        {
+          "name": "foraging T-TRACE natural public-command evidence A reproduces exact commands, decisions and final state",
+          "firstError": "AssertionError: command 9: expected { recorded: true, …(1) } to deeply equal { recorded: true, error: null }"
+        },
+        {
+          "name": "foraging T-TRACE natural public-command evidence B reproduces exact commands, decisions and final state",
+          "firstError": "AssertionError: command 6: expected { recorded: true, error: 'C5_STALE' } to deeply equal { recorded: true, error: null }"
+        },
+        {
+          "name": "foraging T-TRACE natural public-command evidence natural-trace.json save/load, seek and authentic continued recording",
+          "firstError": "AssertionError: command 9: expected { recorded: true, …(1) } to deeply equal { recorded: true, error: null }"
+        },
+        {
+          "name": "foraging T-TRACE natural public-command evidence natural-trace-hearth.json save/load, seek and authentic continued recording",
+          "firstError": "AssertionError: command 6: expected { recorded: true, error: 'C5_STALE' } to deeply equal { recorded: true, error: null }"
+        }
+      ],
+      "status": "unclosed; not waived",
+      "owner": "Maintainer-assigned follow-up; 6Z author retains evidence"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants2_persistence.test.ts",
+      "count": 8,
+      "assertions": [
+        {
+          "name": "giants2 lantern natural persistence continues damaged/phase checkpoints with exact complete world and recording prefix/suffix",
+          "firstError": "AssertionError: initial: expected 'f3fcb90efe855ca581945df5f6780a39ee22c…' to be '55de34537ed682319f283b40c15cab10a827b…' // Object.is equality"
+        },
+        {
+          "name": "giants2 lantern natural persistence replays every real event and nonmonotonically seeks full snapshots and historical HUD including zero",
+          "firstError": "AssertionError: initial: expected 'f3fcb90efe855ca581945df5f6780a39ee22c…' to be '55de34537ed682319f283b40c15cab10a827b…' // Object.is equality"
+        },
+        {
+          "name": "giants2 lantern natural persistence rejects corrupt spatial closure and manifest, or actually missing module, without retiring or changing the current run",
+          "firstError": "AssertionError: initial: expected 'f3fcb90efe855ca581945df5f6780a39ee22c…' to be '55de34537ed682319f283b40c15cab10a827b…' // Object.is equality"
+        },
+        {
+          "name": "giants2 lantern natural persistence retains damage, broken slots and phase spent through real stairs, and defeated encounters never respawn",
+          "firstError": "AssertionError: initial: expected 'f3fcb90efe855ca581945df5f6780a39ee22c…' to be '55de34537ed682319f283b40c15cab10a827b…' // Object.is equality"
+        },
+        {
+          "name": "giants2 copper natural persistence continues damaged/phase checkpoints with exact complete world and recording prefix/suffix",
+          "firstError": "AssertionError: initial: expected '85617314cb68f6d73b74d3fe50a8de4c1ea82…' to be '68e7045d817ad223b732211af443541fdfb76…' // Object.is equality"
+        },
+        {
+          "name": "giants2 copper natural persistence replays every real event and nonmonotonically seeks full snapshots and historical HUD including zero",
+          "firstError": "AssertionError: initial: expected '85617314cb68f6d73b74d3fe50a8de4c1ea82…' to be '68e7045d817ad223b732211af443541fdfb76…' // Object.is equality"
+        },
+        {
+          "name": "giants2 copper natural persistence rejects corrupt spatial closure and manifest, or actually missing module, without retiring or changing the current run",
+          "firstError": "AssertionError: initial: expected '85617314cb68f6d73b74d3fe50a8de4c1ea82…' to be '68e7045d817ad223b732211af443541fdfb76…' // Object.is equality"
+        },
+        {
+          "name": "giants2 copper natural persistence retains damage, broken slots and phase spent through real stairs, and defeated encounters never respawn",
+          "firstError": "AssertionError: initial: expected '85617314cb68f6d73b74d3fe50a8de4c1ea82…' to be '68e7045d817ad223b732211af443541fdfb76…' // Object.is equality"
+        }
+      ],
+      "status": "unclosed; not waived",
+      "owner": "Maintainer-assigned follow-up; 6Z author retains evidence"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants2_trace.test.ts",
+      "count": 2,
+      "assertions": [
+        {
+          "name": "fixed lantern natural public-command trace matches all mechanical checkpoint hashes",
+          "firstError": "AssertionError: expected 'f3fcb90efe855ca581945df5f6780a39ee22c…' to be '55de34537ed682319f283b40c15cab10a827b…' // Object.is equality"
+        },
+        {
+          "name": "fixed copper natural public-command trace matches all mechanical checkpoint hashes",
+          "firstError": "AssertionError: expected '85617314cb68f6d73b74d3fe50a8de4c1ea82…' to be '68e7045d817ad223b732211af443541fdfb76…' // Object.is equality"
+        }
+      ],
+      "status": "unclosed; not waived",
+      "owner": "Maintainer-assigned follow-up; 6Z author retains evidence"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_spine_trace.test.ts",
+      "count": 1,
+      "assertions": [
+        {
+          "name": "naturally recreates spine seed, commands, both RNGs and original sample trace",
+          "firstError": "AssertionError: expected { schema: 1, seed: 7309, …(9) } to deeply equal { schema: 1, seed: 7309, …(9) }"
+        }
+      ],
+      "status": "unclosed; not waived",
+      "owner": "Maintainer-assigned follow-up; 6Z author retains evidence"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_trace.test.ts",
+      "count": 2,
+      "assertions": [
+        {
+          "name": "giants fixed natural command trace naturally recreates seed 7328 D3 world, encounter, bindings and both RNG streams",
+          "firstError": "AssertionError: expected { schema: 1, seed: 7328, …(9) } to deeply equal { schema: 1, seed: 7328, …(9) }"
+        },
+        {
+          "name": "giants fixed natural command trace naturally recreates the D7 colossus world, command route, bindings and both RNG streams",
+          "firstError": "AssertionError: expected { schema: 1, seed: 7309, …(10) } to deeply equal { schema: 1, seed: 7309, …(10) }"
+        }
+      ],
+      "status": "unclosed; not waived",
+      "owner": "Maintainer-assigned follow-up; 6Z author retains evidence"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_combinations.test.ts",
+      "count": 9,
+      "assertions": [
+        {
+          "name": "N2-COMBO 'combo-empty' installed NPC/persistence lifecycle",
+          "firstError": "AssertionError: initial: expected 'ec307091ddcfc32d3da9ae99a4a7d408c113d…' to be '25d3b644343e31e556b8029253d8902272e9c…' // Object.is equality"
+        },
+        {
+          "name": "N2-COMBO 'combo-narrative' installed NPC/persistence lifecycle",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        },
+        {
+          "name": "N2-COMBO 'combo-narrative-growth' installed NPC/persistence lifecycle",
+          "firstError": "AssertionError: initial: expected 'c1eed0516def8af24af1651176b64cce43125…' to be '64dff8cebba1bf352341eff20aa4ae35108e8…' // Object.is equality"
+        },
+        {
+          "name": "N2-COMBO 'combo-narrative-combat' installed NPC/persistence lifecycle",
+          "firstError": "AssertionError: initial: expected '2faaff5218956cbd68e951df97678419c6900…' to be '7edf9f684f5f38ac16a33d0828fd5e7ec2c9e…' // Object.is equality"
+        },
+        {
+          "name": "N2-COMBO 'combo-narrative-giants' installed NPC/persistence lifecycle",
+          "firstError": "AssertionError: initial: expected '9aab7d293791a563c8bb6690f6a8785392ce7…' to be 'b2a452630181030ba6aeb157e059df05abbd1…' // Object.is equality"
+        },
+        {
+          "name": "N2-COMBO 'combo-narrative-crafting' installed NPC/persistence lifecycle",
+          "firstError": "AssertionError: initial: expected 'cb6ef2e85e7461468f82fdd1897cbb0bebcb4…' to be 'f41764bcadaf8f118e679255effcc364374fe…' // Object.is equality"
+        },
+        {
+          "name": "N2-COMBO 'combo-narrative-foraging' installed NPC/persistence lifecycle",
+          "firstError": "AssertionError: initial: expected 'db1392e2268c9348bd73f059292a98c3fc552…' to be '4875b07219c687a2cfe43444eaf9eeb688fca…' // Object.is equality"
+        },
+        {
+          "name": "N2-COMBO 'combo-narrative-settlement' installed NPC/persistence lifecycle",
+          "firstError": "AssertionError: initial: expected '81d8580f57a44fed6169ed2a14f70c577a492…' to be '7791d18af78e7698e1e64949c2b6cf199c27e…' // Object.is equality"
+        },
+        {
+          "name": "N2-COMBO 'combo-narrative-growth-combat-giants-…' installed NPC/persistence lifecycle",
+          "firstError": "AssertionError: expected 57 to be 58 // Object.is equality"
+        }
+      ],
+      "status": "unclosed; not waived",
+      "owner": "Maintainer-assigned follow-up; 6Z author retains evidence"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_imports.test.ts",
+      "count": 1,
+      "assertions": [
+        {
+          "name": "N2-IMPORT exhaustive narrative production ownership preserves the baseline Game field set and narrative-facing shared protocol declarations",
+          "firstError": "AssertionError: expected '846e034a5de13e61feb4952f82e22c62c0fac…' to be 'fa8757e4632cfa4085e696dce03db57f03df7…' // Object.is equality"
+        }
+      ],
+      "status": "unclosed; not waived",
+      "owner": "Maintainer-assigned follow-up; 6Z author retains evidence"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_persistence.test.ts",
+      "count": 22,
+      "assertions": [
+        {
+          "name": "N2-PERSIST genuine zero save resumes the full five-NPC route and recording",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        },
+        {
+          "name": "N2-PERSIST cord.mender continues arrival/open/decision/ending/close/recall saves and keeps recording origin and prefix",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        },
+        {
+          "name": "N2-PERSIST cord.mender replays and nonmonotonically seeks every full checkpoint including initial zero",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        },
+        {
+          "name": "N2-PERSIST cord.mender branches B from the genuine decision save, closes and recalls without duplicate rewards",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        },
+        {
+          "name": "N2-PERSIST cistern.listener continues arrival/open/decision/ending/close/recall saves and keeps recording origin and prefix",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        },
+        {
+          "name": "N2-PERSIST cistern.listener replays and nonmonotonically seeks every full checkpoint including initial zero",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        },
+        {
+          "name": "N2-PERSIST cistern.listener branches B from the genuine decision save, closes and recalls without duplicate rewards",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        },
+        {
+          "name": "N2-PERSIST bone.clerk continues arrival/open/decision/ending/close/recall saves and keeps recording origin and prefix",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        },
+        {
+          "name": "N2-PERSIST bone.clerk replays and nonmonotonically seeks every full checkpoint including initial zero",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        },
+        {
+          "name": "N2-PERSIST bone.clerk branches B from the genuine decision save, closes and recalls without duplicate rewards",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        },
+        {
+          "name": "N2-PERSIST salt.warden continues arrival/open/decision/ending/close/recall saves and keeps recording origin and prefix",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        },
+        {
+          "name": "N2-PERSIST salt.warden replays and nonmonotonically seeks every full checkpoint including initial zero",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        },
+        {
+          "name": "N2-PERSIST salt.warden branches B from the genuine decision save, closes and recalls without duplicate rewards",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        },
+        {
+          "name": "N2-PERSIST letter.carrier continues arrival/open/decision/ending/close/recall saves and keeps recording origin and prefix",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        },
+        {
+          "name": "N2-PERSIST letter.carrier replays and nonmonotonically seeks every full checkpoint including initial zero",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        },
+        {
+          "name": "N2-PERSIST letter.carrier branches B from the genuine decision save, closes and recalls without duplicate rewards",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        },
+        {
+          "name": "N2-PERSIST 'cord.mender' cross-floor revisit preserves stationary bindings, outcomes and all reward receipts",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        },
+        {
+          "name": "N2-PERSIST 'cistern.listener' cross-floor revisit preserves stationary bindings, outcomes and all reward receipts",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        },
+        {
+          "name": "N2-PERSIST 'bone.clerk' cross-floor revisit preserves stationary bindings, outcomes and all reward receipts",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        },
+        {
+          "name": "N2-PERSIST 'salt.warden' cross-floor revisit preserves stationary bindings, outcomes and all reward receipts",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        },
+        {
+          "name": "N2-PERSIST 'letter.carrier' cross-floor revisit preserves stationary bindings, outcomes and all reward receipts",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        },
+        {
+          "name": "N2-PERSIST rejects genuine old1.4 save/replay, tampered identity/state and absent module atomically",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        }
+      ],
+      "status": "unclosed; not waived",
+      "owner": "Maintainer-assigned follow-up; 6Z author retains evidence"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_trace.test.ts",
+      "count": 2,
+      "assertions": [
+        {
+          "name": "N2-TRACE 'five-wizard': fixed real public commands retain full mechanical and message checkpoints",
+          "firstError": "AssertionError: initial: expected 'd2353d509fa92218a4a579a936fc896d1c377…' to be 'daaa21c93772db76817caac3784ff02018f45…' // Object.is equality"
+        },
+        {
+          "name": "N2-TRACE 'cord-normal': fixed real public commands retain full mechanical and message checkpoints",
+          "firstError": "AssertionError: initial: expected '51368ba5ff88b5e470a49a5c3f3e8100da530…' to be 'e62c65929c13628a55f30ce7958bd9ae6a274…' // Object.is equality"
+        }
+      ],
+      "status": "unclosed; not waived",
+      "owner": "Maintainer-assigned follow-up; 6Z author retains evidence"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_captive_natural.test.ts",
+      "count": 1,
+      "assertions": [
+        {
+          "name": "normal seed3 current-source UI route rescues the natural D3 original goblin, builds a paid camp/bed and recruits No/Yes with replay/continuation",
+          "firstError": "AssertionError: expected '6c7c88e955beaca6d71cd35dd2154c10f87ab…' to be '02bfc292e026c6552360c6be33a2a63531a96…' // Object.is equality"
+        }
+      ],
+      "status": "unclosed; not waived",
+      "owner": "Maintainer-assigned follow-up; 6Z author retains evidence"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_natural.test.ts",
+      "count": 1,
+      "assertions": [
+        {
+          "name": "normal new-game core/day-food: original956, same actor/crop carry, guard, stairs, home and persistence",
+          "firstError": "AssertionError: expected '4b3286542ec4f7e8a978cc0093059418ad010…' to be '845cb546c1445479d490bda17a8649d0e1b2a…' // Object.is equality"
+        }
+      ],
+      "status": "unclosed; not waived",
+      "owner": "Maintainer-assigned follow-up; 6Z author retains evidence"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_review.test.ts",
+      "count": 1,
+      "assertions": [
+        {
+          "name": "collapsed selection does not claim movement, while expanded selection consumes only arrows",
+          "firstError": "AssertionError: expected true to be false // Object.is equality"
+        }
+      ],
+      "status": "unclosed; not waived",
+      "owner": "Maintainer-assigned follow-up; 6Z author retains evidence"
+    }
+  ]
+}

@@ -131,7 +131,9 @@ describe('EXT-1e pure new-character projection', () => {
         // Private provenance deliberately contains an unmistakable sentinel; the
         // public whitelist must not depend on a currently empty receipt ledger.
         const internal = runtime as unknown as { states: { growth: { storyReceipts: string[] } } };
-        internal.states.growth.storyReceipts.push('private-identity-receipt-sentinel');
+        // Replace the private test state: production now certifies immutable JSON.
+        internal.states.growth = { ...internal.states.growth,
+            storyReceipts: [...internal.states.growth.storyReceipts, 'private-identity-receipt-sentinel'] };
         const snapshot = runtime.snapshot(), random = rng.getState(), source = runtime.readModuleView('growth')!;
         const identity = source.components.identity as Record<string, unknown>, choices = identity.choices as Record<string, unknown>[];
         expect(Object.keys(identity).sort()).toEqual(['choices', 'faithId', 'lineageId', 'professionId']);

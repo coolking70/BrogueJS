@@ -54,7 +54,7 @@ if(heatPeers.length||hasBodies) describe('foraging T-COMBO optional heat and com
   const h=makeHarness(51020001,['foraging',peer]),g=scene(h);
   let id:number;
   if(peer==='crafting'){
-   expect(getInstalledModuleDescriptors().find(d=>d.id==='crafting')!.rules!.fingerprint).toBe('sha256:fc1b8d11b7faf918331cf58895f135e11e67d397b5c88d1a08c5b2b679597fe1');
+   expect(getInstalledModuleDescriptors().find(d=>d.id==='crafting')!.rules!.fingerprint).toBe('sha256:6c92dced97fb2f6f192be73ceb432c558c826d5bdf0e1de2b0ff2437cdbe2e3a');
    id=craftingHearth(h).interactableId;
   }else{
    const bindings=g.extensionRuntime!.actorActionBinding()!.state.bonfires!.bindings;

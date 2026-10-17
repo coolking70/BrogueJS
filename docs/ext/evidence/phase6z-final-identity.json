@@ -1,0 +1,174 @@
+{
+  "head": "06682d538084d552e40ba192c9f1e2e896b3e13d",
+  "sourceFileCount": 1545,
+  "sourceSha256": "5b3eae8771dbc202a0c49037fc923f109666a60541e0e3f2a4149758bb356039",
+  "algorithm": "SHA256 of compact UTF8 sorted path/sha256 array; src+scripts scope from source-before map",
+  "sourceChanges": [
+    {
+      "path": "src/test/ext_placement_group_runtime.test.ts",
+      "before": "7a4390e1939f97957060f95336e6458c51000ece674e0e5915e2f87819156256",
+      "after": "73ca47fbd841c8c7f60b9dea9fec4418ff066fa2723670e7d8d77aec022372c7"
+    },
+    {
+      "path": "src/test/ext_foundation_contracts.test.ts",
+      "before": "5edf43a6babad838f41cfae589dd89d1ac7947bf65557a8b255bfbe5c1c31b96",
+      "after": "2696c84c6977e84c1c30a0cabfa56b05622ee61dcd28069891ac093e36fbb72f"
+    },
+    {
+      "path": "src/test/ext_recording_v4_digest.test.ts",
+      "before": "50b9d6124104b95360e7b7393fd0d542e36ad943e586a2c91e52e7af5c03da29",
+      "after": "b7e04a0656b2710bc360fba149f2c422acbc0c47c906fb6c3a301ac0d71a0ae3"
+    },
+    {
+      "path": "src/test/u_05_machine_items.test.ts",
+      "before": "0338ab953ad56e2206b9eae0fab9789b3ff9d6cb84ed32d6b50f15d995f7c937",
+      "after": "d9e6105a49703b16be1653373af612924f054beb0ee560caa079c7c66439d9ba"
+    },
+    {
+      "path": "src/test/b2_transcription.test.ts",
+      "before": "e8b3ce8012ba2898cee6177f23a633bc05da7ff18b3d2e906df5028eb222fc80",
+      "after": "94ebd633ba177d68f2c8d58dc05f8add5240feddcd4dc41d449fb0aa8b370554"
+    },
+    {
+      "path": "src/test/phase3a0_actor_action.test.ts",
+      "before": "74c3eeb4a366bb21d5e01387e37a8963fd793d6dea86a182602f90933231ae6d",
+      "after": "38303573caae72e63b3bff93a9c6e7c49a7b91a0e6273b88f80a7d6550c2c7ea"
+    },
+    {
+      "path": "src/test/main_menu_replay_seek.test.ts",
+      "before": "ca2e23f1de2afd1ffdbc5688464e3442153d4e9eae6706a1cccecf0c50a55232",
+      "after": "f2d4024fc558f186d9cdea59410b1b9e2fc7933be84f6f6d246d264152351aff"
+    },
+    {
+      "path": "src/test/u_15a_shattering.test.ts",
+      "before": "bd25976c2863660dc5b58201a2eebda906b8b466c0c8e25b05d7edfde11efd9b",
+      "after": "577ed991c611ef256da53e9e9f0678ab5e4e830fc7200384d9a876a4001f05ec"
+    },
+    {
+      "path": "src/test/dialog_d4_blink.test.ts",
+      "before": "169902513897e8d8f8fdade19effbde9b4976237ec8fd5c903a6d4fdff5e3b7c",
+      "after": "7ad40c632f24555071c7174fcfbfc10282a0f4c963ef62b28f5ca1257cd7dfae"
+    },
+    {
+      "path": "src/test/presentation_timeline.test.ts",
+      "before": "4af38d92c4584d57a14fa17a11fdfbfb3b8ebb0c477134bcd9bf80a32f75b16f",
+      "after": "d22219aa113cbc85602d99eac08573e9ebc737caaa949ff2abb33b776b76c91e"
+    },
+    {
+      "path": "src/test/phase4a2_body_effects.test.ts",
+      "before": "316f3be85c98961c93b0bb919c012aae2a344d15787d06b4e59040c72903aa07",
+      "after": "e45329574e98694105ad3f674e6c4eb577acf270f59038bdc02b79b44f793d78"
+    },
+    {
+      "path": "src/test/fixtures/structure-geometry-baseline.json",
+      "before": "70e4433b124c15cf83570312520522286f8ee03292169ebed73bcb033143760a",
+      "after": "59e338039e24b3c3c0b20dd6c74286a1c0030cfb1afc7f2c0f01c44a8bb9bd4f"
+    },
+    {
+      "path": "src/test/fixtures/traces/u-r4-trace.json.gz",
+      "before": "4e5406e706bc39e09138e39579c0790ed8594bb9a2d4d42c3cebb886d8dc1917",
+      "after": "a250fd69ad6f5a3585306fb72b565bcc3813a5b3e3f34a6c6c0ba8509e71a2fa"
+    },
+    {
+      "path": "src/ext/modules/foraging/tests/foraging_combinations.test.ts",
+      "before": "58015e6da4abc23e7797fa0a36068f7a449222fd9eecd79b2da45735afbffcb2",
+      "after": "44ef6a15a888b8806da3fe5c607f526f0dfdd1b28dbdafb7725cb82b1ed1571e"
+    },
+    {
+      "path": "src/ext/modules/settlement/tests/settlement_review.test.ts",
+      "before": "3680f93ad3a68701ee867372fbd9868dc8e9ac884e3b7f04807f3a30b6bb913c",
+      "after": "2feab7e9627de6da680cb1d1144ca6d8efed499a1b79f9dc24c76ae1e07a1aee"
+    },
+    {
+      "path": "src/ext/modules/combat/tests/combat2_content.test.ts",
+      "before": "ebd1bacf9fe2ef490ce2b1bca26223a7c50f68d0a409c6488eb4a0db855b43f0",
+      "after": "b5a163373ecd5ef0a531bf2ee94bebc13c6fa668a5e7b4da8a46bb571be4a340"
+    },
+    {
+      "path": "src/ext/modules/loot/ui/LootPresetPicker.vue",
+      "before": "8a6cad1e851c09fd1ff60ee26926e65868363628e6b611058822d8c0079371a4",
+      "after": "d34cd6d6a7ba0e1dc9afcfd0d946ea58fd756a9b7348e978654e244d8ff3c898"
+    },
+    {
+      "path": "src/ext/modules/loot/ui/creation/LootCreationStep.vue",
+      "before": "7569f39228215b2847ac89aeb3ca88a54b982d62b93ce0864e90d7cfdf0b3089",
+      "after": "65fad311205a826ee45bb8d662583605b59b31432a4f0f414a661f96e1bf6731"
+    },
+    {
+      "path": "src/ext/modules/growth/tests/ext_growth_loot_receipts.test.ts",
+      "before": "e02c699c3fe40661b3c3d28c72a3b61b31c8b7b38efa3b13409ae40fda35600e",
+      "after": "2d28453c794262b49ffa49e0d9930f1fd57619e567d432f165753e9c5ca1e6f8"
+    },
+    {
+      "path": "src/ext/modules/growth/tests/ext_growth_creation_view.test.ts",
+      "before": "f8325db11fa6be0a10a8305c9bb93da2d64f703e99e5a38a8cf5630ce9e02793",
+      "after": "dd0ac920515016aef9e818ec5b57df9e3cfd0393363723313ae9ee2d6eeab2c9"
+    },
+    {
+      "path": "src/ext/modules/growth/tests/ext_growth_combat_stats.test.ts",
+      "before": "da599fe2243dcd9cb3e8fe3ba327857a9c22e1d1bbbb6e7d6161d895aac4e463",
+      "after": "9ac98535861e6cf6acac09afdfa4ba1daa304560b15960a8cce9f5a969269384"
+    },
+    {
+      "path": "src/ext/modules/giants/tests/giants2_contract.test.ts",
+      "before": "272d5045804fd18b88600601bd2bf77555b50f4a9cd4585bad3a2a0639fb6a4f",
+      "after": "83a2eca7b66c49ff4aa0d4f5a3289819db9c03e20dcac63cb7ebf798bebb97fc"
+    }
+  ],
+  "productionChanges": [
+    "src/ext/modules/loot/ui/LootPresetPicker.vue",
+    "src/ext/modules/loot/ui/creation/LootCreationStep.vue"
+  ],
+  "dist": "e8f898996854caf00833db803699a4e220f12329b6d724209c2a49d11b228542",
+  "distUnchangedFromFirstBuild": true,
+  "removedSurvivingSourceMatchesFinal": true,
+  "reuseRefinement": [
+    {
+      "file": "src/ext/modules/loot/tests/loot_b4_vectors.test.ts",
+      "actualImportPlusDescriptorClosureCount": 438,
+      "changedSinceFirstFreeze": []
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_catalog.test.ts",
+      "actualImportPlusDescriptorClosureCount": 437,
+      "changedSinceFirstFreeze": []
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_data.test.ts",
+      "actualImportPlusDescriptorClosureCount": 437,
+      "changedSinceFirstFreeze": []
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_generator_props.test.ts",
+      "actualImportPlusDescriptorClosureCount": 437,
+      "changedSinceFirstFreeze": []
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_generator_vectors.test.ts",
+      "actualImportPlusDescriptorClosureCount": 437,
+      "changedSinceFirstFreeze": []
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_schema.test.ts",
+      "actualImportPlusDescriptorClosureCount": 437,
+      "changedSinceFirstFreeze": []
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_sources.test.ts",
+      "actualImportPlusDescriptorClosureCount": 444,
+      "changedSinceFirstFreeze": []
+    }
+  ],
+  "descriptorClosure": {
+    "count": 436,
+    "vueFiles": [],
+    "unknownImports": [],
+    "algorithmPath": "/private/tmp/phase6z-06682d5/descriptor-closure.mjs"
+  },
+  "foundationRemote": {
+    "sha": "33d7aba6e458529ae126dee2d889c7b2c24507bd",
+    "url": "https://github.com/coolking70/BrogueJS/commit/33d7aba6e458529ae126dee2d889c7b2c24507bd",
+    "checkedAt": "2026-10-17 10:11:23 UTC",
+    "source": "GitHub connector fetch_commit ext/foundation"
+  }
+}

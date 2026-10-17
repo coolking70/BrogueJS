@@ -1,5 +1,7 @@
 # 远征营地 5E1 配置手册
 
+> 6Z 当前索引（2026-10-17，候选 `06682d5`）：当前身份 foundation20/itemSdk4/worldSdk2/world schema6/edibleSdk1；loot0.9.0、pack0.6.0/schema5、实例6/state2，crafting1.1.0/definitions schema2、growth1.10.0，whole-run7/recording4/origin2。现行增量见 [loot配置](loot-config.md) 与 [合同差异](phase6z-contract-delta.md)；以下有日期的旧章节是冻结历史，不追改数值或历史通过数。6Z实绩见[报告](phase6z.report.md)，浏览器/性能不因功能提交自动关闭。
+
 5Z当前安装身份：foundation **13**、whole-run **6**、recording **4**、origin **2**、world5 **schema4**，SDK兼容号保持1。各模块自有版本/规则身份按下文，旧协议存档/录像直接拒绝、不迁移；引擎门禁与[人工待验清单](phase5z.manual-checklist.md)以[5Z报告](phase5z.report.md)为准。
 
 5E1已两轮收口并发布 `a9f554b`；实施测试与历史覆盖边界见[5E1报告](phase5e1.report.md)。5D2已由父提交 `ce7a2da`。5D1历史验收和性能仅按当时版本引用；完整门禁、最终浏览器和真机归[5Z](phase5z-remainders.md)。

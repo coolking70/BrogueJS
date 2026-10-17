@@ -167,7 +167,7 @@ describe('EXT-3g growth combat provider actual commands and reconstruction',()=>
         command('respec');expect(queryPlayer(game)).toEqual(base);
         const old=structuredClone(saved);old.extensions!.manifest.modules.find(m=>m.id==='growth')!.version='1.7.0';
         const current=game.extensionRuntime;expect(game.loadSnapshot(old)).toBe(false);expect(game.extensionRuntime).toBe(current);
-        expect(GROWTH_VERSION).toBe('1.9.0');
+        expect(GROWTH_VERSION).toBe('1.10.0');
     });
     it('repeated real temporary casts expire without accumulating capacity or changing the saved effect on reads',()=>{
         const skillId='growth.skill.brace';

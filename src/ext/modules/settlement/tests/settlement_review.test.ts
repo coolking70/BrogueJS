@@ -77,9 +77,13 @@ it('camp target is bounded and a failed visible target does not spend food/mater
   u.props().onEstablish();expect(g.world5!.simulationTicks).toBe(ticks);
   expect(inventoryStamp(g.player.inventory.items)).toBe(inventory);expect(u.s.panelOpen.value).toBe(true);u.scope.stop();
 });
-it('collapsed selection does not claim movement, while expanded selection consumes only arrows', () => {
+it('collapsed selection does not claim movement, while expanded selection isolates global shortcuts', () => {
   const {g}=setup();const u=session(g);u.props().onTab('build');
-  expect(u.key('ArrowDown')).toBe(true);expect(u.key('k')).toBe(false);
+  expect(u.key('ArrowDown')).toBe(true);
+  // camp-fix: selection owns every shortcut; only arrows move the display cursor.
+  const cursor={...u.props().cursor},location={...g.player.loc},events=g.recordedInputEvents.length;
+  expect(u.key('k')).toBe(true);expect(u.props().cursor).toEqual(cursor);
+  expect(g.player.loc).toEqual(location);expect(g.recordedInputEvents).toHaveLength(events);
   u.props().onCollapse();expect(u.props().collapsed).toBe(true);expect(u.key('ArrowDown')).toBe(false);
   expect(u.s.panelOpen.value).toBe(true);u.scope.stop();
 });
@@ -88,7 +92,8 @@ it('unseen actual marker/build requests deny generically, surrounding hidden mac
   expect(h.ext('settlement','establish',establish(g)).error).toBe('C5_BLOCKED');
   g.grid.getCell(21,12)!.machineNumber=99;
   expect(h.ext('settlement','establish',establish(g)).error).toBe('C5_BLOCKED');
-  g.grid.getCell(21,12)!.machineNumber=0;(g as any).updateVision(false);
+  // The fixture wrote light channels directly; invalidate the cached batch before restoring visibility.
+  g.grid.getCell(21,12)!.machineNumber=0;g.lightMap.clearLighting();(g as any).updateVision(false);
   Object.assign(g.lightMap.lightAt(18,9)!,{r:0,g:0,b:0});g.grid.getCell(18,9)!.isVisible=false;g.grid.getCell(18,9)!.machineNumber=99;
   expect(h.ext('settlement','establish',establish(g)).error).toBeNull();
   Object.assign(g.lightMap.lightAt(20,13)!,{r:0,g:0,b:0});g.grid.getCell(20,13)!.isVisible=false;
@@ -135,6 +140,6 @@ it('a boundary that cuts a hidden work footprint reports only a generic denial',
   const {h,g}=setup();g.extensionRuntime!.worldWorkPlace({owner:'settlement',depth:1,x:16,y:12,
     instanceKey:'cut-boundary',contentId:'settlement.wood-node',nameKey:'ext.settlement.wood-node.name',descriptionKey:'ext.settlement.wood-node.description',glyph:'木',color:'#aaaaaa',interactionDistance:1,priority:0});
   Object.assign(g.lightMap.lightAt(16,12)!,{r:0,g:0,b:0});g.grid.getCell(16,12)!.isVisible=false;expect(h.ext('settlement','establish',establish(g)).error).toBe('C5_BLOCKED');
-  (g as any).updateVision(false);
+  g.lightMap.clearLighting();(g as any).updateVision(false);
   expect(h.ext('settlement','establish',establish(g)).error).toBe('C5_PROTECTED');
 });

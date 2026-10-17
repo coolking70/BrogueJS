@@ -1,5 +1,7 @@
 # C6-1：阶段 6A 物品扩展与掉落服务合同
 
+> 6Z 当前索引（2026-10-17，候选 `06682d5`）：当前身份 foundation20/itemSdk4/worldSdk2/world schema6/edibleSdk1；loot0.9.0、pack0.6.0/schema5、实例6/state2，crafting1.1.0/definitions schema2、growth1.10.0，whole-run7/recording4/origin2。现行增量见 [loot配置](loot-config.md) 与 [合同差异](phase6z-contract-delta.md)；以下有日期的旧章节是冻结历史，不追改数值或历史通过数。6Z实绩见[报告](phase6z.report.md)，浏览器/性能不因功能提交自动关闭。
+
 2026-10-15，C6-1 v1 的独立审查修复已落在6A1工作树，当前验证与候选冻结身份以报告“审查发现处理”为准。底座与中性 fixture 已接线，验证、接口散列与限制见 [6A1报告](phase6a1.report.md)。**未安装 loot，未 commit；维护者验收合入前不派发6B1。** 本文声明块同步真实 itemSdk.ts，实际导出优先于6A0历史草案。
 
 ## 1. 依据与优先级

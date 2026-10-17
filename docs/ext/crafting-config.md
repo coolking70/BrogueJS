@@ -1,5 +1,9 @@
 # 合成与资源采集配置手册
 
+> 6Z 当前索引（2026-10-17，候选 `06682d5`）：当前身份 foundation20/itemSdk4/worldSdk2/world schema6/edibleSdk1；loot0.9.0、pack0.6.0/schema5、实例6/state2，crafting1.1.0/definitions schema2、growth1.10.0，whole-run7/recording4/origin2。现行增量见 [loot配置](loot-config.md) 与 [合同差异](phase6z-contract-delta.md)；以下有日期的旧章节是冻结历史，不追改数值或历史通过数。6Z实绩见[报告](phase6z.report.md)，浏览器/性能不因功能提交自动关闭。
+
+6C3现行增量：`crafting.forge` 建造成本6石/4金属、300tick；匕首配方4金属+1木/1000工作tick，皮甲6纤维+4皮革/1500工作tick，均不可离线完成，`lootRoll.maxRarity="magic"`。无loot时产plain +0已知装备；有loot时按真实完成票据固定基底生成，不走普通掉落provider。WorldWork托管原生装备、预留与取消/跨层/死亡/异常退款为单所有权事务，箱内展示只读。下面阶段5的schema1/SDK1说明保留历史，现行definitions schema2/worldSdk2。
+
 5Z当前安装身份：foundation **13**、whole-run **6**、recording **4**、origin **2**、world5 **schema4**，SDK兼容号保持1。各模块自有版本/规则身份按下文，旧协议存档/录像直接拒绝、不迁移；引擎门禁与[人工待验清单](phase5z.manual-checklist.md)以[5Z报告](phase5z.report.md)为准。
 
 5D2接入补注（维护者验收通过）：模块新增同步只读 `crafting.recipe-catalog.v1`，返回当前注册配方按owner/ID排序的detached目录。settlement只可选择offlineEligible的chest-kit/bed-kit并复用同一WorkTicket/真实工具/材料/工位及owner提交政策；不导入crafting JSON或向NPC开放任意玩家命令。crafting自身module/rules1.0.0保持，5D2当时底座协议升foundation12；当前foundation13并拒旧档。详见[5D2报告](phase5d2.report.md)。

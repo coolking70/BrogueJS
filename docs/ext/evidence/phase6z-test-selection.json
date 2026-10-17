@@ -1,0 +1,4791 @@
+{
+  "base": "9cf8366",
+  "head": "06682d538084d552e40ba192c9f1e2e896b3e13d",
+  "dependencyReportSha256": "032db9b19fa52127332ecaae2aa0b40c81180ea468188fa61ef6f079b21636cc",
+  "selectorSha256": "4f4eb805451b94b0d19f301ac70b4d25639c10cd970d42d79c984910ee7b56ef",
+  "decisions": [
+    {
+      "file": "src/data/hordes.test.ts",
+      "decision": "unaffected",
+      "dependencyCount": 2,
+      "changedDependencyCount": 0,
+      "exampleChangedDependency": null
+    },
+    {
+      "file": "src/data/monsterBolts.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/data/monsterDamage.test.ts",
+      "decision": "unaffected",
+      "dependencyCount": 2,
+      "changedDependencyCount": 0,
+      "exampleChangedDependency": null
+    },
+    {
+      "file": "src/data/monsters.test.ts",
+      "decision": "unaffected",
+      "dependencyCount": 2,
+      "changedDependencyCount": 0,
+      "exampleChangedDependency": null
+    },
+    {
+      "file": "src/engine/Combat/BoltCatalog.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/engine/Combat/BoltContract.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/engine/Combat/CombatFormulas.test.ts",
+      "decision": "unaffected",
+      "dependencyCount": 5,
+      "changedDependencyCount": 0,
+      "exampleChangedDependency": null
+    },
+    {
+      "file": "src/engine/Core/snapshotQuantity.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/engine/Core/startingKit.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/engine/Items/itemFlavors.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/engine/Random.test.ts",
+      "decision": "unaffected",
+      "dependencyCount": 3,
+      "changedDependencyCount": 0,
+      "exampleChangedDependency": null
+    },
+    {
+      "file": "src/engine/UI/DetailGenerator.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/engine/UI/Discoveries.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_body.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_combinations.test.ts",
+      "decision": "run",
+      "dependencyCount": 568,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_content.test.ts",
+      "decision": "run",
+      "dependencyCount": 755,
+      "changedDependencyCount": 233,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_defense_cancel.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_evasion.test.ts",
+      "decision": "run",
+      "dependencyCount": 567,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_growth.test.ts",
+      "decision": "run",
+      "dependencyCount": 567,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_integrated_natural.test.ts",
+      "decision": "run",
+      "dependencyCount": 569,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_links.test.ts",
+      "decision": "run",
+      "dependencyCount": 569,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_natural.test.ts",
+      "decision": "run",
+      "dependencyCount": 566,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_persistence.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_revisit.test.ts",
+      "decision": "run",
+      "dependencyCount": 567,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_runtime.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_sdk_repro.test.ts",
+      "decision": "run",
+      "dependencyCount": 567,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_ui.test.ts",
+      "decision": "run",
+      "dependencyCount": 754,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_adapters.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_animated_defense.test.ts",
+      "decision": "run",
+      "dependencyCount": 575,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_body_transition_facts.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_bonfire_definitions.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_bonfire_runtime.test.ts",
+      "decision": "run",
+      "dependencyCount": 574,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_bonfire_ui.test.ts",
+      "decision": "run",
+      "dependencyCount": 574,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_combinations.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_defense_state.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_display.test.ts",
+      "decision": "run",
+      "dependencyCount": 573,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_dodge.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_dodge_ui.test.ts",
+      "decision": "run",
+      "dependencyCount": 574,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_foundation_dodge_gate.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_native_defense.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_native_stamina.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_parry.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_parry_advisory.test.ts",
+      "decision": "run",
+      "dependencyCount": 572,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_parry_decision.test.ts",
+      "decision": "run",
+      "dependencyCount": 571,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_parry_ui.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_part_break.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_part_break_runtime.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_phase4d_body_actions.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_phase4d_body_lifecycle.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_phase4d_declarations.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_phase4d_playable_recording.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_phase4d_rest_relations.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_phase4d_travel_ai.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_phase4e_recording.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_planner.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_runtime.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_scheduler_due.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_schema.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_sdk_generation_identity.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_square_replay.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_ui.test.ts",
+      "decision": "run",
+      "dependencyCount": 574,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_warning_map.test.ts",
+      "decision": "run",
+      "dependencyCount": 570,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/crafting/tests/crafting_combinations.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/crafting/tests/crafting_commands.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/crafting/tests/crafting_config_examples.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/crafting/tests/crafting_data_tables.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/crafting/tests/crafting_geometry.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/crafting/tests/crafting_input.test.ts",
+      "decision": "run",
+      "dependencyCount": 583,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/crafting/tests/crafting_module.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/crafting/tests/crafting_persistence.test.ts",
+      "decision": "run",
+      "dependencyCount": 577,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/crafting/tests/crafting_placement.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/crafting/tests/crafting_projection.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/crafting/tests/crafting_regen.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/crafting/tests/crafting_rejections.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/crafting/tests/crafting_runtime.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/crafting/tests/crafting_schema.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/crafting/tests/crafting_sdk_integration.test.ts",
+      "decision": "run",
+      "dependencyCount": 578,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/crafting/tests/crafting_trace.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/crafting/tests/crafting_ui.test.ts",
+      "decision": "run",
+      "dependencyCount": 574,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/crafting/tests/crafting_work.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_atomic.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_combinations.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_commands.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_companion.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_config_examples.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_data_tables.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_eat.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_feed.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_fire.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_imports.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_knowledge.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_leak.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_module.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_names.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_nodes.test.ts",
+      "decision": "run",
+      "dependencyCount": 577,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_persistence.test.ts",
+      "decision": "run",
+      "dependencyCount": 577,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_roast.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_schema.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_trace.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_ui.test.ts",
+      "decision": "run",
+      "dependencyCount": 579,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants2_combinations.test.ts",
+      "decision": "run",
+      "dependencyCount": 566,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants2_contract.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants2_generation.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants2_geometry.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants2_imports.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants2_parts.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants2_persistence.test.ts",
+      "decision": "run",
+      "dependencyCount": 571,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants2_phase.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants2_trace.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants2_ui.test.ts",
+      "decision": "run",
+      "dependencyCount": 574,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_c5_placement.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_colossus.test.ts",
+      "decision": "run",
+      "dependencyCount": 571,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_committed_transition.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_composite.test.ts",
+      "decision": "run",
+      "dependencyCount": 574,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_composite_natural.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_composite_sfc.test.ts",
+      "decision": "run",
+      "dependencyCount": 570,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_config_examples.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_contract.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_rigid.test.ts",
+      "decision": "run",
+      "dependencyCount": 571,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_runtime.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_spine_trace.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_trace.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_transitions.test.ts",
+      "decision": "run",
+      "dependencyCount": 571,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_transitions_sfc.test.ts",
+      "decision": "run",
+      "dependencyCount": 570,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_ui.test.ts",
+      "decision": "run",
+      "dependencyCount": 570,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_zones.test.ts",
+      "decision": "run",
+      "dependencyCount": 572,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_zones_natural.test.ts",
+      "decision": "run",
+      "dependencyCount": 570,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_zones_sfc.test.ts",
+      "decision": "run",
+      "dependencyCount": 570,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/giants/tests/item_drop_integration.test.ts",
+      "decision": "run",
+      "dependencyCount": 565,
+      "changedDependencyCount": 213,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_attributes.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_body_transitions_rewards.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_classic_isolation.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_clone_overhealth.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_combat_stats.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_composite_rewards.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_config.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_content.test.ts",
+      "decision": "run",
+      "dependencyCount": 581,
+      "changedDependencyCount": 214,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_content_rewards.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_creation_ui.test.ts",
+      "decision": "run",
+      "dependencyCount": 753,
+      "changedDependencyCount": 233,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_creation_view.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_data_contract.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_death_projection.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_descriptions.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_evaluator.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_identities.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_identity_adversarial.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_identity_runtime.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_item_runtime.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_items.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_lifecycle.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_loot_receipts.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_modal_advancement.test.ts",
+      "decision": "run",
+      "dependencyCount": 599,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/components/GameCanvas.vue"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_npc_replay.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_optional_rewards.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_progression.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_public_effects.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_runtime.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_skill_integration.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_skills.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_skills_movement.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_skills_slot_order.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_sources.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_square_melee.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_target_knowledge.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_templates.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_templates_runtime.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_ui.test.ts",
+      "decision": "run",
+      "dependencyCount": 753,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/ext/modules/growth/tests/ext_growth_view.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_b4_growth.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_b4_runtime.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_b4_vectors.test.ts",
+      "decision": "reuse",
+      "dependencyCount": 559,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts",
+      "reuse": {
+        "evidence": "/private/tmp/p6c4rev2.tests.json",
+        "passed": 22,
+        "dependencies": 559,
+        "snapshot": "/private/tmp/p6c4rev2.before.json"
+      }
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_capabilities.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_catalog.test.ts",
+      "decision": "reuse",
+      "dependencyCount": 558,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts",
+      "reuse": {
+        "evidence": "/private/tmp/p6c4rev2.tests.json",
+        "passed": 12,
+        "dependencies": 558,
+        "snapshot": "/private/tmp/p6c4rev2.before.json"
+      }
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_commands_integration.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_data.test.ts",
+      "decision": "reuse",
+      "dependencyCount": 558,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts",
+      "reuse": {
+        "evidence": "/private/tmp/p6c4rev2.tests.json",
+        "passed": 11,
+        "dependencies": 558,
+        "snapshot": "/private/tmp/p6c4rev2.before.json"
+      }
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_economy.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_enhancement.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_game_sfc.test.ts",
+      "decision": "run",
+      "dependencyCount": 585,
+      "changedDependencyCount": 216,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_game_ui.test.ts",
+      "decision": "run",
+      "dependencyCount": 578,
+      "changedDependencyCount": 213,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_generator_props.test.ts",
+      "decision": "reuse",
+      "dependencyCount": 558,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts",
+      "reuse": {
+        "evidence": "/private/tmp/p6c4rev2.tests.json",
+        "passed": 53,
+        "dependencies": 558,
+        "snapshot": "/private/tmp/p6c4rev2.before.json"
+      }
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_generator_vectors.test.ts",
+      "decision": "reuse",
+      "dependencyCount": 558,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts",
+      "reuse": {
+        "evidence": "/private/tmp/p6c4rev2.tests.json",
+        "passed": 27,
+        "dependencies": 558,
+        "snapshot": "/private/tmp/p6c4rev2.before.json"
+      }
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_growth_attributes.test.ts",
+      "decision": "run",
+      "dependencyCount": 579,
+      "changedDependencyCount": 214,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_inert.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_integration.test.ts",
+      "decision": "run",
+      "dependencyCount": 580,
+      "changedDependencyCount": 214,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_item.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_locale.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_review_r1.test.ts",
+      "decision": "run",
+      "dependencyCount": 578,
+      "changedDependencyCount": 213,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_schema.test.ts",
+      "decision": "reuse",
+      "dependencyCount": 559,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts",
+      "reuse": {
+        "evidence": "/private/tmp/p6c4rev2.tests.json",
+        "passed": 137,
+        "dependencies": 559,
+        "snapshot": "/private/tmp/p6c4rev2.before.json"
+      }
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_sets.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_sets_growth.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_socket_journey.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_sockets.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_sources.test.ts",
+      "decision": "reuse",
+      "dependencyCount": 566,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts",
+      "reuse": {
+        "evidence": "/private/tmp/p6c4rev2.tests.json",
+        "passed": 32,
+        "dependencies": 566,
+        "snapshot": "/private/tmp/p6c4rev2.before.json"
+      }
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_sources_recording.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_stats.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_stats_integration.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_trigger_commits.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_trigger_settlements.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_ui_components.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_ui_fixtures.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_ui_i18n.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_ui_inert.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 233,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_ui_knowledge.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_ui_preview.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_ui_style.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 233,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_ui_viewmodel.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_work.test.ts",
+      "decision": "run",
+      "dependencyCount": 565,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/loot/tests/loot_work_container.test.ts",
+      "decision": "run",
+      "dependencyCount": 566,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_combinations.test.ts",
+      "decision": "run",
+      "dependencyCount": 565,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_data.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_graph.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_imports.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 233,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_metadata.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_persistence.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_rewards.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_runtime.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_trace.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_ui.test.ts",
+      "decision": "run",
+      "dependencyCount": 576,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_world.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative_combat.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative_content.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative_dialogue.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative_kernel.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative_persistence.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative_portrait_pixels.test.ts",
+      "decision": "unaffected",
+      "dependencyCount": 3,
+      "changedDependencyCount": 0,
+      "exampleChangedDependency": null
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative_rewards.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative_runtime.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative_schema.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative_sessions.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative_ui.test.ts",
+      "decision": "run",
+      "dependencyCount": 574,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/camp_recording.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/foundation_lifecycle_repair.test.ts",
+      "decision": "run",
+      "dependencyCount": 571,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/foundation_retirement_replay.test.ts",
+      "decision": "run",
+      "dependencyCount": 569,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/foundation_xr_repair.test.ts",
+      "decision": "run",
+      "dependencyCount": 570,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/phase5_ui_open.test.ts",
+      "decision": "run",
+      "dependencyCount": 593,
+      "changedDependencyCount": 215,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_captive_natural.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_codec.test.ts",
+      "decision": "run",
+      "dependencyCount": 567,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_combinations.test.ts",
+      "decision": "run",
+      "dependencyCount": 566,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_escort.test.ts",
+      "decision": "run",
+      "dependencyCount": 566,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_failures.test.ts",
+      "decision": "run",
+      "dependencyCount": 567,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_fall.test.ts",
+      "decision": "run",
+      "dependencyCount": 566,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_foraging_integration.test.ts",
+      "decision": "run",
+      "dependencyCount": 567,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_jobs.test.ts",
+      "decision": "run",
+      "dependencyCount": 566,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_labor.test.ts",
+      "decision": "run",
+      "dependencyCount": 566,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_lifecycle.test.ts",
+      "decision": "run",
+      "dependencyCount": 566,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_natural.test.ts",
+      "decision": "run",
+      "dependencyCount": 567,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_needs.test.ts",
+      "decision": "run",
+      "dependencyCount": 565,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_performance.test.ts",
+      "decision": "run",
+      "dependencyCount": 566,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_performance_preparation.test.ts",
+      "decision": "run",
+      "dependencyCount": 566,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_production.test.ts",
+      "decision": "run",
+      "dependencyCount": 581,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_production_codec.test.ts",
+      "decision": "run",
+      "dependencyCount": 569,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_production_economy.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_production_food.test.ts",
+      "decision": "run",
+      "dependencyCount": 571,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_production_replay.test.ts",
+      "decision": "run",
+      "dependencyCount": 566,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_replay_import_ui.test.ts",
+      "decision": "run",
+      "dependencyCount": 585,
+      "changedDependencyCount": 213,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_scale.test.ts",
+      "decision": "run",
+      "dependencyCount": 566,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_sources.test.ts",
+      "decision": "run",
+      "dependencyCount": 567,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_boundaries.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_camera.test.ts",
+      "decision": "unaffected",
+      "dependencyCount": 4,
+      "changedDependencyCount": 0,
+      "exampleChangedDependency": null
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_display.test.ts",
+      "decision": "run",
+      "dependencyCount": 570,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_feedback_ui.test.ts",
+      "decision": "run",
+      "dependencyCount": 581,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_harvest.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_input.test.ts",
+      "decision": "run",
+      "dependencyCount": 585,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_inventory_ui.test.ts",
+      "decision": "run",
+      "dependencyCount": 585,
+      "changedDependencyCount": 213,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_materials.test.ts",
+      "decision": "run",
+      "dependencyCount": 565,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_natural.test.ts",
+      "decision": "run",
+      "dependencyCount": 576,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_performance.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_persistence.test.ts",
+      "decision": "run",
+      "dependencyCount": 566,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_raid_async.test.ts",
+      "decision": "run",
+      "dependencyCount": 565,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_raid_performance.test.ts",
+      "decision": "run",
+      "dependencyCount": 565,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_raid_replay.test.ts",
+      "decision": "run",
+      "dependencyCount": 565,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_raids.test.ts",
+      "decision": "run",
+      "dependencyCount": 571,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_review.test.ts",
+      "decision": "run",
+      "dependencyCount": 578,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_runtime.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_safety.test.ts",
+      "decision": "run",
+      "dependencyCount": 565,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_sdk_generation_raid.test.ts",
+      "decision": "run",
+      "dependencyCount": 567,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_ui.test.ts",
+      "decision": "run",
+      "dependencyCount": 578,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_validation.test.ts",
+      "decision": "run",
+      "dependencyCount": 565,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ai_1_scent_tracking.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/armor_display_effect.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/armor_model_effect.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/armor_runic_effect.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/b1_retire_invented.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/b2_transcription.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/b_1_weapon_specials.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/b_1a_identification.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/b_1b_identification_persistence.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/b_1c_detect_magic.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/b_2_throwing.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/b_4a_item_generation.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/b_4b_item_placement.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/blueprint_ce_coverage.test.ts",
+      "decision": "unaffected",
+      "dependencyCount": 2,
+      "changedDependencyCount": 0,
+      "exampleChangedDependency": null
+    },
+    {
+      "file": "src/test/blueprint_center.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/c_0_add_loops.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/c_1_room_profile.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/c_2_lakes.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/c_2_lakes_determinism.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/c_2_lakes_e2e.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/c_3_walls_doors.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/c_4a_0_layer_model.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/c_4a_terrain_catalog.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/c_4b_dungeon_feature.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/c_4c_promotion.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/c_5_fall_subsystem.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/c_6_autogenerators.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/c_7_lighting.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/c_8_connectivity.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/canvas_resize.test.ts",
+      "decision": "run",
+      "dependencyCount": 596,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/components/GameCanvas.vue"
+    },
+    {
+      "file": "src/test/captive_manacles.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/dialog_continuations.test.ts",
+      "decision": "run",
+      "dependencyCount": 575,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/dialog_d4_blink.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/dialog_host.test.ts",
+      "decision": "run",
+      "dependencyCount": 587,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/dialog_service_input.test.ts",
+      "decision": "run",
+      "dependencyCount": 573,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/dpad_hold_input.test.ts",
+      "decision": "run",
+      "dependencyCount": 575,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_actor_actions_root_world.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_actor_attack_validation.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_actor_needs_runtime.test.ts",
+      "decision": "run",
+      "dependencyCount": 567,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_actor_resources.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_births.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_bolt_causality.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_canvas_input.test.ts",
+      "decision": "run",
+      "dependencyCount": 579,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/ext_causality.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_checkpoint_imports.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_combat_adapter_foundation.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_combat_neutral_differential.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_combat_transition_facts.test.ts",
+      "decision": "run",
+      "dependencyCount": 565,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_compatibility_diagnostics.test.ts",
+      "decision": "run",
+      "dependencyCount": 640,
+      "changedDependencyCount": 219,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/ext_controlled_action_bridge.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_departure_runtime.test.ts",
+      "decision": "run",
+      "dependencyCount": 569,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_derived_draw_vectors.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_edible_combinations.test.ts",
+      "decision": "run",
+      "dependencyCount": 566,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_edible_review.test.ts",
+      "decision": "run",
+      "dependencyCount": 569,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_edible_runtime.test.ts",
+      "decision": "run",
+      "dependencyCount": 568,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_engine_policies.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_fingerprint.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_fire_contact_runtime.test.ts",
+      "decision": "run",
+      "dependencyCount": 569,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_foundation.test.ts",
+      "decision": "run",
+      "dependencyCount": 566,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_foundation_boundary_audit.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_foundation_contracts.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_foundation_native_visibility.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_foundation_origin_performance.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_foundation_origin_repair.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_foundation_retirement_atomicity.test.ts",
+      "decision": "run",
+      "dependencyCount": 569,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_foundation_world_repair.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_generation_actor_identity.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_generation_checkpoint.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_generation_checkpoint_differential.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_generation_transactions.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_hardening.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_item_commands.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 213,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_item_data.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 213,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_item_drop.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 213,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_item_presentation.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 213,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_item_recording.test.ts",
+      "decision": "run",
+      "dependencyCount": 565,
+      "changedDependencyCount": 213,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_item_roots.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 213,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_item_stats.test.ts",
+      "decision": "run",
+      "dependencyCount": 565,
+      "changedDependencyCount": 213,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_kind_knowledge_runtime.test.ts",
+      "decision": "run",
+      "dependencyCount": 567,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_module_boundaries.test.ts",
+      "decision": "run",
+      "dependencyCount": 757,
+      "changedDependencyCount": 233,
+      "exampleChangedDependency": "scripts/test-suites.json"
+    },
+    {
+      "file": "src/test/ext_module_composition.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_module_creation_ui.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 233,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/ext_module_recommendations.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_module_removal.test.ts",
+      "decision": "run",
+      "dependencyCount": 6,
+      "changedDependencyCount": 1,
+      "exampleChangedDependency": "scripts/test-suites.json"
+    },
+    {
+      "file": "src/test/ext_module_ui.test.ts",
+      "decision": "run",
+      "dependencyCount": 576,
+      "changedDependencyCount": 212,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_optional_queries.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_optional_rewards.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_part_break_protocol.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_perf_json.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_placement_group_runtime.test.ts",
+      "decision": "run",
+      "dependencyCount": 567,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_prepared_controlled_commands.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_recording_async.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_recording_v4_digest.test.ts",
+      "decision": "run",
+      "dependencyCount": 565,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "scripts/recording-digest-contract.json"
+    },
+    {
+      "file": "src/test/ext_recording_v4_snapshots.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_recording_v4_storage.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_region_runtime_transactions.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_resident_needs.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_rest_point_runtime.test.ts",
+      "decision": "run",
+      "dependencyCount": 565,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_rooms_topology.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_slaying_alignment.test.ts",
+      "decision": "run",
+      "dependencyCount": 571,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_slumber_runtime.test.ts",
+      "decision": "run",
+      "dependencyCount": 567,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_stats_native.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/ext_stats_pipeline.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_stats_review.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_stats_runtime.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_structure_combinations.test.ts",
+      "decision": "run",
+      "dependencyCount": 565,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_structure_geometry.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_structure_integration.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_structure_performance.test.ts",
+      "decision": "run",
+      "dependencyCount": 565,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_structure_properties.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_structure_protection.test.ts",
+      "decision": "run",
+      "dependencyCount": 565,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_structure_review.test.ts",
+      "decision": "run",
+      "dependencyCount": 565,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_structure_source_guard.test.ts",
+      "decision": "run",
+      "dependencyCount": 5,
+      "changedDependencyCount": 2,
+      "exampleChangedDependency": "src/engine/Map/DungeonFeature.ts"
+    },
+    {
+      "file": "src/test/ext_structure_transactions.test.ts",
+      "decision": "run",
+      "dependencyCount": 565,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_test_dependencies.test.ts",
+      "decision": "run",
+      "dependencyCount": 5,
+      "changedDependencyCount": 2,
+      "exampleChangedDependency": "scripts/test-dependencies.json"
+    },
+    {
+      "file": "src/test/ext_validation.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_world5_clock_levels.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_world5_offline.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_world_display.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_world_harness_closed_loop.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_world_harness_combinations.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_world_interactables.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_world_items_roots.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_world_work_boundaries.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_world_work_failures.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_world_work_review.test.ts",
+      "decision": "run",
+      "dependencyCount": 566,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_world_work_sdk_contract.test.ts",
+      "decision": "run",
+      "dependencyCount": 566,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ext_world_work_transactions.test.ts",
+      "decision": "run",
+      "dependencyCount": 565,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/f_1_fire_as_terrain.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/f_2a_fire_mechanics.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/f_2b_creature_burning.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/f_2c_explosion.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/fe_1_touch.test.ts",
+      "decision": "run",
+      "dependencyCount": 596,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/components/GameCanvas.vue"
+    },
+    {
+      "file": "src/test/fix_rapier_travel.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/floating_text_presentation.test.ts",
+      "decision": "run",
+      "dependencyCount": 570,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/frame_profile.test.ts",
+      "decision": "unaffected",
+      "dependencyCount": 2,
+      "changedDependencyCount": 0,
+      "exampleChangedDependency": null
+    },
+    {
+      "file": "src/test/g_1_gas_volumetric.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/g_2_gas_df_wiring.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/g_3_gas_effects.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/gameplay_layout.test.ts",
+      "decision": "run-supplement",
+      "dependencyCount": 3,
+      "changedDependencyCount": 1,
+      "exampleChangedDependency": "src/App.vue",
+      "reason": "manual review of source(relativePath) helper; static dependency analyzer does not expand string-built new URL"
+    },
+    {
+      "file": "src/test/generation_baseline.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/giants2_foundation.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/glyph_inverse_contrast.test.ts",
+      "decision": "unaffected",
+      "dependencyCount": 2,
+      "changedDependencyCount": 0,
+      "exampleChangedDependency": null
+    },
+    {
+      "file": "src/test/horde_selection.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/horde_terrain_spawn.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/hunger_curve_sim.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/hunger_regen.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/i_1_interaction.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/immersive_mode.test.ts",
+      "decision": "run",
+      "dependencyCount": 576,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/immersive_polish.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/invented_content_pool.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/lava_connectivity.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/main_menu_replay_seek.test.ts",
+      "decision": "run",
+      "dependencyCount": 596,
+      "changedDependencyCount": 213,
+      "exampleChangedDependency": "src/components/MainMenu.vue"
+    },
+    {
+      "file": "src/test/map_tile_modes.test.ts",
+      "decision": "run",
+      "dependencyCount": 595,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/components/GameCanvas.vue"
+    },
+    {
+      "file": "src/test/map_touch_input.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/monster_damage_balance.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/monster_path_cache.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/monster_stats_effect.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/native_bolt_delivery.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p1_20_item_placement.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p1_24_death_sink.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p1_26_invariants.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p1_27_remove_drowning.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p1_28_flag_channel.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p1_29_adversarial_gate.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p1_29_lake_connectivity.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p1_30_i18n_gate.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p1_31_35_placement_snapshot.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p1_33_machine_chokepoint.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p1_34_loopmap_reset.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p1_37_machine_flag_i18n.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p1_42_secret_door_search.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p1_46_keybindings.test.ts",
+      "decision": "run",
+      "dependencyCount": 574,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p2_0_seeded_rng.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/p2_1_tick_architecture.test.ts",
+      "decision": "run",
+      "dependencyCount": 754,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/p2_2_real_speed.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p2_3_objective_time.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p2_4_animation_cadence.test.ts",
+      "decision": "run",
+      "dependencyCount": 596,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/components/GameCanvas.vue"
+    },
+    {
+      "file": "src/test/p2_6_display_settings.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/p4_10_waypoint.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p4_1b_monster_casting.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p4_2_monster_summoning.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p4_3_special_monster_flags.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p4_4_split_kamikaze.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p4_5_melee_specials.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p4_6_attack_geometry.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p4_7_player_weapon_geometry.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p4_8_scent_map.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/p4_9_safety_map.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/perf_2_auto_cadence.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/perf_2_npc_path_cache.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/perf_2_replay_cadence.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/perf_ext_kernels.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase3a0_actor_action.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase3a0_defense.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase3a0_native_prelude.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase3a0_scheduler.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase3b_action_lifecycle.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase3b_body_action_resolution.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4a0_spatial.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4a0_spatial_differential.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4a1_game_perf.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4a1_game_square.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4a1_pathing_perf.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4a1_square_pathing.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4a2_body_combat.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4a2_body_effects.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4a3_body_display.test.ts",
+      "decision": "run",
+      "dependencyCount": 578,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4a3_body_sfc.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 233,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/phase4a4_generation_contributions.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4a4_movement_regions.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4b_game_rigid.test.ts",
+      "decision": "run",
+      "dependencyCount": 571,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4b_pose_pathing.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4b_rigid_rotation.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4c_fixed_zone_health.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4d_body_lifecycle.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4d_body_status.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4d_composite_movement.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4d_declarations.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4d_effects_rewards.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4d_group_sidebar.test.ts",
+      "decision": "run",
+      "dependencyCount": 575,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4d_movement_environment.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4d_playable_recording.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4d_production_body.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4d_terminal_identity.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4d_travel_ai.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4e_body_transition.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4e_recording.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/phase4f_audit.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/presentation_timeline.test.ts",
+      "decision": "run",
+      "dependencyCount": 574,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/r_1_appearance.test.ts",
+      "decision": "run",
+      "dependencyCount": 599,
+      "changedDependencyCount": 210,
+      "exampleChangedDependency": "src/components/GameCanvas.vue"
+    },
+    {
+      "file": "src/test/replay_import_ui.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 233,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/repo_hygiene.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/retained_map_drawing.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/retained_render_determinism.test.ts",
+      "decision": "run",
+      "dependencyCount": 564,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/scroll_effects.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/search_progress_hud.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/sfc_harness.test.ts",
+      "decision": "unaffected",
+      "dependencyCount": 3,
+      "changedDependencyCount": 0,
+      "exampleChangedDependency": null
+    },
+    {
+      "file": "src/test/slaying_melee_autohit.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/smoke.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/t_1_tail.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/test_suite_membership.test.ts",
+      "decision": "run",
+      "dependencyCount": 6,
+      "changedDependencyCount": 1,
+      "exampleChangedDependency": "scripts/test-suites.json"
+    },
+    {
+      "file": "src/test/theme_shell_fixes.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/title_wordmark.test.ts",
+      "decision": "run",
+      "dependencyCount": 591,
+      "changedDependencyCount": 211,
+      "exampleChangedDependency": "src/components/MainMenu.vue"
+    },
+    {
+      "file": "src/test/u20_inventory.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u21c_flare_sidebar.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u21c_terrain_appearance.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u24_hardcoded_text.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/u25_machine_observation.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_00_new_run.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_01_instance_snapshot.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_02a_rng_snapshot.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_02b_level_rng.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_03_whole_run_snapshot.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "scripts/u03-state-contract.json"
+    },
+    {
+      "file": "src/test/u_03b_level_travel.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_04c_machine_cells.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_05_machine_items.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_06_monster_damage.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_07_monster_blink.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_08_terrain_bolts.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_09_learning_consumers.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_10_absorption_snapshot.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_11_corpse_learning.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_12a_cast_eligibility.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_12b_ally_mode.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_13_combat_math.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_14a_status_gaps.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_14b_status_gaps.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_15a_shattering.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_15b2_ring_birth.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_15b_rings.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_15c_charms.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_15d2_armor_runic.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_15d3_runic_generation.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_15d_weapon_runic.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_15e_potions.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_15f_food.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_16_lifecycle.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_17a_df_transaction.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_17b_carriers.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_17c_triggers.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_17d_vents.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_17e_altars.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_17f_carriers.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_18_water_cage.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_18a_2_generation_terrain.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_18a_3_generation.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_18a_terrain_contracts.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_19a_machine_view.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_19b_pending_occupancy.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_19c_immediate_entities.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_19d_machine_families.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_19e_machine_families.test.ts",
+      "decision": "run",
+      "dependencyCount": 563,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_19f_autogen.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_19f_fire.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_19f_machines.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_23_memory_mapping.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_26a_deep_baseline.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_26a_deep_levels.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_26b_endgame.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_27_recording.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_r1_codec.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_r2_trace.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_r3_trace.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/u_r4_trace.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ui_1_rendering.test.ts",
+      "decision": "run",
+      "dependencyCount": 642,
+      "changedDependencyCount": 219,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/ui_2_protection.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ui_4_glyph_feedback.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 233,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/ui_concepts.test.ts",
+      "decision": "run-supplement",
+      "dependencyCount": 4,
+      "changedDependencyCount": 2,
+      "exampleChangedDependency": "src/App.vue",
+      "reason": "manual review of source(relativePath) helper; static dependency analyzer does not expand string-built new URL"
+    },
+    {
+      "file": "src/test/ux_1a_end_ui.test.ts",
+      "decision": "unaffected",
+      "dependencyCount": 6,
+      "changedDependencyCount": 0,
+      "exampleChangedDependency": null
+    },
+    {
+      "file": "src/test/ux_1b_input.test.ts",
+      "decision": "run",
+      "dependencyCount": 574,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ux_1c_display.test.ts",
+      "decision": "unaffected",
+      "dependencyCount": 6,
+      "changedDependencyCount": 0,
+      "exampleChangedDependency": null
+    },
+    {
+      "file": "src/test/ux_1c_hallucination_display_rng.test.ts",
+      "decision": "run",
+      "dependencyCount": 596,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/components/GameCanvas.vue"
+    },
+    {
+      "file": "src/test/ux_1d_export_boundary.test.ts",
+      "decision": "unaffected",
+      "dependencyCount": 2,
+      "changedDependencyCount": 0,
+      "exampleChangedDependency": null
+    },
+    {
+      "file": "src/test/ux_1d_recording_continuation.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/ux_1e_pathfinding.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/v_1a_blueprint_items.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/v_1b_alternative.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/v_1c_machine_structure.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/v_2a_vestibule_return.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/v_2b_2a_placement_flags.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/v_2b_2b_blueprints.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/v_2b_3_wired.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/v_2b_4_altars.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/v_2b_5_dormant.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/v_2b_6_keys.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/v_2b_7_features.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/v_2b_8_autogen.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/v_2b_9a_carriers.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/v_2b_9b_environment.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/v_2b_9c_effects.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/v_2b_9d_dungeon_profile.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/v_2b_9e_2_autogen.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/v_2b_9e_area_machine.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/vector_atlas.test.ts",
+      "decision": "run",
+      "dependencyCount": 596,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/components/GameCanvas.vue"
+    },
+    {
+      "file": "src/test/w_10_poison.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/w_11_teleport_placement.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/w_12_blink_beckoning.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/w_13_tunneling.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/w_14_obstruction.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/w_15_shielding.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/w_16_conjuration.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/w_17_domination.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/w_18_entrancement.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/w_19_polymorph.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/w_20_cloning.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/w_21_empowerment.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/w_23_negation.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/w_24_wand_catalog.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/w_25_staff_catalog.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/w_26_arcana_closure.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/w_2_arcana_submission.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/w_3_bolt_trajectory.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/w_4_bolt_reflection.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/w_5_arcana_instance.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/w_6_arcana_recharge.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/w_7_arcana_enchantment.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/w_8_staff_damage.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/w_9_directed_status.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x2a_recording_checkpoint.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x2b_terrain_derivation.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/x2c_hit_status_owner.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x2d_scroll_equipment.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x2e_charms.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x2f_thrown_math.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x2g_native_effects.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x2h_test_mode_reachability.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x2i_discovery_text.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x2i_i18n_flow.test.ts",
+      "decision": "unaffected",
+      "dependencyCount": 2,
+      "changedDependencyCount": 0,
+      "exampleChangedDependency": null
+    },
+    {
+      "file": "src/test/x2j_monster_ai.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x2k_lifecycle.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x2l_reflected_death.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x2m_lighting.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 209,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x2n_lumenstone_description.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x2o_horde_clump.test.ts",
+      "decision": "run",
+      "dependencyCount": 558,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x3_u1_movement_safety.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x3_u2_ally_captive.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x3_u3_cursed_equipment.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x3_u4_auto_travel.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x3_u5_commands.test.ts",
+      "decision": "run",
+      "dependencyCount": 576,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x3_u5_ui.test.ts",
+      "decision": "run",
+      "dependencyCount": 575,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x3_u6_messages.test.ts",
+      "decision": "run",
+      "dependencyCount": 575,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x3_u7_sidebar.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x3_u8a_forced_turns.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x3_u8b_items.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x3_u8c_combat_items.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x3a_live_iteration.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x3b_display_recording.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x3b_item_details.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x4_r1_world_catalog.test.ts",
+      "decision": "run",
+      "dependencyCount": 561,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x4_r2_generation.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x4_r3_creature_items.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x4_r4_item_details.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x4_r5_content_text.test.ts",
+      "decision": "run",
+      "dependencyCount": 560,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x4_r6_integration.test.ts",
+      "decision": "run",
+      "dependencyCount": 559,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    },
+    {
+      "file": "src/test/x4a_movement_rendering.test.ts",
+      "decision": "run",
+      "dependencyCount": 752,
+      "changedDependencyCount": 232,
+      "exampleChangedDependency": "src/App.vue"
+    },
+    {
+      "file": "src/test/x4b_flavor_text.test.ts",
+      "decision": "run",
+      "dependencyCount": 562,
+      "changedDependencyCount": 208,
+      "exampleChangedDependency": "src/engine/Combat/Combat.ts"
+    }
+  ]
+}

@@ -1,0 +1,1680 @@
+{
+  "schema": 1,
+  "scope": "Original 22 files plus 3 directly affected files in one whole-file batch; necessary correction followup repeats only 3 failed files. No full suite, CE, smoke, or performance runs.",
+  "branch": "ext/phase6",
+  "initialHead": "06682d538084d552e40ba192c9f1e2e896b3e13d",
+  "observedFinalHead": "109480110a77b022013757f6f6b4fa40897dd387",
+  "externalHeadChange": "At 19:20:34 +08:00 an external CI split commit 1094801 advanced HEAD; this author made no git writes; CI file bytes unchanged.",
+  "original": {
+    "files": 22,
+    "failures": 138,
+    "reference": "phase6z-unclosed.json",
+    "repairedOrRecaptured": 74,
+    "lootCasesRemovedByAuthorizedScopeAdjustment": 64,
+    "meaning": "64 loot cases were removed from this short natural-hit matrix under maintainer-authorized scope adjustment; not rerun or claimed as passing."
+  },
+  "dispositions": [
+    {
+      "file": "src/test/dialog_host.test.ts",
+      "originalFailures": 6,
+      "action": "premise-adjustment",
+      "final": {
+        "file": "src/test/dialog_host.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 49,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    },
+    {
+      "file": "src/test/phase4a0_spatial_differential.test.ts",
+      "originalFailures": 4,
+      "action": "recapture",
+      "final": {
+        "file": "src/test/phase4a0_spatial_differential.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 4,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    },
+    {
+      "file": "src/test/replay_import_ui.test.ts",
+      "originalFailures": 1,
+      "action": "recapture-current-natural-route",
+      "final": {
+        "file": "src/test/replay_import_ui.test.ts",
+        "run": "correction-followup",
+        "status": "passed",
+        "passed": 7,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_evasion.test.ts",
+      "originalFailures": 1,
+      "action": "recapture",
+      "final": {
+        "file": "src/ext/modules/combat/tests/combat2_evasion.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 1,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_integrated_natural.test.ts",
+      "originalFailures": 2,
+      "action": "recapture",
+      "final": {
+        "file": "src/ext/modules/combat/tests/combat2_integrated_natural.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 2,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_links.test.ts",
+      "originalFailures": 1,
+      "action": "premise-completion-and-recapture",
+      "final": {
+        "file": "src/ext/modules/combat/tests/combat2_links.test.ts",
+        "run": "correction-followup",
+        "status": "passed",
+        "passed": 1,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_natural.test.ts",
+      "originalFailures": 1,
+      "action": "premise-completion-and-recapture",
+      "final": {
+        "file": "src/ext/modules/combat/tests/combat2_natural.test.ts",
+        "run": "correction-followup",
+        "status": "passed",
+        "passed": 2,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_revisit.test.ts",
+      "originalFailures": 1,
+      "action": "recapture",
+      "final": {
+        "file": "src/ext/modules/combat/tests/combat2_revisit.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 1,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_combinations.test.ts",
+      "originalFailures": 64,
+      "action": "scope-adjustment-exclude-loot",
+      "final": {
+        "file": "src/ext/modules/combat/tests/combat_combinations.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 64,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    },
+    {
+      "file": "src/ext/modules/crafting/tests/crafting_trace.test.ts",
+      "originalFailures": 3,
+      "action": "recapture",
+      "final": {
+        "file": "src/ext/modules/crafting/tests/crafting_trace.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 3,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_trace.test.ts",
+      "originalFailures": 4,
+      "action": "recapture",
+      "final": {
+        "file": "src/ext/modules/foraging/tests/foraging_trace.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 4,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants2_persistence.test.ts",
+      "originalFailures": 8,
+      "action": "recapture",
+      "final": {
+        "file": "src/ext/modules/giants/tests/giants2_persistence.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 8,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants2_trace.test.ts",
+      "originalFailures": 2,
+      "action": "recapture",
+      "final": {
+        "file": "src/ext/modules/giants/tests/giants2_trace.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 2,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_spine_trace.test.ts",
+      "originalFailures": 1,
+      "action": "recapture",
+      "final": {
+        "file": "src/ext/modules/giants/tests/giants_spine_trace.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 1,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_trace.test.ts",
+      "originalFailures": 2,
+      "action": "recapture",
+      "final": {
+        "file": "src/ext/modules/giants/tests/giants_trace.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 2,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_combinations.test.ts",
+      "originalFailures": 9,
+      "action": "recapture",
+      "final": {
+        "file": "src/ext/modules/narrative/tests/narrative2_combinations.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 9,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_imports.test.ts",
+      "originalFailures": 1,
+      "action": "recapture",
+      "final": {
+        "file": "src/ext/modules/narrative/tests/narrative2_imports.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 5,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_persistence.test.ts",
+      "originalFailures": 22,
+      "action": "recapture",
+      "final": {
+        "file": "src/ext/modules/narrative/tests/narrative2_persistence.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 23,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_trace.test.ts",
+      "originalFailures": 2,
+      "action": "recapture",
+      "final": {
+        "file": "src/ext/modules/narrative/tests/narrative2_trace.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 2,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_captive_natural.test.ts",
+      "originalFailures": 1,
+      "action": "recapture",
+      "final": {
+        "file": "src/ext/modules/settlement/tests/resident_captive_natural.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 1,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_natural.test.ts",
+      "originalFailures": 1,
+      "action": "recapture",
+      "final": {
+        "file": "src/ext/modules/settlement/tests/resident_natural.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 2,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_review.test.ts",
+      "originalFailures": 1,
+      "action": "premise-adjustment",
+      "final": {
+        "file": "src/ext/modules/settlement/tests/settlement_review.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 13,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    }
+  ],
+  "primaryBatch": {
+    "totals": {
+      "numTotalTests": 230,
+      "numPassedTests": 227,
+      "numFailedTests": 3,
+      "numPendingTests": 0,
+      "numTodoTests": 0
+    },
+    "files": [
+      {
+        "file": "src/test/dialog_host.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 49,
+        "failed": 0,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/test/phase4a0_spatial_differential.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 4,
+        "failed": 0,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/test/replay_import_ui.test.ts",
+        "run": "primary",
+        "status": "failed",
+        "passed": 6,
+        "failed": 1,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/combat/tests/combat2_evasion.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 1,
+        "failed": 0,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/combat/tests/combat2_integrated_natural.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 2,
+        "failed": 0,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/combat/tests/combat2_links.test.ts",
+        "run": "primary",
+        "status": "failed",
+        "passed": 0,
+        "failed": 1,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/combat/tests/combat2_natural.test.ts",
+        "run": "primary",
+        "status": "failed",
+        "passed": 1,
+        "failed": 1,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/combat/tests/combat2_revisit.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 1,
+        "failed": 0,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/combat/tests/combat_combinations.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 64,
+        "failed": 0,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/crafting/tests/crafting_trace.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 3,
+        "failed": 0,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/foraging/tests/foraging_trace.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 4,
+        "failed": 0,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/giants/tests/giants2_persistence.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 8,
+        "failed": 0,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/giants/tests/giants2_trace.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 2,
+        "failed": 0,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/giants/tests/giants_spine_trace.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 1,
+        "failed": 0,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/giants/tests/giants_trace.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 2,
+        "failed": 0,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/narrative/tests/narrative2_combinations.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 9,
+        "failed": 0,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/narrative/tests/narrative2_imports.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 5,
+        "failed": 0,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/narrative/tests/narrative2_persistence.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 23,
+        "failed": 0,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/narrative/tests/narrative2_trace.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 2,
+        "failed": 0,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/settlement/tests/resident_captive_natural.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 1,
+        "failed": 0,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/settlement/tests/resident_natural.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 2,
+        "failed": 0,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/settlement/tests/resident_production_replay.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 1,
+        "failed": 0,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/settlement/tests/resident_replay_import_ui.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 18,
+        "failed": 0,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/settlement/tests/settlement_input.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 5,
+        "failed": 0,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/settlement/tests/settlement_review.test.ts",
+        "run": "primary",
+        "status": "passed",
+        "passed": 13,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    ],
+    "result": {
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/combat/tests/combat2_evasion.test.ts",
+        "src/ext/modules/combat/tests/combat2_integrated_natural.test.ts",
+        "src/ext/modules/combat/tests/combat2_links.test.ts",
+        "src/ext/modules/combat/tests/combat2_natural.test.ts",
+        "src/ext/modules/combat/tests/combat2_revisit.test.ts",
+        "src/ext/modules/combat/tests/combat_combinations.test.ts",
+        "src/ext/modules/crafting/tests/crafting_trace.test.ts",
+        "src/ext/modules/foraging/tests/foraging_trace.test.ts",
+        "src/ext/modules/giants/tests/giants2_persistence.test.ts",
+        "src/ext/modules/giants/tests/giants2_trace.test.ts",
+        "src/ext/modules/giants/tests/giants_spine_trace.test.ts",
+        "src/ext/modules/giants/tests/giants_trace.test.ts",
+        "src/ext/modules/narrative/tests/narrative2_combinations.test.ts",
+        "src/ext/modules/narrative/tests/narrative2_imports.test.ts",
+        "src/ext/modules/narrative/tests/narrative2_persistence.test.ts",
+        "src/ext/modules/narrative/tests/narrative2_trace.test.ts",
+        "src/ext/modules/settlement/tests/resident_captive_natural.test.ts",
+        "src/ext/modules/settlement/tests/resident_natural.test.ts",
+        "src/ext/modules/settlement/tests/resident_production_replay.test.ts",
+        "src/ext/modules/settlement/tests/resident_replay_import_ui.test.ts",
+        "src/ext/modules/settlement/tests/settlement_input.test.ts",
+        "src/ext/modules/settlement/tests/settlement_review.test.ts",
+        "src/test/dialog_host.test.ts",
+        "src/test/phase4a0_spatial_differential.test.ts",
+        "src/test/replay_import_ui.test.ts",
+        "--maxWorkers=2",
+        "--reporter=verbose",
+        "--reporter=json",
+        "--outputFile.json=/private/tmp/phase6z-cleanup/final-tests.json"
+      ],
+      "cwd": "/Users/coolking70/Documents/同步空间/BrogueJS-p6",
+      "start": 1792236752.4247942,
+      "end": 1792238955.7567308,
+      "exit": 1
+    }
+  },
+  "correctionFollowup": {
+    "totals": {
+      "numTotalTests": 10,
+      "numPassedTests": 10,
+      "numFailedTests": 0,
+      "numPendingTests": 0,
+      "numTodoTests": 0
+    },
+    "files": [
+      {
+        "file": "src/test/replay_import_ui.test.ts",
+        "run": "correction-followup",
+        "status": "passed",
+        "passed": 7,
+        "failed": 0,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/combat/tests/combat2_links.test.ts",
+        "run": "correction-followup",
+        "status": "passed",
+        "passed": 1,
+        "failed": 0,
+        "nonexecuted": 0
+      },
+      {
+        "file": "src/ext/modules/combat/tests/combat2_natural.test.ts",
+        "run": "correction-followup",
+        "status": "passed",
+        "passed": 2,
+        "failed": 0,
+        "nonexecuted": 0
+      }
+    ],
+    "result": {
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/test/replay_import_ui.test.ts",
+        "src/ext/modules/combat/tests/combat2_links.test.ts",
+        "src/ext/modules/combat/tests/combat2_natural.test.ts",
+        "--maxWorkers=2",
+        "--reporter=verbose",
+        "--reporter=json",
+        "--outputFile.json=/private/tmp/phase6z-cleanup/followup-tests.json"
+      ],
+      "cwd": "/Users/coolking70/Documents/同步空间/BrogueJS-p6",
+      "start": 1792239585.500235,
+      "end": 1792241232.23013,
+      "exit": 0
+    }
+  },
+  "finalFileStatus": [
+    {
+      "file": "src/ext/modules/combat/tests/combat2_evasion.test.ts",
+      "run": "primary",
+      "status": "passed",
+      "passed": 1,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_integrated_natural.test.ts",
+      "run": "primary",
+      "status": "passed",
+      "passed": 2,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_links.test.ts",
+      "run": "correction-followup",
+      "status": "passed",
+      "passed": 1,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_natural.test.ts",
+      "run": "correction-followup",
+      "status": "passed",
+      "passed": 2,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat2_revisit.test.ts",
+      "run": "primary",
+      "status": "passed",
+      "passed": 1,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_combinations.test.ts",
+      "run": "primary",
+      "status": "passed",
+      "passed": 64,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/ext/modules/crafting/tests/crafting_trace.test.ts",
+      "run": "primary",
+      "status": "passed",
+      "passed": 3,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/ext/modules/foraging/tests/foraging_trace.test.ts",
+      "run": "primary",
+      "status": "passed",
+      "passed": 4,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants2_persistence.test.ts",
+      "run": "primary",
+      "status": "passed",
+      "passed": 8,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants2_trace.test.ts",
+      "run": "primary",
+      "status": "passed",
+      "passed": 2,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_spine_trace.test.ts",
+      "run": "primary",
+      "status": "passed",
+      "passed": 1,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/ext/modules/giants/tests/giants_trace.test.ts",
+      "run": "primary",
+      "status": "passed",
+      "passed": 2,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_combinations.test.ts",
+      "run": "primary",
+      "status": "passed",
+      "passed": 9,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_imports.test.ts",
+      "run": "primary",
+      "status": "passed",
+      "passed": 5,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_persistence.test.ts",
+      "run": "primary",
+      "status": "passed",
+      "passed": 23,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_trace.test.ts",
+      "run": "primary",
+      "status": "passed",
+      "passed": 2,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_captive_natural.test.ts",
+      "run": "primary",
+      "status": "passed",
+      "passed": 1,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_natural.test.ts",
+      "run": "primary",
+      "status": "passed",
+      "passed": 2,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_production_replay.test.ts",
+      "run": "primary",
+      "status": "passed",
+      "passed": 1,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident_replay_import_ui.test.ts",
+      "run": "primary",
+      "status": "passed",
+      "passed": 18,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_input.test.ts",
+      "run": "primary",
+      "status": "passed",
+      "passed": 5,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_review.test.ts",
+      "run": "primary",
+      "status": "passed",
+      "passed": 13,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/test/dialog_host.test.ts",
+      "run": "primary",
+      "status": "passed",
+      "passed": 49,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/test/phase4a0_spatial_differential.test.ts",
+      "run": "primary",
+      "status": "passed",
+      "passed": 4,
+      "failed": 0,
+      "nonexecuted": 0
+    },
+    {
+      "file": "src/test/replay_import_ui.test.ts",
+      "run": "correction-followup",
+      "status": "passed",
+      "passed": 7,
+      "failed": 0,
+      "nonexecuted": 0
+    }
+  ],
+  "counting": "Final per-file status replaces primary results with followup results for three files; overlapping run totals must not be added.",
+  "gates": {
+    "boundary": {
+      "command": [
+        "node",
+        "scripts/check-module-boundaries.mjs"
+      ],
+      "cwd": "/Users/coolking70/Documents/同步空间/BrogueJS-p6",
+      "start": 1792238955.756989,
+      "end": 1792238961.553569,
+      "exit": 0
+    },
+    "dependencies": {
+      "command": [
+        "node",
+        "scripts/check-test-dependencies.mjs"
+      ],
+      "cwd": "/Users/coolking70/Documents/同步空间/BrogueJS-p6",
+      "start": 1792238961.553834,
+      "end": 1792238964.872368,
+      "exit": 0
+    },
+    "types": {
+      "command": [
+        "node",
+        "node_modules/vue-tsc/bin/vue-tsc.js",
+        "-b"
+      ],
+      "cwd": "/Users/coolking70/Documents/同步空间/BrogueJS-p6",
+      "start": 1792238964.8726258,
+      "end": 1792238975.67386,
+      "exit": 0
+    },
+    "build": {
+      "command": [
+        "node",
+        "node_modules/vite/bin/vite.js",
+        "build"
+      ],
+      "cwd": "/Users/coolking70/Documents/同步空间/BrogueJS-p6",
+      "start": 1792238975.674287,
+      "end": 1792238982.9055092,
+      "exit": 0
+    },
+    "dependencies-final": {
+      "command": [
+        "node",
+        "scripts/check-test-dependencies.mjs"
+      ],
+      "cwd": "/Users/coolking70/Documents/同步空间/BrogueJS-p6",
+      "start": 1792241277.539325,
+      "end": 1792241280.418751,
+      "exit": 0
+    }
+  },
+  "sourceIdentity": {
+    "primaryChanged": [
+      "src/ext/modules/combat/tests/fixtures/combat2-links.json",
+      "src/test/replay_import_ui.test.ts"
+    ],
+    "primaryChangesReason": "Import declaration and links fixture corrected only after their consumers completed; original exit1 retained. Natural fixture supplemented after primary batch.",
+    "followupUnchanged": true,
+    "fixturePackaging": {
+      "file": "src/ext/modules/combat/tests/fixtures/combat2-natural.json",
+      "before": "a9581fc65b408054750f45fccf5c569a102bc84c5b737ca9bc2e4f25d57947d1",
+      "after": "3e1dad82d81b0bad2d2f8f2126ddf6ad284408ceeaa51c36863fb5d272969226",
+      "beforeBytes": 1261804,
+      "afterBytes": 720396,
+      "parsedValuesEqual": true,
+      "nodeDeepStrictEqual": true,
+      "reason": "Only JSON whitespace changed after successful complete gate, one trace per line to keep existing fixture below 1 MB. No command/checkpoint/observation altered; no test rerun for formatting."
+    },
+    "staticGatesScope": "Boundary/dependencies/types/build ran after import declaration and links correction; only opaque JSON fixture supplementation/whitespace changed afterwards. Final dependency check rerun after packaging; no later code changes."
+  },
+  "taskChanges": [
+    {
+      "file": "docs/ext/phase6z.report.md",
+      "before": "068045a0461df47335866660815af5bd34fffaf64c497307606fa5ae2cbf153d",
+      "after": "e1116400915ebfb74fdee8a03b4e90782709b3dc43c981a1664892ea7570c572",
+      "bytes": 40974
+    },
+    {
+      "file": "src/ext/modules/combat/tests/combat_combinations.test.ts",
+      "before": "4f7d0ac0796686774a456148b6016acf078f60060d5d23ae9e1c947d871e6a9c",
+      "after": "ec6d14d1f12f94eddfde26a7dc9f066fe408a5b1c2516e45334681e04b4333c5",
+      "bytes": 17341
+    },
+    {
+      "file": "src/ext/modules/combat/tests/fixtures/combat2-evasion.json",
+      "before": "6fa260929a346a4a2110e46db4ab3f60f78be6186ed884d1d1612629ddcba73b",
+      "after": "79a0667b0a1155b9f501dd5e32918c983a707af46b9133fd92289e17885f9749",
+      "bytes": 18737
+    },
+    {
+      "file": "src/ext/modules/combat/tests/fixtures/combat2-integrated-cached-route.json",
+      "before": "568729175f14b450e22304725467d8327322e58078bac4ab2bb58412272eaa6f",
+      "after": "42888170fd7f920fcbbdf5c094db48b9eddfa7b651c204df3ad9b972b0b50f0f",
+      "bytes": 193032
+    },
+    {
+      "file": "src/ext/modules/combat/tests/fixtures/combat2-integrated-seed118.json",
+      "before": "8f82f84137ab2869ad32512eec6b24667a233fab3ca79f394debd1dac5da8448",
+      "after": "87c69744518f8f690567b8b620aaa23f997dcdcd5089e8720cdf2e866510a770",
+      "bytes": 87712
+    },
+    {
+      "file": "src/ext/modules/combat/tests/fixtures/combat2-links.json",
+      "before": "1b7bfce9a72f8e79a5d7584487eb32b66bd4197cf57f3c3a95e51f163d0cd5a6",
+      "after": "87c69744518f8f690567b8b620aaa23f997dcdcd5089e8720cdf2e866510a770",
+      "bytes": 87712
+    },
+    {
+      "file": "src/ext/modules/combat/tests/fixtures/combat2-natural.json",
+      "before": "9f9fea92f17f29907142eb43630db4e5faa4431d34148df09e9b85c8052ca882",
+      "after": "3e1dad82d81b0bad2d2f8f2126ddf6ad284408ceeaa51c36863fb5d272969226",
+      "bytes": 720396
+    },
+    {
+      "file": "src/ext/modules/combat/tests/fixtures/combat2-revisit.json",
+      "before": "f6a38e79724f8290de93bf364ed3b855022a129030fb1e99c11671856467d41a",
+      "after": "1dc8e3189fd51c6c11b3722089de2fa3a1d45fd27b88aff4c577d0f5a26becb9",
+      "bytes": 24944
+    },
+    {
+      "file": "src/ext/modules/crafting/data/natural-trace.json",
+      "before": "878e0452941ac480e28c7c70759db8e30c5a8588b101f90f4acf6b88686eb6a3",
+      "after": "07ee9f9527bc12f889448f14fa6d9ac020560e864606fe47a5bc21fbab60d1f7",
+      "bytes": 70045
+    },
+    {
+      "file": "src/ext/modules/foraging/data/natural-trace-hearth.json",
+      "before": "d4d85f892f96de39acbe2877e16cce6165d98cbbeeb14e201e173402badfe41f",
+      "after": "fdd170fd8639280006dd95d9f9327b478629b26e977841a59ca4502002f14464",
+      "bytes": 17099
+    },
+    {
+      "file": "src/ext/modules/foraging/data/natural-trace.json",
+      "before": "ec9a527a8827d92e9a4a7f369a017ff6f7dad2f5e5ecbbcd609da57955104409",
+      "after": "f23db5f9d82d082d134cd27dd417d7f49ee1c10e0919e77174ac36059e9cb7ae",
+      "bytes": 12494
+    },
+    {
+      "file": "src/ext/modules/giants/data/colossus-natural-trace.json",
+      "before": "cdd321443837fdc39793fb9164e9eeaf84ebc79c0d17db11a62844494e3beedf",
+      "after": "3d99d9a32bd1f423105d2a921b963534c4af444973995e2bb9028ab9a5b51deb",
+      "bytes": 4343
+    },
+    {
+      "file": "src/ext/modules/giants/data/giants2-copper-trace.json",
+      "before": "76c71fa8216933b9deb8c89e958a3218f9f4be223404d2f6ca0c567c5034b809",
+      "after": "a5df90b0e0533430a9125659010607488a8a7ef466497b5449c8654c652bf1e0",
+      "bytes": 75013
+    },
+    {
+      "file": "src/ext/modules/giants/data/giants2-lantern-trace.json",
+      "before": "1990e5a4a3f913dcadf8121a1102806b15c3e5af08ed63ecf21c7eb44140e6d5",
+      "after": "ed965f17d86c9145f12ea14c498d1e0b9ba86fb22b38ac9b3b7173063a1e0485",
+      "bytes": 21234
+    },
+    {
+      "file": "src/ext/modules/giants/data/natural-trace.json",
+      "before": "20d57e7d852c391eb57b21a7751853cea0cc0f38104b17f51f49f5a77548ddc1",
+      "after": "6d0cb8ee11d4e886ab3c7296fb770677e179ad32f4ce83b9f0fe77ee3d5658e9",
+      "bytes": 2222
+    },
+    {
+      "file": "src/ext/modules/giants/data/spine-natural-trace.json",
+      "before": "957cff6936898e9ed13156215e5d712339b273856a4f1d772df05b063c59ba63",
+      "after": "ce8e8e51a5d45e260eb541f29beed0131a1f04ffc65025ffba928f78652f97c4",
+      "bytes": 6499
+    },
+    {
+      "file": "src/ext/modules/narrative/data/narrative2-combo-empty.trace.json",
+      "before": "66b42c722952aff625ba9430dfd070a5de420b1dfcfab065e1e54af39fdee066",
+      "after": "48bb9f346132303e372f7daedb97ad2d8fce4db967ebe69713945b1e8ae1fdab",
+      "bytes": 1361
+    },
+    {
+      "file": "src/ext/modules/narrative/data/narrative2-combo-narrative-combat.trace.json",
+      "before": "778e7d58ecd1ea7f6a24d50547e984c5ac3c18f0ea585eaf778e241801b86efd",
+      "after": "42b9010cf082e22add3a035a9c7e3ab6741651701c0d29b36cddb76977cd73d7",
+      "bytes": 12922
+    },
+    {
+      "file": "src/ext/modules/narrative/data/narrative2-combo-narrative-crafting.trace.json",
+      "before": "c02a9f0f58622a915599729eef234122d9985d7eb97adc159100295e2aa8e8da",
+      "after": "4ff7658b10e3ab0013969b616841222032cb3daf9e75b034655ad7ccfeee0c22",
+      "bytes": 12924
+    },
+    {
+      "file": "src/ext/modules/narrative/data/narrative2-combo-narrative-foraging.trace.json",
+      "before": "7220a2db8471a13611ba3adaea9951aa7742b91821561d4c047afc49240b6f93",
+      "after": "2eab4d41155fc4f89f4487c327aecd3394c80cae50abd12a88dc3fc5d1df94e3",
+      "bytes": 12924
+    },
+    {
+      "file": "src/ext/modules/narrative/data/narrative2-combo-narrative-giants.trace.json",
+      "before": "e128a401e92896ff9d69d38302655f28eb1d7f717cb15ebdcd4e0ef4c4752d40",
+      "after": "1f54cd80862ae204ea9bba14dc9f18b0c9bcc8e570648636aaf9643bfaba3308",
+      "bytes": 12921
+    },
+    {
+      "file": "src/ext/modules/narrative/data/narrative2-combo-narrative-growth-combat-giants-crafting-foraging-settlement.trace.json",
+      "before": "c15cb6c3e4ecaa18e93b6bd9a8843e190c68b29d49e4341032604dcd79dd638f",
+      "after": "97573ea4ad1eeda6eab3007ae36682115bafd7c429ab17b3f53e656f0f4ed6d5",
+      "bytes": 207821
+    },
+    {
+      "file": "src/ext/modules/narrative/data/narrative2-combo-narrative-growth.trace.json",
+      "before": "c9330f25d5dcc4ad9a741f5c241e1bf5127768ed35d84d92268a7519a5841aa5",
+      "after": "eb6c40a18d3c4420c92801a985e6500c5ea163c15aef254d3b94d443d135c4ef",
+      "bytes": 13090
+    },
+    {
+      "file": "src/ext/modules/narrative/data/narrative2-combo-narrative-settlement.trace.json",
+      "before": "c33a141e24f9fd70f217dd17fa5edda77d45d4b44e888d8d005630800988c3bf",
+      "after": "06196bff38aff736874e235f51946acd563b7c9e5aa8bdbd4ea73568f21eacd6",
+      "bytes": 12577
+    },
+    {
+      "file": "src/ext/modules/narrative/data/narrative2-combo-narrative.trace.json",
+      "before": "6646ef030857536ae6ecb5a505751c1520778134c83e106245c3e73d67dc2407",
+      "after": "c592e26ba798f373252480b7024010698214f15d391c5ecb541b9b8ca2a22f4e",
+      "bytes": 83062
+    },
+    {
+      "file": "src/ext/modules/narrative/data/narrative2-cord-normal.trace.json",
+      "before": "bfbc5fb58036bbee3d19437772220e5ab895c6b08a0302046dac65b17a5c0010",
+      "after": "bb779e88807ca4b61876b7cfb0a75326c13b050585b8f62b2746a249a5510dd0",
+      "bytes": 12908
+    },
+    {
+      "file": "src/ext/modules/narrative/data/narrative2-five-wizard.trace.json",
+      "before": "6646ef030857536ae6ecb5a505751c1520778134c83e106245c3e73d67dc2407",
+      "after": "c592e26ba798f373252480b7024010698214f15d391c5ecb541b9b8ca2a22f4e",
+      "bytes": 83062
+    },
+    {
+      "file": "src/ext/modules/narrative/tests/narrative2_imports.test.ts",
+      "before": "cf636696262bb9c48e6ad34ffaa6c637cb4d8b656770b872190689544f981bdc",
+      "after": "749abcbb389b626c3545300c497d0e8ab1be4610a255224f43825602422ece32",
+      "bytes": 15361
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident-captive-route.json",
+      "before": "584aebd460597bdf331df161bb45f0288b2f865c60a8cfb83c2ac51c0acd1d7b",
+      "after": "5742c85f77d666503e99b895307578324728a0ad1446d149ef734b6e835867cb",
+      "bytes": 24999
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident-natural-route.json",
+      "before": "41e84619beaed59b32468f1661b92dd0470bf789613f25cb53cf6dfcc8d2dc9c",
+      "after": "75e7e19695bbe5abf5ce13b42fd6e3443be7e5cdf68e9319efc656392569dbc4",
+      "bytes": 48856
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_input.test.ts",
+      "before": "ffc5c048d81d29eaf172354c40e1d17e2a868ac1f04d7f20fc03846d247aa302",
+      "after": "c20685bf9a2a85075162f1edb13f1fd02f5bd68f94dd632639bd5fd90870544b",
+      "bytes": 6246
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/settlement_review.test.ts",
+      "before": "2feab7e9627de6da680cb1d1144ca6d8efed499a1b79f9dc24c76ae1e07a1aee",
+      "after": "19cbd322e1fdd3b2e3363b5e266a24c39e23c68684b8b6bb9bc3716ae8850c1b",
+      "bytes": 11268
+    },
+    {
+      "file": "src/test/dialog_host.test.ts",
+      "before": "12585f985d06cafbe477f2a2f169a86bfe770e76e65024422e033d3dc906e9b0",
+      "after": "154c7facc422f11111a1f288a89e8b7cf1e5e4b6fbba2b2922110f27a874436f",
+      "bytes": 51672
+    },
+    {
+      "file": "src/test/fixtures/foraging-foundation15-import.json",
+      "before": "f1b284e4bd1ae84d85c1cd091b66b91f87d77d42e42142e18576e49b7c255f3f",
+      "after": "d917320cdb899ea78d4eff0206c82d26e71b093317dae010a70e1aae52ff9517",
+      "bytes": 66264
+    },
+    {
+      "file": "src/test/fixtures/phase4a0-single-cell-baseline.json",
+      "before": "8f28d69679bf12cf9eb089adfd457c58f7f9fa2dababc4385eec5decfe38ccb8",
+      "after": "70aa60aee02f7861917f00595c6081ed282709bdf8071643babdb9b2f97ca01e",
+      "bytes": 74047
+    },
+    {
+      "file": "src/test/phase4a0_spatial_differential.test.ts",
+      "before": "9af5192f63ba4719e786340f77252287fb6815e21f2c81baf1ac726da97e20fd",
+      "after": "3cfaff8018f5260a86cd723fece3e3dfb41f1c40cf8edda4ce225c9397fa74a8",
+      "bytes": 9312
+    },
+    {
+      "file": "src/test/replay_import_ui.test.ts",
+      "before": "5407f8f10ccfe3855289e982f31f2a5cd5c2aea9da6204500830125c824fdd72",
+      "after": "d4b17f6c890d28860ff02f514a726bcdf00bd8c6a5957cabc61ec4257e4dab53",
+      "bytes": 16084
+    }
+  ],
+  "newEvidenceFile": "docs/ext/evidence/phase6z-cleanup.json (self hash intentionally excluded)",
+  "preservedPreexistingContentPaths": [
+    ".github/workflows/ext-perf.yml",
+    "docs/HANDOFF.md",
+    "docs/README.md",
+    "docs/ext/README.md",
+    "docs/ext/architecture.md",
+    "docs/ext/commander-status.md",
+    "docs/ext/crafting-config.md",
+    "docs/ext/growth-config.md",
+    "docs/ext/loot-core-contract.md",
+    "docs/ext/loot-ui-contract.md",
+    "docs/ext/phase5a2.report.md",
+    "docs/ext/phase5a2.task.md",
+    "docs/ext/phase6a-contract.md",
+    "docs/ext/phase6b3-contract.md",
+    "docs/ext/phase6b4-contract.md",
+    "docs/ext/phase6c.task.md",
+    "docs/ext/phase6c0-contract.md",
+    "docs/ext/phase6c4.report.md",
+    "docs/ext/phase6z.task.md",
+    "docs/ext/settlement-config.md",
+    "docs/ext/stats-config.md",
+    "docs/i18n.md",
+    "docs/release.md",
+    "scripts/ext-perf-ab-policy.mjs",
+    "scripts/ext-perf-budget.mjs",
+    "scripts/run-ext-perf-ab.mjs",
+    "src/ext/modules/combat/tests/combat2_content.test.ts",
+    "src/ext/modules/foraging/tests/foraging_combinations.test.ts",
+    "src/ext/modules/giants/tests/giants2_contract.test.ts",
+    "src/ext/modules/growth/tests/ext_growth_combat_stats.test.ts",
+    "src/ext/modules/growth/tests/ext_growth_creation_view.test.ts",
+    "src/ext/modules/growth/tests/ext_growth_loot_receipts.test.ts",
+    "src/ext/modules/loot/ui/LootPresetPicker.vue",
+    "src/ext/modules/loot/ui/creation/LootCreationStep.vue",
+    "src/test/b2_transcription.test.ts",
+    "src/test/dialog_d4_blink.test.ts",
+    "src/test/ext_foundation_contracts.test.ts",
+    "src/test/ext_placement_group_runtime.test.ts",
+    "src/test/ext_recording_v4_digest.test.ts",
+    "src/test/fixtures/structure-geometry-baseline.json",
+    "src/test/fixtures/traces/u-r4-trace.json.gz",
+    "src/test/main_menu_replay_seek.test.ts",
+    "src/test/phase3a0_actor_action.test.ts",
+    "src/test/phase4a2_body_effects.test.ts",
+    "src/test/presentation_timeline.test.ts",
+    "src/test/u_05_machine_items.test.ts",
+    "src/test/u_15a_shattering.test.ts"
+  ],
+  "preexistingTrackedDiffsTouchedOnlyToAppendTaskFix": [
+    "src/ext/modules/settlement/tests/settlement_review.test.ts"
+  ],
+  "corrections": {
+    "importDeclaration": {
+      "time": 1792238042.2621691,
+      "file": "src/test/replay_import_ui.test.ts",
+      "before": "8793c003f006bcb2c680d66804179d043fe794d17419f7393d32b905428d3b57",
+      "after": "d4b17f6c890d28860ff02f514a726bcdf00bd8c6a5957cabc61ec4257e4dab53",
+      "reason": "Capture edit accidentally removed historicalRecording still used by immutable foundation10 rejection. Restore declaration only; preserve every assertion. This file already finished in active batch. Only this file requires followup."
+    },
+    "links": {
+      "time": 1792238380.5531552,
+      "file": "src/ext/modules/combat/tests/fixtures/combat2-links.json",
+      "before": "e41b111f41ecf1c923b8614a99771022cc087b3727b10030daa7c978dd4dfe04",
+      "after": "87c69744518f8f690567b8b620aaa23f997dcdcd5089e8720cdf2e866510a770",
+      "oldSeed": 47,
+      "oldReason": "no-safe-stair-route",
+      "oldNaturalGiantHits": [],
+      "currentSeed": 118,
+      "source": "src/ext/modules/combat/tests/fixtures/combat2-integrated-seed118.json",
+      "naturalPositiveGiantHits": [
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.anchor-break",
+          "segmentIndex": 0,
+          "elapsed": 140,
+          "damage": 4,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.advancing-point",
+          "segmentIndex": 0,
+          "elapsed": 80,
+          "damage": 3,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.advancing-point",
+          "segmentIndex": 1,
+          "elapsed": 140,
+          "damage": 4,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.returning-sweep",
+          "segmentIndex": 0,
+          "elapsed": 100,
+          "damage": 4,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.answering-edge",
+          "segmentIndex": 0,
+          "elapsed": 30,
+          "damage": 3,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.returning-sweep",
+          "segmentIndex": 0,
+          "elapsed": 100,
+          "damage": 3,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.returning-sweep",
+          "segmentIndex": 0,
+          "elapsed": 100,
+          "damage": 4,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.answering-edge",
+          "segmentIndex": 0,
+          "elapsed": 30,
+          "damage": 3,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.returning-sweep",
+          "segmentIndex": 0,
+          "elapsed": 100,
+          "damage": 3,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.returning-sweep",
+          "segmentIndex": 0,
+          "elapsed": 100,
+          "damage": 3,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.answering-edge",
+          "segmentIndex": 0,
+          "elapsed": 30,
+          "damage": 3,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.returning-sweep",
+          "segmentIndex": 0,
+          "elapsed": 100,
+          "damage": 4,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.returning-sweep",
+          "segmentIndex": 0,
+          "elapsed": 100,
+          "damage": 4,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.answering-edge",
+          "segmentIndex": 0,
+          "elapsed": 30,
+          "damage": 4,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.returning-sweep",
+          "segmentIndex": 0,
+          "elapsed": 100,
+          "damage": 4,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.answering-edge",
+          "segmentIndex": 0,
+          "elapsed": 30,
+          "damage": 4,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.returning-sweep",
+          "segmentIndex": 0,
+          "elapsed": 100,
+          "damage": 4,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.answering-edge",
+          "segmentIndex": 0,
+          "elapsed": 30,
+          "damage": 4,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.returning-sweep",
+          "segmentIndex": 0,
+          "elapsed": 100,
+          "damage": 3,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.answering-edge",
+          "segmentIndex": 0,
+          "elapsed": 30,
+          "damage": 4,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.returning-sweep",
+          "segmentIndex": 0,
+          "elapsed": 100,
+          "damage": 4,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.answering-edge",
+          "segmentIndex": 0,
+          "elapsed": 30,
+          "damage": 3,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.returning-sweep",
+          "segmentIndex": 0,
+          "elapsed": 100,
+          "damage": 4,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.answering-edge",
+          "segmentIndex": 0,
+          "elapsed": 30,
+          "damage": 4,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.answering-edge",
+          "segmentIndex": 0,
+          "elapsed": 30,
+          "damage": 3,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.returning-sweep",
+          "segmentIndex": 0,
+          "elapsed": 100,
+          "damage": 4,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.answering-edge",
+          "segmentIndex": 0,
+          "elapsed": 30,
+          "damage": 3,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.answering-edge",
+          "segmentIndex": 0,
+          "elapsed": 30,
+          "damage": 3,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.answering-edge",
+          "segmentIndex": 0,
+          "elapsed": 30,
+          "damage": 4,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.returning-sweep",
+          "segmentIndex": 0,
+          "elapsed": 100,
+          "damage": 3,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.answering-edge",
+          "segmentIndex": 0,
+          "elapsed": 30,
+          "damage": 3,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.returning-sweep",
+          "segmentIndex": 0,
+          "elapsed": 100,
+          "damage": 3,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.answering-edge",
+          "segmentIndex": 0,
+          "elapsed": 30,
+          "damage": 3,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.answering-edge",
+          "segmentIndex": 0,
+          "elapsed": 30,
+          "damage": 3,
+          "hit": true
+        },
+        {
+          "sourceId": 1,
+          "targetId": 62,
+          "attackId": "combat.answering-edge",
+          "segmentIndex": 0,
+          "elapsed": 30,
+          "damage": 4,
+          "hit": true
+        }
+      ],
+      "growth": [
+        {
+          "index": 60,
+          "focusBefore": {
+            "current": 8,
+            "remainder": 0
+          },
+          "focusAfter": {
+            "current": 6,
+            "remainder": 1
+          },
+          "staminaBefore": 24,
+          "staminaAfter": 24
+        }
+      ],
+      "reason": "Old seed47 trace contains no giant hit at all. Reuse the already freshly captured genuine seed118 three-module public route, with positive giant damage and growth focus consumption; do not weaken assertions or use old giantHit waiver. This fixture has only combat2_links as a normal gate consumer, and that file finished before correction."
+    },
+    "natural": {
+      "time": 1792239585.433398,
+      "file": "src/ext/modules/combat/tests/fixtures/combat2-natural.json",
+      "before": "f29b17c85cc934b9af10ee0aae1ec13c1dbd22fdcb641f1cc4b5610c37b45658",
+      "after": "a9581fc65b408054750f45fccf5c569a102bc84c5b737ca9bc2e4f25d57947d1",
+      "oldFiveTracesUnchanged": true,
+      "added": [
+        {
+          "seed": 3,
+          "commands": 62,
+          "depth": 2,
+          "reason": "fixed-natural-prefix-new-warning-evasion"
+        },
+        {
+          "seed": 438491256,
+          "commands": 815,
+          "depth": 11,
+          "reason": "natural-deep-zombie-release"
+        }
+      ],
+      "player": [
+        "combat.advancing-point",
+        "combat.anchor-break",
+        "combat.answering-edge",
+        "combat.cast-echo",
+        "combat.returning-sweep"
+      ],
+      "npc": [
+        "combat.advancing-point",
+        "combat.anchor-break",
+        "combat.answering-edge",
+        "combat.cast-echo",
+        "combat.returning-sweep"
+      ],
+      "parry": true,
+      "evasion": true,
+      "zombieBirths": [
+        {
+          "id": 294,
+          "depth": 11,
+          "type": "zombie",
+          "birth": {
+            "creationReason": "natural",
+            "originalMonsterType": "zombie",
+            "initiallyHostile": true,
+            "sourceId": null,
+            "nativeStatsCopied": false
+          }
+        },
+        {
+          "id": 297,
+          "depth": 11,
+          "type": "zombie",
+          "birth": {
+            "creationReason": "natural",
+            "originalMonsterType": "zombie",
+            "initiallyHostile": true,
+            "sourceId": null,
+            "nativeStatsCopied": false
+          }
+        }
+      ],
+      "zombieReleases": [
+        {
+          "actionId": 111,
+          "sourceId": 297,
+          "sourceSubactionId": 1,
+          "attackId": "combat.anchor-break",
+          "segmentIndex": 0,
+          "elapsed": 140,
+          "cells": [
+            {
+              "x": 39,
+              "y": 15
+            },
+            {
+              "x": 37,
+              "y": 16
+            },
+            {
+              "x": 38,
+              "y": 16
+            },
+            {
+              "x": 38,
+              "y": 17
+            }
+          ]
+        }
+      ]
+    },
+    "deepNaturalLifecycle": {
+      "events": 815,
+      "saves": 12,
+      "seek": [
+        815,
+        0,
+        48,
+        1,
+        815
+      ],
+      "continuedEvents": 816,
+      "oos": 0
+    }
+  },
+  "capture": {
+    "basic": "7 files: 12 selected capture cases passed, 5 name-filtered; original capture flags",
+    "routes": {
+      "args": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        "/private/tmp/phase6z-cleanup/capture.config.mts",
+        "--maxWorkers=1"
+      ],
+      "exit": 0,
+      "seconds": 629.4947061538696
+    },
+    "importCapture": "Two old-route capture attempts fail with Missing replay item e; current natural-route real App capture passes; all 43 action/data/decisions exactly match current foraging capture. Whole-file import validation is separate.",
+    "foraging": {
+      "A": {
+        "oldSeed": 2,
+        "newSeed": 24,
+        "oldCommands": 149,
+        "newCommands": 43
+      },
+      "B": {
+        "oldSeed": 6,
+        "newSeed": 2,
+        "oldCommands": 27,
+        "newCommands": 68
+      }
+    },
+    "zombie": {
+      "firstAttempt": {
+        "command": [
+          "node",
+          "node_modules/vitest/vitest.mjs",
+          "run",
+          "--config",
+          "/private/tmp/phase6z-cleanup/zombie.config.mts",
+          "--maxWorkers=1",
+          "--reporter=verbose"
+        ],
+        "start": 1792238830.598635,
+        "end": 1792239201.2558541,
+        "exit": 1
+      },
+      "completedCapture": {
+        "command": [
+          "node",
+          "node_modules/vitest/vitest.mjs",
+          "run",
+          "--config",
+          "/private/tmp/phase6z-cleanup/zombie.config.mts",
+          "--maxWorkers=1",
+          "--reporter=verbose"
+        ],
+        "start": 1792239169.4859362,
+        "end": 1792239377.8128252,
+        "exit": 0
+      },
+      "method": "Existing start/play/observe/mechanical/digest capture APIs, fresh wizard seed438491256 combat-only game. Untimed existing pure route planner, then read-only BFS towards natural zombie at D11. All state changes are recorded public commands; no entity/HP/world/RNG injections. First attempt bypassed zombie and hit depth bound15>14; retained failure log. New trace revalidated by original complete persistence gate."
+    },
+    "rawEvidenceRoot": "/private/tmp/phase6z-cleanup"
+  }
+}

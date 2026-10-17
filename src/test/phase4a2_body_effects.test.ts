@@ -253,10 +253,10 @@ describe('4a-2 public targeting and native body perception', () => {
         expect(wake.mock.calls.filter(c => c[1] === m)).toHaveLength(1); expect(m.state).toBe(MonsterState.HUNTING);
     });
     it.each([2, 3] as const)('%s-square light has one stable central source and its whole footprint blocks light', size => {
-        const { g, m } = scene(size); (g as any).setBurningDuration(m, 10); const paint = vi.spyOn(g.lightMap, 'paintLight');
+        const { g, m } = scene(size); (g as any).setBurningDuration(m, 10); const paint = vi.spyOn(g.lightMap, 'updateLighting');
         const before = rng.getState(); (g as any).updateVision(false);
         expect(bodyLightOrigin(m)).toMatchObject(size === 2 ? { x: 8, y: 5 } : { x: 9, y: 6 });
-        const atBody = paint.mock.calls.filter(c => c[0].x === bodyLightOrigin(m).x && c[0].y === bodyLightOrigin(m).y);
+        const atBody = paint.mock.calls.flatMap(c => c[0]).filter(c => c.x === bodyLightOrigin(m).x && c.y === bodyLightOrigin(m).y);
         expect(atBody).toHaveLength(1); expect(rng.getState()).toEqual(before);
         for (const p of footprintOf(m)) expect((g as any).hasCreatureAtForLight(p.x, p.y)).toBe(true);
     });

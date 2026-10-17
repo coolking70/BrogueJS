@@ -1,5 +1,7 @@
 # 版本与发布
 
+> 扩展分支当前发布流程（2026-10-17）：`.github/workflows/pages.yml` 实际由 `ext/foundation` push 或显式workflow_dispatch触发，Node24、`npm run build -- --base /BrogueJS/`。下方main/Node22描述为旧经典流程，不能用于当前ext部署。6Z仅准备[草稿](ext/phase6z-release-notes.md)与[候选差异](ext/phase6z.report.md)，本次不提交/推送/合并/部署，无tag/Release或package大版本升级。
+
 ## 1. 版本号
 
 - `package.json` 的 `version` 与 git tag 一致（`v0.2.0` 等）。

@@ -80,6 +80,7 @@ beforeAll(async () => {
     const modules: Record<string, unknown> = {
         './ext/ui/useModuleUi': await import('../ext/ui/useModuleUi'),
         '../ext/catalog': await import('../ext/catalog'),
+        '../ext/selection': await import('../ext/selection'),
         '../ext/ui/defaults': await import('../ext/ui/defaults'),
         '../ext/ui/creation': await import('../ext/ui/creation'),
 

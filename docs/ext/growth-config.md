@@ -1,5 +1,7 @@
 # Growth 数据配置合同（当前 Stat 接线，schema 1 / rules 1.8.0）
 
+> 6Z 当前索引（2026-10-17，候选 `06682d5`）：当前身份 foundation20/itemSdk4/worldSdk2/world schema6/edibleSdk1；loot0.9.0、pack0.6.0/schema5、实例6/state2，crafting1.1.0/definitions schema2、growth1.10.0，whole-run7/recording4/origin2。现行增量见 [loot配置](loot-config.md) 与 [合同差异](phase6z-contract-delta.md)；以下有日期的旧章节是冻结历史，不追改数值或历史通过数。6Z实绩见[报告](phase6z.report.md)，浏览器/性能不因功能提交自动关闭。
+
 5Z当前安装身份：foundation **13**、whole-run **6**、recording **4**、origin **2**、world5 **schema4**，SDK兼容号保持1。各模块自有版本/规则身份按下文，旧协议存档/录像直接拒绝、不迁移；引擎门禁与[人工待验清单](phase5z.manual-checklist.md)以[5Z报告](phase5z.report.md)为准。
 
 本文件记录 growth 数据包的实际字段合同。配置是有限、可校验的 JSON，不是脚本；数值是可调整的默认样例，不承诺平衡。1a0、1a、1a1 已验收；1b 启用 P01 纯求值、属性/训练/分配/洗点和原物品永久收益控制。1d 已接技能动作/效果消费/客观时钟；1e 接通身份选择/授予/誓约、怪物模板与盟友自动分配。§1.1–1.6 保留逐步交付历史，2c 新增可选能力见 §1.7；3g 可信 actor 容量查询见 §1.8。
@@ -148,7 +150,7 @@
 
 旧配置守卫唯一前提扩展：删除全部属性的夹具同时设置 `combatStats:null`，移除本轮新增引用，原“不抛异常”断言不变。隔离原 HEAD 生产反事实通过，新生产原夹具仅因 dangling combatStats 属性引用失败；未在共享工作区反转生产文件。
 
-### 1.9 当前统一 Stat 接线（1.8.0 / foundation 13）
+### 1.9 阶段5统一 Stat 接线（历史1.8.0 / foundation13，现行见页首6Z）
 
 当前module/rules精确为1.8.0，包schema仍1；旧版本/指纹拒绝而不迁移。生产 `module.ts` 注册 `createGrowthStatSources(pack)`，没有注册旧§1.8的 `growth.combat-stats.v1` optionalActorQueries。`combatStats.ts` 保留纯整数映射helper，容量配置和原先的属性/效果数学继续使用，不据此宣称旧DTO provider仍存在。
 

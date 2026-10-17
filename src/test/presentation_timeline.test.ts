@@ -48,7 +48,7 @@ function live(animation: boolean, automatic = false, ui = true) {
     return { game, ...mounted };
 }
 
-// AST inventory pins the existing 21 production sites, not archive IDs. The
+// AST inventory pins the current 22 production sites, not archive IDs. The
 // shared log seam is exercised for every source key, alongside live producers.
 function ackSources() {
     const result: string[] = [];
@@ -68,11 +68,11 @@ function ackSources() {
 }
 
 describe('D3 observation and ordered projection', () => {
-    it('all 21 unchanged ACK sources share the archive-before-observation seam', () => {
-        const sources = ackSources(); expect(sources).toHaveLength(21);
+    it('all 22 current ACK sources share the archive-before-observation seam', () => {
+        const sources = ackSources(); expect(sources).toHaveLength(22);
         const game = createHeadlessGame(33421); const { service, timeline } = mount(game);
         for (const source of sources) logger.log(source, '#fff', { acknowledge: true });
-        expect(logger.pendingAcknowledgments).toHaveLength(21);
+        expect(logger.pendingAcknowledgments).toHaveLength(22);
         for (const source of sources) {
             expect(service.current?.text).toBe(source);
             expect(displayedFrame(game)?.logs.find(message => message.text === source)).toBeDefined();

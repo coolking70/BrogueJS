@@ -91,8 +91,8 @@ describe('D4 blink command continuation and protocol', () => {
         const { g } = scene(true); g.onCommandConfirmRequest = () => {};
         g.executeCommand('confirm_target'); answer(g, decision); drain(g);
         const expected = world(g), recording = g.exportRecording(), save = g.toSaveSnapshot();
-        // 5A4 adopted whole-run v6; 5D1 §0/§5 retains that exact format.
-        expect(recording.version).toBe(4); expect(save.version).toBe(6);
+        // 6Z retains current whole-run v7 and recording v4 identities.
+        expect(recording.version).toBe(4); expect(save.version).toBe(7);
 
         g.onCommandConfirmRequest = () => { expect(g.pendingCommandConfirmation).toBeNull(); };
         g.onConfirmRequest = () => { throw new Error('replay resolver'); };

@@ -1,5 +1,7 @@
 # 独立新产品原型：架构与阶段 0–1 实现记录
 
+> 6Z 当前索引（2026-10-17，候选 `06682d5`）：当前身份 foundation20/itemSdk4/worldSdk2/world schema6/edibleSdk1；loot0.9.0、pack0.6.0/schema5、实例6/state2，crafting1.1.0/definitions schema2、growth1.10.0，whole-run7/recording4/origin2。现行增量见 [loot配置](loot-config.md) 与 [合同差异](phase6z-contract-delta.md)；以下有日期的旧章节是冻结历史，不追改数值或历史通过数。6Z实绩见[报告](phase6z.report.md)，两轮修复后仍有22文件138项失败未关闭；浏览器54格待维护者，C3超时/C4取消，性能待补录。
+
 ## 当前政策与阅读范围
 
 `ext/foundation` 是独立新产品原型，阶段 1e 已验收、阶段 1 已完成，阶段 2 四项 A 已确认，2a0/2a1 已验收，2b 已验收，本轮只实施并独立验收 2c，2d及后续仍待确认，暂不合并 main。玩法、内容与数值可在后续彻底重设计。最新开发原则与门禁以 [README](README.md) 为准，并覆盖阶段 0/1 旧验收原则及 `AGENTS.md`、主线文档和历史报告中的冲突要求。

@@ -1,0 +1,980 @@
+{
+  "candidate": "06682d538084d552e40ba192c9f1e2e896b3e13d",
+  "allDeleted": {
+    "row": "keep-none",
+    "temporaryCopy": "/var/folders/2s/dmv643cj5493tlmrh5rfgwxw0000gn/T/brogue-removed-modules-ahSvlB/candidate",
+    "deletedModules": [
+      "combat",
+      "crafting",
+      "foraging",
+      "giants",
+      "growth",
+      "loot",
+      "narrative",
+      "settlement"
+    ],
+    "physicalDirectoriesAbsent": true,
+    "unchangedRemainingSrcAndScripts": true,
+    "remainingTestFiles": 411,
+    "removedOwnedTestFiles": 266,
+    "firstExt": {
+      "exit": 1,
+      "files": 122,
+      "passedFiles": 92,
+      "failedFiles": 5,
+      "skippedFiles": 25,
+      "passed": 1684,
+      "failed": 6,
+      "skipped": 25,
+      "seconds": 1069.08
+    },
+    "firstGates": [
+      {
+        "id": "boundaries",
+        "command": [
+          "/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "scripts/check-module-boundaries.mjs"
+        ],
+        "startedAt": "2026-10-17T09:36:57.275Z",
+        "endedAt": "2026-10-17T09:37:02.107Z",
+        "exitCode": 0,
+        "signal": null,
+        "log": "/private/tmp/phase6z-06682d5/all-deleted/keep-none-1.log"
+      },
+      {
+        "id": "test-dependencies",
+        "command": [
+          "/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "scripts/check-test-dependencies.mjs"
+        ],
+        "startedAt": "2026-10-17T09:37:02.107Z",
+        "endedAt": "2026-10-17T09:37:05.315Z",
+        "exitCode": 0,
+        "signal": null,
+        "log": "/private/tmp/phase6z-06682d5/all-deleted/keep-none-2.log"
+      },
+      {
+        "id": "typecheck",
+        "command": [
+          "/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "node_modules/vue-tsc/bin/vue-tsc.js",
+          "-b"
+        ],
+        "startedAt": "2026-10-17T09:37:05.320Z",
+        "endedAt": "2026-10-17T09:37:13.184Z",
+        "exitCode": 0,
+        "signal": null,
+        "log": "/private/tmp/phase6z-06682d5/all-deleted/keep-none-3.log"
+      },
+      {
+        "id": "build",
+        "command": [
+          "npm",
+          "run",
+          "build"
+        ],
+        "startedAt": "2026-10-17T09:37:13.185Z",
+        "endedAt": "2026-10-17T09:37:27.803Z",
+        "exitCode": 0,
+        "signal": null,
+        "log": "/private/tmp/phase6z-06682d5/all-deleted/keep-none-4.log"
+      },
+      {
+        "id": "extension-tests",
+        "command": [
+          "npm",
+          "run",
+          "test:ext",
+          "--",
+          "--maxWorkers=1",
+          "--no-file-parallelism"
+        ],
+        "startedAt": "2026-10-17T09:37:27.804Z",
+        "endedAt": "2026-10-17T09:55:20.369Z",
+        "exitCode": 1,
+        "signal": null,
+        "log": "/private/tmp/phase6z-06682d5/all-deleted/keep-none-5.log"
+      }
+    ],
+    "endpoint": "not-run: original runner stopped after extension-tests failure",
+    "declaredSkips": [
+      {
+        "file": "src/test/ext_actor_actions_root_world.test.ts",
+        "group": "Declared test dependencies missing: combat (src/test/ext_actor_actions_root_world.test.ts)",
+        "required": [
+          "combat"
+        ],
+        "missing": [
+          "combat"
+        ]
+      },
+      {
+        "file": "src/test/ext_combat_adapter_foundation.test.ts",
+        "group": "Declared test dependencies missing: growth (src/test/ext_combat_adapter_foundation.test.ts)",
+        "required": [
+          "growth"
+        ],
+        "missing": [
+          "growth"
+        ]
+      },
+      {
+        "file": "src/test/ext_combat_transition_facts.test.ts",
+        "group": "Declared test dependencies missing: combat, giants, growth, narrative (src/test/ext_combat_transition_facts.test.ts)",
+        "required": [
+          "combat",
+          "giants",
+          "growth",
+          "narrative"
+        ],
+        "missing": [
+          "combat",
+          "giants",
+          "growth",
+          "narrative"
+        ]
+      },
+      {
+        "file": "src/test/ext_compatibility_diagnostics.test.ts",
+        "group": "Declared test dependencies missing: narrative (src/test/ext_compatibility_diagnostics.test.ts)",
+        "required": [
+          "narrative"
+        ],
+        "missing": [
+          "narrative"
+        ]
+      },
+      {
+        "file": "src/test/ext_departure_runtime.test.ts",
+        "group": "Declared test dependencies missing: combat, giants (src/test/ext_departure_runtime.test.ts)",
+        "required": [
+          "combat",
+          "giants"
+        ],
+        "missing": [
+          "combat",
+          "giants"
+        ]
+      },
+      {
+        "file": "src/test/ext_edible_review.test.ts",
+        "group": "Declared test dependencies missing: combat, giants (src/test/ext_edible_review.test.ts)",
+        "required": [
+          "combat",
+          "giants"
+        ],
+        "missing": [
+          "combat",
+          "giants"
+        ]
+      },
+      {
+        "file": "src/test/ext_edible_runtime.test.ts",
+        "group": "Declared test dependencies missing: growth (src/test/ext_edible_runtime.test.ts)",
+        "required": [
+          "growth"
+        ],
+        "missing": [
+          "growth"
+        ]
+      },
+      {
+        "file": "src/test/ext_fire_contact_runtime.test.ts",
+        "group": "Declared test dependencies missing: crafting (src/test/ext_fire_contact_runtime.test.ts)",
+        "required": [
+          "crafting"
+        ],
+        "missing": [
+          "crafting"
+        ]
+      },
+      {
+        "file": "src/test/ext_foundation_boundary_audit.test.ts",
+        "group": "Declared test dependencies missing: combat, crafting, foraging, giants, settlement (src/test/ext_foundation_boundary_audit.test.ts)",
+        "required": [
+          "combat",
+          "crafting",
+          "foraging",
+          "giants",
+          "settlement"
+        ],
+        "missing": [
+          "combat",
+          "crafting",
+          "foraging",
+          "giants",
+          "settlement"
+        ]
+      },
+      {
+        "file": "src/test/ext_foundation_retirement_atomicity.test.ts",
+        "group": "Declared test dependencies missing: combat (src/test/ext_foundation_retirement_atomicity.test.ts)",
+        "required": [
+          "combat"
+        ],
+        "missing": [
+          "combat"
+        ]
+      },
+      {
+        "file": "src/test/ext_foundation_world_repair.test.ts",
+        "group": "Declared test dependencies missing: combat, crafting, foraging, giants, growth, narrative, settlement (src/test/ext_foundation_world_repair.test.ts)",
+        "required": [
+          "combat",
+          "crafting",
+          "foraging",
+          "giants",
+          "growth",
+          "narrative",
+          "settlement"
+        ],
+        "missing": [
+          "combat",
+          "crafting",
+          "foraging",
+          "giants",
+          "growth",
+          "narrative",
+          "settlement"
+        ]
+      },
+      {
+        "file": "src/test/ext_generation_actor_identity.test.ts",
+        "group": "Declared test dependencies missing: combat (src/test/ext_generation_actor_identity.test.ts)",
+        "required": [
+          "combat"
+        ],
+        "missing": [
+          "combat"
+        ]
+      },
+      {
+        "file": "src/test/ext_item_stats.test.ts",
+        "group": "Declared test dependencies missing: combat (src/test/ext_item_stats.test.ts)",
+        "required": [
+          "combat"
+        ],
+        "missing": [
+          "combat"
+        ]
+      },
+      {
+        "file": "src/test/ext_rest_point_runtime.test.ts",
+        "group": "Declared test dependencies missing: combat (src/test/ext_rest_point_runtime.test.ts)",
+        "required": [
+          "combat"
+        ],
+        "missing": [
+          "combat"
+        ]
+      },
+      {
+        "file": "src/test/ext_stats_review.test.ts",
+        "group": "Declared test dependencies missing: combat, growth (src/test/ext_stats_review.test.ts)",
+        "required": [
+          "combat",
+          "growth"
+        ],
+        "missing": [
+          "combat",
+          "growth"
+        ]
+      },
+      {
+        "file": "src/test/ext_world_work_review.test.ts",
+        "group": "Declared test dependencies missing: combat (src/test/ext_world_work_review.test.ts)",
+        "required": [
+          "combat"
+        ],
+        "missing": [
+          "combat"
+        ]
+      },
+      {
+        "file": "src/test/ext_world_work_transactions.test.ts",
+        "group": "Declared test dependencies missing: combat (src/test/ext_world_work_transactions.test.ts)",
+        "required": [
+          "combat"
+        ],
+        "missing": [
+          "combat"
+        ]
+      },
+      {
+        "file": "src/test/phase4a0_spatial_differential.test.ts",
+        "group": "Declared test dependencies missing: growth, narrative (src/test/phase4a0_spatial_differential.test.ts)",
+        "required": [
+          "growth",
+          "narrative"
+        ],
+        "missing": [
+          "growth",
+          "narrative"
+        ]
+      },
+      {
+        "file": "src/test/phase4d_body_lifecycle.test.ts",
+        "group": "Declared test dependencies missing: combat, growth (src/test/phase4d_body_lifecycle.test.ts)",
+        "required": [
+          "combat",
+          "growth"
+        ],
+        "missing": [
+          "combat",
+          "growth"
+        ]
+      },
+      {
+        "file": "src/test/phase4d_declarations.test.ts",
+        "group": "Declared test dependencies missing: combat (src/test/phase4d_declarations.test.ts)",
+        "required": [
+          "combat"
+        ],
+        "missing": [
+          "combat"
+        ]
+      },
+      {
+        "file": "src/test/phase4d_effects_rewards.test.ts",
+        "group": "Declared test dependencies missing: combat, growth (src/test/phase4d_effects_rewards.test.ts)",
+        "required": [
+          "combat",
+          "growth"
+        ],
+        "missing": [
+          "combat",
+          "growth"
+        ]
+      },
+      {
+        "file": "src/test/phase4d_production_body.test.ts",
+        "group": "Declared test dependencies missing: combat (src/test/phase4d_production_body.test.ts)",
+        "required": [
+          "combat"
+        ],
+        "missing": [
+          "combat"
+        ]
+      },
+      {
+        "file": "src/test/phase4e_body_transition.test.ts",
+        "group": "Declared test dependencies missing: combat (src/test/phase4e_body_transition.test.ts)",
+        "required": [
+          "combat"
+        ],
+        "missing": [
+          "combat"
+        ]
+      },
+      {
+        "file": "src/test/phase4e_recording.test.ts",
+        "group": "Declared test dependencies missing: combat (src/test/phase4e_recording.test.ts)",
+        "required": [
+          "combat"
+        ],
+        "missing": [
+          "combat"
+        ]
+      }
+    ],
+    "historicalSkips": [
+      {
+        "file": "src/test/ext_structure_performance.test.ts",
+        "name": "observes zero and 3072-cell/12288-component budget fixture",
+        "reason": "C5_PERF not 1; no performance run requested"
+      }
+    ],
+    "targetedRepair": {
+      "gates": {
+        "R1-removed-targeted": {
+          "command": [
+            "node",
+            "node_modules/vitest/vitest.mjs",
+            "run",
+            "src/test/ext_foundation_contracts.test.ts",
+            "src/test/ext_recording_v4_digest.test.ts",
+            "src/test/ext_placement_group_runtime.test.ts",
+            "src/test/ext_structure_geometry.test.ts",
+            "src/test/phase4a2_body_effects.test.ts",
+            "--maxWorkers=1",
+            "--no-file-parallelism",
+            "--reporter=default",
+            "--reporter=json",
+            "--outputFile=/private/tmp/phase6z-06682d5/R1-removed-targeted.json"
+          ],
+          "cwd": "/var/folders/2s/dmv643cj5493tlmrh5rfgwxw0000gn/T/brogue-removed-modules-ahSvlB/candidate",
+          "start": 1792231883.139255,
+          "end": 1792231937.0758998,
+          "exit": 0
+        },
+        "R1-removed-endpoint": {
+          "command": [
+            "node",
+            "scripts/check-module-composition-smoke.mjs",
+            "--output",
+            "/private/tmp/phase6z-06682d5/R1-removed-endpoint.json",
+            "--engine-only",
+            "--removed-modules",
+            "combat,crafting,foraging,giants,growth,loot,narrative,settlement",
+            "--combinations",
+            "endpoints"
+          ],
+          "cwd": "/var/folders/2s/dmv643cj5493tlmrh5rfgwxw0000gn/T/brogue-removed-modules-ahSvlB/candidate",
+          "start": 1792231937.076122,
+          "end": 1792231941.2324202,
+          "exit": 0
+        }
+      },
+      "tests": {
+        "files": 5,
+        "passed": 86,
+        "failed": 0
+      },
+      "synced": [
+        "src/test/dialog_d4_blink.test.ts",
+        "src/test/phase3a0_actor_action.test.ts",
+        "src/test/u_15a_shattering.test.ts",
+        "src/test/ext_foundation_contracts.test.ts",
+        "src/test/ext_placement_group_runtime.test.ts",
+        "src/test/ext_recording_v4_digest.test.ts",
+        "src/test/presentation_timeline.test.ts",
+        "src/test/phase4a2_body_effects.test.ts",
+        "src/test/u_05_machine_items.test.ts",
+        "src/test/main_menu_replay_seek.test.ts",
+        "src/test/b2_transcription.test.ts",
+        "src/test/fixtures/structure-geometry-baseline.json",
+        "src/test/fixtures/traces/u-r4-trace.json.gz"
+      ],
+      "endpoint": {
+        "schema": 1,
+        "cwd": "/private/var/folders/2s/dmv643cj5493tlmrh5rfgwxw0000gn/T/brogue-removed-modules-ahSvlB/candidate",
+        "requestedScope": "engine-only",
+        "combinationSelection": "endpoints",
+        "removed": [
+          "combat",
+          "crafting",
+          "foraging",
+          "giants",
+          "growth",
+          "loot",
+          "narrative",
+          "settlement"
+        ],
+        "installed": [],
+        "engine": {
+          "status": "passed",
+          "combinations": [
+            {
+              "modules": [],
+              "events": 2,
+              "continuationEvents": 3,
+              "exactCheckpoints": true,
+              "saveLoad": true,
+              "replaySeek": true,
+              "continuation": true,
+              "missingModuleRejected": [
+                "combat",
+                "crafting",
+                "foraging",
+                "giants",
+                "growth",
+                "loot",
+                "narrative",
+                "settlement",
+                "composition-unavailable"
+              ]
+            }
+          ]
+        },
+        "browser": {
+          "status": "not-run",
+          "reason": "Explicit --engine-only: built-product browser validation is a separate required gate"
+        },
+        "passed": false,
+        "requestedScopePassed": true
+      },
+      "finalVerdict": "original failure retained; all6 original ext failures closed plus previously unexecuted endpoint passed; no second whole ext run and no second physical layout"
+    }
+  },
+  "sevenSmoke": {
+    "schema": 1,
+    "cwd": "/Users/coolking70/Documents/同步空间/BrogueJS-p6",
+    "requestedScope": "engine-only",
+    "combinationSelection": "all",
+    "removed": [],
+    "installed": [
+      "combat",
+      "crafting",
+      "foraging",
+      "giants",
+      "growth",
+      "loot",
+      "narrative",
+      "settlement"
+    ],
+    "engine": {
+      "status": "passed",
+      "combinations": [
+        {
+          "modules": [
+            "combat",
+            "crafting",
+            "foraging",
+            "giants",
+            "growth",
+            "loot",
+            "narrative",
+            "settlement"
+          ],
+          "naturalDepth": 2,
+          "naturalContributedBirth": true,
+          "events": 60,
+          "continuationEvents": 61,
+          "exactCheckpoints": true,
+          "saveLoad": true,
+          "replaySeek": true,
+          "continuation": true,
+          "missingModuleRejected": [
+            "composition-unavailable"
+          ]
+        },
+        {
+          "modules": [],
+          "events": 2,
+          "continuationEvents": 3,
+          "exactCheckpoints": true,
+          "saveLoad": true,
+          "replaySeek": true,
+          "continuation": true,
+          "missingModuleRejected": [
+            "composition-unavailable"
+          ]
+        },
+        {
+          "modules": [
+            "loot",
+            "growth"
+          ],
+          "events": 4,
+          "continuationEvents": 5,
+          "exactCheckpoints": true,
+          "saveLoad": true,
+          "replaySeek": true,
+          "continuation": true,
+          "missingModuleRejected": [
+            "composition-unavailable"
+          ]
+        },
+        {
+          "modules": [
+            "loot"
+          ],
+          "events": 3,
+          "continuationEvents": 4,
+          "exactCheckpoints": true,
+          "saveLoad": true,
+          "replaySeek": true,
+          "continuation": true,
+          "missingModuleRejected": [
+            "composition-unavailable"
+          ]
+        },
+        {
+          "modules": [
+            "growth"
+          ],
+          "events": 3,
+          "continuationEvents": 4,
+          "exactCheckpoints": true,
+          "saveLoad": true,
+          "replaySeek": true,
+          "continuation": true,
+          "missingModuleRejected": [
+            "composition-unavailable"
+          ]
+        },
+        {
+          "modules": [
+            "combat",
+            "crafting",
+            "foraging",
+            "giants",
+            "growth",
+            "narrative",
+            "settlement"
+          ],
+          "naturalDepth": 2,
+          "naturalContributedBirth": true,
+          "events": 59,
+          "continuationEvents": 60,
+          "exactCheckpoints": true,
+          "saveLoad": true,
+          "replaySeek": true,
+          "continuation": true,
+          "missingModuleRejected": [
+            "composition-unavailable"
+          ]
+        },
+        {
+          "modules": [
+            "combat",
+            "crafting",
+            "foraging",
+            "giants",
+            "loot",
+            "narrative",
+            "settlement"
+          ],
+          "naturalDepth": 2,
+          "naturalContributedBirth": true,
+          "events": 59,
+          "continuationEvents": 60,
+          "exactCheckpoints": true,
+          "saveLoad": true,
+          "replaySeek": true,
+          "continuation": true,
+          "missingModuleRejected": [
+            "composition-unavailable"
+          ]
+        }
+      ]
+    },
+    "browser": {
+      "status": "not-run",
+      "reason": "Explicit --engine-only: built-product browser validation is a separate required gate"
+    },
+    "passed": false,
+    "requestedScopePassed": true
+  },
+  "realInputs": {
+    "status": "pass",
+    "result": [
+      {
+        "label": "loot",
+        "modules": [
+          {
+            "id": "loot",
+            "version": "0.9.0",
+            "rules": {
+              "schema": 1,
+              "version": "0.9.0",
+              "fingerprint": "sha256:745fff0befa6ded14159bc11f21db2257ee778fb4b4b13525613fd786d974f3b"
+            },
+            "configuration": {
+              "presetId": "standard"
+            }
+          }
+        ],
+        "save": "/private/tmp/phase6z-06682d5/real-inputs/loot.save.json",
+        "recording": "/private/tmp/phase6z-06682d5/real-inputs/loot.recording.json",
+        "saveHash": "72be91942dcaf6cfb2bdb5f64111f623ddff480833ff48ac90d724b091154a58",
+        "recordingHash": "da48586941a1c590dcc5a875a1b6534bfcef5f934f5b133ece56a4bf3b6032a3",
+        "events": 3,
+        "normalLifecycle": "pass"
+      },
+      {
+        "label": "loot-growth",
+        "modules": [
+          {
+            "id": "growth",
+            "version": "1.10.0",
+            "rules": {
+              "schema": 1,
+              "version": "1.10.0",
+              "fingerprint": "sha256:2599e550813f0df085701c908fe3edb88fcd29e3350870378ccbf417e20624f8"
+            }
+          },
+          {
+            "id": "loot",
+            "version": "0.9.0",
+            "rules": {
+              "schema": 1,
+              "version": "0.9.0",
+              "fingerprint": "sha256:745fff0befa6ded14159bc11f21db2257ee778fb4b4b13525613fd786d974f3b"
+            },
+            "configuration": {
+              "presetId": "standard"
+            }
+          }
+        ],
+        "save": "/private/tmp/phase6z-06682d5/real-inputs/loot-growth.save.json",
+        "recording": "/private/tmp/phase6z-06682d5/real-inputs/loot-growth.recording.json",
+        "saveHash": "cdb4311410fc629462318aa7e8989da18793506b26cc43c062a6fc2966e2c4e9",
+        "recordingHash": "66a6a10068351b76cc07f3076172dbdb298e1de40fc7cea94a24699edb029852",
+        "events": 4,
+        "normalLifecycle": "pass"
+      },
+      {
+        "label": "loot-crafting",
+        "modules": [
+          {
+            "id": "crafting",
+            "version": "1.1.0",
+            "rules": {
+              "schema": 2,
+              "version": "1.1.0",
+              "fingerprint": "sha256:6c92dced97fb2f6f192be73ceb432c558c826d5bdf0e1de2b0ff2437cdbe2e3a"
+            }
+          },
+          {
+            "id": "loot",
+            "version": "0.9.0",
+            "rules": {
+              "schema": 1,
+              "version": "0.9.0",
+              "fingerprint": "sha256:745fff0befa6ded14159bc11f21db2257ee778fb4b4b13525613fd786d974f3b"
+            },
+            "configuration": {
+              "presetId": "standard"
+            }
+          }
+        ],
+        "save": "/private/tmp/phase6z-06682d5/real-inputs/loot-crafting.save.json",
+        "recording": "/private/tmp/phase6z-06682d5/real-inputs/loot-crafting.recording.json",
+        "saveHash": "5293bac102e804d637aecbd015c04edfa68e228f53731a648141a391309ca305",
+        "recordingHash": "765b620ac76aaaf2cdaba7cee62804729af5698cd4d31dd0653a8ee76becef79",
+        "events": 3,
+        "normalLifecycle": "pass"
+      },
+      {
+        "label": "loot-giants",
+        "modules": [
+          {
+            "id": "giants",
+            "version": "1.1.0",
+            "rules": {
+              "schema": 1,
+              "version": "1.1.0",
+              "fingerprint": "sha256:cae84fd3f67cffdfb426d0fe275a820ac330104a83221104d127f960a74fb0e5"
+            }
+          },
+          {
+            "id": "loot",
+            "version": "0.9.0",
+            "rules": {
+              "schema": 1,
+              "version": "0.9.0",
+              "fingerprint": "sha256:745fff0befa6ded14159bc11f21db2257ee778fb4b4b13525613fd786d974f3b"
+            },
+            "configuration": {
+              "presetId": "standard"
+            }
+          }
+        ],
+        "save": "/private/tmp/phase6z-06682d5/real-inputs/loot-giants.save.json",
+        "recording": "/private/tmp/phase6z-06682d5/real-inputs/loot-giants.recording.json",
+        "saveHash": "fdc1edf25861bd004ed6ccd4b97e87ff276c293f24ada2d98cea49985e2e230f",
+        "recordingHash": "2785a8451643017184262abd24f81cbb84f5f9d8136fc25e033cffc9f75a4f51",
+        "events": 3,
+        "normalLifecycle": "pass"
+      },
+      {
+        "label": "all",
+        "modules": [
+          {
+            "id": "combat",
+            "version": "1.6.0",
+            "rules": {
+              "schema": 1,
+              "version": "1.6.0",
+              "fingerprint": "sha256:9c2be4947fa2e080890ad9ca2b6a7aca20197f0ee77648b042fc9194618587ae"
+            }
+          },
+          {
+            "id": "crafting",
+            "version": "1.1.0",
+            "rules": {
+              "schema": 2,
+              "version": "1.1.0",
+              "fingerprint": "sha256:6c92dced97fb2f6f192be73ceb432c558c826d5bdf0e1de2b0ff2437cdbe2e3a"
+            }
+          },
+          {
+            "id": "foraging",
+            "version": "1.0.0",
+            "rules": {
+              "schema": 1,
+              "version": "1.0.0",
+              "fingerprint": "sha256:d2e0803474a80f1adfc41680351199da38b7f3e8129df3d58ffd0349488d936f"
+            }
+          },
+          {
+            "id": "giants",
+            "version": "1.1.0",
+            "rules": {
+              "schema": 1,
+              "version": "1.1.0",
+              "fingerprint": "sha256:cae84fd3f67cffdfb426d0fe275a820ac330104a83221104d127f960a74fb0e5"
+            }
+          },
+          {
+            "id": "growth",
+            "version": "1.10.0",
+            "rules": {
+              "schema": 1,
+              "version": "1.10.0",
+              "fingerprint": "sha256:2599e550813f0df085701c908fe3edb88fcd29e3350870378ccbf417e20624f8"
+            }
+          },
+          {
+            "id": "loot",
+            "version": "0.9.0",
+            "rules": {
+              "schema": 1,
+              "version": "0.9.0",
+              "fingerprint": "sha256:745fff0befa6ded14159bc11f21db2257ee778fb4b4b13525613fd786d974f3b"
+            },
+            "configuration": {
+              "presetId": "standard"
+            }
+          },
+          {
+            "id": "narrative",
+            "version": "1.5.0",
+            "rules": {
+              "schema": 1,
+              "version": "1.5.0",
+              "fingerprint": "sha256:c22c646d3b86ee57ab3d36069992e317bf355f8d105bacc92114a67176f04beb"
+            }
+          },
+          {
+            "id": "settlement",
+            "version": "1.4.0",
+            "rules": {
+              "schema": 1,
+              "version": "1.4.0",
+              "fingerprint": "sha256:54de0cf33dda2e4b83ca5f15494e5cb90b8d35b9b242fb79f474e89707d4a65f"
+            },
+            "configuration": {
+              "raids": false
+            }
+          }
+        ],
+        "save": "/private/tmp/phase6z-06682d5/real-inputs/all.save.json",
+        "recording": "/private/tmp/phase6z-06682d5/real-inputs/all.recording.json",
+        "saveHash": "1c75f8dd94bc429befed3fc6a253dbd553ed104b0798ec9f576ea5fd65cfc5af",
+        "recordingHash": "49f7851295d9af27acbdd0958de661d373a599cbf3c2610338c204e09c51ccb3",
+        "events": 4,
+        "normalLifecycle": "pass"
+      }
+    ]
+  },
+  "realRejection": {
+    "status": "pass",
+    "installed": [],
+    "result": [
+      {
+        "label": "loot",
+        "kind": "save",
+        "accepted": false,
+        "fullGraphUnchanged": true,
+        "rngUnchanged": true,
+        "allocatorsUnchanged": true,
+        "diagnostic": "无法读取：缺少模块 loot，文件要求版本 0.9.0。",
+        "reason": "same foundation20 and native unedited version; required modules physically absent"
+      },
+      {
+        "label": "loot",
+        "kind": "recording",
+        "accepted": false,
+        "fullGraphUnchanged": true,
+        "rngUnchanged": true,
+        "allocatorsUnchanged": true,
+        "diagnostic": "无法读取：缺少模块 loot，文件要求版本 0.9.0。",
+        "reason": "same foundation20 and native unedited version; required modules physically absent"
+      },
+      {
+        "label": "loot-growth",
+        "kind": "save",
+        "accepted": false,
+        "fullGraphUnchanged": true,
+        "rngUnchanged": true,
+        "allocatorsUnchanged": true,
+        "diagnostic": "无法读取：缺少模块 growth，文件要求版本 1.10.0。",
+        "reason": "same foundation20 and native unedited version; required modules physically absent"
+      },
+      {
+        "label": "loot-growth",
+        "kind": "recording",
+        "accepted": false,
+        "fullGraphUnchanged": true,
+        "rngUnchanged": true,
+        "allocatorsUnchanged": true,
+        "diagnostic": "无法读取：缺少模块 growth，文件要求版本 1.10.0。",
+        "reason": "same foundation20 and native unedited version; required modules physically absent"
+      },
+      {
+        "label": "loot-crafting",
+        "kind": "save",
+        "accepted": false,
+        "fullGraphUnchanged": true,
+        "rngUnchanged": true,
+        "allocatorsUnchanged": true,
+        "diagnostic": "无法读取：缺少模块 crafting，文件要求版本 1.1.0。",
+        "reason": "same foundation20 and native unedited version; required modules physically absent"
+      },
+      {
+        "label": "loot-crafting",
+        "kind": "recording",
+        "accepted": false,
+        "fullGraphUnchanged": true,
+        "rngUnchanged": true,
+        "allocatorsUnchanged": true,
+        "diagnostic": "无法读取：缺少模块 crafting，文件要求版本 1.1.0。",
+        "reason": "same foundation20 and native unedited version; required modules physically absent"
+      },
+      {
+        "label": "loot-giants",
+        "kind": "save",
+        "accepted": false,
+        "fullGraphUnchanged": true,
+        "rngUnchanged": true,
+        "allocatorsUnchanged": true,
+        "diagnostic": "无法读取：缺少模块 giants，文件要求版本 1.1.0。",
+        "reason": "same foundation20 and native unedited version; required modules physically absent"
+      },
+      {
+        "label": "loot-giants",
+        "kind": "recording",
+        "accepted": false,
+        "fullGraphUnchanged": true,
+        "rngUnchanged": true,
+        "allocatorsUnchanged": true,
+        "diagnostic": "无法读取：缺少模块 giants，文件要求版本 1.1.0。",
+        "reason": "same foundation20 and native unedited version; required modules physically absent"
+      },
+      {
+        "label": "all",
+        "kind": "save",
+        "accepted": false,
+        "fullGraphUnchanged": true,
+        "rngUnchanged": true,
+        "allocatorsUnchanged": true,
+        "diagnostic": "无法读取：缺少模块 combat，文件要求版本 1.6.0。",
+        "reason": "same foundation20 and native unedited version; required modules physically absent"
+      },
+      {
+        "label": "all",
+        "kind": "recording",
+        "accepted": false,
+        "fullGraphUnchanged": true,
+        "rngUnchanged": true,
+        "allocatorsUnchanged": true,
+        "diagnostic": "无法读取：缺少模块 combat，文件要求版本 1.6.0。",
+        "reason": "same foundation20 and native unedited version; required modules physically absent"
+      }
+    ],
+    "liveContinuation": "pass"
+  },
+  "probeSha256": {
+    "socket-witness.mjs": "de595db674a9cb37956bd6b0807908551935a297b6fea1b3661adf7d0495aa9e",
+    "real-missing-inputs.mjs": "7f06de7530e39f8e4d97e1cc1be130dcd1cc9df6032c6fc8f77077e94430d434",
+    "seven-smoke.mjs": "66f7e51e3a5acce06a18cff6c2d1347646c43b3bcdced323e063e98b7c815994",
+    "seven-smoke.diff": "f7f4093274a34c9f42fb6929cc5074b5bb966c85fa1ceda934a7b7fad6ff8e43"
+  },
+  "notes": [
+    "sevenSmoke.combinationSelection remains original CLI default all; warehouse selector overrides actual combinations to exactly the seven listed. No standalone 256 runner.",
+    "passed=false at top of sevenSmoke means browser not run; requestedScopePassed=true and engine.status=passed are the engine-only verdict.",
+    "Vite HMR listen EPERM on port24678 occurred in SSR probes; assertions and processes completed exit0; not browser acceptance."
+  ]
+}

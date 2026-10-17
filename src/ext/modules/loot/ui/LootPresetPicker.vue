@@ -9,7 +9,7 @@ const titleId = useId();
 const root = ref<HTMLElement | null>(null);
 const selected = computed(() => Math.max(0, props.options.findIndex(option => option.id === props.modelValue)));
 function choose(id: string) { if (!props.disabled) emit('update:modelValue', id); }
-function confirm() { if (!props.disabled && props.options.some(option => option.id === props.modelValue)) emit('confirm', props.modelValue); }
+function submitPreset() { if (!props.disabled && props.options.some(option => option.id === props.modelValue)) emit('confirm', props.modelValue); }
 function keydown(event: KeyboardEvent) {
   if (props.disabled || !props.options.length) return;
   let index = selected.value;
@@ -17,7 +17,7 @@ function keydown(event: KeyboardEvent) {
   else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') index = (index + 1) % props.options.length;
   else if (event.key === 'Home') index = 0;
   else if (event.key === 'End') index = props.options.length - 1;
-  else if (event.key === 'Enter') { event.preventDefault(); event.stopPropagation(); confirm(); return; }
+  else if (event.key === 'Enter') { event.preventDefault(); event.stopPropagation(); submitPreset(); return; }
   else if (event.key !== ' ') return;
   event.preventDefault(); event.stopPropagation();
   const option = props.options[index];
@@ -32,7 +32,7 @@ function keydown(event: KeyboardEvent) {
       <span class="loot-preset-description">{{ t(option.description.nameKey, option.description.params) }}</span>
       <span class="loot-preset-metrics"><span v-for="metric in option.metrics" :key="metric.key" class="loot-preset-metric"><span>{{ t(metric.label.nameKey, metric.label.params) }}</span><span class="loot-preset-value">{{ metric.value }}</span></span></span>
     </button></div>
-    <button class="loot-preset-confirm" type="button" data-action="confirm" :disabled="disabled || !options.some(option => option.id === modelValue)" @click="confirm">{{ t('ext.loot.ui.preset.confirm') }}</button>
+    <button class="loot-preset-confirm" type="button" data-action="confirm" :disabled="disabled || !options.some(option => option.id === modelValue)" @click="submitPreset">{{ t('ext.loot.ui.preset.confirm') }}</button>
   </section>
 </template>
 <style>

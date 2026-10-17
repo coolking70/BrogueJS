@@ -1,5 +1,7 @@
 # 6B4 实施合同与分步记录
 
+> 6Z 当前索引（2026-10-17，候选 `06682d5`）：当前身份 foundation20/itemSdk4/worldSdk2/world schema6/edibleSdk1；loot0.9.0、pack0.6.0/schema5、实例6/state2，crafting1.1.0/definitions schema2、growth1.10.0，whole-run7/recording4/origin2。现行增量见 [loot配置](loot-config.md) 与 [合同差异](phase6z-contract-delta.md)；以下有日期的旧章节是冻结历史，不追改数值或历史通过数。6Z实绩见[报告](phase6z.report.md)，浏览器/性能不因功能提交自动关闭。
+
 2026-10-16，开工 ext/phase6 / 8d7c799；D1–D7 全部 A。按任务单串行实施，不调参、不 commit。本文为实现前冻结方案，实际完成与门禁以报告为准。
 
 ## B4-0 差量

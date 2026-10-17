@@ -1,5 +1,7 @@
 # Foundation 属性配置（5A2-S）
 
+> 6Z 当前索引（2026-10-17，候选 `06682d5`）：当前身份 foundation20/itemSdk4/worldSdk2/world schema6/edibleSdk1；loot0.9.0、pack0.6.0/schema5、实例6/state2，crafting1.1.0/definitions schema2、growth1.10.0，whole-run7/recording4/origin2。现行增量见 [loot配置](loot-config.md) 与 [合同差异](phase6z-contract-delta.md)；以下有日期的旧章节是冻结历史，不追改数值或历史通过数。6Z实绩见[报告](phase6z.report.md)，浏览器/性能不因功能提交自动关闭。
+
 统一入口为 `src/ext/stats.ts`。生产查询、原生 CE 表节点、growth 来源与 combat 模板共同经过 `StatPipeline`；内容模块不导入引擎、其它模块实现或旧规则端口。foundation 8，growth module/rules 1.8.0，combat module/rules 1.6.0、state 4；旧版本拒载，不迁移。whole-run 仍为 5、录像仍为 4；录像头的 codec.foundation 与摘要版本身份为 8。
 
 ## 数值、层与类别

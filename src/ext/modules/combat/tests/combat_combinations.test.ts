@@ -41,9 +41,12 @@ const directions = [
     { facing: 'sw', x: -1, y: 1 }, { facing: 'nw', x: -1, y: -1 },
 ] as const;
 
+// This natural short-encounter matrix excludes loot: its monster scaling changes
+// the hit premise. Loot composition/lifecycle is covered by the 6Z seven-combo
+// smoke and loot integration tests; all natural-hit assertions below stay exact.
 // Discover the powerset so physically removing another module also removes its
 // cases. No optional module's implementation, definitions or tests are imported.
-const optionalIds = getInstalledModuleDescriptors().map(module => module.id).filter(id => id !== 'combat');
+const optionalIds = getInstalledModuleDescriptors().map(module => module.id).filter(id => id !== 'combat' && id !== 'loot');
 const subsets = optionalIds.reduce<string[][]>((sets, id) => [...sets, ...sets.map(ids => [...ids, id])], [['combat']]);
 
 function start(ids: string[]): Game {

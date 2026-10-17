@@ -1,5 +1,7 @@
 # BrogueJS 文档
 
+> 6Z两轮结束、自动门禁未关闭（2026-10-17）：`ext/phase6` / `06682d5`。维护者接受Z-D1…Z-D7及精简门禁：影响面单批/原样证据沿用、静态+types+build各一次、全删1行、精选七组合、drift按影响、不新跑性能。见[6Z报告](ext/phase6z.report.md)、[loot手册](ext/loot-config.md)、[统一人工清单](ext/phase6z.manual-checklist.md)、[遗留](ext/phase6z-remainders.md)、[发布草稿](ext/phase6z-release-notes.md)。首轮160项失败关闭22项，仍有22文件138项未关闭；七组合通过，全删首败经定向复验关闭。U01–U18三档54格待维护者，C3超时/C4取消、性能结论待补录；未提交/推送/合并/部署。下方旧128/15行及旧阶段状态仅历史。
+
 | 文档 | 读者 | 内容 |
 |---|---|---|
 | [HANDOFF.md](HANDOFF.md) | 接手者（先读） | 项目状态、已定决策、怎样继续 |

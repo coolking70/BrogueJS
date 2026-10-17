@@ -1,8 +1,12 @@
 # 6Z 任务单：phase6 普通集成收口
 
-> 起草日期：2026-10-17；核对基线：`ext/phase6` / `07d7c97cdbe3f49ed58ae5137d145fceb02fcfbb`。6A1–6C4 功能已经提交；6C3/6C4 云端 A/B 进行中，结果及 run id 待回填。本文件是执行任务单，不是验收报告，也不授权执行发布。
+> 执行裁定（2026-10-17）：维护者已接受 Z-D1…Z-D7 全部推荐；本次候选 `ext/phase6` / `06682d538084d552e40ba192c9f1e2e896b3e13d`。本单下列精简门禁覆盖原完整 npm/ext/drift、256 组合及新增性能运行要求。最多两轮修复；不提交、不推送、不合并、不部署。
 >
-> **C-D8 已裁定：普通 phase6 收口，完整测试 / 动态启用组合 + 静态依赖 / 全删 1 行；不做发布矩阵、不打大版本 tag。** 本次起草只新增本文件，不改代码、不 commit。下面的执行、文档更新、修复及发布是后续任务范围，须分别按维护者实际授权推进。
+> 原起草基线为 `07d7c97`；执行候选见上。6A1–6C4功能已提交；C3/C4云端run已登记§6；本次查询C3超时、C4取消，完整性能结论待维护者补录。本文件不授权发布。
+>
+> **C-D8 已裁定：普通 phase6 收口，影响面测试 / 精选七组合 + 静态依赖 / 全删 1 行；不做发布矩阵、不打大版本 tag。** 本次授权执行 Z0–Z6；Z7 仍须后续明确授权。
+
+> 最终执行状态：两轮修复已用完，自动门禁尚有22文件138项失败未关闭；七组合通过，全删首败定向关闭。详见[6Z报告](phase6z.report.md)。本任务单保留执行规范，不表示验收通过。
 
 ## 1 依据、顺序与停点
 
@@ -10,15 +14,15 @@
 
 执行顺序：
 
-1. **Z0 前置**：核对分支、候选、C3/C4 云端结果、site 延期及各步审查状态。可先整理文档和清单；C3/C4 性能未裁定不得宣布正式进入最终收口或发布。
+1. **Z0 前置**：核对分支、候选、C3/C4 云端结果、site 延期及各步审查状态。可先整理文档和清单；C3/C4 未出结果时报告待维护者补录，不阻塞其余收口工作，不冒称性能通过或可发布。
 2. **Z5/Z6 先整理**：完成 §7 文档/合同及遗留登记，再冻结待验候选。历史报告保留原始身份与失败，新增当前状态说明，不重写历史为通过。
-3. **Z1**：Node24 / 3072MiB / 串行，完整静态、类型、构建、npm/ext/drift。
-4. **Z2/Z3**：发现器全部启用组合；一个全删布局、全部剩余 ext、全关生命周期和真实缺包拒绝。不做单删/单留，不执行 `--release-matrix`。
-5. **Z4**：最终性能身份/预算核对、功能体积与补充负载；维护者完成统一三档浏览器清单。
+3. **Z1**：Node24 / 3072MiB / maxWorkers=2，受影响文件去重单次运行；有逐文件字节与原样通过证据的沿用。boundary、静态测试依赖、vue-tsc、build 各一次；drift 按源码影响决定。
+4. **Z2/Z3**：发现器精选七启用组合；一个全删布局、全部剩余 ext、全关生命周期和真实缺包拒绝。不做单删/单留，不执行 `--release-matrix`。
+5. **Z4**：既有性能身份/冻结预算核对，仅补 0/1/4 孔与100次只读计数/体积小见证；维护者完成统一三档浏览器清单。
 6. 有问题按 §4 最多两轮审查→修复→复核；冻结修复后身份，按影响复验，不覆盖首败。无问题不制造第二轮。
 7. 交 Z1–Z6 最终报告、候选/目标差异、发布说明草案；**Z7 只有维护者明确授权后执行**。
 
-前置通过条件：C1/C2 已采用预算及例外可追溯；C3/C4 有维护者认可的有效性能结论和对应冻结制品；site 无入口的延期有明确记录；各步已确认缺陷关闭或由维护者具名裁定。提交存在、工作流绿灯、限定测试通过，均不代替以上条件。当前 `07d7c97` 仍缺 C3/C4 冻结预算/route/source，注册为 `accepted:false`；不得在本次文档起草中假填通过。
+前置通过条件：C1/C2 已采用预算及例外可追溯；C3/C4 云端结果按实际状态记录，缺结果待维护者补录；site 无入口的延期有明确记录；各步已确认缺陷关闭或由维护者具名裁定。提交存在、工作流绿灯、限定测试通过，均不代替以上条件。当前 `07d7c97` 仍缺 C3/C4 冻结预算/route/source，注册为 `accepted:false`；不得在本次文档起草中假填通过。
 
 ## 2 Z1：环境、冻结与完整门禁
 
@@ -59,10 +63,10 @@ run_gate() {
   printf '%s exit=%s\n' "$gate" "$rc"
   return "$rc"
 }
-run_gate 00-install npm ci
+ # 已有依赖且 lockfile 未变时沿用；仅依赖缺失才 npm ci，避免重复安装。
 ```
 
-安装失败先处理环境，不开始门禁。不得为安装或通过测试擅改 lockfile。Z5 文档/必要修复就绪后冻结：
+依赖缺失导致安装失败时先处理环境，不开始门禁。不得为安装或通过测试擅改 lockfile。Z5 文档/必要修复就绪后冻结：
 
 ```bash
 node --input-type=module <<'JS' > "$P6Z_EVIDENCE/source-before.json"
@@ -76,40 +80,38 @@ git ls-files --others --exclude-standard > "$P6Z_EVIDENCE/untracked.txt"
 
 `sourceSnapshot` 的 src 清单包含测试和新增源文件；`hashCandidate` 还覆盖脚本/配置/文档，排除 dist/依赖/缓存。另登记未跟踪文件的内容 hash，不能只留文件名。最终 build 后对 dist 按排序相对路径逐文件 SHA256、再对清单求 SHA256；保留算法/完整清单。规则/静态 pack/各有效能力目录及配置指纹从真实运行会话导出，不手写模拟。SDK 字节、性能工具/manifest/route/source 的 hash 分列，不将 src hash 等同于工具或构建身份。
 
-### 2.2 固定执行顺序
+### 2.2 精简门禁（维护者本次授权，替换原 Z1/Z2）
+
+1. 从 `git diff 9cf8366 HEAD -- src scripts` 建立源码影响集。用 `scripts/test-suites.json` / 模块清单的发现器及 `analyzeTestDependencies` 的传递 imports、required/optional、读源码守卫补充依赖，逐文件生成选择依据。测试自身及夹具变化也计入。动态目录发现和读源码字符串不能被静态 imports 漏掉。
+2. 已在各步审查原样整文件通过，且测试/夹具/传递依赖/动态能力依赖在该证据之后字节不变者，登记原日志、身份、通过数、依赖核对和沿用理由，不重跑。无法证明者进入单次去重批次；不另跑完整 npm test/test:ext。
+3. 批次命令为 `node node_modules/vitest/vitest.mjs run <选择文件> --maxWorkers=2`，Node24、`NODE_OPTIONS=--max-old-space-size=3072`；记录 JSON reporter、原始日志及退出码。超时先原 timeout 单文件单 worker 复核，再按已接受 Z-D3 因果关闭，不为全绿重跑全集。
+4. 正常候选 boundary、静态测试依赖检查、`vue-tsc -b`、`vite build` 各一次。build 用 Vite 直接入口，避免 npm build 再次隐式运行 vue-tsc。已有依赖沿用。
+5. drift 仅在上述 diff 触及 drift 测试的实际依赖源码时运行；与影响面批次去重（单列 drift 成员结果即算实际执行），否则逐依赖登记跳过理由。不以版本或模块标签猜测无影响。
+6. 不并发多个重门禁；首败、复核、历史 skip/todo、未选/沿用、unhandled 分列。
 
 ```bash
 run_gate 01-boundaries node scripts/check-module-boundaries.mjs
-run_gate 02-test-dependencies npm run check:test-dependencies
+run_gate 02-test-dependencies node scripts/check-test-dependencies.mjs
 run_gate 03-types node node_modules/vue-tsc/bin/vue-tsc.js -b
-run_gate 04-build npm run build
-run_gate 05-npm-first npm test -- --maxWorkers=1 --no-file-parallelism
-run_gate 06-ext-first npm run test:ext -- --maxWorkers=1 --no-file-parallelism
-run_gate 07-drift-first npm run test:drift -- --maxWorkers=1 --no-file-parallelism
+run_gate 04-build node node_modules/vite/bin/vite.js build
+# 文件清单在选择报告中冻结后，单次运行；不直接粘贴占位。
+run_gate 05-impact node node_modules/vitest/vitest.mjs run <选择文件> --maxWorkers=2
 ```
 
-这三套必须真正完整执行；不加文件过滤、不用定向批次拼接。`test:ext` 与 npm 有交集，统计不相加。测试发现由当前 `scripts/test-suites.json`、模块自有清单和 `scripts/test-dependencies.json` 决定，不照抄旧文件数。通过条件：静态/依赖零错误，types/build exit0；三套完整命令退出/通过/失败/skip/todo/unhandled 均记实，产品失败已关闭。严格“一次完整全绿”只用于该完整命令实际 exit0 的记录；经复核关闭的情况按 §4 裁定。
+冻结 src、依赖工具与 SDK 字节，运行期间不得改变实质输入；纯文档更新单列，不因此重复门禁。
 
-构建失败可继续独立测试以收集问题，但不能用旧 dist 做浏览器验收。只保留既有 chunk 提示也须写明。批次结束再次用上面的快照命令输出 `source-after.json`（不要覆盖 before），核对源码及工具没有在运行中变化；文档有意更新须单列差量，实质输入变化使受影响结果失效。
+## 3 Z2/Z3：精选启用组合与全删一行
 
-## 3 Z2/Z3：动态启用组合与全删一行
+### 3.1 正常树精选组合
 
-### 3.1 计划与正常树
-
-```bash
-run_gate 08-composition-plan node scripts/check-module-composition-smoke.mjs --plan --engine-only --output "$P6Z_EVIDENCE/composition-plan.json"
-run_gate 09-removal-plan npm run check:module-removal -- --plan --profile=removal --retain=none --engine-only --maxWorkers=1
-run_gate 10-composition node scripts/check-module-composition-smoke.mjs --engine-only --output "$P6Z_EVIDENCE/composition.json"
-```
-
-当前应发现 combat/crafting/foraging/giants/growth/loot/narrative/settlement 八模块，全部启用子集为 `2^8=256`。以执行时发现结果为准：逐集合唯一且数量相等；发现数量变更先解释，不硬改成128/256求过。所有组合实际 new/play/save/load/full replay/seek/续录、初始命令及自然贡献入口通过、零 OOS。`--plan` 只检查计划，`--engine-only` 的浏览器 `not-run` 必须保留，不能把 scope 通过改称浏览器通过。
+只跑 **全开、全关、loot+growth、仅 loot、仅 growth、全开去掉 loot、全开去掉 growth**，engine-only。发现八模块后以模块 ID 生成这七个唯一集合；不跑 256 全组合。复用原 smoke 的实际 new/play/save/load/full replay/seek/续录、初始命令及自然贡献断言；如现有 CLI 不支持七集合，可用仓外副本仅替换输入选择，记录副本差量/hash，不削减断言。浏览器保持 not-run，交维护者 U01–U18。
 
 ### 3.2 一个真实删除布局
 
 先按 §3.3 完成仓外探针，再在正常候选导出同版本真实输入，随后删除；按下面顺序执行：
 
 ```bash
-run_gate 10b-real-capture node "$P6Z_EVIDENCE/real-missing-inputs.mjs" capture --root "$P6Z_ROOT" --output "$P6Z_EVIDENCE/real-inputs"
+run_gate 10b-real-capture node "$P6Z_EVIDENCE/real-missing-inputs.mjs" capture "$P6Z_ROOT" "$P6Z_EVIDENCE/real-inputs"
 run_gate 11-all-deleted npm run check:module-removal -- --profile=removal --retain=none --engine-only --maxWorkers=1 --output="$P6Z_EVIDENCE/all-deleted"
 ```
 
@@ -124,7 +126,7 @@ run_gate 11-all-deleted npm run check:module-removal -- --profile=removal --reta
 ```bash
 # 第11步完成后读取真实副本路径；不猜临时目录名。
 export P6Z_REMOVED="$(node --input-type=module -e 'import fs from "node:fs"; const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); if(r.cases.length!==1) throw Error("Expected one row"); console.log(r.cases[0].temporaryCopy)' "$P6Z_EVIDENCE/all-deleted/module-removal-results.json")"
-run_gate 12-real-missing node "$P6Z_EVIDENCE/real-missing-inputs.mjs" reject --root "$P6Z_REMOVED" --input "$P6Z_EVIDENCE/real-inputs" --output "$P6Z_EVIDENCE/real-missing.json"
+run_gate 12-real-missing node "$P6Z_EVIDENCE/real-missing-inputs.mjs" reject "$P6Z_REMOVED" "$P6Z_EVIDENCE/real-inputs"
 ```
 
 探针实现与验收合同（报告附脚本 hash、命令、完整结果，不只附“pass”）：
@@ -145,7 +147,7 @@ run_gate 12-real-missing node "$P6Z_EVIDENCE/real-missing-inputs.mjs" reject --r
 2. **复核**：超时/争用按原 seed、原断言、原 timeout，单文件/单 worker/禁文件并行执行，例如 `run_gate R1-file node node_modules/vitest/vitest.mjs run <确切失败文件> --maxWorkers=1 --no-file-parallelism`；先将占位替换为首败实际文件。记录文件中的全部结果，不只截取通过项。禁止提高 timeout、减少样本/组合、放宽预算、关 OOS 或改守卫求过。
 3. **测试与基线**：真实正确性失败修生产。旧测试若确因本次修复失效，按根 AGENTS 先做只回退本次生产文件的单变量反事实，再仅修前提，不改断言语义；逐项登记。纯身份/格式差量沿 ext 政策按原捕获法重录并说明版本原因；含玩法/RNG/未知差量仍做单变量归因、按 [testing §3](../testing.md) 逐字段登记。不把格式升级用作改随机结果的解释。
 4. **skip**：历史 skip、todo、`-t` 未选项、全删声明缺依赖分列；具名声明 skip 不是测试通过。正常树新增 skip 或任何 unhandled 必须解释并裁定，不能以进程 exit0 掩盖。未经批准的产品失败不得“移到skip”。
-5. **两轮上限**：R1 审查→一批必要修复→原失败复验及直接影响回归；仍有问题才 R2。每次冻结新候选并同步全删副本的相应剩余源文件，复验受影响静态/类型/构建/测试/组合/输入/性能/UI。改生成、RNG、持久协议或影响范围不清时，重跑完整 npm/ext/drift 及组合/全删相关门禁；纯文档不重复重测生产。R2 后剩余问题单列给维护者，不自动 R3、不无限循环；末次修复只经作者复验的明确标记，不能称独立关闭。
+5. **两轮上限**：R1 审查→一批必要修复→原失败复验及直接影响回归；仍有问题才 R2。每次冻结新候选并同步全删副本的相应剩余源文件，复验受影响静态/类型/构建/测试/组合/输入/性能/UI。改生成、RNG、持久协议或影响范围不清时，重新评估影响闭包，复验失效证据与组合/全删相关项；不得默认恢复三套冗余全量门禁；纯文档不重复重测生产。R2 后剩余问题单列给维护者，不自动 R3、不无限循环；末次修复只经作者复验的明确标记，不能称独立关闭。
 6. **通过措辞**：首轮 exit1 永久保留。所有失败有充分证据关闭时可由维护者接受“完整首轮失败、定向复核关闭”；不得称“一次完整全绿”。推荐先完成已有完整执行和有因果的复核，不为漂亮数字反复跑全套。若维护者要求一次新完整全绿，另用新日志目录按 §2 全命令重跑。
 7. **阻断**：未关闭的同版本确定性、丢物/重复发放、非法输入保活局、预算硬错误、核心 UI 无法操作均阻断发布。非阻断差异需具名决定、理由、影响范围与下一任务；“最多两轮”不等于剩余缺陷自动豁免。
 
@@ -186,81 +188,17 @@ npm run preview -- --host 127.0.0.1 --port 4173 --strictPort
 
 通过条件：全部格有实际结果；核心闭环无阻断，所有未执行/失败给维护者裁定。三档浏览器模拟尺寸不等于手机真机性能；真机/失焦/移动端压力未测单列，不自动扩成平台矩阵。
 
-## 6 Z4：性能 manifest、体积与最终候选核对
+## 6 Z4：既有性能证据与有界补充（不新跑性能）
 
-### 6.1 冻结链及当前事实
+核对冻结 manifest、来源说明、route/source、接受状态与报告；云端 run 分别为 6B4 `38860207834`、6C1 `38920592958`、6C2 `38960940396`、6C3 `38996836519`、6C4 `39006896716`。只读查询已有 run，**不 dispatch、不再生成/回放 A/B、不跑 final-budget 或各步 profile**。C2 既有前缀回归按维护者原接受结论保留，核对其独立冻结预算来源，不扩展特批。B4 无第四次独立回放的限制保持。
 
-| 步骤 | 预算/来源 | 状态及必须保留的限制 |
-| --- | --- | --- |
-| P0/P1/P2 累计参考 | `scripts/ext-perf-budget.json`；[P0/P1](perf-p0p1.report.md)、[P2](perf-p2.report.md) | 留作phase6累计趋势；历史机器绝对毫秒不能作当前机器基线 |
-| 6B4 | `scripts/ext-perf-6b4-budget.json`；[run 38860207834 / attempt1](https://github.com/coolking70/BrogueJS/actions/runs/38860207834) | 维护者关闭B4-5；修订D6离线pass，三轮B冻结后只重查校准数据，无第四次独立回放。1714前缀仅属于此步 |
-| 6C1 | `scripts/ext-perf-6c1-budget.json`；[run 38920592958 / attempt1](https://github.com/coolking70/BrogueJS/actions/runs/38920592958) | 自动hard/pass，三轮及round-verify独立回放/预算检查；已采用，provenance之外与suggested相同 |
-| 6C2 | `scripts/ext-perf-6c2-budget.json`；[run 38960940396](https://github.com/coolking70/BrogueJS/actions/runs/38960940396) | **hard pass、原D6 regression**；47输入前缀P95开销按维护者接受，`acceptance=known-prefix-overhead`。三轮B完整输入冻结，本地独立完整正确性/预算复核，不是第四次云端计时；不得写成自动A/B pass。早先生成失败 [38937707099](https://github.com/coolking70/BrogueJS/actions/runs/38937707099) 单列 |
-| 6C3 | 预期 `scripts/ext-perf-6c3-budget.json` + `scripts/perf/ext-6c3-late-*` | **当前不存在/待采纳**。A=`33d7aba6e458529ae126dee2d889c7b2c24507bd`/6c2，B=`0d2e98a91e238e9c988017e87c7a51fb31569691`/6c3；在途run id、attempt、control SHA由维护者回填，不编造 |
-| 6C4 | 预期 `scripts/ext-perf-6c4-budget.json` + `scripts/perf/ext-6c4-late-*` | **当前不存在/待采纳**。A=`0d2e98a91e238e9c988017e87c7a51fb31569691`/6c3，B=`07d7c97cdbe3f49ed58ae5137d145fceb02fcfbb`/6c4；run id/attempt待维护者回填。pendingBaseline比较不能冻结/采纳C4 |
+C3/C4 尚无结果或本机无法取得时标“待维护者补录”，不阻塞其余收口；未采用的预算仍 accepted:false，不能修改标志伪造通过。制品7天到期前由维护者持久归档，仓外临时目录不是长期唯一副本。
 
-维护者提供在途运行身份后，执行者只读下载归档（`P6Z_RUN_ID` 必须填实际数值）：
-
-```bash
-export P6Z_RUN_ID=<实际run_id>
-gh run view "$P6Z_RUN_ID" --repo coolking70/BrogueJS --json databaseId,attempt,headSha,status,conclusion,url,createdAt,updatedAt > "$P6Z_EVIDENCE/cloud-$P6Z_RUN_ID.json"
-gh run download "$P6Z_RUN_ID" --repo coolking70/BrogueJS --dir "$P6Z_EVIDENCE/cloud-$P6Z_RUN_ID"
-```
-
-这不是触发新A/B的命令。本单起草不联网检查运行状态；库中尚无C3/C4 run id。工作流 artifact 保留 **7天**，维护者负责到期前把原始目录和 SHA256 清单归档到持久仓外位置；`/private/tmp` 仅暂存，不作为长期唯一副本。
-
-### 6.2 核对与通过条件
-
-1. 从实际 `result.json` 核对 A/B/control完整SHA、runner/Node、rounds=3、classic/all完整输入及冻结source/route/recordingHash、生产和工具首尾hash、17项既有入口计数和新增场景计数；每条完整路线到D20且D20≥500 settled，覆盖256/2048边界。生成日志计数与实际落盘事件数分列。
-2. 零OOS、完整逐域/终态/双流/调度一致，同版本重复输入计数稳定且不超预算；缺制品/组合、漂移、计数增长必须失败。规则换版只用原捕获方法重新生成，不改录像头/检查点，不做旧档兼容。
-3. D6按 [6B4 §6.3修订](phase6b4.task.md#63-p0原基准规则换版与新增开销)：全程/D20命令及客观回合P95 +10%，命令max +25%，客观块P99 +25%，回放墙钟+10%；判式 `B > A + max(1ms, A×比例)`，相等不越线。三轮至少两轮有任一指标越线即阻断（不同指标亦计），`round.max`/分层round.max只报告。P99用原逐块最近秩 `ceil(n×0.99)`，不以max代填。
-4. 工作量改变时完整D20保留正确性/计数和校准，时延只参考；相对裁决用自动求得的同输入前缀，逐轮验证rowsHash、双流、块数/回合/ticks一致。不套用1714或47；前缀缺失/不等不得通过。逐步对比之外保留P0→B4→C1→C2→C3→C4累计趋势，不能连续换预算掩盖总退化。
-5. C3先获得有效裁决并采纳，再裁定C4。若在途C4运行带 `pendingBaseline`、无建议manifest/round-verify，结果仅作比较，**不能只把accepted改true补成通过**；推荐采纳C3后用同一C4源码重新做正式三轮。性能运行三轮是采样轮次，与最多两轮修复不同；不得自行无限重跑碰运气。
-6. 正常通过时检查三轮B完整数据冻结的 suggested manifest、独立 `round-verify/B-{classic,all}-full` 及check exit0；采用时只加来源说明，不改断言/预算。若新D6 regression，先定位/最多两轮修复，剩余回归交维护者；C2的特批不能自动继承。6B4离线freeze例外也不能复用到C3/C4。
-7. 采纳后的manifest、classic/all route/source与原artifact逐字节/去provenance深比较；注册accepted必须有实际审核依据。最终候选与云端B若只有文档差量，记录证明；生产/目录/性能所导入支持代码变化须复验，不能靠HEAD相近复用旧结果。
-
-若确需重跑，先核对在途run避免重复触发；维护者授权该次云端执行后，按顺序使用以下参数。C3通过并将预算/route/source及accepted审核落盘到workflow ref后，才执行第二条；工具复制到历史A/B检出树的差量亦保留hash。若后续生产修复改变候选，用已审阅并已推送的完整新SHA替换对应head，重新登记因果，不能继续测旧SHA。
-
-```bash
-gh workflow run ext-perf.yml --repo coolking70/BrogueJS --ref ext/phase6 \
-  -f base_ref=33d7aba6e458529ae126dee2d889c7b2c24507bd \
-  -f head_ref=0d2e98a91e238e9c988017e87c7a51fb31569691 \
-  -f base_identity=6c2 -f head_identity=6c3 -f rounds=3
-# 停点：完成C3审阅和冻结制品采纳，再单独触发C4。
-gh workflow run ext-perf.yml --repo coolking70/BrogueJS --ref ext/phase6 \
-  -f base_ref=0d2e98a91e238e9c988017e87c7a51fb31569691 \
-  -f head_ref=07d7c97cdbe3f49ed58ae5137d145fceb02fcfbb \
-  -f base_identity=6c3 -f head_identity=6c4 -f rounds=3
-```
-
-每次dispatch后回填实际run id/attempt，不把命令成功当测量成功。已通过的C1可用原云端 `round-verify` 离线检查；C2按其已采用本地 `freeze-check` 记录引用；C3/C4各用实际独立验证数据做同样检查。例如在下载的C4 artifact目录已确认后：
-
-```bash
-export P6Z_C4_ARTIFACT='<下载后含result.json和round-verify的实际目录>'
-run_gate 15b-cloud-frozen-check node scripts/ext-perf-budget.mjs check scripts/ext-perf-6c4-budget.json "classic=$P6Z_C4_ARTIFACT/round-verify/B-classic-full" "all=$P6Z_C4_ARTIFACT/round-verify/B-all-full"
-```
-
-这一步重查既有独立数据，不是新增一次回放；工具/observer hash不匹配或缺round-verify必须失败，不能拿前三轮校准数据替代。
-
-C3/C4制品实际采纳后，运行以下最终**正确性/计数预算**检查；本地时延仅报告，不替代云端D6：
-
-```bash
-run_gate 13-perf-selection node scripts/test-ext-perf-selection.mjs
-run_gate 14-perf-policy node scripts/test-ext-perf-ab.mjs
-run_gate 15-perf-route node scripts/test-ext-perf-route.mjs
-run_gate 16-final-budget node scripts/check-ext-perf.mjs "$P6Z_EVIDENCE/final-inputs" "$P6Z_EVIDENCE/final-budget" --identity=6c4 --regenerate
-run_gate 17-set-scenes node scripts/profile-ext-6c1.mjs "$P6Z_EVIDENCE/set-scenes.json"
-run_gate 18-work-scenes node scripts/profile-ext-6c3.mjs "$P6Z_EVIDENCE/work-scenes.json"
-run_gate 19-part-scenes node scripts/profile-ext-6c4.mjs "$P6Z_EVIDENCE/part-scenes.json"
-```
-
-当前缺C4制品时第16步应失败，不要退回P0/C2假通过。C2孔/匹配专场在旧报告中未完整验过，现有 `profile-ext-6c1` 仍是套装场景：最终报告须补0/1/4孔、匹配/不匹配及100次只读的有界见证，或由维护者明确接受这一性能覆盖缺口，不能冒称已有独立C2专场。
-
-体积/规模由执行者在最终生产codec测量，记录实测值、最大合法边界、预设/能力集合、命令及证据：单件六随机/八固定行/四孔，满孔成词、两套四槽组合、工作托管/预留/退款、多批订单、part资格台账、全局保存/录像与当前续录。owner≤4KiB、总moduleData≤8KiB、深度≤16、loot state≤4KiB、工位operation≤1KiB、每件行≤24/provider≤256；默认最坏行应仍为11/8/6、四槽31+4cap=35。根容量按现C5/C6的7168/8192语义核对，不能把原生历史自然增长改成8192硬读档上限。整个save/recording只报实际字节和既有合同上限，不自创总大小通过线。纯查询零事务/零RNG；C3接单/取消/完成/满输出/跨层恢复及C4两body/12直接破坏的重复计数稳定。
+Z-D5 只补受控合法 **0/1/4孔、匹配/不匹配**，每场景100次只读，报告事务/随机流/allocator/完整对象图不变及有限体积、属性贡献计数；不是新增性能基准，不用毫秒数裁定。其余负载沿用各步已冻结合同/证据，真实手机、D22+、最大居民/结构等列延期，不增测。
 
 ## 7 Z5：文档、合同与身份收口
 
-下列为后续6Z执行的文档清单，**本次起草不修改这些文件**。只更正现行说明；冻结C0和历史审查报告保持原身份，必要追加后续差量链接。
+下列为本次6Z执行的文档清单。只更正现行说明；冻结C0和历史审查报告保持原身份，必要追加后续差量链接。
 
 | 文件/合同 | 必须补齐或核对 |
 | --- | --- |
@@ -290,7 +228,7 @@ run_gate 19-part-scenes node scripts/profile-ext-6c4.mjs "$P6Z_EVIDENCE/part-sce
 | 已接受性能限制 | B4无第四次独立回放、C2已知前缀回归及本地复核范围；C3/C4新限制只按实际结果登记，不预先豁免 |
 | 历史未关闭事项 | 对照 commander/5Z遗留，仅搬运仍相关且未被后续覆盖的事项，注明历史来源；不把整份phase5积压自动扩为本次工作，也不静默删除 |
 
-需维护者决定的事项如下；每项给推荐，已定C-D8不再询问：
+下列 Z-D1…Z-D7 维护者已全部采用推荐（2026-10-17），不再重复询问；其中性能按本次精简裁定执行，发布仍未授权：
 
 | 编号 | 待决定问题 | 推荐及停点 |
 | --- | --- | --- |
@@ -304,7 +242,7 @@ run_gate 19-part-scenes node scripts/profile-ext-6c4.mjs "$P6Z_EVIDENCE/part-sce
 
 ## 9 Z7：授权后的合入 ext/foundation 与 Pages
 
-本节是待执行发布步骤；**当前无提交、推送、合并、部署授权**。先把全部结果和拟发布内容准备到可审阅状态：`phase6z.report.md`、版本/源码/dist/SDK/配置/性能身份清单、小型证据索引、统一浏览器逐格结果、遗留/例外、发布说明、候选与远端foundation差异。需新增报告的文件名只是后续交付约定，本次不创建。
+本节是待执行发布步骤；**当前无提交、推送、合并、部署授权**。先把全部结果和拟发布内容准备到可审阅状态：`phase6z.report.md`、版本/源码/dist/SDK/配置/性能身份清单、小型证据索引、统一浏览器逐格结果、遗留/例外、发布说明、候选与远端foundation差异。本次创建报告/清单/草稿，停在提交发布之前。
 
 1. 审阅通过并明确授权提交/推送后，用确切路径暂存6Z实际交付文件，先检查暂存差异；不 `git add -A`，不自动升package版本。提交后绑定完整候选SHA。若云端性能需要先推修复候选，须单独取得该候选发布到phase6的授权，不能借最终发布条款提前推送。
 

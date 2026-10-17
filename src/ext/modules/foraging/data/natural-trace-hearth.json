@@ -1,5 +1,5 @@
 {
-  "seed": 6,
+  "seed": 2,
   "mode": "normal",
   "modules": [
     "crafting",
@@ -9,7 +9,7 @@
     {
       "action": "move",
       "data": {
-        "x": -1,
+        "x": 1,
         "y": 0
       },
       "expect": {
@@ -19,57 +19,11 @@
     {
       "action": "move",
       "data": {
-        "x": -1,
+        "x": 1,
         "y": 0
       },
       "expect": {
         "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "move",
-      "data": {
-        "x": -1,
-        "y": 0
-      },
-      "expect": {
-        "recorded": true
-      }
-    },
-    {
-      "action": "ext:command",
-      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":29,\"nodeRevision\":0,\"inventoryStamp\":\"6e8fb15dee5708c3\",\"destinationId\":null,\"destinationRevision\":null}}",
-      "expect": {
-        "recorded": true,
-        "error": null
-      }
-    },
-    {
-      "action": "ext:command",
-      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":29,\"nodeRevision\":2,\"inventoryStamp\":\"c06e79ab3c604c46\",\"destinationId\":null,\"destinationRevision\":null}}",
-      "expect": {
-        "recorded": true,
-        "error": null
       }
     },
     {
@@ -95,7 +49,67 @@
     {
       "action": "move",
       "data": {
-        "x": 0,
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
         "y": -1
       },
       "expect": {
@@ -203,8 +217,208 @@
       }
     },
     {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
       "action": "ext:command",
-      "data": "{\"module\":\"crafting\",\"action\":\"place-station\",\"payload\":{\"v\":1,\"definitionId\":\"crafting.hearth\",\"x\":44,\"y\":24,\"inventoryStamp\":\"92eda5917a4d46af\"}}",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":24,\"nodeRevision\":0,\"inventoryStamp\":\"8bc5026dc446ecab\",\"destinationId\":null,\"destinationRevision\":null}}",
       "expect": {
         "recorded": true,
         "error": null
@@ -212,7 +426,195 @@
     },
     {
       "action": "ext:command",
-      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":34,\"nodeRevision\":0,\"inventoryStamp\":\"4345be8395381a6b\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":24,\"nodeRevision\":2,\"inventoryStamp\":\"007bc6de1caaa966\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"place-station\",\"payload\":{\"v\":1,\"definitionId\":\"crafting.hearth\",\"x\":52,\"y\":10,\"inventoryStamp\":\"a2135955ad9d8203\"}}",
       "expect": {
         "recorded": true,
         "error": null
@@ -220,7 +622,7 @@
     },
     {
       "action": "ext:command",
-      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":34,\"nodeRevision\":2,\"inventoryStamp\":\"56cdc68d02cf4c19\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":28,\"nodeRevision\":0,\"inventoryStamp\":\"4a613d17cc939334\",\"destinationId\":null,\"destinationRevision\":null}}",
       "expect": {
         "recorded": true,
         "error": null
@@ -228,7 +630,7 @@
     },
     {
       "action": "ext:command",
-      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":34,\"nodeRevision\":4,\"inventoryStamp\":\"f69c9fee075cddfe\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":28,\"nodeRevision\":2,\"inventoryStamp\":\"f9163a8d241f7b4c\",\"destinationId\":null,\"destinationRevision\":null}}",
       "expect": {
         "recorded": true,
         "error": null
@@ -236,7 +638,15 @@
     },
     {
       "action": "ext:command",
-      "data": "{\"module\":\"foraging\",\"action\":\"roast\",\"payload\":{\"v\":1,\"itemId\":42,\"heatSourceId\":41,\"inventoryStamp\":\"1e0a16490d1366d0\"}}",
+      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":28,\"nodeRevision\":4,\"inventoryStamp\":\"bf433c9d98d798d6\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"foraging\",\"action\":\"roast\",\"payload\":{\"v\":1,\"itemId\":36,\"heatSourceId\":35,\"inventoryStamp\":\"dad202667b03a236\"}}",
       "expect": {
         "recorded": true,
         "error": null
@@ -254,7 +664,7 @@
     },
     {
       "action": "ext:command",
-      "data": "{\"module\":\"foraging\",\"action\":\"roast\",\"payload\":{\"v\":1,\"itemId\":42,\"heatSourceId\":41,\"inventoryStamp\":\"0f52d107f866c4e3\"}}",
+      "data": "{\"module\":\"foraging\",\"action\":\"roast\",\"payload\":{\"v\":1,\"itemId\":36,\"heatSourceId\":35,\"inventoryStamp\":\"1b514baee4b413ab\"}}",
       "expect": {
         "recorded": true,
         "error": null
@@ -307,7 +717,7 @@
         },
         {
           "definitionId": "foraging.astray-roasted",
-          "state": "tasted",
+          "state": "unknown",
           "title": null
         },
         {
@@ -362,7 +772,7 @@
         },
         {
           "definitionId": "foraging.mend-roasted",
-          "state": "unknown",
+          "state": "tasted",
           "title": null
         },
         {
@@ -490,22 +900,22 @@
           "factId": 14,
           "kind": "fire",
           "result": "transformed",
-          "tick": 2600
+          "tick": 6700
         },
         {
           "factId": 15,
           "kind": "eat",
           "result": "tasted",
-          "tick": 2700
+          "tick": 6800
         },
         {
           "factId": 16,
           "kind": "fire",
           "result": "transformed",
-          "tick": 2800
+          "tick": 6900
         }
       ]
     },
-    "digest": "664bccdbf63755242b355b298971743a93fee8bba415032cca599b3f8faf86ac"
+    "digest": "5dfb354c4be2832e778e0b64f36f61dbb97c2237c1ebcc27670b0557084e6a69"
   }
 }

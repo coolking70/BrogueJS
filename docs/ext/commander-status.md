@@ -1,5 +1,7 @@
 # 当前状态（2026-10-14，最终失败修复完成）
 
+> 6Z两轮结束、自动门禁未关闭（2026-10-17）：`ext/phase6` / `06682d5`。维护者接受Z-D1…Z-D7及精简门禁：影响面单批/原样证据沿用、静态+types+build各一次、全删1行、精选七组合、drift按影响、不新跑性能。见[6Z报告](phase6z.report.md)、[loot手册](loot-config.md)、[统一人工清单](phase6z.manual-checklist.md)、[遗留](phase6z-remainders.md)、[发布草稿](phase6z-release-notes.md)。首轮160项失败关闭22项，仍有22文件138项未关闭；七组合通过，全删首败经定向复验关闭。U01–U18三档54格待维护者，C3超时/C4取消、性能结论待补录；未提交/推送/合并/部署。下方旧128/15行及旧阶段状态仅历史。
+
 - HEAD a15c980＋既有未提交集成/政策差量全部保留，候选SHA `f4542258a60ae235fea408d9c7ab356353fe6e4fcf2df2f87d3faee9b7ef7fa2`；无生产改动，未commit/push。见[修复报告](phase5-final-fix.report.md)。
 - 原96项未豁免失败及5空套件已关闭；5文件有效测试保留。完整图56黄金叶完成单变量归因/原法重录；原11超时所在4文件单worker全过。
 - 完整npm exit1：11340过/18败/9skip/5todo；ext exit1：6316过/3败/1skip。npm另15超时均有同源完整文件单worker通过证据，含末次giants2_persistence 8/8；不覆盖首次退出1。

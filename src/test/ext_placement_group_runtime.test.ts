@@ -96,7 +96,7 @@ it('module protocol/action collisions and locale placeholders refused', () => {
   expect(() => validateEdibleModule(descriptor.create(), undefined)).toThrow('C5_BAD_VERSION');
   const m = descriptor.create();
   m.commands!.feed = () => {};
-  expect(() => validateEdibleModule(m, 1)).toThrow('C5_BAD_DEFINITION');
+  expect(() => validateEdibleModule(m, 2)).toThrow('C5_BAD_DEFINITION');
   expect(() =>
     validateEdibleTemplates(definitions, {
       zh_CN: { ...locales, 'ext.fgfixture.template.roasted': '{{title}}' }

@@ -1,0 +1,788 @@
+{
+  "roundsLimit": 2,
+  "round1": {
+    "edits": [
+      {
+        "file": "src/ext/modules/loot/ui/LootPresetPicker.vue",
+        "oldSha256": "8a6cad1e851c09fd1ff60ee26926e65868363628e6b611058822d8c0079371a4",
+        "newSha256": "d34cd6d6a7ba0e1dc9afcfd0d946ea58fd756a9b7348e978654e244d8ff3c898"
+      },
+      {
+        "file": "src/ext/modules/loot/ui/creation/LootCreationStep.vue",
+        "oldSha256": "7569f39228215b2847ac89aeb3ca88a54b982d62b93ce0864e90d7cfdf0b3089",
+        "newSha256": "65fad311205a826ee45bb8d662583605b59b31432a4f0f414a661f96e1bf6731"
+      },
+      {
+        "file": "src/test/dialog_d4_blink.test.ts",
+        "oldSha256": "169902513897e8d8f8fdade19effbde9b4976237ec8fd5c903a6d4fdff5e3b7c",
+        "newSha256": "7ad40c632f24555071c7174fcfbfc10282a0f4c963ef62b28f5ca1257cd7dfae"
+      },
+      {
+        "file": "src/test/phase3a0_actor_action.test.ts",
+        "oldSha256": "74c3eeb4a366bb21d5e01387e37a8963fd793d6dea86a182602f90933231ae6d",
+        "newSha256": "38303573caae72e63b3bff93a9c6e7c49a7b91a0e6273b88f80a7d6550c2c7ea"
+      },
+      {
+        "file": "src/test/u_15a_shattering.test.ts",
+        "oldSha256": "bd25976c2863660dc5b58201a2eebda906b8b466c0c8e25b05d7edfde11efd9b",
+        "newSha256": "577ed991c611ef256da53e9e9f0678ab5e4e830fc7200384d9a876a4001f05ec"
+      },
+      {
+        "file": "src/test/ext_foundation_contracts.test.ts",
+        "oldSha256": "5edf43a6babad838f41cfae589dd89d1ac7947bf65557a8b255bfbe5c1c31b96",
+        "newSha256": "2696c84c6977e84c1c30a0cabfa56b05622ee61dcd28069891ac093e36fbb72f"
+      },
+      {
+        "file": "src/ext/modules/combat/tests/combat2_content.test.ts",
+        "oldSha256": "ebd1bacf9fe2ef490ce2b1bca26223a7c50f68d0a409c6488eb4a0db855b43f0",
+        "newSha256": "b5a163373ecd5ef0a531bf2ee94bebc13c6fa668a5e7b4da8a46bb571be4a340"
+      },
+      {
+        "file": "src/ext/modules/giants/tests/giants2_contract.test.ts",
+        "oldSha256": "272d5045804fd18b88600601bd2bf77555b50f4a9cd4585bad3a2a0639fb6a4f",
+        "newSha256": "83a2eca7b66c49ff4aa0d4f5a3289819db9c03e20dcac63cb7ebf798bebb97fc"
+      },
+      {
+        "file": "src/ext/modules/growth/tests/ext_growth_combat_stats.test.ts",
+        "oldSha256": "da599fe2243dcd9cb3e8fe3ba327857a9c22e1d1bbbb6e7d6161d895aac4e463",
+        "newSha256": "9ac98535861e6cf6acac09afdfa4ba1daa304560b15960a8cce9f5a969269384"
+      },
+      {
+        "file": "src/test/ext_placement_group_runtime.test.ts",
+        "oldSha256": "7a4390e1939f97957060f95336e6458c51000ece674e0e5915e2f87819156256",
+        "newSha256": "73ca47fbd841c8c7f60b9dea9fec4418ff066fa2723670e7d8d77aec022372c7"
+      },
+      {
+        "file": "src/test/ext_recording_v4_digest.test.ts",
+        "oldSha256": "50b9d6124104b95360e7b7393fd0d542e36ad943e586a2c91e52e7af5c03da29",
+        "newSha256": "b7e04a0656b2710bc360fba149f2c422acbc0c47c906fb6c3a301ac0d71a0ae3"
+      },
+      {
+        "file": "src/ext/modules/growth/tests/ext_growth_loot_receipts.test.ts",
+        "oldSha256": "e02c699c3fe40661b3c3d28c72a3b61b31c8b7b38efa3b13409ae40fda35600e",
+        "newSha256": "2d28453c794262b49ffa49e0d9930f1fd57619e567d432f165753e9c5ca1e6f8"
+      },
+      {
+        "file": "src/ext/modules/foraging/tests/foraging_combinations.test.ts",
+        "oldSha256": "58015e6da4abc23e7797fa0a36068f7a449222fd9eecd79b2da45735afbffcb2",
+        "newSha256": "44ef6a15a888b8806da3fe5c607f526f0dfdd1b28dbdafb7725cb82b1ed1571e"
+      },
+      {
+        "file": "src/test/presentation_timeline.test.ts",
+        "oldSha256": "4af38d92c4584d57a14fa17a11fdfbfb3b8ebb0c477134bcd9bf80a32f75b16f",
+        "newSha256": "d22219aa113cbc85602d99eac08573e9ebc737caaa949ff2abb33b776b76c91e"
+      },
+      {
+        "file": "src/test/phase4a2_body_effects.test.ts",
+        "oldSha256": "316f3be85c98961c93b0bb919c012aae2a344d15787d06b4e59040c72903aa07",
+        "newSha256": "e45329574e98694105ad3f674e6c4eb577acf270f59038bdc02b79b44f793d78"
+      },
+      {
+        "file": "src/test/u_05_machine_items.test.ts",
+        "oldSha256": "0338ab953ad56e2206b9eae0fab9789b3ff9d6cb84ed32d6b50f15d995f7c937",
+        "newSha256": "d9e6105a49703b16be1653373af612924f054beb0ee560caa079c7c66439d9ba"
+      },
+      {
+        "file": "src/test/main_menu_replay_seek.test.ts",
+        "oldSha256": "ca2e23f1de2afd1ffdbc5688464e3442153d4e9eae6706a1cccecf0c50a55232",
+        "newSha256": "f2d4024fc558f186d9cdea59410b1b9e2fc7933be84f6f6d246d264152351aff"
+      },
+      {
+        "file": "src/ext/modules/growth/tests/ext_growth_creation_view.test.ts",
+        "oldSha256": "f8325db11fa6be0a10a8305c9bb93da2d64f703e99e5a38a8cf5630ce9e02793",
+        "newSha256": "dd0ac920515016aef9e818ec5b57df9e3cfd0393363723313ae9ee2d6eeab2c9"
+      },
+      {
+        "file": "src/test/b2_transcription.test.ts",
+        "oldSha256": "e8b3ce8012ba2898cee6177f23a633bc05da7ff18b3d2e906df5028eb222fc80",
+        "newSha256": "94ebd633ba177d68f2c8d58dc05f8add5240feddcd4dc41d449fb0aa8b370554"
+      },
+      {
+        "file": "src/test/fixtures/structure-geometry-baseline.json",
+        "oldSha256": "70e4433b124c15cf83570312520522286f8ee03292169ebed73bcb033143760a",
+        "newSha256": "59e338039e24b3c3c0b20dd6c74286a1c0030cfb1afc7f2c0f01c44a8bb9bd4f",
+        "fields": [
+          {
+            "path": "/scenes/0/fingerprints/craftskel",
+            "old": "sha256:3a8374fb84848c24a5c9ac193845f4bf68524b6d5c993fb361f53f88c4b2fa1b",
+            "new": "sha256:7cdc1af9fc072e4c3768fcf10bbe1790cf07cf98845f2eee5e987e9f9484bdad"
+          },
+          {
+            "path": "/scenes/0/fingerprints/c5fixture",
+            "old": "sha256:a46caa8e6e8690b468c6ba0cf2b6f93b47657c9e1195a069a0c017aefcd0bbb7",
+            "new": "sha256:89ec972d7600277292ebb5f298952f2d0c7a3d9dd30b3e6dd4eeac75e6027eef"
+          },
+          {
+            "path": "/scenes/1/fingerprints/craftskel",
+            "old": "sha256:3a8374fb84848c24a5c9ac193845f4bf68524b6d5c993fb361f53f88c4b2fa1b",
+            "new": "sha256:7cdc1af9fc072e4c3768fcf10bbe1790cf07cf98845f2eee5e987e9f9484bdad"
+          },
+          {
+            "path": "/scenes/1/fingerprints/c5fixture",
+            "old": "sha256:a46caa8e6e8690b468c6ba0cf2b6f93b47657c9e1195a069a0c017aefcd0bbb7",
+            "new": "sha256:89ec972d7600277292ebb5f298952f2d0c7a3d9dd30b3e6dd4eeac75e6027eef"
+          },
+          {
+            "path": "/scenes/2/fingerprints/craftskel",
+            "old": "sha256:3a8374fb84848c24a5c9ac193845f4bf68524b6d5c993fb361f53f88c4b2fa1b",
+            "new": "sha256:7cdc1af9fc072e4c3768fcf10bbe1790cf07cf98845f2eee5e987e9f9484bdad"
+          },
+          {
+            "path": "/scenes/2/fingerprints/c5fixture",
+            "old": "sha256:a46caa8e6e8690b468c6ba0cf2b6f93b47657c9e1195a069a0c017aefcd0bbb7",
+            "new": "sha256:89ec972d7600277292ebb5f298952f2d0c7a3d9dd30b3e6dd4eeac75e6027eef"
+          }
+        ]
+      },
+      {
+        "file": "src/test/fixtures/traces/u-r4-trace.json.gz",
+        "oldSha256": "4e5406e706bc39e09138e39579c0790ed8594bb9a2d4d42c3cebb886d8dc1917",
+        "newSha256": "a250fd69ad6f5a3585306fb72b565bcc3813a5b3e3f34a6c6c0ba8509e71a2fa",
+        "fields": [
+          {
+            "path": "/slowed-environment/animated/rows/2/recording/0/chainDigest",
+            "old": "1c92b6f10dd9a65b224e5fcfc535c1dce5e21d12ebe46bda81bc5b361739053f",
+            "new": "222452e9a07d7ded6801eecbf212590e8ace44a1598fec7811cd31be4bfdb83e"
+          },
+          {
+            "path": "/slowed-environment/animated/rows/3/recording/0/chainDigest",
+            "old": "1c92b6f10dd9a65b224e5fcfc535c1dce5e21d12ebe46bda81bc5b361739053f",
+            "new": "222452e9a07d7ded6801eecbf212590e8ace44a1598fec7811cd31be4bfdb83e"
+          },
+          {
+            "path": "/slowed-environment/animated/rows/4/recording/0/chainDigest",
+            "old": "1c92b6f10dd9a65b224e5fcfc535c1dce5e21d12ebe46bda81bc5b361739053f",
+            "new": "222452e9a07d7ded6801eecbf212590e8ace44a1598fec7811cd31be4bfdb83e"
+          },
+          {
+            "path": "/slowed-environment/animated/rows/4/recording/1/chainDigest",
+            "old": "a0990f2fd5e7ef8d83d6e1cbe1e7a01af60eb3b2e9090f9501777a9bc1e349c6",
+            "new": "e3e388304edecf63f266c1fb6a15fe578a6263c5b6d9b2343f9a0fb9ee95aa52"
+          },
+          {
+            "path": "/slowed-environment/animated/rows/5/recording/0/chainDigest",
+            "old": "1c92b6f10dd9a65b224e5fcfc535c1dce5e21d12ebe46bda81bc5b361739053f",
+            "new": "222452e9a07d7ded6801eecbf212590e8ace44a1598fec7811cd31be4bfdb83e"
+          },
+          {
+            "path": "/slowed-environment/animated/rows/5/recording/1/chainDigest",
+            "old": "a0990f2fd5e7ef8d83d6e1cbe1e7a01af60eb3b2e9090f9501777a9bc1e349c6",
+            "new": "e3e388304edecf63f266c1fb6a15fe578a6263c5b6d9b2343f9a0fb9ee95aa52"
+          },
+          {
+            "path": "/slowed-environment/animated/rows/6/recording/0/chainDigest",
+            "old": "1c92b6f10dd9a65b224e5fcfc535c1dce5e21d12ebe46bda81bc5b361739053f",
+            "new": "222452e9a07d7ded6801eecbf212590e8ace44a1598fec7811cd31be4bfdb83e"
+          },
+          {
+            "path": "/slowed-environment/animated/rows/6/recording/1/chainDigest",
+            "old": "a0990f2fd5e7ef8d83d6e1cbe1e7a01af60eb3b2e9090f9501777a9bc1e349c6",
+            "new": "e3e388304edecf63f266c1fb6a15fe578a6263c5b6d9b2343f9a0fb9ee95aa52"
+          },
+          {
+            "path": "/slowed-environment/animated/rows/6/recording/2/chainDigest",
+            "old": "24066d4814e26df5f8294b373f4fbc930adba6501fc715c227fa2287936bdc45",
+            "new": "c1cce38836948c3d5bb575f482e42f93d5a3d2092d8478a5a6f84a61a56637ad"
+          },
+          {
+            "path": "/slowed-environment/animated/rows/7/recording/0/chainDigest",
+            "old": "1c92b6f10dd9a65b224e5fcfc535c1dce5e21d12ebe46bda81bc5b361739053f",
+            "new": "222452e9a07d7ded6801eecbf212590e8ace44a1598fec7811cd31be4bfdb83e"
+          },
+          {
+            "path": "/slowed-environment/animated/rows/7/recording/1/chainDigest",
+            "old": "a0990f2fd5e7ef8d83d6e1cbe1e7a01af60eb3b2e9090f9501777a9bc1e349c6",
+            "new": "e3e388304edecf63f266c1fb6a15fe578a6263c5b6d9b2343f9a0fb9ee95aa52"
+          },
+          {
+            "path": "/slowed-environment/animated/rows/7/recording/2/chainDigest",
+            "old": "24066d4814e26df5f8294b373f4fbc930adba6501fc715c227fa2287936bdc45",
+            "new": "c1cce38836948c3d5bb575f482e42f93d5a3d2092d8478a5a6f84a61a56637ad"
+          },
+          {
+            "path": "/slowed-environment/animated/rows/8/recording/0/chainDigest",
+            "old": "1c92b6f10dd9a65b224e5fcfc535c1dce5e21d12ebe46bda81bc5b361739053f",
+            "new": "222452e9a07d7ded6801eecbf212590e8ace44a1598fec7811cd31be4bfdb83e"
+          },
+          {
+            "path": "/slowed-environment/animated/rows/8/recording/1/chainDigest",
+            "old": "a0990f2fd5e7ef8d83d6e1cbe1e7a01af60eb3b2e9090f9501777a9bc1e349c6",
+            "new": "e3e388304edecf63f266c1fb6a15fe578a6263c5b6d9b2343f9a0fb9ee95aa52"
+          },
+          {
+            "path": "/slowed-environment/animated/rows/8/recording/2/chainDigest",
+            "old": "24066d4814e26df5f8294b373f4fbc930adba6501fc715c227fa2287936bdc45",
+            "new": "c1cce38836948c3d5bb575f482e42f93d5a3d2092d8478a5a6f84a61a56637ad"
+          },
+          {
+            "path": "/slowed-environment/animated/rows/8/recording/3/chainDigest",
+            "old": "767211104989deb23984d2f8a52a778e1b64a60fa3723ecf2540269bb220cc3a",
+            "new": "c842aa58a8b992668e227516c41d56dcc70ad2b3db22398986c1a8c2d46a22d0"
+          },
+          {
+            "path": "/slowed-environment/continuous/rows/2/recording/0/chainDigest",
+            "old": "1c92b6f10dd9a65b224e5fcfc535c1dce5e21d12ebe46bda81bc5b361739053f",
+            "new": "222452e9a07d7ded6801eecbf212590e8ace44a1598fec7811cd31be4bfdb83e"
+          },
+          {
+            "path": "/slowed-environment/continuous/rows/3/recording/0/chainDigest",
+            "old": "1c92b6f10dd9a65b224e5fcfc535c1dce5e21d12ebe46bda81bc5b361739053f",
+            "new": "222452e9a07d7ded6801eecbf212590e8ace44a1598fec7811cd31be4bfdb83e"
+          },
+          {
+            "path": "/slowed-environment/continuous/rows/4/recording/0/chainDigest",
+            "old": "1c92b6f10dd9a65b224e5fcfc535c1dce5e21d12ebe46bda81bc5b361739053f",
+            "new": "222452e9a07d7ded6801eecbf212590e8ace44a1598fec7811cd31be4bfdb83e"
+          },
+          {
+            "path": "/slowed-environment/continuous/rows/4/recording/1/chainDigest",
+            "old": "a0990f2fd5e7ef8d83d6e1cbe1e7a01af60eb3b2e9090f9501777a9bc1e349c6",
+            "new": "e3e388304edecf63f266c1fb6a15fe578a6263c5b6d9b2343f9a0fb9ee95aa52"
+          },
+          {
+            "path": "/slowed-environment/continuous/rows/5/recording/0/chainDigest",
+            "old": "1c92b6f10dd9a65b224e5fcfc535c1dce5e21d12ebe46bda81bc5b361739053f",
+            "new": "222452e9a07d7ded6801eecbf212590e8ace44a1598fec7811cd31be4bfdb83e"
+          },
+          {
+            "path": "/slowed-environment/continuous/rows/5/recording/1/chainDigest",
+            "old": "a0990f2fd5e7ef8d83d6e1cbe1e7a01af60eb3b2e9090f9501777a9bc1e349c6",
+            "new": "e3e388304edecf63f266c1fb6a15fe578a6263c5b6d9b2343f9a0fb9ee95aa52"
+          },
+          {
+            "path": "/slowed-environment/continuous/rows/6/recording/0/chainDigest",
+            "old": "1c92b6f10dd9a65b224e5fcfc535c1dce5e21d12ebe46bda81bc5b361739053f",
+            "new": "222452e9a07d7ded6801eecbf212590e8ace44a1598fec7811cd31be4bfdb83e"
+          },
+          {
+            "path": "/slowed-environment/continuous/rows/6/recording/1/chainDigest",
+            "old": "a0990f2fd5e7ef8d83d6e1cbe1e7a01af60eb3b2e9090f9501777a9bc1e349c6",
+            "new": "e3e388304edecf63f266c1fb6a15fe578a6263c5b6d9b2343f9a0fb9ee95aa52"
+          },
+          {
+            "path": "/slowed-environment/continuous/rows/6/recording/2/chainDigest",
+            "old": "24066d4814e26df5f8294b373f4fbc930adba6501fc715c227fa2287936bdc45",
+            "new": "c1cce38836948c3d5bb575f482e42f93d5a3d2092d8478a5a6f84a61a56637ad"
+          },
+          {
+            "path": "/slowed-environment/continuous/rows/7/recording/0/chainDigest",
+            "old": "1c92b6f10dd9a65b224e5fcfc535c1dce5e21d12ebe46bda81bc5b361739053f",
+            "new": "222452e9a07d7ded6801eecbf212590e8ace44a1598fec7811cd31be4bfdb83e"
+          },
+          {
+            "path": "/slowed-environment/continuous/rows/7/recording/1/chainDigest",
+            "old": "a0990f2fd5e7ef8d83d6e1cbe1e7a01af60eb3b2e9090f9501777a9bc1e349c6",
+            "new": "e3e388304edecf63f266c1fb6a15fe578a6263c5b6d9b2343f9a0fb9ee95aa52"
+          },
+          {
+            "path": "/slowed-environment/continuous/rows/7/recording/2/chainDigest",
+            "old": "24066d4814e26df5f8294b373f4fbc930adba6501fc715c227fa2287936bdc45",
+            "new": "c1cce38836948c3d5bb575f482e42f93d5a3d2092d8478a5a6f84a61a56637ad"
+          },
+          {
+            "path": "/slowed-environment/continuous/rows/8/recording/0/chainDigest",
+            "old": "1c92b6f10dd9a65b224e5fcfc535c1dce5e21d12ebe46bda81bc5b361739053f",
+            "new": "222452e9a07d7ded6801eecbf212590e8ace44a1598fec7811cd31be4bfdb83e"
+          },
+          {
+            "path": "/slowed-environment/continuous/rows/8/recording/1/chainDigest",
+            "old": "a0990f2fd5e7ef8d83d6e1cbe1e7a01af60eb3b2e9090f9501777a9bc1e349c6",
+            "new": "e3e388304edecf63f266c1fb6a15fe578a6263c5b6d9b2343f9a0fb9ee95aa52"
+          },
+          {
+            "path": "/slowed-environment/continuous/rows/8/recording/2/chainDigest",
+            "old": "24066d4814e26df5f8294b373f4fbc930adba6501fc715c227fa2287936bdc45",
+            "new": "c1cce38836948c3d5bb575f482e42f93d5a3d2092d8478a5a6f84a61a56637ad"
+          },
+          {
+            "path": "/slowed-environment/continuous/rows/8/recording/3/chainDigest",
+            "old": "767211104989deb23984d2f8a52a778e1b64a60fa3723ecf2540269bb220cc3a",
+            "new": "c842aa58a8b992668e227516c41d56dcc70ad2b3db22398986c1a8c2d46a22d0"
+          },
+          {
+            "path": "/death/animated/rows/1/recording/0/chainDigest",
+            "old": "3eaaaa0dc58643ddf5a200f72a2d9e1fa1efb846ee525ce66f9a05e0e03347bc",
+            "new": "8df10c9be8a9cb212b8443d5883ce71f3f59226d165db7b05bbce584b876f5b0"
+          },
+          {
+            "path": "/death/continuous/rows/1/recording/0/chainDigest",
+            "old": "3eaaaa0dc58643ddf5a200f72a2d9e1fa1efb846ee525ce66f9a05e0e03347bc",
+            "new": "8df10c9be8a9cb212b8443d5883ce71f3f59226d165db7b05bbce584b876f5b0"
+          },
+          {
+            "path": "/hasted/animated/rows/0/recording/0/chainDigest",
+            "old": "0ceae9e851ae852031fd89bfa152ed3a3353a3c1fef31bdc59c503c2540bb619",
+            "new": "63300301145de4ebf0225d63e7ba5d3d1624f31fbe678c85867287f944932b7d"
+          },
+          {
+            "path": "/hasted/animated/rows/1/recording/0/chainDigest",
+            "old": "0ceae9e851ae852031fd89bfa152ed3a3353a3c1fef31bdc59c503c2540bb619",
+            "new": "63300301145de4ebf0225d63e7ba5d3d1624f31fbe678c85867287f944932b7d"
+          },
+          {
+            "path": "/hasted/animated/rows/1/recording/1/chainDigest",
+            "old": "0cac0e5f538c61ec421660df5e5a19b48b897b7f9a0355a56487b9506c196ef6",
+            "new": "ff047596ac7334c35601a4eacf2bae300425944774cf679bebf52a1db7e9c252"
+          },
+          {
+            "path": "/hasted/animated/rows/1/recording/2/chainDigest",
+            "old": "bcb705cc35c20c49b4ffb566678f940fe6651a0c62bf9b9fc161e99f19eccd90",
+            "new": "0fe3b439f1f9a131586deeb03ba612adeab7779d80aa2a0f00c51655e3d6cb7e"
+          },
+          {
+            "path": "/hasted/animated/rows/2/recording/0/chainDigest",
+            "old": "0ceae9e851ae852031fd89bfa152ed3a3353a3c1fef31bdc59c503c2540bb619",
+            "new": "63300301145de4ebf0225d63e7ba5d3d1624f31fbe678c85867287f944932b7d"
+          },
+          {
+            "path": "/hasted/animated/rows/2/recording/1/chainDigest",
+            "old": "0cac0e5f538c61ec421660df5e5a19b48b897b7f9a0355a56487b9506c196ef6",
+            "new": "ff047596ac7334c35601a4eacf2bae300425944774cf679bebf52a1db7e9c252"
+          },
+          {
+            "path": "/hasted/animated/rows/2/recording/2/chainDigest",
+            "old": "bcb705cc35c20c49b4ffb566678f940fe6651a0c62bf9b9fc161e99f19eccd90",
+            "new": "0fe3b439f1f9a131586deeb03ba612adeab7779d80aa2a0f00c51655e3d6cb7e"
+          },
+          {
+            "path": "/hasted/animated/rows/2/recording/3/chainDigest",
+            "old": "9a824c676905670a3d51e12f4534c1741224158845d057910236ab3ac26924a0",
+            "new": "648d2a31c7e05403a647e65aeb6a000f5ebd99311cb0654771350af1d5e6a0c1"
+          },
+          {
+            "path": "/hasted/continuous/rows/0/recording/0/chainDigest",
+            "old": "0ceae9e851ae852031fd89bfa152ed3a3353a3c1fef31bdc59c503c2540bb619",
+            "new": "63300301145de4ebf0225d63e7ba5d3d1624f31fbe678c85867287f944932b7d"
+          },
+          {
+            "path": "/hasted/continuous/rows/1/recording/0/chainDigest",
+            "old": "0ceae9e851ae852031fd89bfa152ed3a3353a3c1fef31bdc59c503c2540bb619",
+            "new": "63300301145de4ebf0225d63e7ba5d3d1624f31fbe678c85867287f944932b7d"
+          },
+          {
+            "path": "/hasted/continuous/rows/1/recording/1/chainDigest",
+            "old": "0cac0e5f538c61ec421660df5e5a19b48b897b7f9a0355a56487b9506c196ef6",
+            "new": "ff047596ac7334c35601a4eacf2bae300425944774cf679bebf52a1db7e9c252"
+          },
+          {
+            "path": "/hasted/continuous/rows/1/recording/2/chainDigest",
+            "old": "bcb705cc35c20c49b4ffb566678f940fe6651a0c62bf9b9fc161e99f19eccd90",
+            "new": "0fe3b439f1f9a131586deeb03ba612adeab7779d80aa2a0f00c51655e3d6cb7e"
+          },
+          {
+            "path": "/hasted/continuous/rows/2/recording/0/chainDigest",
+            "old": "0ceae9e851ae852031fd89bfa152ed3a3353a3c1fef31bdc59c503c2540bb619",
+            "new": "63300301145de4ebf0225d63e7ba5d3d1624f31fbe678c85867287f944932b7d"
+          },
+          {
+            "path": "/hasted/continuous/rows/2/recording/1/chainDigest",
+            "old": "0cac0e5f538c61ec421660df5e5a19b48b897b7f9a0355a56487b9506c196ef6",
+            "new": "ff047596ac7334c35601a4eacf2bae300425944774cf679bebf52a1db7e9c252"
+          },
+          {
+            "path": "/hasted/continuous/rows/2/recording/2/chainDigest",
+            "old": "bcb705cc35c20c49b4ffb566678f940fe6651a0c62bf9b9fc161e99f19eccd90",
+            "new": "0fe3b439f1f9a131586deeb03ba612adeab7779d80aa2a0f00c51655e3d6cb7e"
+          },
+          {
+            "path": "/hasted/continuous/rows/2/recording/3/chainDigest",
+            "old": "9a824c676905670a3d51e12f4534c1741224158845d057910236ab3ac26924a0",
+            "new": "648d2a31c7e05403a647e65aeb6a000f5ebd99311cb0654771350af1d5e6a0c1"
+          },
+          {
+            "path": "/fall/animated/rows/0/recording/0/chainDigest",
+            "old": "0637961fb0c33093b22d739d186302842804171083ea41304a44b29e009dcc2f",
+            "new": "dc9864d8bbcb66c5d59a8c5fba0483cb3e932718b82271cc628e8d27afc7a14c"
+          },
+          {
+            "path": "/fall/continuous/rows/0/recording/0/chainDigest",
+            "old": "0637961fb0c33093b22d739d186302842804171083ea41304a44b29e009dcc2f",
+            "new": "dc9864d8bbcb66c5d59a8c5fba0483cb3e932718b82271cc628e8d27afc7a14c"
+          }
+        ]
+      }
+    ],
+    "reasons": {
+      "UI names": "Only two local handlers renamed confirm -> submitPreset; emitted event names, props, DOM, CSS and i18n unchanged; original native confirm guard unchanged.",
+      "identity premises": "wholeRun6->7 in D4/shattering/actor fixture; foundation15/16->20; growth1.9.0->1.10.0; edible worldSdk1->2; exact current crafting rules fingerprint. Negative historical compatibility inputs unchanged.",
+      "loot fixture": "growth receipt fixtures instance1 -> 6 plus pieceId:null/identityKnown:false; no gameplay assertion changed; current validator/load required.",
+      "ACK": "Game ACK producer for scroll.reveal_enchantment added by6B4; pre-existing21 retained; inventory premise22, same source seam assertions.",
+      "light": "Test observation from paintLight calls to updateLighting batch; same stable origin, exactly one source, all footprint blockers and full RNG assertions.",
+      "retry": "Sixth allowDrop=false when qualifiers is defined, including []; whole-request retry arrays remain exact.",
+      "menu": "Add real ext/selection import to compiled production SFC harness; all original replay seek assertions retained.",
+      "growth state": "Test-only sentinel installation replaces certified immutable state with detached spread plus sentinel; no whitelist/frozen/no-NPC-leak assertions changed.",
+      "b2": "Original single-worker3072MiB OOM repeated. Clear Architect.prepareStairLoc spy calls after every level assertions; retain34seeds*26, live machine occupants, every accepted overwriter, RNG and connectivity checks.",
+      "geometry": "Original capture6 leaf fingerprint changes only; both source definitions only worldSdk1->2; all positions and interaction rays equal.",
+      "UR4": "Original capture52 chainDigest leaves only; all worlds/messages/commands/ticks/RNG equal. Initial wrong historical guess17 failed and retained; git log fixture b2702ff identifies15. Only production FOUNDATION_PROTOCOL20->15 makes original file pass. Current20 recapture adopted.",
+      "digest vector": "Independent sha256 canonical tag calculation reproduces old foundation17 fixed vector and current20 vector; other Merkle, Unicode and historical foundation11 chain vector untouched."
+    },
+    "counterfactuals": [
+      {
+        "command": [
+          "node",
+          "node_modules/vitest/vitest.mjs",
+          "run",
+          "src/test/presentation_timeline.test.ts",
+          "--maxWorkers=1",
+          "--no-file-parallelism",
+          "--reporter=default",
+          "--reporter=json",
+          "--outputFile=/private/tmp/phase6z-06682d5/R1-cf-ack.json"
+        ],
+        "cwd": "/private/tmp/phase6z-06682d5/counterfactual",
+        "start": 1792231195.996214,
+        "end": 1792231226.682334,
+        "exit": 0,
+        "onlyChangedFile": "src/engine/Core/Game.ts",
+        "beforeSha256": "e6d72dbc61bdee5e2108594052f5652ffb156c20a3dafc8458378fd2b74930c4",
+        "afterSha256": "269d32f735513aa55196b7c8b20c0ed2cbaca4daf02d668785b853bfdad985ea",
+        "testUnchanged": true,
+        "evidence": "R1-cf-ack.result.json"
+      },
+      {
+        "command": [
+          "node",
+          "node_modules/vitest/vitest.mjs",
+          "run",
+          "src/ext/modules/growth/tests/ext_growth_creation_view.test.ts",
+          "--maxWorkers=1",
+          "--no-file-parallelism",
+          "--reporter=default",
+          "--reporter=json",
+          "--outputFile=/private/tmp/phase6z-06682d5/R1-cf-growth-state.json"
+        ],
+        "cwd": "/private/tmp/phase6z-06682d5/counterfactual",
+        "start": 1792231272.123682,
+        "end": 1792231280.465051,
+        "exit": 0,
+        "onlyChangedFile": "src/ext/runtime.ts",
+        "beforeSha256": "9b32650e798b4a2cd2868dc53f7da2818cee20d6bd2bd0ef119443b56e870e7c",
+        "afterSha256": "9c8a6427e750de35560801c4ec3ab43ad99659443cc6ad0f5777d2df747902c1",
+        "testUnchanged": true,
+        "evidence": "R1-cf-growth-state.result.json"
+      },
+      {
+        "command": [
+          "node",
+          "node_modules/vitest/vitest.mjs",
+          "run",
+          "src/test/phase4a2_body_effects.test.ts",
+          "--maxWorkers=1",
+          "--no-file-parallelism",
+          "--reporter=default",
+          "--reporter=json",
+          "--outputFile=/private/tmp/phase6z-06682d5/R1-cf-light.json"
+        ],
+        "cwd": "/private/tmp/phase6z-06682d5/counterfactual",
+        "start": 1792231226.684522,
+        "end": 1792231250.7718048,
+        "exit": 0,
+        "onlyChangedFile": "src/engine/Core/Game.ts",
+        "beforeSha256": "e6d72dbc61bdee5e2108594052f5652ffb156c20a3dafc8458378fd2b74930c4",
+        "afterSha256": "a288eb1861238327d1dfdab068f52ba9c6482dda1de7a149614789f841c42a0a",
+        "testUnchanged": true,
+        "evidence": "R1-cf-light.result.json"
+      },
+      {
+        "command": [
+          "node",
+          "node_modules/vitest/vitest.mjs",
+          "run",
+          "src/test/main_menu_replay_seek.test.ts",
+          "--maxWorkers=1",
+          "--no-file-parallelism",
+          "--reporter=default",
+          "--reporter=json",
+          "--outputFile=/private/tmp/phase6z-06682d5/R1-cf-menu.json"
+        ],
+        "cwd": "/private/tmp/phase6z-06682d5/counterfactual",
+        "start": 1792231261.300429,
+        "end": 1792231272.122575,
+        "exit": 0,
+        "onlyChangedFile": "src/components/MainMenu.vue",
+        "beforeSha256": "6e244dbe63503909ab8e00d8727cb74b9236eb6ff7f2052962afbdbd4c827c90",
+        "afterSha256": "75aed1c3898040f451adcd6aeed8afb29db9fc4c394629737fbc7fd1568c1b21",
+        "testUnchanged": true,
+        "evidence": "R1-cf-menu.result.json"
+      },
+      {
+        "command": [
+          "node",
+          "node_modules/vitest/vitest.mjs",
+          "run",
+          "src/test/u_05_machine_items.test.ts",
+          "--maxWorkers=1",
+          "--no-file-parallelism",
+          "--reporter=default",
+          "--reporter=json",
+          "--outputFile=/private/tmp/phase6z-06682d5/R1-cf-retry.json"
+        ],
+        "cwd": "/private/tmp/phase6z-06682d5/counterfactual",
+        "start": 1792231250.7746282,
+        "end": 1792231261.2987862,
+        "exit": 0,
+        "onlyChangedFile": "src/engine/Core/Game.ts",
+        "beforeSha256": "e6d72dbc61bdee5e2108594052f5652ffb156c20a3dafc8458378fd2b74930c4",
+        "afterSha256": "3665eb62cebbff5e6df95d487a38dcf6715cb35b71455278a6798c1f9bd01201",
+        "testUnchanged": true,
+        "evidence": "R1-cf-retry.result.json"
+      },
+      {
+        "command": [
+          "node",
+          "node_modules/vitest/vitest.mjs",
+          "run",
+          "src/test/u_r4_trace.test.ts",
+          "--maxWorkers=1",
+          "--no-file-parallelism",
+          "--reporter=default",
+          "--reporter=json",
+          "--outputFile=/private/tmp/phase6z-06682d5/R1-cf-ur4.json"
+        ],
+        "cwd": "/private/tmp/phase6z-06682d5/counterfactual",
+        "start": 1792231331.998046,
+        "end": 1792231343.604745,
+        "exit": 1,
+        "onlyChange": "FOUNDATION_PROTOCOL 20 -> 17",
+        "beforeSha256": "44f8a0df44c148ab086405f393b2a190b89c9ecbe4abec3d28b76edae88dbfa9",
+        "afterSha256": "9e2299df75b5566b8f63c59154dfdef4c6111c8e150831b69bf477e75d80e0b3",
+        "testUnchanged": true,
+        "onlyChangedProductionFile": "src/ext/descriptor.ts",
+        "unrelatedCapturedFixture": "structure-geometry-baseline.json was recaptured in same copy; UR4 imports/read path do not use it; original UR4 test and fixture unchanged",
+        "evidence": "R1-cf-ur4-wrong17.result.json"
+      },
+      {
+        "command": [
+          "node",
+          "node_modules/vitest/vitest.mjs",
+          "run",
+          "src/test/u_r4_trace.test.ts",
+          "--maxWorkers=1",
+          "--no-file-parallelism",
+          "--reporter=default",
+          "--reporter=json",
+          "--outputFile=/private/tmp/phase6z-06682d5/R1-cf-ur4.json"
+        ],
+        "cwd": "/private/tmp/phase6z-06682d5/counterfactual",
+        "start": 1792231378.37813,
+        "end": 1792231389.4216871,
+        "exit": 0,
+        "onlyChangedFile": "src/ext/descriptor.ts",
+        "onlyChange": "FOUNDATION_PROTOCOL 20 -> 15",
+        "beforeSha256": "44f8a0df44c148ab086405f393b2a190b89c9ecbe4abec3d28b76edae88dbfa9",
+        "afterSha256": "33b3d1a313da4fdbbcf557723c64562d08ea4a274fc5f9a9d62ac0644cbc29c5",
+        "testUnchanged": true,
+        "evidence": "R1-cf-ur4.result.json"
+      }
+    ],
+    "digestVector": {
+      "input": [
+        "c5-root-v1",
+        [
+          "brogue-web-whole-run-v7",
+          7,
+          20,
+          2
+        ],
+        "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+        [
+          "323a572cbdc04b1211bc4c0198ba8209325c6fb699120b1d18cbaa99ae2a16ca",
+          "45d52001ca271816b0e09831cbec73e18c38871c0dfe26b42f93ec734a3b64cd",
+          "12d261a5676b74aaf5d71e57bff0dbfe3473d4c4120551927d1d70245ca63449",
+          "9f1c9dc4d52ec4c60fe72bcc1de71b66536be51dcd27556f1fa4142b0ddf0306",
+          "a4a5b045927c5f0c3d22ce749a91a99a89f96f32df4a66f12a4a046cb6962880",
+          "1b5cd72d6624ed3521924c3549e9dac21fc7fd8e7885d22d556496da3fb9e8d7"
+        ]
+      ],
+      "newSha256": "17de152d4f7f33a5cbeccfd708d3a6b802b3e64e55ca930f8e4db6220bfe333e",
+      "oldFoundation17Sha256": "1b536dc901b91f43f545295d272d678641471cc69e84ba47b16c40ae2def0458"
+    },
+    "verification": {
+      "R1-dependencies": {
+        "command": [
+          "node",
+          "scripts/check-test-dependencies.mjs"
+        ],
+        "cwd": "/Users/coolking70/Documents/同步空间/BrogueJS-p6",
+        "start": 1792231403.435312,
+        "end": 1792231407.627268,
+        "exit": 0
+      },
+      "R1-types": {
+        "command": [
+          "node",
+          "node_modules/vue-tsc/bin/vue-tsc.js",
+          "-b"
+        ],
+        "cwd": "/Users/coolking70/Documents/同步空间/BrogueJS-p6",
+        "start": 1792231407.6568189,
+        "end": 1792231420.1335301,
+        "exit": 0
+      },
+      "R1-build": {
+        "command": [
+          "node",
+          "node_modules/vite/bin/vite.js",
+          "build"
+        ],
+        "cwd": "/Users/coolking70/Documents/同步空间/BrogueJS-p6",
+        "start": 1792231420.175933,
+        "end": 1792231429.4281971,
+        "exit": 0
+      },
+      "R1-b2-fixed": {
+        "command": [
+          "node",
+          "node_modules/vitest/vitest.mjs",
+          "run",
+          "src/test/b2_transcription.test.ts",
+          "--maxWorkers=1",
+          "--no-file-parallelism",
+          "--reporter=default",
+          "--reporter=json",
+          "--outputFile=/private/tmp/phase6z-06682d5/R1-b2-fixed.json"
+        ],
+        "cwd": "/Users/coolking70/Documents/同步空间/BrogueJS-p6",
+        "start": 1792231429.45779,
+        "end": 1792231738.779416,
+        "exit": 0
+      },
+      "R1-targeted": {
+        "command": [
+          "node",
+          "node_modules/vitest/vitest.mjs",
+          "run",
+          "src/ext/modules/combat/tests/combat2_content.test.ts",
+          "src/ext/modules/foraging/tests/foraging_combinations.test.ts",
+          "src/ext/modules/giants/tests/giants2_contract.test.ts",
+          "src/ext/modules/growth/tests/ext_growth_combat_stats.test.ts",
+          "src/ext/modules/growth/tests/ext_growth_creation_view.test.ts",
+          "src/ext/modules/growth/tests/ext_growth_loot_receipts.test.ts",
+          "src/ext/modules/loot/tests/loot_game_sfc.test.ts",
+          "src/ext/modules/loot/tests/loot_ui_components.test.ts",
+          "src/test/dialog_d4_blink.test.ts",
+          "src/test/ext_foundation_contracts.test.ts",
+          "src/test/ext_placement_group_runtime.test.ts",
+          "src/test/ext_recording_v4_digest.test.ts",
+          "src/test/ext_structure_geometry.test.ts",
+          "src/test/main_menu_replay_seek.test.ts",
+          "src/test/phase3a0_actor_action.test.ts",
+          "src/test/phase4a2_body_effects.test.ts",
+          "src/test/presentation_timeline.test.ts",
+          "src/test/u_05_machine_items.test.ts",
+          "src/test/u_15a_shattering.test.ts",
+          "src/test/u_r4_trace.test.ts",
+          "--maxWorkers=2",
+          "--reporter=default",
+          "--reporter=json",
+          "--outputFile=/private/tmp/phase6z-06682d5/R1-targeted.json"
+        ],
+        "cwd": "/Users/coolking70/Documents/同步空间/BrogueJS-p6",
+        "start": 1792231738.839533,
+        "end": 1792231883.130116,
+        "exit": 0
+      },
+      "R1-removed-targeted": {
+        "command": [
+          "node",
+          "node_modules/vitest/vitest.mjs",
+          "run",
+          "src/test/ext_foundation_contracts.test.ts",
+          "src/test/ext_recording_v4_digest.test.ts",
+          "src/test/ext_placement_group_runtime.test.ts",
+          "src/test/ext_structure_geometry.test.ts",
+          "src/test/phase4a2_body_effects.test.ts",
+          "--maxWorkers=1",
+          "--no-file-parallelism",
+          "--reporter=default",
+          "--reporter=json",
+          "--outputFile=/private/tmp/phase6z-06682d5/R1-removed-targeted.json"
+        ],
+        "cwd": "/var/folders/2s/dmv643cj5493tlmrh5rfgwxw0000gn/T/brogue-removed-modules-ahSvlB/candidate",
+        "start": 1792231883.139255,
+        "end": 1792231937.0758998,
+        "exit": 0
+      },
+      "R1-removed-endpoint": {
+        "command": [
+          "node",
+          "scripts/check-module-composition-smoke.mjs",
+          "--output",
+          "/private/tmp/phase6z-06682d5/R1-removed-endpoint.json",
+          "--engine-only",
+          "--removed-modules",
+          "combat,crafting,foraging,giants,growth,loot,narrative,settlement",
+          "--combinations",
+          "endpoints"
+        ],
+        "cwd": "/var/folders/2s/dmv643cj5493tlmrh5rfgwxw0000gn/T/brogue-removed-modules-ahSvlB/candidate",
+        "start": 1792231937.076122,
+        "end": 1792231941.2324202,
+        "exit": 0
+      }
+    },
+    "counts": {
+      "b2": 21,
+      "targetedFiles": 20,
+      "targetedPassed": 385,
+      "removedFiles": 5,
+      "removedPassed": 86,
+      "endpoint": 1,
+      "notAdditive": "All targeted counts overlap original assertions; never sum as full coverage."
+    }
+  },
+  "round2": {
+    "counterfactual": {
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/settlement/tests/settlement_review.test.ts",
+        "--maxWorkers=1",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile=/private/tmp/phase6z-06682d5/R2-cf-settlement-light.json"
+      ],
+      "cwd": "/private/tmp/phase6z-06682d5/counterfactual",
+      "start": 1792231942.615253,
+      "end": 1792231955.4730072,
+      "exit": 1,
+      "onlyChangedProductionFile": "src/engine/Core/Game.ts",
+      "onlyChange": "updateVision method restored from a56e644 parent",
+      "beforeSha256": "e6d72dbc61bdee5e2108594052f5652ffb156c20a3dafc8458378fd2b74930c4",
+      "afterSha256": "a288eb1861238327d1dfdab068f52ba9c6482dda1de7a149614789f841c42a0a",
+      "testUnchanged": true
+    },
+    "counterfactualResults": {
+      "passed": 12,
+      "failed": 1,
+      "unrelatedFailure": "keyboard k ownership"
+    },
+    "changedFile": "src/ext/modules/settlement/tests/settlement_review.test.ts",
+    "change": "Invalidate manually tampered fixture light channels via clearLighting before two existing updateVision calls; assertions unchanged",
+    "verification": {
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/settlement/tests/settlement_review.test.ts",
+        "--maxWorkers=1",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile=/private/tmp/phase6z-06682d5/R2-settlement.json"
+      ],
+      "cwd": "/Users/coolking70/Documents/同步空间/BrogueJS-p6",
+      "start": 1792232020.558768,
+      "end": 1792232033.8096719,
+      "exit": 1
+    },
+    "results": {
+      "passed": 12,
+      "failed": 1
+    },
+    "status": "two visibility failures closed; key behavior unresolved; no round3"
+  },
+  "independentReview": false
+}

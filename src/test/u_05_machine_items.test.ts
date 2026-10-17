@@ -88,7 +88,7 @@ describe('U05 CE rejection and failsafe boundaries',()=>{
         const bad=Object.assign(weapon(),{isCursed:true}),good=weapon();
         const roll=vi.spyOn(api,'rollBlueprintItem').mockReturnValueOnce(bad).mockReturnValueOnce(good);
         expect(spawn('WEAPON|ARMOR',undefined,[])).toBe(good);
-        expect(roll.mock.calls).toEqual([['WEAPON|ARMOR',undefined,7,8,12],['WEAPON|ARMOR',undefined,7,8,12]]);
+        expect(roll.mock.calls).toEqual([['WEAPON|ARMOR',undefined,7,8,12,false],['WEAPON|ARMOR',undefined,7,8,12,false]]);
     });
     it('ITEM_RUNIC alone satisfies machine quality independently of the effect mapping',()=>{
         vi.spyOn(rng,'randPercent').mockReturnValueOnce(true).mockReturnValueOnce(false);

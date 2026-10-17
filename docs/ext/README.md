@@ -1,5 +1,7 @@
 > 2026-10-14最终失败修复已完成，见[报告](phase5-final-fix.report.md) / [门禁摘要](evidence/phase5-final-fix-gates.json)。原96项未豁免失败与5空套件已关闭；完整npm仍exit1（11340过/18败，含15项已单文件复验通过的负载超时），ext仍exit1（6316过/3项已批准失败）。drift、boundary/依赖、types/build通过。未提交/推送，浏览器/真机仍待人工；下方2026-10-13阻塞记录保留为历史。
 
+> 6Z两轮结束、自动门禁未关闭（2026-10-17）：`ext/phase6` / `06682d5`。维护者接受Z-D1…Z-D7及精简门禁：影响面单批/原样证据沿用、静态+types+build各一次、全删1行、精选七组合、drift按影响、不新跑性能。见[6Z报告](phase6z.report.md)、[loot手册](loot-config.md)、[统一人工清单](phase6z.manual-checklist.md)、[遗留](phase6z-remainders.md)、[发布草稿](phase6z-release-notes.md)。首轮160项失败关闭22项，仍有22文件138项未关闭；七组合通过，全删首败经定向复验关闭。U01–U18三档54格待维护者，C3超时/C4取消、性能结论待补录；未提交/推送/合并/部署。下方旧128/15行及旧阶段状态仅历史。
+
 > 2026-10-13最终交付 **BLOCKED，未提交/推送**：本轮[逐门禁核对](phase5-final-policy-gates.report.md) / [npm99条首败初分类](phase5-final-npm-triage.md) / [最终候选人工待验清单](phase5-final-policy.manual-checklist.md)。npm96项未获豁免失败及5空套件错误未关闭，ext另有重叠3项未获豁免失败；drift、正常128、全删1与本轮真实输入拒绝通过。下方旧收口计数为历史，不能代替本轮。
 
 > 扩展测试政策已于2026-10-13更新，以[当前验收门禁](#当前验收门禁)为准；以下旧收口与计数为历史记录，当前阶段见[状态顶部](commander-status.md)。
