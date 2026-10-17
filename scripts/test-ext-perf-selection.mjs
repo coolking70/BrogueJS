@@ -14,20 +14,27 @@ for(const flags of [['--identity=6c3'],['--identity=unknown'],['--identity=p0','
 const frozen=loadPerfIdentity(process.cwd(),'6c1');
 assert.equal(frozen.entry.accepted,true);
 assert.equal(frozen.sources.all.source,'e27648489953069b9aca4c9cf2b8a5ed5162a372');
-assert.throws(()=>loadPerfIdentity(process.cwd(),'6c2'),'Uncalibrated C2 cannot pass the normal budget checker');
+const c2=loadPerfIdentity(process.cwd(),'6c2');
+assert.equal(c2.entry.accepted,true);
+assert.equal(c2.sources.all.source,'feb33b030f74949a2e0af001362b53f2f6e0eea3');
+assert.equal(c2.manifest.provenance.acceptance,'known-prefix-overhead');
+assert.equal(c2.manifest.provenance.cloudVerdict,'regression');
 const temp=mkdtempSync(resolve(tmpdir(),'c1-selection-'));
 try{
- const entry=perfIdentity('6c1'),source={recordingHash:'x',events:2050,coverage:{20:{settled:500}}};
+ assert.throws(()=>loadPerfIdentity(temp,'6c2'),'Uncalibrated C2 cannot pass the normal budget checker');
+ for(const identity of ['6c1','6c2']){
+ const entry=perfIdentity(identity),source={recordingHash:'x',events:2050,coverage:{20:{settled:500}}};
  const artifacts={[entry.manifest]:{cases:{classic:{...source,source},all:{...source,source}}}};
  for(const id of ['classic','all']){artifacts[entry.route(id)]={recordingHash:'x',commands:Array(2050).fill({action:'wait'})};artifacts[entry.source(id)]=source;}
  const write=()=>{for(const [path,value]of Object.entries(artifacts)){mkdirSync(dirname(resolve(temp,path)),{recursive:true});writeFileSync(resolve(temp,path),JSON.stringify(value));}};
- write();loadPerfIdentity(temp,'6c1');
- for(const path of Object.keys(artifacts)){rmSync(resolve(temp,path));assert.throws(()=>loadPerfIdentity(temp,'6c1'));write();}
- artifacts[entry.route('all')].recordingHash='bad';write();assert.throws(()=>loadPerfIdentity(temp,'6c1'));
+ write();loadPerfIdentity(temp,identity);
+ for(const path of Object.keys(artifacts)){rmSync(resolve(temp,path));assert.throws(()=>loadPerfIdentity(temp,identity));write();}
+ artifacts[entry.route('all')].recordingHash='bad';write();assert.throws(()=>loadPerfIdentity(temp,identity));
+ }
  const events=[1,2,3].map(n=>({action:'wait',rng:{substantive:n,cosmetic:n},turn:n,simulationTicks:n*100}));
  assert.equal(comparablePrefix({events},{events:structuredClone(events)}),3);
  const changed=structuredClone(events);changed[2].rng.cosmetic++;
  assert.equal(comparablePrefix({events},{events:changed}),2);
  assert.throws(()=>comparablePrefix({events},{events:[]}));
 }finally{rmSync(temp,{recursive:true,force:true});}
-console.log('C1 finite selection, all artifact omissions, conflicting/unknown identities, hash drift and derived prefix passed');
+console.log('C1/C2 finite selection, all artifact omissions, conflicting/unknown identities, hash drift and derived prefix passed');

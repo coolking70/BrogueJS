@@ -1,5 +1,7 @@
 # 6C2 实施报告
 
+性能最新结论见文末「性能剖析与已知开销预算（2026-10-17）」：保留云端 regression，按本轮维护者选择接受短前缀已知开销并冻结预算；三档浏览器仍待验。前文各次待验状态为历史记录。
+
 开工：`ext/phase6` / `e276484`。授权止于 6C2；不 commit、不 push、不进入 C3。冻结输入为 `phase6c0-contract.md` §4；四符文、两词、孔权重、掉落概率和经济数值均保持原表。6C1 云端 A/B 独立进行，本步不改套装行为与冻结性能预算。
 
 性能与三档浏览器均交维护者待验，不将本地功能结果当作阶段验收通过。以下首轮送审记录保留作历史证据；R1 修复、复验与更新身份见文末「审查发现处理」。
@@ -344,3 +346,123 @@ gh workflow run ext-perf.yml --ref ext/phase6 \
 ```
 
 本地冒烟能证明固定 A/B 在修复工具下通过完整生成、原生捕获、回放与硬判定路径；正式云端三轮时延、独立第四次冻结后验证及 C2 专场仍按原范围待验，不据本机计时预判 D6。
+
+## 性能剖析与已知开销预算（2026-10-17）
+
+本节覆盖前文性能待验状态。结论：**没有发现能解释云端尾延迟、且值得实施的低成本生产优化；不改游戏代码。按维护者本轮给定的回退选择，接受此次短前缀尾延迟为已知开销，以原云端 B 三轮完整数据冻结 C2 预算。** 这属于明确接受已测回归，不是将 D6 判定改成 pass；具体微观成因仍未确证，不能声称已定位成孔/符文计算或已经修复。D20 完整路线仍属不同工作量，不能拿本节的 D1 结论外推。
+
+### 输入、方法及可复现性
+
+- A=`e27648489953069b9aca4c9cf2b8a5ed5162a372`；B=`feb33b030f74949a2e0af001362b53f2f6e0eea3`；H=`c1f68d0`。B/H 的整个 `src` tree 都是 `5c588225980a69b5a12a0d2572a1a3aee899beca`，本轮生产源码保持该身份。A/B 使用既有独立检出 `/private/tmp/phase6c2-classic-fix-{A,B}`，H 使用当前工作树，依赖相同。
+- 输入直接使用 run [38960940396](https://github.com/coolking70/BrogueJS/actions/runs/38960940396) artifact `inputs/{A,B}-all-prefix.json`，各自原生版本头/检查点原样保留；H 使用 B 原录像。两文件各 73,710 字节，文件 SHA256 分别为 `ae44a0a2fc7d22e1f586c61460fcff1c1293a75b3d8668a756683bfca62ae371`、`2101583a97e2e5685e5e4cf0759e4b5b9f2016d3e6aa1f7a28896f77a743d840`。47 条同输入/结果前缀，D1、45 块、4500 tick、最大7怪；不截掉早期慢命令，不抑制检查点。
+- Apple M5 / darwin arm64 / Node **v24.19.0** / heap3072 MiB；云端 Node v24.21.0。沿原 observer 的12次未计时 wait、原生 `loadReplay`、固定 `Date.now`；wall、CPU、细分插桩分别执行，各子进程串行，不与测试/build争用。
+- wall 五轮顺序为 ABH、HBA、ABH、HBA、ABH，未增改原 observer。CPU 为各版本1次默认采样及另3次100µs采样。细分为各版本3次函数计数/包含时间，另3次带推进段归属与掉落请求的计数。后者用仓外 Vite transform 对指定函数体插入 `try/finally`，不修改生产文件；计时只用于归因，不用于门禁。
+- 原始证据与探针在 `/private/tmp/phase6c2-profile/`：`run.py`、`cpu100.mjs`、`run-cpu100.py`、`instrument{,2}.mjs`、`detail{,2}.mjs`、`run-detail{,2}.py`、`analyze-cpu.py`，以及对应 `*-wall-*` / `*-cpu100-*` / `*-detail*` 输出。45次正式前缀回放逐份比较原云端对应侧的完整 state、逐事件 domains、full-domains、17项计数、双流及全部 semantic 字段，全部精确一致、0 OOS；见 `verification.json`。开头另有1次 Node25 默认CPU探索，仅留原文件 `A-cpu.*`，不纳入以上比较和统计。
+- A/B 最终状态仅8个叶不同：foundation版本2处、loot模块/rules版本2处、rules/catalog/world definitions指纹3处、地面一件loot实例v一处；无物理状态或随机流差异。H/B 全状态一致。控制台 Vite HMR 监听有 sandbox EPERM 警告，SSR回放完整退出0；这发生在计时前，不伪称启动无警告。
+
+复跑 wall 单次的原方法（cwd 切到对应引擎；所有路径均为仓外证据路径）：
+
+```sh
+/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node \
+  --max-old-space-size=3072 \
+  /Users/coolking70/Documents/同步空间/BrogueJS-p6/scripts/profile-ext-perf.mjs \
+  /private/tmp/perfci-38960940396/ext-perf-38960940396-1/inputs/A-all-prefix.json \
+  /private/tmp/phase6c2-profile/new-A
+```
+
+B/H 换 B 原生输入；CPU默认采样加 `--cpu`，100µs及细分用上述独立探针。既有输出不得覆盖。
+
+### 云端尾部位置与本地配对结果
+
+门禁的 `round.p95` 是 `observeObjectiveWork` 统计的**完整客观推进工作**，包含怪物行动；`objectiveBlocks.p95` 只计 `Game.objectiveTimeBlock`。原云端 19→21 ms 指前者，不应混为后者或每块稳定增加2 ms。
+
+| 云端轮次 | 完整客观段 P95 A→B（ms） | 相对差 | P95所处命令 |
+| --- | --- | --- | --- |
+| 1 | 18.963→21.589 | +13.84% | A=3，B=7；B另有命令23插入尾部 |
+| 2 | 18.604→20.654 | +11.02% | 两侧均3 |
+| 3 | 18.206→20.313 | +11.58% | 两侧均3 |
+
+45个样本的 nearest-rank P95 是第43个，即第三慢样本。三轮最大值均在命令8（实际rat死亡、图捕获），不是P95的通常来源；不能因CPU里捕获显眼就将P95增长归因于捕获。原 run 硬门禁pass、classic 0/3、all/prefix 3/3 regression完整保留。
+
+| 本地轮次 | A P95 | B P95 / 相对A | H P95 / 相对A |
+| --- | --- | --- | --- |
+| 1 | 5.631 | 5.851 / +3.91% | 5.578 / −0.94% |
+| 2 | 5.630 | 5.962 / +5.90% | 5.762 / +2.34% |
+| 3 | 5.660 | 5.566 / −1.66% | 5.507 / −2.70% |
+| 4 | 5.760 | 5.556 / −3.54% | 5.535 / −3.91% |
+| 5 | 5.407 | 6.230 / +15.21% | 5.784 / +6.96% |
+
+单位ms。配对相对差中位数 B **+3.91%**、H **−0.94%**；仅按+10%比率计B为1/5、H为0/5，B第5轮绝对差0.823ms，尚未超过原D6的最小1ms噪声门槛。这里不是正式三轮云端门禁，也不是“优化后回到+10%”：生产代码根本未改。同源码B/H也会分开波动，故不能将这组数据解释成一次修复。wall总时长中位数 A/B/H=427.94/426.34/427.20ms；完整客观段总时长中位数190.49/187.80/189.94ms，未复现稳定累计增长。
+
+### 分段计数、耗时及新增工作
+
+下表计数为 A/B/H **全部相同**（各3次重复一致）；时间为第二组细分3次中位数，仅统计 `advancementLoop` 内的调用。包含时间有嵌套，不能相加；“每块”均指整段除45的摊销，不声称每一块都执行了该项。
+
+| 分段 | 全前缀次数 / 推进内次数 | 推进内 A / B / H 总ms | B摊销ms/块 |
+| --- | --- | --- | --- |
+| 属性来源汇总 `runtime.collect` | 3011 / 972 | 28.199 / 26.200 / 26.076 | 0.5822 |
+| 其中 loot provider | 3011 / 972 | 1.229 / 1.251 / 1.232 | 0.0278 |
+| 来源 JSON 校验（含递归） | 89151 / 33837 | 7.186 / 7.212 / 6.799 | 0.1603 |
+| `validateStatRows` | 3049 / 979 | 1.845 / 1.859 / 1.800 | 0.0413 |
+| `invalidateStats` | 62 / 48 | 0.115 / 0.111 / 0.114 | 0.0025 |
+| extension事务 | 97 / 2 | 2.705 / 2.642 / 2.687 | 0.0587 |
+| JSON事务捕获 | 194 / 4 | 0.028 / 0.028 / 0.029 | 0.0006 |
+| 独立图捕获 `checkpointGenerationWorld` | 13 / 4 | 27.782 / 29.060 / 28.653 | 0.6458 |
+| 合并图捕获 `checkpointGenerationWorldGroups` | 1 / 1 | 0.922 / 0.904 / 0.908 | 0.0201 |
+| loot掉落provider（整个调用） | 1 / 1 | 0.106 / 0.103 / 0.103 | 0.0023 |
+
+其他稳定工作量：属性cache hits/misses **5881/3733**、pipeline clear61、物品装备事实3011、套装来源850（推进内287）、`collectExtensionComponents`93、`settle`93、vision137、gas90、light mask6300、occupancy89077。没有C2引入更多查询、来源行校验或失效的计数证据。
+
+- **孔/符文/词行进入属性管线：0次。** `projectItemModifiers`、`socketRows`、`matchRuneword` 均0；初始装备不带loot数据，唯一地面loot实例没有进入装备管线。新建“无孔装备快路”对本输入没有收益。
+- **物品校验、显示投影：0次。** `validateLootItemData`、`deriveNativeFacts`、`projectLootKnowledge`、`assertLootKnownItem`、presentation的project/name/appearance均0；版本正确的原生load在计时区外完成，绑定复用既有检查结果。100次只读/成词场景不是本前缀，不能将其成本算到这里。
+- **新增的实际执行代码很小且集中于一次死亡。** `requests.json` 证明仅有D1普通rat kill，0寻宝、无收据、无leader/champion。C2增加空`materials`数组、空映射/展开及材料分支判断；未生成装备/材料、未进入孔骰或符文概率路径。包含所有旧逻辑的整个掉落provider也只约0.103ms（摊销0.0023ms/块），无法解释命令3的云端P95差额；不能将该包含时间当成净新增时间。
+- **事务/捕获不是新增次数。** 既有图捕获占相当时间，但同次数、同世界工作量，热点集中于命令8。改写写集或失效粒度会涉及回滚对象身份、派生属性与录像合同，当前无收益证据，成本/风险明显高于无条件加缓存。
+
+100µs CPU采样各版本3次聚合，剔除inspector启停栈，按调用祖先分配互斥类别（不是各函数inclusive时间求和）：
+
+| CPU样本归属 | A占比 | B占比 | H占比 |
+| --- | --- | --- | --- |
+| 属性管线及provider | 28.95% | 29.31% | 28.81% |
+| 图捕获 | 6.92% | 6.88% | 6.78% |
+| 事务剩余部分 | 5.56% | 5.47% | 5.39% |
+| 摘要/快照 | 13.44% | 13.48% | 13.33% |
+| 视野/光照 | 10.73% | 10.74% | 10.52% |
+| 环境 | 9.61% | 9.59% | 9.49% |
+| GC | 1.95% | 1.70% | 2.40% |
+| 其余调度、原生行动等 | 22.84% | 22.83% | 23.27% |
+
+采样总量A/B/H=1384.96/1390.66/1402.37ms；孔/词和物品显示投影均无样本。以上是**现有总成本构成**，不是“云端新增11–14%的分摊”。本地不能从近零、变号的净差中可靠估计新增占比，也没有云端CPU/GC数据来证明具体是哪次JIT、分配或调度造成尾部差额。早期短样本/运行时热度是待验证解释，不写成已确认根因。接受的已知限制是原云端这条47输入前缀的P95回归，不是宣称C2在所有负载上固定多耗11–14%。
+
+### 预算冻结与后续触发
+
+采用 [C2预算](../../scripts/ext-perf-6c2-budget.json)，并将原 artifact 的 classic/all `.route.json`、`.source.json` 逐字节冻结到 `scripts/perf/ext-6c2-late-*`；完整录像、状态、CPU profile不进仓库。原 `ext-perf-budget.mjs freeze` 读取 **云端B前三轮完整数据**，不使用47条前缀或本地计时校准。未附来源的原始冻结文件SHA256：`81d9a0086f666254439f93981c0b0e8082e1c21afb8bc5c39ece13d406ce83ae`。落盘预算仅增加 `provenance`，测量、计数、阈值、hash与policy字段保持原值。
+
+`provenance.acceptance=known-prefix-overhead`、`cloudVerdict=regression` 明确区分“按本轮维护者授权接受”与“自动门禁通过”。注册C2 `accepted=true`，缺预算/路线/source、hash漂移仍拒绝。**未改** `ext-perf-ab-policy.mjs`、自动 `canFreeze`、observer、比较器、freezer、工作流、C1/B4预算、生产规则或生成输入；未来遇到同类D6回归仍会返回regression，不存在自动放宽接受路径。
+
+冻结后在当前同源码H上各做一次独立完整原生回放（`freeze-check-{classic,all}.*`），使用原 `ext-perf-budget.mjs check` 验证；并将完整state、domains、full-domains逐份与原云端B第一轮比较。这是本地独立正确性/工作量复核，不是第四次云端计时，也不是新一次A/B通过。其最终实际结果见下表。
+
+| 独立冻结复核 | 事件 | 客观块 | ticks | 结果 |
+| --- | --- | --- | --- | --- |
+| classic | 2208 | 2431 | 241350 | 0 OOS；原frozen check硬检查及完整JSON相等 |
+| all | 2423 | 2549 | 253375 | 0 OOS；原frozen check硬检查及完整JSON相等 |
+
+如需在维护者提交本轮预算/工具/报告后再运行原A/B，触发参数如下；本轮没有生产优化，不承诺该重跑会改变原regression，也不需要靠重跑偶然pass来追认本次已知开销接受：
+
+```text
+workflow: ext-perf.yml
+workflow ref: ext/phase6（含维护者后续提交的本轮改动）
+base_ref: e27648489953069b9aca4c9cf2b8a5ed5162a372
+head_ref: <维护者提交本轮改动后的完整新SHA>
+base_identity: 6c1
+head_identity: 6c2
+rounds: 3
+```
+
+本执行者没有commit/push或触发云端。预算来源仍绑定原生产B `feb33b0`，新head的`src`应继续为上述同一tree；不得把尚未产生的新提交号写成已验证身份。若今后要进一步解释这个尾部差额，需要同云端runner的逐命令CPU/GC/JIT证据；本地已有证据只足以排除本前缀上大多数假定的C2新增热路径。
+
+### 本轮限定验证
+
+- 生产文件没有修改，故没有新增游戏行为回归或重录黄金trace；必要回归放在性能身份选择与A/B策略脚本。C2接受后的原缺制品负例在空目录中继续执行，并将逐件缺失、hash漂移检查同时覆盖C1/C2。A/B的未知身份负例移至仍未知的C3；不登记或进入C3。
+- 旧前提归因：改注册前，原 `test-ext-perf-selection.mjs`、`test-ext-perf-ab.mjs`、`test-ext-perf-route.mjs` 在原 `c1f68d0` 全部exit0，证据 `checks/`。本轮没有生产行为变化，只有“C2尚无预算/不能作为已接受A”的前提因实际冻结而过时；保留缺制品拒绝语义、原P95/P99/max/1ms阈值、2/3规则、回归禁止自动freeze断言，未修改生产守卫或任何性能容差。
+- 最终相关脚本3项、boundary、测试依赖检查全部exit0，见 `checks-final/`。`vue-tsc -b` 与实际Vite生产build在本轮同一未变生产源码上exit0，见 `checks/types.log`、`checks/build.log`；build仅既有大chunk提示。没有运行全量npm/ext/drift、组合删除或浏览器套件。
+- 原云端完整证据、45次前缀精确比较、2次独立完整冻结复核、测试退出码分开登记，不将它们拼成新一次云端A/B pass。`git diff --check`、LF及新增制品大小检查通过；所有提交候选文件均小于1MiB。
