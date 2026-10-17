@@ -4,14 +4,15 @@ import {sourceSnapshot,assertCandidateSnapshot} from './ext-perf-source-snapshot
  * Optional --rounds 1..3 --case classic|all|both --limit EVENTS (smoke only).
  * The unchanged observer resolves engine modules from each child's cwd. */
 import assert from 'node:assert/strict';
-import {readFileSync,writeFileSync,mkdirSync,existsSync,openSync,closeSync,realpathSync} from 'node:fs';
+import {readFileSync,writeFileSync,mkdirSync,existsSync,openSync,closeSync,realpathSync,copyFileSync} from 'node:fs';
 import {resolve,dirname,relative} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {execFileSync,spawnSync} from 'node:child_process';
+import {randomUUID} from 'node:crypto';
 import {cpus,totalmem,platform,arch} from 'node:os';
 import {hash,write} from './ext-perf-common.mjs';
 import {perfIdentity,loadPerfIdentity,comparablePrefix,pendingPerfBaseline} from './ext-perf-selection.mjs';
-import {parseOptions,validateRun,withObjectiveP99,evaluateGates,overallStatus,policyVersion,timingPolicy} from './ext-perf-ab-policy.mjs';
+import {parseOptions,kindsFor,validateRun,withObjectiveP99,evaluateGates,overallStatus,policyVersion,timingPolicy} from './ext-perf-ab-policy.mjs';
 
 const options=parseOptions(process.argv.slice(2));
 const control=resolve(dirname(fileURLToPath(import.meta.url)),'..');
@@ -24,7 +25,7 @@ mkdirSync(out,{recursive:true});
 const read=p=>JSON.parse(readFileSync(p,'utf8'));
 const git=(root,...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8'}).trim();
 const result={version:1,status:'running',hard:'pending',options,startedAt:new Date().toISOString(),
- runner:{node:process.version,cpu:cpus()[0]?.model,cpus:cpus().length,memoryBytes:totalmem(),platform:platform(),arch:arch(),heapMiB:3072,runId:process.env.GITHUB_RUN_ID??null,attempt:process.env.GITHUB_RUN_ATTEMPT??null},
+ runner:{invocation:randomUUID(),job:process.env.GITHUB_JOB??null,shard:options.shard??null,node:process.version,cpu:cpus()[0]?.model,cpus:cpus().length,memoryBytes:totalmem(),platform:platform(),arch:arch(),heapMiB:3072,runId:process.env.GITHUB_RUN_ID??null,attempt:process.env.GITHUB_RUN_ATTEMPT??null},
  identities:{},steps:[],runs:[],gates:[],
  scope:options.limit?`Local diagnostic: first ${options.limit} production events of both registered routes, plus bounded feature scenes. This is not full-route timing or D20 calibration.`:'Registered A/B complete classic/all routes and an outcome-verified identical all prefix. Prefix length is derived from production captures; it is NOT a D20 calibration.',
  policyVersion,policy:timingPolicy};
@@ -47,7 +48,7 @@ function publish(){
  lines.push('', '| Pair / round | Metric | A → B (ms) | Relative | Crossed |', '| --- | --- | --- | --- | --- |');
  for(const g of result.gates)for(const [i,pair]of g.pairs.entries())for(const v of pair)
   lines.push(`| ${g.id}/${g.kind} / ${i+1} | ${v.metric} | ${fmt(v.a)} → ${fmt(v.b)} | ${v.relative===null?'n/a':fmt(v.relative*100)+'%'} | ${v.exceeded?'yes':'no'} |`);
- lines.push('',result.manifest?`Suggested manifest: ext-perf-${options.headIdentity}-budget.suggested.json; independent post-freeze replay/check passed. Review before adopting; no repository writes.`:'No recommended manifest. Partial/smoke/error/regression results cannot freeze a budget.',
+ lines.push('',result.manifest?`Suggested manifest: ext-perf-${options.headIdentity}-budget.suggested.json; independent post-freeze replay/check passed. Review before adopting; no repository writes.`:options.shard?'Shard evidence only; aggregate job decides D6 and the suggested manifest.':'No recommended manifest. Partial/smoke/error/regression results cannot freeze a budget.',
   result.error?`Failure: ${result.error}`:'',`Latest step: ${result.steps.at(-1)?.label??'preflight'} (${result.steps.at(-1)?.status??'pending'}).`,
   'A running/pending status means incomplete evidence, never a pass. Raw inputs, complete observer outputs, comparisons and logs are retained in the artifact.');
  writeFileSync(resolve(out,'summary.md'),lines.join('\n')+'\n');
@@ -105,7 +106,7 @@ try {
  }
  result.identities.control={commit:git(control,'rev-parse','HEAD'),srcTree:git(control,'rev-parse','HEAD:src'),sourceHash:hash(execFileSync('git',['diff','HEAD','--','scripts','.github'],{cwd:control,encoding:'utf8'}))};
  result.instrumentationHash=instrumentationHash;
- result.toolHashes=Object.fromEntries(['ext-perf-source-snapshot.mjs','run-ext-perf-ab.mjs','generate-ext-perf.mjs','ext-perf-route-recovery.mjs','profile-ext-6c1.mjs','profile-ext-6c3.mjs','profile-ext-6c4.mjs','ext-perf-selection.mjs','ext-perf-ab-policy.mjs','capture-ext-perf-prefix.mjs','regenerate-ext-perf.mjs','profile-ext-perf.mjs','ext-perf-common.mjs','compare-ext-perf.mjs','ext-perf-budget.mjs'].map(n=>[n,hash(readFileSync(resolve(control,'scripts',n),'utf8'))]));
+ result.toolHashes=Object.fromEntries(['merge-ext-perf-ab.mjs','ext-perf-source-snapshot.mjs','run-ext-perf-ab.mjs','generate-ext-perf.mjs','ext-perf-route-recovery.mjs','profile-ext-6c1.mjs','profile-ext-6c3.mjs','profile-ext-6c4.mjs','ext-perf-selection.mjs','ext-perf-ab-policy.mjs','capture-ext-perf-prefix.mjs','regenerate-ext-perf.mjs','profile-ext-perf.mjs','ext-perf-common.mjs','compare-ext-perf.mjs','ext-perf-budget.mjs'].map(n=>[n,hash(readFileSync(resolve(control,'scripts',n),'utf8'))]));
  const inputs={},routePaths={},sourcePaths={};
  for(const id of options.cases){
   routePaths[`A-${id}`]=resolve(control,baseline.entry.route(id));
@@ -126,18 +127,22 @@ try {
    }
   }
   if(id==='classic')assert.deepEqual(read(routePaths[`A-${id}`]).commands,read(routePaths[`B-${id}`]).commands,'Classic route changed');
-  if(id==='all'){
+  if(id==='all'&&options.shard!=='all-full'){
    const n=comparablePrefix(recordings.A,recordings.B);
    result.prefixEvidence={events:n,method:'Longest production command/outcome prefix; observer rechecks workload and RNG',a:hash(recordings.A.events.slice(0,n).map(e=>[e.action,e.data,e.decisions,e.rng])),b:hash(recordings.B.events.slice(0,n).map(e=>[e.action,e.data,e.decisions,e.rng]))};
    assert.equal(result.prefixEvidence.a,result.prefixEvidence.b);
    for(const side of ['A','B']){
     const prefix=resolve(out,'inputs',`${side}-${id}-prefix.json`);
-    run(`capture-${side}-${id}-prefix`,roots[side],'capture-ext-perf-prefix.mjs',[routePaths[`A-${id}`],prefix,String(n)]);
+    // An entire identical prefix is already a production capture. Reuse input
+    // bytes only; its observer runs remain independent and interleaved.
+    if(n===recordings[side].events.length){
+     copyFileSync(inputs[`${side}-${id}-full`].path,prefix);
+    }else run(`capture-${side}-${id}-prefix`,roots[side],'capture-ext-perf-prefix.mjs',[routePaths[`A-${id}`],prefix,String(n)]);
     const p=read(prefix);inputs[`${side}-${id}-prefix`]={path:prefix,recordingHash:hash(p),events:p.events.length};
    }
   }
  }
- result.inputs=inputs;publish();
+ result.inputs=inputs;result.sources=Object.fromEntries(Object.entries(sourcePaths).map(([id,path])=>[id,read(path)]));publish();
  const first=new Map();
  function measure(round,id,side,kind){
   const key=`${side}-${id}-${kind}`,input=inputs[key],prefix=resolve(out,`round-${round}`,key);
@@ -153,8 +158,7 @@ try {
   // Never parallelize: each case sees A1,B1,A2,B2,A3,B3 on this runner.
   const pair={};
   for(const side of ['A','B']){
-   pair[side]=measure(round,id,side,'full');
-   if(id==='all')pair[side+'prefix']=measure(round,id,side,'prefix');
+   for(const kind of kindsFor(options,id))pair[side+kind]=measure(round,id,side,kind);
   }
   result.gates=evaluateGates(result.runs,options);
   publish();
@@ -163,12 +167,17 @@ try {
   const args=options.cases.map(id=>`${id}=${resolve(out,`round-${round}`,`A-${id}-full`)}`);
   run(`original-budget-${round}`,roots.A,'ext-perf-budget.mjs',['check',resolve(control,baseline.entry.manifest),...args]);
  }
- if(generated){run('C1-bounded-supplement',roots.B,'profile-ext-6c1.mjs',[resolve(out,'c1-scenes.json')]);result.c1Scenes=read(resolve(out,'c1-scenes.json'));}
- if(options.headIdentity==='6c3'){run('C3-bounded-supplement',roots.B,'profile-ext-6c3.mjs',[resolve(out,'c3-scenes.json')]);result.c3Scenes=read(resolve(out,'c3-scenes.json'));}
- if(options.headIdentity==='6c4'){run('C4-bounded-supplement',roots.B,'profile-ext-6c4.mjs',[resolve(out,'c4-scenes.json')]);result.c4Scenes=read(resolve(out,'c4-scenes.json'));}
+ if(generated&&options.shard!=='all-prefix'){run('C1-bounded-supplement',roots.B,'profile-ext-6c1.mjs',[resolve(out,'c1-scenes.json')]);result.c1Scenes=read(resolve(out,'c1-scenes.json'));}
+ if(options.headIdentity==='6c3'&&options.shard!=='all-prefix'){run('C3-bounded-supplement',roots.B,'profile-ext-6c3.mjs',[resolve(out,'c3-scenes.json')]);result.c3Scenes=read(resolve(out,'c3-scenes.json'));}
+ if(options.headIdentity==='6c4'&&options.shard!=='all-prefix'){run('C4-bounded-supplement',roots.B,'profile-ext-6c4.mjs',[resolve(out,'c4-scenes.json')]);result.c4Scenes=read(resolve(out,'c4-scenes.json'));}
  result.hard='pass';
  if(options.headSourceHash)assertCandidateSnapshot(options,sourceSnapshot(roots.B));
  result.status=overallStatus(result);
+ if(options.shard&&options.shard!=='all-prefix'&&options.rounds===3&&!options.limit&&!pendingBase&&!result.gates.some(g=>g.status==='regression')){
+  // Independent fourth B replay stays on this case's runner. The aggregate
+  // freezes rounds 1..3, then checks this held-out replay against that budget.
+  for(const id of options.cases)measure('verify',id,'B','full');
+ }
  if(result.status==='pass'){
   result.status='verifying';publish();
   // Use the same correctness/count freezer with revised objective-tail reporting. First 3 complete B runs only; no cherry-picking.

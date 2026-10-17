@@ -35,6 +35,11 @@ permissions:
 
 jobs:
   ab:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [classic, all-full, all-prefix]
+    name: A/B ${{ matrix.shard }}
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     env:
@@ -104,16 +109,18 @@ jobs:
           }
           JS
       - name: Interleaved A/B and B calibration
-        timeout-minutes: 330
+        timeout-minutes: 345
         env:
           PERF_BASE_IDENTITY: ${{ inputs.base_identity }}
           PERF_HEAD_IDENTITY: ${{ inputs.head_identity }}
           PERF_ROUNDS: ${{ inputs.rounds }}
+          PERF_SHARD: ${{ matrix.shard }}
         run: >-
           node control/scripts/run-ext-perf-ab.mjs
           --base "$GITHUB_WORKSPACE/base"
           --head "$GITHUB_WORKSPACE/head"
           --out "$RUNNER_TEMP/ext-perf"
+          --shard "$PERF_SHARD"
           --rounds "$PERF_ROUNDS"
           --base-identity "$PERF_BASE_IDENTITY"
           --head-identity "$PERF_HEAD_IDENTITY"
@@ -132,8 +139,61 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ext-perf-${{ github.run_id }}-${{ github.run_attempt }}
+          name: ext-perf-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard }}
           path: ${{ runner.temp }}/ext-perf/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 6
+
+  summary:
+    name: Aggregate D6 verdict
+    needs: ab
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout dispatched tools
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Set up Node 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+      - name: Install aggregate tool dependencies
+        run: npm ci
+      - name: Download all shard evidence
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ext-perf-${{ github.run_id }}-${{ github.run_attempt }}-*
+          path: ${{ runner.temp }}/shards
+      - name: Recheck evidence, adjudicate D6 and suggest budget
+        if: always()
+        env:
+          ARTIFACT: ext-perf-${{ github.run_id }}-${{ github.run_attempt }}
+        run: >-
+          node scripts/merge-ext-perf-ab.mjs
+          "$RUNNER_TEMP/ext-perf-aggregate"
+          "$RUNNER_TEMP/shards/$ARTIFACT-classic"
+          "$RUNNER_TEMP/shards/$ARTIFACT-all-full"
+          "$RUNNER_TEMP/shards/$ARTIFACT-all-prefix"
+      - name: Publish aggregate summary
+        if: always()
+        run: |
+          if test -f "$RUNNER_TEMP/ext-perf-aggregate/summary.md"; then
+            cat "$RUNNER_TEMP/ext-perf-aggregate/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          else
+            mkdir -p "$RUNNER_TEMP/ext-perf-aggregate"
+            printf '%s\n' '{"status":"failed","hard":"failed","error":"Aggregate setup failed"}' > "$RUNNER_TEMP/ext-perf-aggregate/result.json"
+            printf '%s\n' 'Aggregate setup failed. No D6 pass or suggested manifest.' > "$RUNNER_TEMP/ext-perf-aggregate/summary.md"
+            cat "$RUNNER_TEMP/ext-perf-aggregate/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload aggregate and portable raw evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ext-perf-${{ github.run_id }}-${{ github.run_attempt }}-aggregate
+          path: ${{ runner.temp }}/ext-perf-aggregate/
           if-no-files-found: error
           retention-days: 7
           compression-level: 6
