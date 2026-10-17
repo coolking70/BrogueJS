@@ -22,7 +22,7 @@ assert.equal(c2.manifest.provenance.cloudVerdict,'regression');
 const temp=mkdtempSync(resolve(tmpdir(),'c1-selection-'));
 try{
  assert.throws(()=>loadPerfIdentity(temp,'6c2'),'Uncalibrated C2 cannot pass the normal budget checker');
- for(const identity of ['6c1','6c2']){
+ for(const identity of ['6c1','6c2','6c3','6c4']){
  const entry=perfIdentity(identity),source={recordingHash:'x',events:2050,coverage:{20:{settled:500}}};
  const artifacts={[entry.manifest]:{cases:{classic:{...source,source},all:{...source,source}}}};
  for(const id of ['classic','all']){artifacts[entry.route(id)]={recordingHash:'x',commands:Array(2050).fill({action:'wait'})};artifacts[entry.source(id)]=source;}
@@ -37,9 +37,21 @@ try{
  assert.equal(comparablePrefix({events},{events:changed}),2);
  assert.throws(()=>comparablePrefix({events},{events:[]}));
 }finally{rmSync(temp,{recursive:true,force:true});}
-console.log('C1/C2 finite selection, all artifact omissions, conflicting/unknown identities, hash drift and derived prefix passed');
+console.log('C1–C4 finite selection, all artifact omissions, conflicting/unknown identities, hash drift and derived prefix passed');
 
 assert.equal(selectExtPerf(['i','o','--identity=6c3']).manifest,'scripts/ext-perf-6c3-budget.json');
-assert.equal(perfIdentity('6c3').accepted,false);
-
-assert.equal(perfIdentity('6c4').accepted,false);assert.equal(perfIdentity('6c4').generate,true);assert.throws(()=>loadPerfIdentity(process.cwd(),'6c4'));
+for(const identity of ['6c3','6c4']){
+ const accepted=loadPerfIdentity(process.cwd(),identity);
+ assert.equal(accepted.entry.accepted,true);assert.equal(accepted.entry.generate,true);
+ assert.equal(accepted.manifest.provenance.cloudHardGate,'pass');
+ assert.equal(accepted.manifest.provenance.independentPostFreezeReplay,false);
+ assert.equal(accepted.manifest.provenance.independentHeldOutReplay,false);
+ assert.equal(accepted.sources.all.source,accepted.manifest.provenance.identities.B.commit);
+}
+const c3=loadPerfIdentity(process.cwd(),'6c3'),c4=loadPerfIdentity(process.cwd(),'6c4');
+assert.equal(c3.manifest.provenance.acceptance,'known-tail-risk');
+assert.equal(c3.manifest.provenance.cloudVerdict,'regression');
+assert.equal(c4.manifest.provenance.cloudVerdict,'incomplete');
+assert.equal(c4.manifest.provenance.timingVerdict,'pass');
+assert.equal(c4.manifest.provenance.identities.A.commit,c3.manifest.provenance.identities.B.commit);
+console.log('C3/C4 accepted artifacts, historical verdicts, baseline chain and missing independent verification preserved');

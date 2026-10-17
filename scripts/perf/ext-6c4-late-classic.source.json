@@ -1,0 +1,26 @@
+{
+  "kind": "wizard-command-route",
+  "planner": "omniscient BFS; no world edits",
+  "source": "07d7c97cdbe3f49ed58ae5137d145fceb02fcfbb",
+  "node": "v24.21.0",
+  "seed": "438491256",
+  "mode": "wizard",
+  "recordedAt": 1792022400000,
+  "recordingVersion": 4,
+  "codec": {
+    "wholeRun": 7,
+    "foundation": 20,
+    "origin": 2
+  },
+  "extensions": null,
+  "modules": [],
+  "coverage": {
+    "20": {
+      "settled": 500,
+      "maxMonsters": 35,
+      "maxTerrainLights": 174
+    }
+  },
+  "events": 2208,
+  "recordingHash": "ab901fb175c236a9d0be6e367e2967ffae4905efa3ea99e6dad71b28fd410304"
+}

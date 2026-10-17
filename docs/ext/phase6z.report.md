@@ -1,5 +1,7 @@
 # 6Z 收口报告
 
+> 性能补录（2026-10-17）见§5.1：6C3排除路线工作量差异，保留D6 regression并按已知尾部风险采纳；6C4计时pass、离线采纳。两份预算及完整route/source已冻结；无完整第四轮独立云端验证。下列旧性能待办为历史。
+
 > **当前清理结果见 §4.1：原22个失败文件已关闭。** 74项由当前版本重录/前提修正关闭；另64项按维护者授权从短战斗矩阵排除loot组合，不能计作重跑通过。限定25文件首批227pass/3fail，修正后仅3个失败文件补验10pass；boundary、依赖、vue-tsc、build通过。其余章节保留原6Z/CI阶段记录，原138项清单为历史状态；人工/性能待办不因本轮自动关闭。
 
 2026-10-17，`ext/phase6`，开工及当前HEAD `06682d538084d552e40ba192c9f1e2e896b3e13d`；phase5比较点 `9cf8366`。初始工作区干净。维护者已接受Z-D1…Z-D7全部推荐并追加精简门禁，先修订[任务单](phase6z.task.md)后执行。最多两轮修复；未提交、推送、合并、部署，没有tag/Release/package升版。
@@ -144,6 +146,8 @@ boundary、静态依赖、`vue-tsc -b`及Vite build均exit0。它们在导入声
 
 ## 5 既有性能预算与云端状态
 
+本节下列为上一轮历史核对，最新拆分artifact结论、预算采纳及限制见§5.1。
+
 只做文件/hash/身份核对，新增A/B、正式性能回放、独立基准运行次数=0。影响面整文件中原有`combat_runtime`包含9次命令计时观察，已随21项执行；这是整文件运行附带的计时，并非“完全没有计时”，没有用于性能结论或预算采纳，也不重跑。原`ext_structure_performance`保持环境开关关闭的既有skip；`resident_performance_preparation`是untimed计数/合同断言。`budget-audit-final`exit0：原loadPerfIdentity核对classic/all路线长度、D20≥500、source/route/manifest recordingHash。B4/C1原result文件SHA吻合provenance；C2去provenance的原freeze SHA吻合`81d9a0086f666254439f93981c0b0e8082e1c21afb8bc5c39ece13d406ce83ae`，两套route/source与原云端artifact逐字节相等。
 
 | 阶段/run | 已核对结论 | 限制 |
@@ -163,6 +167,48 @@ GitHub查询走连接器（本机gh/DNS访问失败原日志保留），原job�
 | 6c2 | `63f210adef8608b9b048f3ae07ec3188251a7be7f879522084d9fa7c6f6e563f` | true |
 | 6c3 | `尚无预算` | false |
 | 6c4 | `尚无预算` | false |
+
+### 5.1 拆分云端复核与预算采纳（2026-10-17）
+
+本次使用维护者已下载的完整 artifact：6C3 `/private/tmp/perfci-39028334751/`、6C4 `/private/tmp/perfci-39028341691/`。开工 HEAD `ed13574`；未触发云端、未修改生产、observer、D6 阈值、自动 freeze 或回放语义。原汇总工具从三个 shard 在新目录重新合并，核验原工具 hash、runner invocation、A1/B1/A2/B2/A3/B3 次序、完整输入、逐轮域/最终状态、原 A 预算及补充场景，结果与原 aggregate 相同；6C4 因 pending 基线原本不检查 A 预算，本次另以新冻 C3 对其三轮 A 完整结果检查通过。原 artifact 只读，离线证据在 `/private/tmp/p6-perf-review/`。
+
+| 阶段 | 原工具结论（保持） | 本次采纳 |
+| --- | --- | --- |
+| 6C3，33d7aba→0d2e98a，run39028334751 | hard pass；classic 0/3、all/full 2/3、all/prefix 1/3；D6 regression | 更符合尾部噪声特征，未确证真实代码回退，但不能证明纯噪声；保留尾部风险，按本次维护者授权登记 `known-tail-risk` 并冻结，不伪改自动 regression 为 pass |
+| 6C4，0d2e98a→07d7c97，run39028341691 | hard pass；classic 0/3、all/full 1/3、all/prefix 1/3，三个 gate pass；aggregate incomplete | 离线正式计时 pass，接受 C3 后基线链完整；冻结 `offline-passing-timing`，原 incomplete 保留 |
+
+**6C4 incomplete 原因不是汇总工具缺陷。** `pendingPerfBaseline(6c3,6c4)` 在 C3 accepted=false 时为真，`canFreeze` 明确返回 false，`overallStatus` 因而 incomplete。runner 同条件跳过独立第4次 B 回放；aggregate 只在 status=pass 时生成 candidate/suggested manifest。缺少的是完整第四轮验证与冻结 manifest，不是三轮输入/计时或 C1/C4 补充场景。仅翻 accepted 再跑普通 merger 会在“Missing independent fourth B replay”处失败；本次没有降低该守卫。按既有维护者离线采纳做法，用原 `freeze-split` 从各 case 原 B 完整1/2/3轮冻结，再重查这三轮；这是校准数据复查，不能叫独立复核。C3仅有classic第4轮，all缺；C4两个case都缺。未来自动路径仍要求完整独立复核。
+
+**6C3 不属于工作量差异。** classic 两侧2208输入/2431块；all两侧2423输入/2549块与客观回合/253375 ticks，全部observer调用计数一致，去ms的rowsHash、双RNG完全一致。all相同结果前缀为2423，覆盖完整路线；state/domain hash随版本身份变化不作跨版本强等。不能把all/full降为report-only，也不能借另一runner的prefix通过抵消其2/3越线；prefix门禁按既有策略只比较全程指标，不包含D20分层指标，即使该次前缀恰好等于全程。
+
+| all/full 指标 | 第1轮 A→B | 第2轮 A→B | 第3轮 A→B |
+| --- | --- | --- | --- |
+| 命令 P95（ms） | 739.293→744.693（+0.73%） | 753.834→741.409（−1.65%） | 724.866→738.941（+1.94%） |
+| 墙钟（s） | 789.048→790.667（+0.21%） | 801.382→803.769（+0.30%） | 768.440→795.076（+3.47%） |
+| 客观回合 P99（ms） | 380.287→631.881（+66.16%） | 390.738→401.182（+2.67%） | 384.681→402.847（+4.72%） |
+| D20命令 max（ms） | 2165.010→3178.313（+46.80%） | 2971.452→2153.694（−27.52%） | 2760.532→2103.488（−23.80%） |
+| D20客观回合 P99（ms） | 190.062→283.585（+49.21%） | 211.470→200.160（−5.35%） | 190.075→256.729（+35.07%） |
+
+D20每轮570个客观回合，P99取第565小（第6大），容易受少数尖峰影响。同一all/full runner的A自身D20命令max跨度37.25%，B跨度51.10%；B客观总P99第1轮比第2轮高57.50%。D20>500ms客观块：A三轮1/2/1个，B为3/0/2个；A发生于2031、2111/2351、2347，B发生于2030/2144/2368、无、1961/2273，尖峰不是固定命令新增工作。稳定较慢的1993/2285/2399在两侧反复出现。P95/墙钟无越线，尾部跨轮漂移支持噪声为主，但原wall artifact没有GC/调度记录，不能声称已经证明某一次GC或排除微小真实分配开销。
+
+本地 profile 使用隔离的A=`33d7aba`、B=`0d2e98a`源码副本和各自云端原all输入，从origin完整串行回放；只在副本加诊断计数，主仓生产未改。每侧2423输入、0 OOS，最终完整状态hash分别精确等于云端A/B，两条RNG也一致。计数窗口是loadReplay后的输入执行；CPU仅采D19–D20，不包括冷启动。原始脚本、log、`.cpuprofile`及小型汇总在 `/private/tmp/p6-perf-review/`，不将单次本机耗时用于D6或预算。
+
+D19–D20共551输入/622客观块：两侧`validateLootItemData`均80次，新增`prepareWorkOperation`、`bindCraftRoll`、`completeWorkOperation`、`completeCraftRoll`及runtime work-item provider入口均0次，`computeEquipmentRowBudget`在本次回放计数窗口内0次。来源校验函数会检查新增craft条件，但这条路线的craft来源为0；最终保存图的loot来源出现15个floor、2个kill，工作事实仅2条startup，没有制造/重铸/拆符文。不能以入口未触发为理由跳过通用校验开销。
+
+D1–18两侧`worldWorkTransaction`均145次、`checkpointWorldWork`均147次；C3把前者转入`itemCommandTransaction`，因此后者A=1、B=146，确有共享回滚保护增加的内部工作，并非“所有新增代码都未执行”。这些调用在D19–D20均0，不能直接解释D20尾部；撤掉回滚保护会改变语义，未发现由证据支持的低成本等价修复。D19–D20 self CPU采样仍以既有`structuredClone`（A36.08%／B35.79%）、`isStatJson`（5.90%／5.69%）等为主；新增工位函数和`validateLootItemData`没有self样本，零采样不等于零耗时。GC采样占比3.99%／4.80%，单次profile的差别不能归因为云端某次暂停或证明纯噪声。综合结论为排除路线工作量差异、尾部偏噪声但保留真实分配/回滚开销风险；原D6 regression不变，按本次授权登记已知尾部开销/风险。
+
+预算来源严格为各自候选commit；6Z当前HEAD不冒充两个历史候选。新增C3/C4 manifest及classic/all route/source，`loadPerfIdentity`核验完整长度、D20≥500与recordingHash后才登记accepted=true。绝对时间不跨runner比较，保留三轮所有样本；没有新云端计时、没有完整第四轮独立云端验证，不覆盖浏览器/真机、D22+、最大居民负载、工位/craft及部位掉落压力性能。对应受控补充场景仅证明功能/规模，不替代该覆盖。
+
+本轮限定验证全部exit0：`node scripts/test-ext-perf-selection.mjs`、`node scripts/test-ext-perf-ab.mjs`、`node scripts/test-ext-perf-split.mjs`及`npm run check:test-dependencies`。身份测试随已采纳预算更新；缺产物/hash漂移/轮次/阈值/缺第四轮拒绝断言保留，原pending基线拒绝语义移到隔离的未接受C3注册表夹具继续验证，未放宽守卫。测试在两次诊断回放结束后串行执行。主仓无生产代码修改，因此未跑生产相关测试、boundary、vue-tsc、build或全量门禁。没有commit/push。日志及退出码见[联合证据](evidence/phase6c3-c4-perf-review.json)。
+
+本次新预算登记（覆盖上表C3/C4历史“尚无预算”行）：
+
+| 身份 | manifest SHA-256 | accepted |
+| --- | --- | --- |
+| 6c3 | `c497c6788b394da0f2ce5d69d5913b8eaca859b3b24d749a70bc5bdc693e9924` | true（上述离线裁定及限制） |
+| 6c4 | `8820ca2e4da1bc69af1a95fddbfc17a3479bf98fce35a0b801a38927377c9557` | true（上述离线裁定及限制） |
+
+全部身份、逐轮指标、计数、profile摘要及校验日志hash见[联合证据](evidence/phase6c3-c4-perf-review.json)。
 
 ## 6 合同、文档和延期
 

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {mkdtempSync,mkdirSync,readFileSync,writeFileSync,rmSync} from 'node:fs';
+import {mkdtempSync,mkdirSync,readFileSync,writeFileSync,rmSync,copyFileSync,symlinkSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {resolve} from 'node:path';
 import {spawnSync} from 'node:child_process';
@@ -11,7 +11,7 @@ assert.equal(parseOptions(args).rounds,3);
 assert.equal(parseOptions([...args,'--base-identity','6b4','--head-identity','6c1']).headIdentity,'6c1');
 assert.equal(parseOptions([...args,'--base-identity','6c1','--head-identity','6c2']).headIdentity,'6c2');
 assert.equal(parseOptions([...args,'--base-identity','6c2']).baseIdentity,'6c2');
-for(const extra of [['--base-identity','6c4'],['--head-identity','6c5'],['--base-identity','6b4','--head-identity','6b4'],['--head-identity','6c1','--head-identity','6c1']])assert.throws(()=>parseOptions([...args,...extra]));
+for(const extra of [['--base-identity','6c5'],['--head-identity','6c5'],['--base-identity','6b4','--head-identity','6b4'],['--head-identity','6c1','--head-identity','6c1']])assert.throws(()=>parseOptions([...args,...extra]));
 for(const extra of [['--rounds','0'],['--rounds','4'],['--rounds','1.5'],['--case','unknown'],['--limit','-1'],['--limit','1715'],['--unknown','x'],['--rounds','1','--rounds','3'],['--case']])assert.throws(()=>parseOptions([...args,...extra]));
 const sample=()=>({mode:'wall',oos:0,recordingHash:'hash',events:3,node:'node',machine:{cpu:'cpu'},sourceHash:'src',semantic:{stateHash:'state',rng:[1],blocks:3,rounds:3,roundTicks:300,rowsHash:'rows'},diagnostics:{stats:{hits:1}},segments:{counter:{calls:2}},elapsed:100,
  command:{n:3,p50:1,p95:10,max:20},round:{p95:10,p99:20,max:20},depth:{20:{p95:10,max:20}},roundDepth:{20:{p95:10,p99:20,max:20}}});
@@ -160,5 +160,23 @@ assert.equal(canFreeze({...ready,options:{...ready.options,headSourceHash:'a'.re
 const witness=mkdtempSync(resolve(tmpdir(),'c3-source-'));
 try {mkdirSync(resolve(witness,'src'));writeFileSync(resolve(witness,'src','a.ts'),'first');const before=sourceSnapshot(witness);writeFileSync(resolve(witness,'src','a.ts'),'second');assert.notEqual(sourceSnapshot(witness).hash,before.hash);writeFileSync(resolve(witness,'src','new.ts'),'untracked');assert.equal(sourceSnapshot(witness).files.length,2);} finally {rmSync(witness,{recursive:true,force:true});}
 
-const pending=parseOptions([...args,'--base-identity','6c3','--head-identity','6c4']);assert.equal(pending.baseIdentity,'6c3');assert.equal(canFreeze({options:pending,gates:[],hard:'pass'}),false);
-assert.throws(()=>parseOptions([...args,'--base-identity','6c3','--head-identity','6c2']));
+const accepted=parseOptions([...args,'--base-identity','6c3','--head-identity','6c4']);assert.equal(accepted.baseIdentity,'6c3');assert.equal(canFreeze({options:accepted,gates:[],hard:'pass'}),false);
+assert.equal(canFreeze({...ready,options:accepted}),true);
+assert.throws(()=>parseOptions([...args,'--base-identity','6c5','--head-identity','6c2']));
+
+// Preserve the pending-baseline guard after adopting C3/C4. Only the isolated
+// registry fixture is pending; production identities and manifests stay intact.
+const pendingFixture=mkdtempSync(resolve(tmpdir(),'pending-perf-baseline-'));
+try {
+ symlinkSync(resolve('node_modules'),resolve(pendingFixture,'node_modules'));
+ for(const name of ['ext-perf-ab-policy.mjs','ext-perf-common.mjs'])copyFileSync(resolve('scripts',name),resolve(pendingFixture,name));
+ const registry=readFileSync('scripts/ext-perf-selection.mjs','utf8');
+ const pendingRegistry=registry.replace(/('6c3':\{[^\n]*accepted:)true/,'$1false');
+ assert.notEqual(registry,pendingRegistry,'Expected accepted C3 registry entry');
+ writeFileSync(resolve(pendingFixture,'ext-perf-selection.mjs'),pendingRegistry);
+ const pendingPolicy=await import(resolve(pendingFixture,'ext-perf-ab-policy.mjs'));
+ const pending=pendingPolicy.parseOptions([...args,'--base-identity','6c3','--head-identity','6c4']);
+ assert.equal(pendingPolicy.canFreeze({...ready,options:pending}),false);
+ assert.equal(pendingPolicy.overallStatus({...ready,options:pending}),'incomplete');
+ assert.throws(()=>pendingPolicy.parseOptions([...args,'--base-identity','6c3','--head-identity','6c2']));
+} finally {rmSync(pendingFixture,{recursive:true,force:true});}

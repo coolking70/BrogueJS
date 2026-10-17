@@ -1,5 +1,7 @@
 # 6C4 作者报告
 
+> 性能补录（2026-10-17）见末节：拆分run39028341691三个D6计时gate均pass；原incomplete来自pending C3基线，非工具缺陷。C3采纳后离线冻结C4，明确缺独立第四轮云端验证；浏览器仍待验。下方旧性能待办为历史。
+
 > 6Z后继核对（2026-10-17）：C4已由维护者提交为`07d7c97`；R2独立复验实际7文件294项通过，R1-F1关闭，证据`/private/tmp/p6c4rev2.findings.md`、`.tests.json`与`.integrity.json`，逐文件沿用依据见[6Z报告](phase6z.report.md)。本报告下方R1“待第2轮”等保留当时状态，不重写历史计数。C4云端run39006896716仍待维护者结果采纳；不代表性能/浏览器已通过。
 
 开工分支 `ext/phase6`，基线 `0d2e98a91e238e9c988017e87c7a51fb31569691`。依据任务单 §4.4、冻结 C0 §6/§6.1 实施，不修改冻结合同或既有数值；不 commit、不进入 6Z。6C3 云端 A/B 的结果与本候选分开记录。
@@ -155,3 +157,24 @@ rounds: 3
 | 1440×900 | 鼠标与键盘均可操作，部位/kill/encounter 来源并存且不重复；跨层返回、保存/载入、回放/seek后数量与属性不变；已有套装/嵌孔/工位 UI 回归 | 待验 |
 
 三档共同确认无 site 产出或入口按钮；展开/比较/滚动不耗时、不鉴定，键盘不穿透地图、Esc逐层返回；忙态不重复提交，load/seek/换局后旧目标清理、回放只读、控制台无新错误；记录实际浏览器、src/dist 身份、操作序列及截图路径。截图和大于1MiB原始制品留仓外。phase6 功能实施到 C4 停止，site 按前置条件延期；不进入 6Z，不自动发布。
+
+
+## 拆分云端性能正式结论与冻结（2026-10-17）
+
+本节覆盖上文性能待办；浏览器待验不变。完整artifact `/private/tmp/perfci-39028341691/`，run **39028341691**，A=`0d2e98a91e238e9c988017e87c7a51fb31569691`（6c3），B=`07d7c97cdbe3f49ed58ae5137d145fceb02fcfbb`（6c4），control=`1094801`。使用原汇总器在新目录逐个核验三个shard的输入、轮次、runner、工具hash、逐域/状态/工作计数与C1/C4补充场景：hard pass、原aggregate incomplete精确复现。
+
+**不是汇总工具缺陷。** 当时C3 accepted=false，`pendingPerfBaseline(6c3,6c4)`为真；`canFreeze`据此拒绝，`overallStatus`返回incomplete。runner也因pending跳过独立第4次B回放，merger只在pass分支生成candidate/suggested预算。三轮正式计时、完整D20输入和补充场景齐全，缺的是第四轮及冻结产物。只翻accepted后重跑普通merger仍会因缺第四轮失败；本次未修改或绕松该自动守卫。
+
+| 门禁 | 越线轮数 | D6计时结论 |
+| --- | --- | --- |
+| classic/full | 0/3 | pass |
+| all/full | 1/3（首轮D20 command.max +28.63%） | pass |
+| all/prefix | 1/3（末轮round.p99 +33.50%） | pass |
+
+all/full命令P95 **+0.40%／−0.05%／+0.59%**，墙钟 **−0.36%／−0.43%／+0.50%**。两侧classic2208输入/2431块、all2423输入/2549块，完整all可比；相同前缀也为2423。数据只在各shard同runner配对，不比较不同runner绝对时间。
+
+6C3已按本次维护者授权登记已知尾部风险并采纳后，C4的三轮A完整输入/语义与C3预算一致，额外原`ext-perf-budget.mjs check`全部hard pass（跨云端机器只检查确定性/计数，毫秒警告不用于该基线链判定）。**正式计时结论pass，预算按既有离线采纳方式冻结**：原`freeze-split`取B两个case完整第1/2/3轮，不移除样本、不借本机耗时，三轮冻结后校准数据检查均hard pass。新增C4 manifest和两套route/source，经`loadPerfIdentity`核对后accepted=true，provenance标为`offline-passing-timing`并保留原`cloudVerdict=incomplete`。
+
+C4两case均无独立第4次B云端回放，`independentPostFreezeReplay=false`、`independentHeldOutReplay=false`；本次离线采纳不宣称自动全流程或独立复核通过。不覆盖浏览器/真机、D22+、最大居民负载及部位掉落/工位/craft压力性能；C4受控补充场景仅证明功能和有界规模。完整分析见[6Z §5.1](phase6z.report.md#51-拆分云端复核与预算采纳2026-10-17)，hash/逐轮小型证据见[联合证据](evidence/phase6c3-c4-perf-review.json)，原始离线输出在 `/private/tmp/p6-perf-review/`。
+
+本轮限定验证全部exit0：`node scripts/test-ext-perf-selection.mjs`、`node scripts/test-ext-perf-ab.mjs`、`node scripts/test-ext-perf-split.mjs`及`npm run check:test-dependencies`。身份测试随已采纳预算更新；缺产物/hash漂移/轮次/阈值/缺第四轮拒绝断言保留，原pending基线拒绝语义移到隔离的未接受C3注册表夹具继续验证，未放宽守卫。测试在两次诊断回放结束后串行执行。主仓无生产代码修改，因此未跑生产相关测试、boundary、vue-tsc、build或全量门禁。没有commit/push。日志及退出码见[联合证据](evidence/phase6c3-c4-perf-review.json)。

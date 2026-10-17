@@ -1,5 +1,7 @@
 # 6C3 工位、craft 与原生装备托管报告
 
+> 性能补录（2026-10-17）见§12：拆分run39028334751硬门禁通过；同路线尾部偏噪声但不能证明纯噪声，原D6 regression保留，以known-tail-risk采纳并冻结。无完整独立第四轮云端验证；浏览器仍待验。下方旧性能待办为历史。
+
 日期：2026-10-17。分支 `ext/phase6`；开工及交付时 HEAD 均为 `33d7aba6e458529ae126dee2d889c7b2c24507bd`，本轮不 commit、不 push、不发布、不开始 C4。依据 [任务单 §4.3](phase6c.task.md#43-6c3工位拆卸重铸craft来源和容器软联动)、已冻结 [C0 合同 §5](phase6c0-contract.md#5-c3工位装备所有权与craft) 及 [C2 报告](phase6c2.report.md)。未修改冻结合同或其数值。
 
 第 1 轮独立审查发现的三项重要问题及本轮修复、验证结果见 §11；该节取代首轮关于当前字节全部通过的结论。生产实施已完成。**正式性能验收和三档浏览器人工复核待维护者执行，因此不宣称 C3 已通过全部验收。** 首轮原始证据留在仓外 `/private/tmp/phase6c3/`，§1–10 相对证据路径均相对于该目录；R1 修复证据另在 `/private/tmp/phase6c3-r1/`。
@@ -235,3 +237,24 @@ rowId 字段替代依据本轮用户明确要求，冻结 C0 文档保持原文�
 §7、§10 的首轮日志及 §8 A/B、全移除证据只属于修复前 `src=51b16631cdb01433ef20b1bdadbde7dc3e7531325d9ae15e1171b5a44dc7a267`，**不能作为当前修复源码的性能或全移除通过证明**。本轮遵照限定测试范围未重跑它们，也未添加性能身份/路线；§9 三档浏览器清单仍待验，SFC 自动测试不等于实际浏览器验收。
 
 云端交接参数保持 `base=33d7aba`、`head=<提交后 SHA>`、`base_identity=6c2`、`head_identity=6c3`，正式完整路线 rounds=3。当前没有提交 SHA，不伪填 head。本轮止于 R1 三项修复与限定门禁，不 commit，不开 C4。
+
+
+## 12 拆分云端性能裁定与冻结（2026-10-17）
+
+维护者本次授权先分析噪声/执行路径，不能确证低成本无语义修复时沿既有方式登记开销并冻结。原完整artifact `/private/tmp/perfci-39028334751/`，run **39028334751**，A=`33d7aba6e458529ae126dee2d889c7b2c24507bd`（6c2），B=`0d2e98a91e238e9c988017e87c7a51fb31569691`（6c3），control=`1094801`。原汇总及三个shard重新离线验证，hard pass；classic **0/3**、all/full **2/3**、all/prefix **1/3**，**原D6 regression保持**。没有将前缀通过当成完整路线通过；prefix门禁虽在本次覆盖全部输入，仍不含D20分层指标，且在另一runner配对计时。
+
+两侧完整工作量相同：classic2208输入/2431块，all2423输入/2549块与客观回合/253375ticks；all去耗时rowsHash、双RNG与全部observer计数相同，最长同结果前缀就是完整2423输入。版本身份导致state/domain摘要不同，不要求跨版本这些摘要相同；各自三轮完整状态/域一致且0 OOS。完整all不能按不同工作量降为report-only。
+
+all/full三轮命令P95变化 **+0.73%／−1.65%／+1.94%**，墙钟 **+0.21%／+0.30%／+3.47%**；P95/墙钟无越线。越线仅第1轮round.p99 +66.16%、D20命令max +46.80%、D20 round.p99 +49.21%，以及第3轮D20 round.p99 +35.07%。第2轮B的D20命令max反而−27.52%，第3轮−23.80%。D20每轮570客观回合，P99取第6大；>500ms尖峰A三轮1/2/1个、B为3/0/2个，发生命令随轮次漂移，A也有775–984ms尖峰。逐轮完整数值及命令位置见[6Z §5.1](phase6z.report.md#51-拆分云端复核与预算采纳2026-10-17)与[小型证据](evidence/phase6c3-c4-perf-review.json)。不同shard机器的绝对耗时不互比。
+
+本地 profile 使用隔离的A=`33d7aba`、B=`0d2e98a`源码副本和各自云端原all输入，从origin完整串行回放；只在副本加诊断计数，主仓生产未改。每侧2423输入、0 OOS，最终完整状态hash分别精确等于云端A/B，两条RNG也一致。计数窗口是loadReplay后的输入执行；CPU仅采D19–D20，不包括冷启动。原始脚本、log、`.cpuprofile`及小型汇总在 `/private/tmp/p6-perf-review/`，不将单次本机耗时用于D6或预算。
+
+D19–D20共551输入/622客观块：两侧`validateLootItemData`均80次，新增`prepareWorkOperation`、`bindCraftRoll`、`completeWorkOperation`、`completeCraftRoll`及runtime work-item provider入口均0次，`computeEquipmentRowBudget`在本次回放计数窗口内0次。来源校验函数会检查新增craft条件，但这条路线的craft来源为0；最终保存图的loot来源出现15个floor、2个kill，工作事实仅2条startup，没有制造/重铸/拆符文。不能以入口未触发为理由跳过通用校验开销。
+
+D1–18两侧`worldWorkTransaction`均145次、`checkpointWorldWork`均147次；C3把前者转入`itemCommandTransaction`，因此后者A=1、B=146，确有共享回滚保护增加的内部工作，并非“所有新增代码都未执行”。这些调用在D19–D20均0，不能直接解释D20尾部；撤掉回滚保护会改变语义，未发现由证据支持的低成本等价修复。D19–D20 self CPU采样仍以既有`structuredClone`（A36.08%／B35.79%）、`isStatJson`（5.90%／5.69%）等为主；新增工位函数和`validateLootItemData`没有self样本，零采样不等于零耗时。GC采样占比3.99%／4.80%，单次profile的差别不能归因为云端某次暂停或证明纯噪声。综合结论为排除路线工作量差异、尾部偏噪声但保留真实分配/回滚开销风险；原D6 regression不变，按本次授权登记已知尾部开销/风险。
+
+归因结论：**排除工作量差异；尾部更符合噪声特征，但不能证明纯噪声，也未确证真实代码回退**。B的全程round.p99三轮都高于A（只有首轮越线），因此不能凭尖峰漂移忽略系统性尾部风险；可能存在微小校验/分配开销。wall artifact未采GC/调度，不能给漂移尖峰指定确定的GC原因；不凭本地profile推翻原D6。没有可由证据支持的低成本生产修复，本次不改语义/回放/生产代码，以 **`known-tail-risk`** 记录限制并冻结C3预算。该采纳是本次维护者授权的人工裁定，不是自动performance pass。
+
+`scripts/ext-perf-6c3-budget.json`由原B完整classic/all第1/2/3轮通过原`freeze-split`生成，各case三轮机器/输入/状态/计数保持，复查三轮均hard pass；完整route/source一同登记，D20均settled500。只在全部文件/hash检查通过后登记accepted=true。已有classic held-out第4轮，all/full因regression没有第4轮，故无完整独立验证；本地诊断回放也不冒充第4轮云端预算检查。预算只代表B历史commit，不追认6Z当前HEAD；不覆盖D22+、浏览器/真机、最大负载或活跃工位/craft。原预算文件及六次离线检查、重合并记录在 `/private/tmp/p6-perf-review/`，没有新云端任务。
+
+本轮限定验证全部exit0：`node scripts/test-ext-perf-selection.mjs`、`node scripts/test-ext-perf-ab.mjs`、`node scripts/test-ext-perf-split.mjs`及`npm run check:test-dependencies`。身份测试随已采纳预算更新；缺产物/hash漂移/轮次/阈值/缺第四轮拒绝断言保留，原pending基线拒绝语义移到隔离的未接受C3注册表夹具继续验证，未放宽守卫。测试在两次诊断回放结束后串行执行。主仓无生产代码修改，因此未跑生产相关测试、boundary、vue-tsc、build或全量门禁。没有commit/push。日志及退出码见[联合证据](evidence/phase6c3-c4-perf-review.json)。

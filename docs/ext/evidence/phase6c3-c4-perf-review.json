@@ -1,0 +1,2746 @@
+{
+  "date": "2026-10-17",
+  "rootHead": "ed13574",
+  "productionChanged": false,
+  "runs": {
+    "6c3": {
+      "run": "39028334751",
+      "originalStatus": "regression",
+      "hard": "pass",
+      "originalResultSha256": "a24c4a0ebfc21e3e5bec121b4d81ba579215623b5302154835b9e6fa8c1f0a82",
+      "identities": {
+        "A": {
+          "commit": "33d7aba6e458529ae126dee2d889c7b2c24507bd",
+          "srcTree": "5c588225980a69b5a12a0d2572a1a3aee899beca",
+          "sourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "lockHash": "4d4afe4ad1a42df02ae865ca69c6d00246a6036abd53922ab75d4e2ceaaac361"
+        },
+        "B": {
+          "commit": "0d2e98a91e238e9c988017e87c7a51fb31569691",
+          "srcTree": "2ccd5c9cd98e6ba7c304ff31b383ffc22e69739e",
+          "sourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "lockHash": "4d4afe4ad1a42df02ae865ca69c6d00246a6036abd53922ab75d4e2ceaaac361"
+        },
+        "control": {
+          "commit": "109480110a77b022013757f6f6b4fa40897dd387",
+          "srcTree": "15bb17f45399ab99732d34719cafc9cd22e97f9c",
+          "sourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "gates": [
+        {
+          "id": "classic",
+          "kind": "full",
+          "status": "pass",
+          "exceededRounds": 0,
+          "workloads": [
+            {
+              "round": 1,
+              "a": {
+                "events": 2208,
+                "blocks": 2431,
+                "rounds": 2431
+              },
+              "b": {
+                "events": 2208,
+                "blocks": 2431,
+                "rounds": 2431
+              },
+              "changed": false
+            },
+            {
+              "round": 2,
+              "a": {
+                "events": 2208,
+                "blocks": 2431,
+                "rounds": 2431
+              },
+              "b": {
+                "events": 2208,
+                "blocks": 2431,
+                "rounds": 2431
+              },
+              "changed": false
+            },
+            {
+              "round": 3,
+              "a": {
+                "events": 2208,
+                "blocks": 2431,
+                "rounds": 2431
+              },
+              "b": {
+                "events": 2208,
+                "blocks": 2431,
+                "rounds": 2431
+              },
+              "changed": false
+            }
+          ],
+          "pairs": [
+            [
+              {
+                "metric": "command.p95",
+                "a": 36.12342399999761,
+                "b": 35.63011199999892,
+                "fraction": 0.1,
+                "delta": -0.4933119999986957,
+                "relative": -0.013656291275121912,
+                "threshold": 39.735766399997374,
+                "exceeded": false
+              },
+              {
+                "metric": "command.max",
+                "a": 2474.3178340000013,
+                "b": 2502.695799000001,
+                "fraction": 0.25,
+                "delta": 28.377964999999676,
+                "relative": 0.011469005561877799,
+                "threshold": 3092.8972925000016,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p95",
+                "a": 21.448473999997077,
+                "b": 21.723015999996278,
+                "fraction": 0.1,
+                "delta": 0.2745419999992009,
+                "relative": 0.012800071464255991,
+                "threshold": 23.593321399996785,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p99",
+                "a": 39.85070600000108,
+                "b": 40.911645000000135,
+                "fraction": 0.25,
+                "delta": 1.0609389999990526,
+                "relative": 0.026622840759684907,
+                "threshold": 49.81338250000135,
+                "exceeded": false
+              },
+              {
+                "metric": "depth.20.p95",
+                "a": 42.237217999994755,
+                "b": 42.38618100000167,
+                "fraction": 0.1,
+                "delta": 0.14896300000691554,
+                "relative": 0.0035268184568153504,
+                "threshold": 46.46093979999423,
+                "exceeded": false
+              },
+              {
+                "metric": "depth.20.max",
+                "a": 2474.3178340000013,
+                "b": 2502.695799000001,
+                "fraction": 0.25,
+                "delta": 28.377964999999676,
+                "relative": 0.011469005561877799,
+                "threshold": 3092.8972925000016,
+                "exceeded": false
+              },
+              {
+                "metric": "roundDepth.20.p95",
+                "a": 21.87953500000731,
+                "b": 22.400284000003012,
+                "fraction": 0.1,
+                "delta": 0.5207489999957033,
+                "relative": 0.02380073433898522,
+                "threshold": 24.06748850000804,
+                "exceeded": false
+              },
+              {
+                "metric": "roundDepth.20.p99",
+                "a": 27.953112000002875,
+                "b": 28.20713400000386,
+                "fraction": 0.25,
+                "delta": 0.25402200000098674,
+                "relative": 0.009087431839466031,
+                "threshold": 34.941390000003594,
+                "exceeded": false
+              },
+              {
+                "metric": "elapsed",
+                "a": 55970.668614,
+                "b": 55539.891876,
+                "fraction": 0.1,
+                "delta": -430.7767380000005,
+                "relative": -0.007696472968204859,
+                "threshold": 61567.735475400004,
+                "exceeded": false
+              }
+            ],
+            [
+              {
+                "metric": "command.p95",
+                "a": 35.32286400000157,
+                "b": 36.016623000003165,
+                "fraction": 0.1,
+                "delta": 0.6937590000015916,
+                "relative": 0.019640508198926376,
+                "threshold": 38.85515040000173,
+                "exceeded": false
+              },
+              {
+                "metric": "command.max",
+                "a": 2527.855424000001,
+                "b": 2505.185774000005,
+                "fraction": 0.25,
+                "delta": -22.66964999999618,
+                "relative": -0.008967937716993446,
+                "threshold": 3159.8192800000015,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p95",
+                "a": 21.112032999990333,
+                "b": 21.45695500000147,
+                "fraction": 0.1,
+                "delta": 0.34492200001113815,
+                "relative": 0.016337697085415437,
+                "threshold": 23.223236299989367,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p99",
+                "a": 37.18841999999859,
+                "b": 41.55958399999872,
+                "fraction": 0.25,
+                "delta": 4.371164000000135,
+                "relative": 0.11754099797733542,
+                "threshold": 46.48552499999823,
+                "exceeded": false
+              },
+              {
+                "metric": "depth.20.p95",
+                "a": 41.38107100000343,
+                "b": 42.494652000001224,
+                "fraction": 0.1,
+                "delta": 1.1135809999977937,
+                "relative": 0.026910395818360966,
+                "threshold": 45.51917810000377,
+                "exceeded": false
+              },
+              {
+                "metric": "depth.20.max",
+                "a": 2527.855424000001,
+                "b": 2505.185774000005,
+                "fraction": 0.25,
+                "delta": -22.66964999999618,
+                "relative": -0.008967937716993446,
+                "threshold": 3159.8192800000015,
+                "exceeded": false
+              },
+              {
+                "metric": "roundDepth.20.p95",
+                "a": 21.629471000000194,
+                "b": 21.98634199999651,
+                "fraction": 0.1,
+                "delta": 0.35687099999631755,
+                "relative": 0.01649929394927474,
+                "threshold": 23.792418100000212,
+                "exceeded": false
+              },
+              {
+                "metric": "roundDepth.20.p99",
+                "a": 28.911613000003854,
+                "b": 28.797664999990957,
+                "fraction": 0.25,
+                "delta": -0.11394800001289696,
+                "relative": -0.003941253641326803,
+                "threshold": 36.13951625000482,
+                "exceeded": false
+              },
+              {
+                "metric": "elapsed",
+                "a": 55205.144967,
+                "b": 55943.310842,
+                "fraction": 0.1,
+                "delta": 738.1658749999988,
+                "relative": 0.013371323912676036,
+                "threshold": 60725.6594637,
+                "exceeded": false
+              }
+            ],
+            [
+              {
+                "metric": "command.p95",
+                "a": 34.57094599999982,
+                "b": 36.79533300000185,
+                "fraction": 0.1,
+                "delta": 2.224387000002025,
+                "relative": 0.06434267086593581,
+                "threshold": 38.028040599999805,
+                "exceeded": false
+              },
+              {
+                "metric": "command.max",
+                "a": 2517.3414340000018,
+                "b": 2489.9448630000043,
+                "fraction": 0.25,
+                "delta": -27.396570999997493,
+                "relative": -0.010883136721133946,
+                "threshold": 3146.676792500002,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p95",
+                "a": 21.033300999999483,
+                "b": 21.572853000005125,
+                "fraction": 0.1,
+                "delta": 0.5395520000056422,
+                "relative": 0.02565227398236991,
+                "threshold": 23.13663109999943,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p99",
+                "a": 40.658454000003985,
+                "b": 39.63996899999984,
+                "fraction": 0.25,
+                "delta": -1.0184850000041479,
+                "relative": -0.02504977193682889,
+                "threshold": 50.82306750000498,
+                "exceeded": false
+              },
+              {
+                "metric": "depth.20.p95",
+                "a": 40.52184100000159,
+                "b": 42.922458000000915,
+                "fraction": 0.1,
+                "delta": 2.400616999999329,
+                "relative": 0.0592425452732821,
+                "threshold": 44.57402510000175,
+                "exceeded": false
+              },
+              {
+                "metric": "depth.20.max",
+                "a": 2517.3414340000018,
+                "b": 2489.9448630000043,
+                "fraction": 0.25,
+                "delta": -27.396570999997493,
+                "relative": -0.010883136721133946,
+                "threshold": 3146.676792500002,
+                "exceeded": false
+              },
+              {
+                "metric": "roundDepth.20.p95",
+                "a": 21.33076499999879,
+                "b": 22.28728699999192,
+                "fraction": 0.1,
+                "delta": 0.9565219999931287,
+                "relative": 0.04484236735031222,
+                "threshold": 23.463841499998672,
+                "exceeded": false
+              },
+              {
+                "metric": "roundDepth.20.p99",
+                "a": 28.30729099999735,
+                "b": 29.321969000004174,
+                "fraction": 0.25,
+                "delta": 1.0146780000068247,
+                "relative": 0.03584511142401148,
+                "threshold": 35.384113749996686,
+                "exceeded": false
+              },
+              {
+                "metric": "elapsed",
+                "a": 55190.624702,
+                "b": 57090.562793000005,
+                "fraction": 0.1,
+                "delta": 1899.9380910000036,
+                "relative": 0.03442501514086249,
+                "threshold": 60709.6871722,
+                "exceeded": false
+              }
+            ]
+          ]
+        },
+        {
+          "id": "all",
+          "kind": "full",
+          "status": "regression",
+          "exceededRounds": 2,
+          "workloads": [
+            {
+              "round": 1,
+              "a": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "b": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "changed": false
+            },
+            {
+              "round": 2,
+              "a": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "b": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "changed": false
+            },
+            {
+              "round": 3,
+              "a": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "b": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "changed": false
+            }
+          ],
+          "pairs": [
+            [
+              {
+                "metric": "command.p95",
+                "a": 739.2929570000852,
+                "b": 744.6931439999025,
+                "fraction": 0.1,
+                "delta": 5.400186999817379,
+                "relative": 0.00730452921089686,
+                "threshold": 813.2222527000937,
+                "exceeded": false
+              },
+              {
+                "metric": "command.max",
+                "a": 7535.2689560000435,
+                "b": 7287.035169000039,
+                "fraction": 0.25,
+                "delta": -248.23378700000467,
+                "relative": -0.032942923265180335,
+                "threshold": 9419.086195000054,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p95",
+                "a": 170.89912199991522,
+                "b": 171.32331700006034,
+                "fraction": 0.1,
+                "delta": 0.4241950001451187,
+                "relative": 0.002482136801997825,
+                "threshold": 187.98903419990674,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p99",
+                "a": 380.28730099999666,
+                "b": 631.8805019999854,
+                "fraction": 0.25,
+                "delta": 251.59320099998877,
+                "relative": 0.6615871745872235,
+                "threshold": 475.3591262499958,
+                "exceeded": true
+              },
+              {
+                "metric": "depth.20.p95",
+                "a": 749.0324269999983,
+                "b": 750.5392620000057,
+                "fraction": 0.1,
+                "delta": 1.5068350000074133,
+                "relative": 0.0020117086332864798,
+                "threshold": 823.9356696999981,
+                "exceeded": false
+              },
+              {
+                "metric": "depth.20.max",
+                "a": 2165.010349999997,
+                "b": 3178.3127630000236,
+                "fraction": 0.25,
+                "delta": 1013.3024130000267,
+                "relative": 0.4680358285585231,
+                "threshold": 2706.262937499996,
+                "exceeded": true
+              },
+              {
+                "metric": "roundDepth.20.p95",
+                "a": 160.10060199990403,
+                "b": 165.24901600007433,
+                "fraction": 0.1,
+                "delta": 5.148414000170305,
+                "relative": 0.03215736815388981,
+                "threshold": 176.11066219989442,
+                "exceeded": false
+              },
+              {
+                "metric": "roundDepth.20.p99",
+                "a": 190.06219399999827,
+                "b": 283.5846169999568,
+                "fraction": 0.25,
+                "delta": 93.52242299995851,
+                "relative": 0.49206220885758767,
+                "threshold": 237.57774249999784,
+                "exceeded": true
+              },
+              {
+                "metric": "elapsed",
+                "a": 789047.884847,
+                "b": 790666.9836929999,
+                "fraction": 0.1,
+                "delta": 1619.0988459999207,
+                "relative": 0.0020519652572339453,
+                "threshold": 867952.6733317,
+                "exceeded": false
+              }
+            ],
+            [
+              {
+                "metric": "command.p95",
+                "a": 753.8339839999971,
+                "b": 741.4088130000746,
+                "fraction": 0.1,
+                "delta": -12.425170999922557,
+                "relative": -0.016482635784064947,
+                "threshold": 829.2173823999968,
+                "exceeded": false
+              },
+              {
+                "metric": "command.max",
+                "a": 7505.34569799999,
+                "b": 7721.969901000033,
+                "fraction": 0.25,
+                "delta": 216.62420300004305,
+                "relative": 0.02886265492844231,
+                "threshold": 9381.682122499988,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p95",
+                "a": 172.79990800004452,
+                "b": 171.88611600006698,
+                "fraction": 0.1,
+                "delta": -0.9137919999775477,
+                "relative": -0.005288150963467575,
+                "threshold": 190.07989880004897,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p99",
+                "a": 390.7379989999463,
+                "b": 401.18150799989235,
+                "fraction": 0.25,
+                "delta": 10.443508999946062,
+                "relative": 0.026727651333310787,
+                "threshold": 488.42249874993286,
+                "exceeded": false
+              },
+              {
+                "metric": "depth.20.p95",
+                "a": 756.4861189999501,
+                "b": 741.4088130000746,
+                "fraction": 0.1,
+                "delta": -15.077305999875534,
+                "relative": -0.019930710717874445,
+                "threshold": 832.1347308999451,
+                "exceeded": false
+              },
+              {
+                "metric": "depth.20.max",
+                "a": 2971.452062999946,
+                "b": 2153.6935010000598,
+                "fraction": 0.25,
+                "delta": -817.7585619998863,
+                "relative": -0.27520503264464113,
+                "threshold": 3714.3150787499326,
+                "exceeded": false
+              },
+              {
+                "metric": "roundDepth.20.p95",
+                "a": 162.42010800004937,
+                "b": 157.27867699984927,
+                "fraction": 0.1,
+                "delta": -5.1414310002001,
+                "relative": -0.03165513841548817,
+                "threshold": 178.66211880005432,
+                "exceeded": false
+              },
+              {
+                "metric": "roundDepth.20.p99",
+                "a": 211.47037299990188,
+                "b": 200.16005700000096,
+                "fraction": 0.25,
+                "delta": -11.310315999900922,
+                "relative": -0.05348416347620555,
+                "threshold": 264.33796624987735,
+                "exceeded": false
+              },
+              {
+                "metric": "elapsed",
+                "a": 801382.465928,
+                "b": 803768.763312,
+                "fraction": 0.1,
+                "delta": 2386.2973839999177,
+                "relative": 0.0029777259741221584,
+                "threshold": 881520.7125208001,
+                "exceeded": false
+              }
+            ],
+            [
+              {
+                "metric": "command.p95",
+                "a": 724.8662579999072,
+                "b": 738.9406989999115,
+                "fraction": 0.1,
+                "delta": 14.074441000004299,
+                "relative": 0.019416603883369188,
+                "threshold": 797.352883799898,
+                "exceeded": false
+              },
+              {
+                "metric": "command.max",
+                "a": 7413.214837000007,
+                "b": 7563.259985999961,
+                "fraction": 0.25,
+                "delta": 150.0451489999541,
+                "relative": 0.020240226716628396,
+                "threshold": 9266.518546250009,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p95",
+                "a": 162.89318099996308,
+                "b": 173.05302200000733,
+                "fraction": 0.1,
+                "delta": 10.159841000044253,
+                "relative": 0.062371186673839674,
+                "threshold": 179.1824990999594,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p99",
+                "a": 384.6805110000023,
+                "b": 402.84687200000553,
+                "fraction": 0.25,
+                "delta": 18.166361000003235,
+                "relative": 0.04722454213440286,
+                "threshold": 480.8506387500029,
+                "exceeded": false
+              },
+              {
+                "metric": "depth.20.p95",
+                "a": 728.6251410000259,
+                "b": 724.0409370000707,
+                "fraction": 0.1,
+                "delta": -4.584203999955207,
+                "relative": -0.006291580871974123,
+                "threshold": 801.4876551000285,
+                "exceeded": false
+              },
+              {
+                "metric": "depth.20.max",
+                "a": 2760.5321759999497,
+                "b": 2103.4884880000027,
+                "fraction": 0.25,
+                "delta": -657.043687999947,
+                "relative": -0.23801341412075572,
+                "threshold": 3450.665219999937,
+                "exceeded": false
+              },
+              {
+                "metric": "roundDepth.20.p95",
+                "a": 156.53636000002734,
+                "b": 156.06721699994523,
+                "fraction": 0.1,
+                "delta": -0.46914300008211285,
+                "relative": -0.0029970225453180843,
+                "threshold": 172.18999600003008,
+                "exceeded": false
+              },
+              {
+                "metric": "roundDepth.20.p99",
+                "a": 190.0746119999094,
+                "b": 256.7285729999421,
+                "fraction": 0.25,
+                "delta": 66.65396100003272,
+                "relative": 0.3506726137631915,
+                "threshold": 237.59326499988674,
+                "exceeded": true
+              },
+              {
+                "metric": "elapsed",
+                "a": 768440.05201,
+                "b": 795076.160688,
+                "fraction": 0.1,
+                "delta": 26636.108678000048,
+                "relative": 0.0346625720618392,
+                "threshold": 845284.057211,
+                "exceeded": false
+              }
+            ]
+          ]
+        },
+        {
+          "id": "all",
+          "kind": "prefix",
+          "status": "pass",
+          "exceededRounds": 1,
+          "workloads": [
+            {
+              "round": 1,
+              "a": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "b": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "changed": false
+            },
+            {
+              "round": 2,
+              "a": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "b": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "changed": false
+            },
+            {
+              "round": 3,
+              "a": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "b": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "changed": false
+            }
+          ],
+          "pairs": [
+            [
+              {
+                "metric": "command.p95",
+                "a": 1334.2897210000083,
+                "b": 1340.7286620000377,
+                "fraction": 0.1,
+                "delta": 6.438941000029445,
+                "relative": 0.004825744288282197,
+                "threshold": 1467.7186931000092,
+                "exceeded": false
+              },
+              {
+                "metric": "command.max",
+                "a": 11725.349048999953,
+                "b": 11680.430102000013,
+                "fraction": 0.25,
+                "delta": -44.91894699994009,
+                "relative": -0.003830926210573793,
+                "threshold": 14656.686311249941,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p95",
+                "a": 300.23285000002943,
+                "b": 300.67377499997383,
+                "fraction": 0.1,
+                "delta": 0.44092499994440004,
+                "relative": 0.0014686101135981122,
+                "threshold": 330.2561350000324,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p99",
+                "a": 881.2972560001072,
+                "b": 961.9633330000506,
+                "fraction": 0.25,
+                "delta": 80.66607699994347,
+                "relative": 0.0915310656543491,
+                "threshold": 1101.621570000134,
+                "exceeded": false
+              },
+              {
+                "metric": "elapsed",
+                "a": 1427344.782196,
+                "b": 1431083.404984,
+                "fraction": 0.1,
+                "delta": 3738.6227879999205,
+                "relative": 0.002619285007122052,
+                "threshold": 1570079.2604156,
+                "exceeded": false
+              }
+            ],
+            [
+              {
+                "metric": "command.p95",
+                "a": 1338.4343580000568,
+                "b": 1330.433694000123,
+                "fraction": 0.1,
+                "delta": -8.00066399993375,
+                "relative": -0.005977628975311622,
+                "threshold": 1472.2777938000625,
+                "exceeded": false
+              },
+              {
+                "metric": "command.max",
+                "a": 12075.653216000064,
+                "b": 11879.927490000031,
+                "fraction": 0.25,
+                "delta": -195.72572600003332,
+                "relative": -0.01620829304212712,
+                "threshold": 15094.56652000008,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p95",
+                "a": 303.88877599989064,
+                "b": 300.32327999995323,
+                "fraction": 0.1,
+                "delta": -3.5654959999374114,
+                "relative": -0.011732897959807143,
+                "threshold": 334.2776535998797,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p99",
+                "a": 665.5438200002536,
+                "b": 892.2373859999934,
+                "fraction": 0.25,
+                "delta": 226.6935659997398,
+                "relative": 0.34061403500021004,
+                "threshold": 831.929775000317,
+                "exceeded": true
+              },
+              {
+                "metric": "elapsed",
+                "a": 1435176.6258979999,
+                "b": 1428730.476319,
+                "fraction": 0.1,
+                "delta": -6446.149578999961,
+                "relative": -0.004491537461437267,
+                "threshold": 1578694.2884878,
+                "exceeded": false
+              }
+            ],
+            [
+              {
+                "metric": "command.p95",
+                "a": 1332.2295280001126,
+                "b": 1337.5745920001063,
+                "fraction": 0.1,
+                "delta": 5.345063999993727,
+                "relative": 0.004012119449129381,
+                "threshold": 1465.4524808001238,
+                "exceeded": false
+              },
+              {
+                "metric": "command.max",
+                "a": 11997.231551000034,
+                "b": 12169.746238000109,
+                "fraction": 0.25,
+                "delta": 172.51468700007536,
+                "relative": 0.014379541335575396,
+                "threshold": 14996.539438750042,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p95",
+                "a": 302.04094099998474,
+                "b": 301.467622999975,
+                "fraction": 0.1,
+                "delta": -0.5733180000097491,
+                "relative": -0.001898146648966259,
+                "threshold": 332.2450350999832,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p99",
+                "a": 792.596021000063,
+                "b": 980.5311710000387,
+                "fraction": 0.25,
+                "delta": 187.9351499999757,
+                "relative": 0.23711341594025082,
+                "threshold": 990.7450262500788,
+                "exceeded": false
+              },
+              {
+                "metric": "elapsed",
+                "a": 1431978.298157,
+                "b": 1433319.31413,
+                "fraction": 0.1,
+                "delta": 1341.0159730000887,
+                "relative": 0.0009364778605416291,
+                "threshold": 1575176.1279727,
+                "exceeded": false
+              }
+            ]
+          ]
+        }
+      ],
+      "availableHeldOutCases": [
+        "classic"
+      ],
+      "workload": {
+        "events": 2423,
+        "semanticShared": {
+          "rowsHash": "7d0ecbf759d7e983b721122c468d3b058fb2be4694591c20972141f9d7b35ca1",
+          "rng": {
+            "version": 2,
+            "algorithm": "brogue-web-ranval32-uint64-level-v2",
+            "streams": [
+              {
+                "a": 2549604079,
+                "b": 2060452983,
+                "c": 1743037916,
+                "d": 3382033924
+              },
+              {
+                "a": 3362814670,
+                "b": 1582507782,
+                "c": 2269951668,
+                "d": 2911758098
+              }
+            ],
+            "currentRNG": 0,
+            "randomNumbersGenerated": 5898913,
+            "cosmeticNumbersGenerated": 1088
+          },
+          "blocks": 2549,
+          "rounds": 2549,
+          "roundTicks": 253375
+        },
+        "observerCalls": {
+          "extension.transaction": 5000,
+          "collectExtensionComponents": 4794,
+          "extension.settle": 4794,
+          "recordingEventDigest": 2423,
+          "extension.snapshot": 2433,
+          "updateVision": 7424,
+          "hasCreatureAtForLight": 6854719,
+          "getMonsterAt": 6709412,
+          "light.buildLightMask": 423427,
+          "objectiveTimeBlock": 2549,
+          "updateEnvironment": 3499,
+          "gas.update": 4990,
+          "checkpointCombatFactWorld": 148,
+          "checkpointResidentWorld": 145,
+          "light.paintLight": 2226,
+          "projectWholeRun": 10
+        },
+        "sameCounters": true,
+        "prefixEvents": 2423,
+        "actions": {
+          "ext:command": 2,
+          "move": 1881,
+          "wait": 501,
+          "item:command": 4,
+          "search": 33,
+          "pickup": 2
+        }
+      },
+      "d20Tail": [
+        {
+          "side": "A",
+          "round": 1,
+          "n": 570,
+          "over500ms": [
+            {
+              "command": 2031,
+              "depth": 20,
+              "ms": 777.295792000019,
+              "ticks": 100
+            }
+          ],
+          "top6": [
+            {
+              "command": 2031,
+              "depth": 20,
+              "ms": 777.295792000019,
+              "ticks": 100
+            },
+            {
+              "command": 2285,
+              "depth": 20,
+              "ms": 362.57551300001796,
+              "ticks": 100
+            },
+            {
+              "command": 1993,
+              "depth": 20,
+              "ms": 279.76985099999,
+              "ticks": 100
+            },
+            {
+              "command": 2399,
+              "depth": 20,
+              "ms": 269.8812870000256,
+              "ticks": 100
+            },
+            {
+              "command": 2160,
+              "depth": 20,
+              "ms": 192.46010400005616,
+              "ticks": 100
+            },
+            {
+              "command": 2313,
+              "depth": 20,
+              "ms": 190.06219399999827,
+              "ticks": 100
+            }
+          ]
+        },
+        {
+          "side": "A",
+          "round": 2,
+          "n": 570,
+          "over500ms": [
+            {
+              "command": 2111,
+              "depth": 20,
+              "ms": 983.9641509999055,
+              "ticks": 100
+            },
+            {
+              "command": 2351,
+              "depth": 20,
+              "ms": 880.445934999967,
+              "ticks": 100
+            }
+          ],
+          "top6": [
+            {
+              "command": 2111,
+              "depth": 20,
+              "ms": 983.9641509999055,
+              "ticks": 100
+            },
+            {
+              "command": 2351,
+              "depth": 20,
+              "ms": 880.445934999967,
+              "ticks": 100
+            },
+            {
+              "command": 2285,
+              "depth": 20,
+              "ms": 365.67676900012884,
+              "ticks": 100
+            },
+            {
+              "command": 2399,
+              "depth": 20,
+              "ms": 269.5906220001634,
+              "ticks": 100
+            },
+            {
+              "command": 1993,
+              "depth": 20,
+              "ms": 269.0157350000227,
+              "ticks": 100
+            },
+            {
+              "command": 2252,
+              "depth": 20,
+              "ms": 211.47037299990188,
+              "ticks": 100
+            }
+          ]
+        },
+        {
+          "side": "A",
+          "round": 3,
+          "n": 570,
+          "over500ms": [
+            {
+              "command": 2347,
+              "depth": 20,
+              "ms": 774.9494899999117,
+              "ticks": 100
+            }
+          ],
+          "top6": [
+            {
+              "command": 2347,
+              "depth": 20,
+              "ms": 774.9494899999117,
+              "ticks": 100
+            },
+            {
+              "command": 2285,
+              "depth": 20,
+              "ms": 357.61315300001297,
+              "ticks": 100
+            },
+            {
+              "command": 2399,
+              "depth": 20,
+              "ms": 293.41641699988395,
+              "ticks": 100
+            },
+            {
+              "command": 1993,
+              "depth": 20,
+              "ms": 267.72893799992744,
+              "ticks": 100
+            },
+            {
+              "command": 2389,
+              "depth": 20,
+              "ms": 191.34079199994449,
+              "ticks": 100
+            },
+            {
+              "command": 2335,
+              "depth": 20,
+              "ms": 190.0746119999094,
+              "ticks": 100
+            }
+          ]
+        },
+        {
+          "side": "B",
+          "round": 1,
+          "n": 570,
+          "over500ms": [
+            {
+              "command": 2030,
+              "depth": 20,
+              "ms": 1014.2257799998624,
+              "ticks": 100
+            },
+            {
+              "command": 2144,
+              "depth": 20,
+              "ms": 1127.6020390000194,
+              "ticks": 100
+            },
+            {
+              "command": 2368,
+              "depth": 20,
+              "ms": 1054.899468999938,
+              "ticks": 100
+            }
+          ],
+          "top6": [
+            {
+              "command": 2144,
+              "depth": 20,
+              "ms": 1127.6020390000194,
+              "ticks": 100
+            },
+            {
+              "command": 2368,
+              "depth": 20,
+              "ms": 1054.899468999938,
+              "ticks": 100
+            },
+            {
+              "command": 2030,
+              "depth": 20,
+              "ms": 1014.2257799998624,
+              "ticks": 100
+            },
+            {
+              "command": 2285,
+              "depth": 20,
+              "ms": 354.23543299990706,
+              "ticks": 100
+            },
+            {
+              "command": 1964,
+              "depth": 20,
+              "ms": 291.1691029999638,
+              "ticks": 100
+            },
+            {
+              "command": 2399,
+              "depth": 20,
+              "ms": 283.5846169999568,
+              "ticks": 100
+            }
+          ]
+        },
+        {
+          "side": "B",
+          "round": 2,
+          "n": 570,
+          "over500ms": [],
+          "top6": [
+            {
+              "command": 2285,
+              "depth": 20,
+              "ms": 401.18150799989235,
+              "ticks": 100
+            },
+            {
+              "command": 2394,
+              "depth": 20,
+              "ms": 306.43874999997206,
+              "ticks": 100
+            },
+            {
+              "command": 1993,
+              "depth": 20,
+              "ms": 287.16835699998774,
+              "ticks": 100
+            },
+            {
+              "command": 2399,
+              "depth": 20,
+              "ms": 265.9660219999496,
+              "ticks": 100
+            },
+            {
+              "command": 2160,
+              "depth": 20,
+              "ms": 209.96631499996874,
+              "ticks": 100
+            },
+            {
+              "command": 2099,
+              "depth": 20,
+              "ms": 200.16005700000096,
+              "ticks": 100
+            }
+          ]
+        },
+        {
+          "side": "B",
+          "round": 3,
+          "n": 570,
+          "over500ms": [
+            {
+              "command": 1961,
+              "depth": 20,
+              "ms": 814.4552590000094,
+              "ticks": 100
+            },
+            {
+              "command": 2273,
+              "depth": 20,
+              "ms": 1008.5635730000213,
+              "ticks": 100
+            }
+          ],
+          "top6": [
+            {
+              "command": 2273,
+              "depth": 20,
+              "ms": 1008.5635730000213,
+              "ticks": 100
+            },
+            {
+              "command": 1961,
+              "depth": 20,
+              "ms": 814.4552590000094,
+              "ticks": 100
+            },
+            {
+              "command": 2285,
+              "depth": 20,
+              "ms": 351.9195279999403,
+              "ticks": 100
+            },
+            {
+              "command": 1959,
+              "depth": 20,
+              "ms": 333.05085100006545,
+              "ticks": 100
+            },
+            {
+              "command": 1993,
+              "depth": 20,
+              "ms": 271.6940830000094,
+              "ticks": 100
+            },
+            {
+              "command": 2399,
+              "depth": 20,
+              "ms": 256.7285729999421,
+              "ticks": 100
+            }
+          ]
+        }
+      ],
+      "memory": [
+        {
+          "round": 1,
+          "side": "A",
+          "bytes": {
+            "rss": 2613153792,
+            "heapTotal": 1948749824,
+            "heapUsed": 1572376856,
+            "external": 20229460,
+            "arrayBuffers": 10268788
+          }
+        },
+        {
+          "round": 1,
+          "side": "B",
+          "bytes": {
+            "rss": 2596585472,
+            "heapTotal": 2021953536,
+            "heapUsed": 1921005856,
+            "external": 20891627,
+            "arrayBuffers": 10065675
+          }
+        },
+        {
+          "round": 2,
+          "side": "A",
+          "bytes": {
+            "rss": 2459246592,
+            "heapTotal": 2004570112,
+            "heapUsed": 1892129792,
+            "external": 25773174,
+            "arrayBuffers": 15812502
+          }
+        },
+        {
+          "round": 2,
+          "side": "B",
+          "bytes": {
+            "rss": 2584440832,
+            "heapTotal": 1944956928,
+            "heapUsed": 1745906072,
+            "external": 21593179,
+            "arrayBuffers": 11632507
+          }
+        },
+        {
+          "round": 3,
+          "side": "A",
+          "bytes": {
+            "rss": 2452742144,
+            "heapTotal": 2009022464,
+            "heapUsed": 1901207360,
+            "external": 19891282,
+            "arrayBuffers": 9572174
+          }
+        },
+        {
+          "round": 3,
+          "side": "B",
+          "bytes": {
+            "rss": 2591174656,
+            "heapTotal": 2006077440,
+            "heapUsed": 1913082320,
+            "external": 18282093,
+            "arrayBuffers": 8321421
+          }
+        }
+      ],
+      "finalOriginOccurrences": {
+        "floor": 15,
+        "kill": 2,
+        "craft": 0
+      },
+      "finalWorkFacts": {
+        "startup": 2,
+        "item-operation": 0,
+        "craft-batch": 0,
+        "worldWorkDetails": 0
+      },
+      "offlineValidation": {
+        "originalResultSha256": "a24c4a0ebfc21e3e5bec121b4d81ba579215623b5302154835b9e6fa8c1f0a82",
+        "validatedResultSha256": "499aef3f2a15182a2a01b125e97b4402ddd0eb5be47e2c1c13f7e2afa14df513",
+        "status": "regression",
+        "hard": "pass",
+        "exit": 1
+      },
+      "calibrationChecks": [
+        {
+          "round": 1,
+          "exit": 0,
+          "logSha256": "21820408955131b95a87dd30a56ad6d814cbf9f3a9986e3305ee0d45973076f3"
+        },
+        {
+          "round": 2,
+          "exit": 0,
+          "logSha256": "c0abe311f2ce4b448cd02f551cb990f04c5cc143084c1c30311761906f692e09"
+        },
+        {
+          "round": 3,
+          "exit": 0,
+          "logSha256": "e1df0421bb1bc0680f467720bbaad7e9da9cb6668f8f1643079e19d809b14cc5"
+        }
+      ]
+    },
+    "6c4": {
+      "run": "39028341691",
+      "originalStatus": "incomplete",
+      "hard": "pass",
+      "originalResultSha256": "c98e91a153b955e5c73c52c62191c159d005bb075a231f5f1e0605c7d33af982",
+      "identities": {
+        "A": {
+          "commit": "0d2e98a91e238e9c988017e87c7a51fb31569691",
+          "srcTree": "2ccd5c9cd98e6ba7c304ff31b383ffc22e69739e",
+          "sourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "lockHash": "4d4afe4ad1a42df02ae865ca69c6d00246a6036abd53922ab75d4e2ceaaac361"
+        },
+        "B": {
+          "commit": "07d7c97cdbe3f49ed58ae5137d145fceb02fcfbb",
+          "srcTree": "15bb17f45399ab99732d34719cafc9cd22e97f9c",
+          "sourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "lockHash": "4d4afe4ad1a42df02ae865ca69c6d00246a6036abd53922ab75d4e2ceaaac361"
+        },
+        "control": {
+          "commit": "109480110a77b022013757f6f6b4fa40897dd387",
+          "srcTree": "15bb17f45399ab99732d34719cafc9cd22e97f9c",
+          "sourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "gates": [
+        {
+          "id": "classic",
+          "kind": "full",
+          "status": "pass",
+          "exceededRounds": 0,
+          "workloads": [
+            {
+              "round": 1,
+              "a": {
+                "events": 2208,
+                "blocks": 2431,
+                "rounds": 2431
+              },
+              "b": {
+                "events": 2208,
+                "blocks": 2431,
+                "rounds": 2431
+              },
+              "changed": false
+            },
+            {
+              "round": 2,
+              "a": {
+                "events": 2208,
+                "blocks": 2431,
+                "rounds": 2431
+              },
+              "b": {
+                "events": 2208,
+                "blocks": 2431,
+                "rounds": 2431
+              },
+              "changed": false
+            },
+            {
+              "round": 3,
+              "a": {
+                "events": 2208,
+                "blocks": 2431,
+                "rounds": 2431
+              },
+              "b": {
+                "events": 2208,
+                "blocks": 2431,
+                "rounds": 2431
+              },
+              "changed": false
+            }
+          ],
+          "pairs": [
+            [
+              {
+                "metric": "command.p95",
+                "a": 18.367709000001923,
+                "b": 17.487505000000965,
+                "fraction": 0.1,
+                "delta": -0.8802040000009583,
+                "relative": -0.04792127314303962,
+                "threshold": 20.204479900002116,
+                "exceeded": false
+              },
+              {
+                "metric": "command.max",
+                "a": 1361.0244519999978,
+                "b": 1366.5521670000016,
+                "fraction": 0.25,
+                "delta": 5.527715000003809,
+                "relative": 0.004061436950586028,
+                "threshold": 1701.2805649999973,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p95",
+                "a": 11.52366400000028,
+                "b": 10.609848000000056,
+                "fraction": 0.1,
+                "delta": -0.9138160000002244,
+                "relative": -0.07929908404134334,
+                "threshold": 12.67603040000031,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p99",
+                "a": 19.99074499999915,
+                "b": 19.8143489999984,
+                "fraction": 0.25,
+                "delta": -0.17639600000075006,
+                "relative": -0.008823883252012776,
+                "threshold": 24.98843124999894,
+                "exceeded": false
+              },
+              {
+                "metric": "depth.20.p95",
+                "a": 22.791041000000405,
+                "b": 20.925231999997777,
+                "fraction": 0.1,
+                "delta": -1.8658090000026277,
+                "relative": -0.08186589634069785,
+                "threshold": 25.070145100000445,
+                "exceeded": false
+              },
+              {
+                "metric": "depth.20.max",
+                "a": 1361.0244519999978,
+                "b": 1366.5521670000016,
+                "fraction": 0.25,
+                "delta": 5.527715000003809,
+                "relative": 0.004061436950586028,
+                "threshold": 1701.2805649999973,
+                "exceeded": false
+              },
+              {
+                "metric": "roundDepth.20.p95",
+                "a": 11.84899199999927,
+                "b": 11.006976000004215,
+                "fraction": 0.1,
+                "delta": -0.8420159999950556,
+                "relative": -0.07106224731986543,
+                "threshold": 13.033891199999198,
+                "exceeded": false
+              },
+              {
+                "metric": "roundDepth.20.p99",
+                "a": 15.424463000003016,
+                "b": 14.056367999997747,
+                "fraction": 0.25,
+                "delta": -1.368095000005269,
+                "relative": -0.08869644278734379,
+                "threshold": 19.28057875000377,
+                "exceeded": false
+              },
+              {
+                "metric": "elapsed",
+                "a": 29619.769273,
+                "b": 29207.622509000004,
+                "fraction": 0.1,
+                "delta": -412.14676399999735,
+                "relative": -0.013914583878129383,
+                "threshold": 32581.746200300004,
+                "exceeded": false
+              }
+            ],
+            [
+              {
+                "metric": "command.p95",
+                "a": 18.3165740000004,
+                "b": 18.17871600000217,
+                "fraction": 0.1,
+                "delta": -0.13785799999823212,
+                "relative": -0.007526407503839372,
+                "threshold": 20.14823140000044,
+                "exceeded": false
+              },
+              {
+                "metric": "command.max",
+                "a": 1394.9164000000019,
+                "b": 1403.0529840000017,
+                "fraction": 0.25,
+                "delta": 8.136583999999857,
+                "relative": 0.005833026265946728,
+                "threshold": 1743.6455000000024,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p95",
+                "a": 10.84192699999403,
+                "b": 10.965723999997863,
+                "fraction": 0.1,
+                "delta": 0.12379700000383309,
+                "relative": 0.0114183576410265,
+                "threshold": 11.926119699993432,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p99",
+                "a": 19.191381999999066,
+                "b": 19.982200000000375,
+                "fraction": 0.25,
+                "delta": 0.790818000001309,
+                "relative": 0.041206933403824086,
+                "threshold": 23.989227499998833,
+                "exceeded": false
+              },
+              {
+                "metric": "depth.20.p95",
+                "a": 20.76179299999785,
+                "b": 20.753483000000415,
+                "fraction": 0.1,
+                "delta": -0.008309999997436535,
+                "relative": -0.00040025444803526433,
+                "threshold": 22.837972299997638,
+                "exceeded": false
+              },
+              {
+                "metric": "depth.20.max",
+                "a": 1394.9164000000019,
+                "b": 1403.0529840000017,
+                "fraction": 0.25,
+                "delta": 8.136583999999857,
+                "relative": 0.005833026265946728,
+                "threshold": 1743.6455000000024,
+                "exceeded": false
+              },
+              {
+                "metric": "roundDepth.20.p95",
+                "a": 10.9655229999953,
+                "b": 11.111413000002358,
+                "fraction": 0.1,
+                "delta": 0.1458900000070571,
+                "relative": 0.01330442697599743,
+                "threshold": 12.06207529999483,
+                "exceeded": false
+              },
+              {
+                "metric": "roundDepth.20.p99",
+                "a": 14.36136400000396,
+                "b": 14.621188000000984,
+                "fraction": 0.25,
+                "delta": 0.25982399999702466,
+                "relative": 0.018091874838417343,
+                "threshold": 17.95170500000495,
+                "exceeded": false
+              },
+              {
+                "metric": "elapsed",
+                "a": 29479.200526999997,
+                "b": 29456.628979,
+                "fraction": 0.1,
+                "delta": -22.571547999996255,
+                "relative": -0.000765677073885418,
+                "threshold": 32427.120579699997,
+                "exceeded": false
+              }
+            ],
+            [
+              {
+                "metric": "command.p95",
+                "a": 18.061530000002676,
+                "b": 18.103914999999688,
+                "fraction": 0.1,
+                "delta": 0.04238499999701162,
+                "relative": 0.0023467004177943895,
+                "threshold": 19.867683000002945,
+                "exceeded": false
+              },
+              {
+                "metric": "command.max",
+                "a": 1464.7153910000015,
+                "b": 1423.0165010000019,
+                "fraction": 0.25,
+                "delta": -41.698889999999665,
+                "relative": -0.028468936870753248,
+                "threshold": 1830.894238750002,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p95",
+                "a": 10.690629999997327,
+                "b": 10.947575999998662,
+                "fraction": 0.1,
+                "delta": 0.25694600000133505,
+                "relative": 0.024034692062245178,
+                "threshold": 11.75969299999706,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p99",
+                "a": 19.68719399999827,
+                "b": 20.215194000000338,
+                "fraction": 0.25,
+                "delta": 0.5280000000020664,
+                "relative": 0.026819464470259735,
+                "threshold": 24.60899249999784,
+                "exceeded": false
+              },
+              {
+                "metric": "depth.20.p95",
+                "a": 21.273973000003025,
+                "b": 20.41485499999908,
+                "fraction": 0.1,
+                "delta": -0.8591180000039458,
+                "relative": -0.04038352403680423,
+                "threshold": 23.40137030000333,
+                "exceeded": false
+              },
+              {
+                "metric": "depth.20.max",
+                "a": 1464.7153910000015,
+                "b": 1423.0165010000019,
+                "fraction": 0.25,
+                "delta": -41.698889999999665,
+                "relative": -0.028468936870753248,
+                "threshold": 1830.894238750002,
+                "exceeded": false
+              },
+              {
+                "metric": "roundDepth.20.p95",
+                "a": 11.082648000003246,
+                "b": 11.108939999998256,
+                "fraction": 0.1,
+                "delta": 0.026291999995009974,
+                "relative": 0.0023723572195923914,
+                "threshold": 12.19091280000357,
+                "exceeded": false
+              },
+              {
+                "metric": "roundDepth.20.p99",
+                "a": 14.06556200000341,
+                "b": 14.4786239999994,
+                "fraction": 0.25,
+                "delta": 0.413061999995989,
+                "relative": 0.029366903362687546,
+                "threshold": 17.581952500004263,
+                "exceeded": false
+              },
+              {
+                "metric": "elapsed",
+                "a": 29418.912163,
+                "b": 29754.951535000004,
+                "fraction": 0.1,
+                "delta": 336.0393720000029,
+                "relative": 0.011422562810552872,
+                "threshold": 32360.8033793,
+                "exceeded": false
+              }
+            ]
+          ]
+        },
+        {
+          "id": "all",
+          "kind": "full",
+          "status": "pass",
+          "exceededRounds": 1,
+          "workloads": [
+            {
+              "round": 1,
+              "a": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "b": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "changed": false
+            },
+            {
+              "round": 2,
+              "a": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "b": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "changed": false
+            },
+            {
+              "round": 3,
+              "a": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "b": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "changed": false
+            }
+          ],
+          "pairs": [
+            [
+              {
+                "metric": "command.p95",
+                "a": 1343.002463000128,
+                "b": 1348.3437860000413,
+                "fraction": 0.1,
+                "delta": 5.341322999913245,
+                "relative": 0.003977150561571774,
+                "threshold": 1477.3027093001408,
+                "exceeded": false
+              },
+              {
+                "metric": "command.max",
+                "a": 11793.390990000102,
+                "b": 12102.156175000011,
+                "fraction": 0.25,
+                "delta": 308.76518499990925,
+                "relative": 0.026181204817318227,
+                "threshold": 14741.738737500127,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p95",
+                "a": 309.8358659998048,
+                "b": 306.35227899998426,
+                "fraction": 0.1,
+                "delta": -3.4835869998205453,
+                "relative": -0.011243330363253534,
+                "threshold": 340.8194525997853,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p99",
+                "a": 996.650908999989,
+                "b": 740.8150330000208,
+                "fraction": 0.25,
+                "delta": -255.83587599996827,
+                "relative": -0.25669557283268485,
+                "threshold": 1245.8136362499863,
+                "exceeded": false
+              },
+              {
+                "metric": "depth.20.p95",
+                "a": 1351.1600510000717,
+                "b": 1356.5589739999268,
+                "fraction": 0.1,
+                "delta": 5.398922999855131,
+                "relative": 0.003995768669935895,
+                "threshold": 1486.276056100079,
+                "exceeded": false
+              },
+              {
+                "metric": "depth.20.max",
+                "a": 3547.436662999913,
+                "b": 4563.206823000102,
+                "fraction": 0.25,
+                "delta": 1015.7701600001892,
+                "relative": 0.2863391954519623,
+                "threshold": 4434.295828749891,
+                "exceeded": true
+              },
+              {
+                "metric": "roundDepth.20.p95",
+                "a": 283.9762679999694,
+                "b": 286.96841299999505,
+                "fraction": 0.1,
+                "delta": 2.99214500002563,
+                "relative": 0.010536602305182496,
+                "threshold": 312.37389479996637,
+                "exceeded": false
+              },
+              {
+                "metric": "roundDepth.20.p99",
+                "a": 358.1445219996385,
+                "b": 310.5138800002169,
+                "fraction": 0.25,
+                "delta": -47.63064199942164,
+                "relative": -0.13299279780543372,
+                "threshold": 447.68065249954816,
+                "exceeded": false
+              },
+              {
+                "metric": "elapsed",
+                "a": 1448178.771095,
+                "b": 1443011.454765,
+                "fraction": 0.1,
+                "delta": -5167.31633000006,
+                "relative": -0.0035681480996251347,
+                "threshold": 1592996.6482044999,
+                "exceeded": false
+              }
+            ],
+            [
+              {
+                "metric": "command.p95",
+                "a": 1340.6201550001279,
+                "b": 1339.973852999974,
+                "fraction": 0.1,
+                "delta": -0.6463020001538098,
+                "relative": -0.00048209181231784193,
+                "threshold": 1474.6821705001407,
+                "exceeded": false
+              },
+              {
+                "metric": "command.max",
+                "a": 12135.183498000028,
+                "b": 12036.935593000031,
+                "fraction": 0.25,
+                "delta": -98.24790499999654,
+                "relative": -0.008096120261896989,
+                "threshold": 15168.979372500035,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p95",
+                "a": 300.23425400000997,
+                "b": 297.9902679999359,
+                "fraction": 0.1,
+                "delta": -2.2439860000740737,
+                "relative": -0.007474117194082752,
+                "threshold": 330.25767940001094,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p99",
+                "a": 752.4234229999929,
+                "b": 603.2116270000042,
+                "fraction": 0.25,
+                "delta": -149.21179599998868,
+                "relative": -0.19830828153257807,
+                "threshold": 940.5292787499911,
+                "exceeded": false
+              },
+              {
+                "metric": "depth.20.p95",
+                "a": 1347.3792270000558,
+                "b": 1348.537684999872,
+                "fraction": 0.1,
+                "delta": 1.1584579998161644,
+                "relative": 0.0008597861512200655,
+                "threshold": 1482.1171497000614,
+                "exceeded": false
+              },
+              {
+                "metric": "depth.20.max",
+                "a": 4518.953049000003,
+                "b": 4496.056588999927,
+                "fraction": 0.25,
+                "delta": -22.89646000007633,
+                "relative": -0.005066762091087251,
+                "threshold": 5648.691311250004,
+                "exceeded": false
+              },
+              {
+                "metric": "roundDepth.20.p95",
+                "a": 282.3022259999998,
+                "b": 283.40482099959627,
+                "fraction": 0.1,
+                "delta": 1.1025949995964766,
+                "relative": 0.0039057254886700754,
+                "threshold": 310.5324485999998,
+                "exceeded": false
+              },
+              {
+                "metric": "roundDepth.20.p99",
+                "a": 308.8229519999586,
+                "b": 309.16476399987005,
+                "fraction": 0.25,
+                "delta": 0.3418119999114424,
+                "relative": 0.0011068218786778328,
+                "threshold": 386.02868999994826,
+                "exceeded": false
+              },
+              {
+                "metric": "elapsed",
+                "a": 1436084.526778,
+                "b": 1429906.788491,
+                "fraction": 0.1,
+                "delta": -6177.738286999986,
+                "relative": -0.004301792945893168,
+                "threshold": 1579692.9794558,
+                "exceeded": false
+              }
+            ],
+            [
+              {
+                "metric": "command.p95",
+                "a": 1342.5693709999905,
+                "b": 1350.519146000035,
+                "fraction": 0.1,
+                "delta": 7.94977500004461,
+                "relative": 0.005921314139710532,
+                "threshold": 1476.8263080999895,
+                "exceeded": false
+              },
+              {
+                "metric": "command.max",
+                "a": 11480.731191999977,
+                "b": 11849.375187000027,
+                "fraction": 0.25,
+                "delta": 368.6439950000495,
+                "relative": 0.03210980109497985,
+                "threshold": 14350.913989999972,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p95",
+                "a": 307.5830520000309,
+                "b": 305.9243739999947,
+                "fraction": 0.1,
+                "delta": -1.6586780000361614,
+                "relative": -0.005392618316421349,
+                "threshold": 338.34135720003394,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p99",
+                "a": 995.4074599999585,
+                "b": 857.9846189999953,
+                "fraction": 0.25,
+                "delta": -137.42284099996323,
+                "relative": -0.1380568727101653,
+                "threshold": 1244.2593249999481,
+                "exceeded": false
+              },
+              {
+                "metric": "depth.20.p95",
+                "a": 1352.3733060001396,
+                "b": 1358.309939000057,
+                "fraction": 0.1,
+                "delta": 5.936632999917492,
+                "relative": 0.004389788657893634,
+                "threshold": 1487.6106366001536,
+                "exceeded": false
+              },
+              {
+                "metric": "depth.20.max",
+                "a": 4496.541527999798,
+                "b": 3564.5441999998875,
+                "fraction": 0.25,
+                "delta": -931.9973279999103,
+                "relative": -0.20726981441100845,
+                "threshold": 5620.676909999747,
+                "exceeded": false
+              },
+              {
+                "metric": "roundDepth.20.p95",
+                "a": 287.62073599989526,
+                "b": 285.2411129998509,
+                "fraction": 0.1,
+                "delta": -2.3796230000443757,
+                "relative": -0.008273475108711348,
+                "threshold": 316.3828095998848,
+                "exceeded": false
+              },
+              {
+                "metric": "roundDepth.20.p99",
+                "a": 671.644051000243,
+                "b": 318.58662000019103,
+                "fraction": 0.25,
+                "delta": -353.057431000052,
+                "relative": -0.5256615173978877,
+                "threshold": 839.5550637503038,
+                "exceeded": false
+              },
+              {
+                "metric": "elapsed",
+                "a": 1437978.128236,
+                "b": 1445126.771042,
+                "fraction": 0.1,
+                "delta": 7148.642806000076,
+                "relative": 0.004971315394601605,
+                "threshold": 1581775.9410595999,
+                "exceeded": false
+              }
+            ]
+          ]
+        },
+        {
+          "id": "all",
+          "kind": "prefix",
+          "status": "pass",
+          "exceededRounds": 1,
+          "workloads": [
+            {
+              "round": 1,
+              "a": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "b": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "changed": false
+            },
+            {
+              "round": 2,
+              "a": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "b": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "changed": false
+            },
+            {
+              "round": 3,
+              "a": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "b": {
+                "events": 2423,
+                "blocks": 2549,
+                "rounds": 2549
+              },
+              "changed": false
+            }
+          ],
+          "pairs": [
+            [
+              {
+                "metric": "command.p95",
+                "a": 1373.16242399998,
+                "b": 1355.7262419997714,
+                "fraction": 0.1,
+                "delta": -17.436182000208646,
+                "relative": -0.012697829255637227,
+                "threshold": 1510.478666399978,
+                "exceeded": false
+              },
+              {
+                "metric": "command.max",
+                "a": 11672.002261999995,
+                "b": 11847.290093000047,
+                "fraction": 0.25,
+                "delta": 175.2878310000524,
+                "relative": 0.01501780303545086,
+                "threshold": 14590.002827499993,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p95",
+                "a": 302.5501669999794,
+                "b": 301.3094810000621,
+                "fraction": 0.1,
+                "delta": -1.240685999917332,
+                "relative": -0.0041007612463734855,
+                "threshold": 332.80518369997736,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p99",
+                "a": 692.686147000175,
+                "b": 755.0418520000021,
+                "fraction": 0.25,
+                "delta": 62.35570499982714,
+                "relative": 0.09002014154588167,
+                "threshold": 865.8576837502187,
+                "exceeded": false
+              },
+              {
+                "metric": "elapsed",
+                "a": 1443874.994049,
+                "b": 1448600.422134,
+                "fraction": 0.1,
+                "delta": 4725.428085000021,
+                "relative": 0.00327274044115744,
+                "threshold": 1588262.4934539,
+                "exceeded": false
+              }
+            ],
+            [
+              {
+                "metric": "command.p95",
+                "a": 1333.0348730001133,
+                "b": 1340.8965619998053,
+                "fraction": 0.1,
+                "delta": 7.861688999691978,
+                "relative": 0.005897586896581819,
+                "threshold": 1466.3383603001246,
+                "exceeded": false
+              },
+              {
+                "metric": "command.max",
+                "a": 12198.727947999956,
+                "b": 12123.614840999944,
+                "fraction": 0.25,
+                "delta": -75.11310700001195,
+                "relative": -0.0061574540657189925,
+                "threshold": 15248.409934999945,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p95",
+                "a": 302.55924900004175,
+                "b": 304.68155300000217,
+                "fraction": 0.1,
+                "delta": 2.1223039999604225,
+                "relative": 0.007014507098938916,
+                "threshold": 332.8151739000459,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p99",
+                "a": 849.9669410001952,
+                "b": 850.0735880001448,
+                "fraction": 0.25,
+                "delta": 0.10664699994958937,
+                "relative": 0.00012547193873690965,
+                "threshold": 1062.458676250244,
+                "exceeded": false
+              },
+              {
+                "metric": "elapsed",
+                "a": 1426162.049455,
+                "b": 1439408.790268,
+                "fraction": 0.1,
+                "delta": 13246.740812999895,
+                "relative": 0.009288384036065134,
+                "threshold": 1568778.2544005,
+                "exceeded": false
+              }
+            ],
+            [
+              {
+                "metric": "command.p95",
+                "a": 1368.089804999996,
+                "b": 1348.2587540000677,
+                "fraction": 0.1,
+                "delta": -19.831050999928266,
+                "relative": -0.01449543072936521,
+                "threshold": 1504.8987854999955,
+                "exceeded": false
+              },
+              {
+                "metric": "command.max",
+                "a": 11894.381412000046,
+                "b": 11830.94213900005,
+                "fraction": 0.25,
+                "delta": -63.43927299999632,
+                "relative": -0.005333549581316932,
+                "threshold": 14867.976765000058,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p95",
+                "a": 305.865265999455,
+                "b": 304.0960869999835,
+                "fraction": 0.1,
+                "delta": -1.7691789994714782,
+                "relative": -0.005784177532190404,
+                "threshold": 336.4517925994005,
+                "exceeded": false
+              },
+              {
+                "metric": "round.p99",
+                "a": 754.2044689999966,
+                "b": 1006.8626280000026,
+                "fraction": 0.25,
+                "delta": 252.65815900000598,
+                "relative": 0.33499955169319895,
+                "threshold": 942.7555862499958,
+                "exceeded": true
+              },
+              {
+                "metric": "elapsed",
+                "a": 1441613.4643279999,
+                "b": 1443277.0136530001,
+                "fraction": 0.1,
+                "delta": 1663.549325000262,
+                "relative": 0.0011539496308572428,
+                "threshold": 1585774.8107607998,
+                "exceeded": false
+              }
+            ]
+          ]
+        }
+      ],
+      "availableHeldOutCases": [],
+      "incompleteCause": {
+        "pendingBaseline": "6c3 accepted=false at cloud execution",
+        "timingGatesComplete": true,
+        "missing": [
+          "classic independent fourth B replay",
+          "all independent fourth B replay",
+          "candidate/suggested frozen manifest"
+        ],
+        "toolDefect": false,
+        "originalBudgetCheckSkipped": true,
+        "offlineC3BudgetChecks": [
+          1,
+          2,
+          3
+        ]
+      },
+      "offlineValidation": {
+        "originalResultSha256": "c98e91a153b955e5c73c52c62191c159d005bb075a231f5f1e0605c7d33af982",
+        "validatedResultSha256": "6958584470187cd7d956aaac41d50cdce703e6edd40954451af07a8737f7c34d",
+        "status": "incomplete",
+        "hard": "pass",
+        "exit": 0
+      },
+      "calibrationChecks": [
+        {
+          "round": 1,
+          "exit": 0,
+          "logSha256": "9932ada6160abc4076938da0927b8f8952212d7f5d5141ba171b75d982bb7022"
+        },
+        {
+          "round": 2,
+          "exit": 0,
+          "logSha256": "ab4118b1fa5497cb03299a3ef3512dd948cd9a8b63d7114b2c0cac169f12a6f7"
+        },
+        {
+          "round": 3,
+          "exit": 0,
+          "logSha256": "cd3155ffe835e3ede0ada133bdb8b14d5de1e04f27fb2c319910faabd19f3dcc"
+        }
+      ],
+      "newBaselineChecks": [
+        {
+          "round": 1,
+          "exit": 0,
+          "logSha256": "cd7835583a266971807efb88e1cc7eff679f025fc45369477f2f5e33a74a3956"
+        },
+        {
+          "round": 2,
+          "exit": 0,
+          "logSha256": "d88cc4493733981088458786b178962678720a7c73f906efb1fceb414e101323"
+        },
+        {
+          "round": 3,
+          "exit": 0,
+          "logSha256": "68ec3bb32586c9a352c23342a66f898a8362ed6223be42407a85c4b314b6a68b"
+        }
+      ]
+    }
+  },
+  "localProfile": {
+    "kind": "diagnostic counters and D19/D20 CPU self samples; not a wall performance adjudication",
+    "environment": {
+      "node": "v25.2.1",
+      "platform": "macOS-26.6.2-arm64-arm-64bit",
+      "machine": "arm64"
+    },
+    "runs": {
+      "A": {
+        "events": 2423,
+        "oos": 0,
+        "elapsed": 464031.051833,
+        "counts": {
+          "D1-18": {
+            "recordingEventDigest": 1872,
+            "checkpointWorldWork": 147,
+            "itemCommandTransaction": 1,
+            "objectiveTimeBlock": 1927,
+            "updateEnvironment": 2827,
+            "worldWorkTransaction": 145,
+            "validateLootItemData": 244
+          },
+          "D19+": {
+            "objectiveTimeBlock": 622,
+            "updateEnvironment": 672,
+            "recordingEventDigest": 551,
+            "validateLootItemData": 80
+          }
+        },
+        "calls": {
+          "worldWorkTransaction": 145,
+          "itemCommandTransaction": 1,
+          "checkpointWorldWork": 147,
+          "updateEnvironment": 3499,
+          "objectiveTimeBlock": 2549,
+          "recordingEventDigest": 2423
+        },
+        "segments": {
+          "updateEnvironment": 527.0185920010554,
+          "objectiveTimeBlock": 1463.8034550001612,
+          "recordingEventDigest": 7031.972255999513
+        },
+        "stateHash": "65480287d7135b64d16f39487be805843f6fd526c135fa947b9318e5cfdc7d77",
+        "rng": {
+          "version": 2,
+          "algorithm": "brogue-web-ranval32-uint64-level-v2",
+          "streams": [
+            {
+              "a": 2549604079,
+              "b": 2060452983,
+              "c": 1743037916,
+              "d": 3382033924
+            },
+            {
+              "a": 3362814670,
+              "b": 1582507782,
+              "c": 2269951668,
+              "d": 2911758098
+            }
+          ],
+          "currentRNG": 0,
+          "randomNumbersGenerated": 5898913,
+          "cosmeticNumbersGenerated": 1088
+        },
+        "extensions": [
+          "{\"module\":\"growth\",\"action\":\"create-character\",\"payload\":{\"revision\":0}}",
+          "{\"module\":\"loot\",\"action\":\"create\",\"payload\":{\"v\":1,\"presetId\":\"standard\"}}"
+        ]
+      },
+      "B": {
+        "events": 2423,
+        "oos": 0,
+        "elapsed": 470220.02308300004,
+        "counts": {
+          "D1-18": {
+            "recordingEventDigest": 1872,
+            "checkpointWorldWork": 147,
+            "itemCommandTransaction": 146,
+            "objectiveTimeBlock": 1927,
+            "updateEnvironment": 2827,
+            "worldWorkTransaction": 145,
+            "validateLootItemData": 244
+          },
+          "D19+": {
+            "objectiveTimeBlock": 622,
+            "updateEnvironment": 672,
+            "recordingEventDigest": 551,
+            "validateLootItemData": 80
+          }
+        },
+        "calls": {
+          "hasWorkOperation": 0,
+          "workItemIdentity": 0,
+          "prepareWorkItem": 0,
+          "validateStoredWorkItem": 0,
+          "commitWorkItem": 0,
+          "worldWorkTransaction": 145,
+          "itemCommandTransaction": 146,
+          "checkpointWorldWork": 147,
+          "updateEnvironment": 3499,
+          "objectiveTimeBlock": 2549,
+          "recordingEventDigest": 2423
+        },
+        "segments": {
+          "updateEnvironment": 522.4422580003156,
+          "objectiveTimeBlock": 1462.6779890001635,
+          "recordingEventDigest": 7129.696284000413
+        },
+        "stateHash": "3307be24e849ef8868092aab37b372675caa3484c528012837ede438e148616c",
+        "rng": {
+          "version": 2,
+          "algorithm": "brogue-web-ranval32-uint64-level-v2",
+          "streams": [
+            {
+              "a": 2549604079,
+              "b": 2060452983,
+              "c": 1743037916,
+              "d": 3382033924
+            },
+            {
+              "a": 3362814670,
+              "b": 1582507782,
+              "c": 2269951668,
+              "d": 2911758098
+            }
+          ],
+          "currentRNG": 0,
+          "randomNumbersGenerated": 5898913,
+          "cosmeticNumbersGenerated": 1088
+        },
+        "extensions": [
+          "{\"module\":\"growth\",\"action\":\"create-character\",\"payload\":{\"revision\":0}}",
+          "{\"module\":\"loot\",\"action\":\"create\",\"payload\":{\"v\":1,\"presetId\":\"standard\"}}"
+        ],
+        "zeroReplayEntryCounts": {
+          "prepareWorkOperation": 0,
+          "bindCraftRoll": 0,
+          "completeWorkOperation": 0,
+          "completeCraftRoll": 0,
+          "computeEquipmentRowBudget": 0
+        }
+      }
+    },
+    "cpu": {
+      "A": {
+        "sampledSeconds": 214.104911,
+        "topSelf": [
+          {
+            "function": "structuredClone",
+            "url": "node:internal/worker/js_transferable",
+            "percent": 36.082226063464745
+          },
+          {
+            "function": "isStatJson",
+            "url": "file:///private/tmp/p6-perf-review/A/src/ext/stats.ts",
+            "percent": 5.899760048007493
+          },
+          {
+            "function": "",
+            "url": "file:///private/tmp/p6-perf-review/A/src/engine/Core/Game.ts",
+            "percent": 4.9824027623542
+          },
+          {
+            "function": "(garbage collector)",
+            "url": "",
+            "percent": 3.9929014052368
+          },
+          {
+            "function": "decimalStatFraction",
+            "url": "file:///private/tmp/p6-perf-review/A/src/engine/Stats/StatPipeline.ts",
+            "percent": 3.2983022047541914
+          },
+          {
+            "function": "isJson",
+            "url": "file:///private/tmp/p6-perf-review/A/src/ext/json.ts",
+            "percent": 2.8525590428890255
+          },
+          {
+            "function": "collect",
+            "url": "file:///private/tmp/p6-perf-review/A/src/ext/runtime.ts",
+            "percent": 2.7068687835936656
+          },
+          {
+            "function": "",
+            "url": "",
+            "percent": 2.61025820187749
+          },
+          {
+            "function": "collect",
+            "url": "",
+            "percent": 2.5594536689539082
+          },
+          {
+            "function": "collectModifiers",
+            "url": "file:///private/tmp/p6-perf-review/A/src/ext/modules/growth/evaluator.ts",
+            "percent": 1.9333456578209924
+          },
+          {
+            "function": "rows",
+            "url": "file:///private/tmp/p6-perf-review/A/src/engine/Stats/StatPipeline.ts",
+            "percent": 1.8853112621970636
+          },
+          {
+            "function": "seal",
+            "url": "file:///private/tmp/p6-perf-review/A/src/ext/json.ts",
+            "percent": 1.8072593393245426
+          },
+          {
+            "function": "find",
+            "url": "",
+            "percent": 1.5848253943133515
+          },
+          {
+            "function": "text",
+            "url": "file:///private/tmp/p6-perf-review/A/src/ext/worldJson.ts",
+            "percent": 1.565696921356465
+          },
+          {
+            "function": "(program)",
+            "url": "",
+            "percent": 1.5029295614802596
+          }
+        ],
+        "changedCodeSelf": [],
+        "gcPercent": 3.9929014052368
+      },
+      "B": {
+        "sampledSeconds": 216.676151,
+        "topSelf": [
+          {
+            "function": "structuredClone",
+            "url": "node:internal/worker/js_transferable",
+            "percent": 35.78858524212939
+          },
+          {
+            "function": "isStatJson",
+            "url": "file:///private/tmp/p6-perf-review/B/src/ext/stats.ts",
+            "percent": 5.6899769278253425
+          },
+          {
+            "function": "",
+            "url": "file:///private/tmp/p6-perf-review/B/src/engine/Core/Game.ts",
+            "percent": 5.202577647781827
+          },
+          {
+            "function": "(garbage collector)",
+            "url": "",
+            "percent": 4.800844925475901
+          },
+          {
+            "function": "collect",
+            "url": "file:///private/tmp/p6-perf-review/B/src/ext/runtime.ts",
+            "percent": 3.9483653187101333
+          },
+          {
+            "function": "decimalStatFraction",
+            "url": "file:///private/tmp/p6-perf-review/B/src/engine/Stats/StatPipeline.ts",
+            "percent": 3.179133452485964
+          },
+          {
+            "function": "isJson",
+            "url": "file:///private/tmp/p6-perf-review/B/src/ext/json.ts",
+            "percent": 2.7455656621849447
+          },
+          {
+            "function": "",
+            "url": "",
+            "percent": 2.716442475480377
+          },
+          {
+            "function": "collect",
+            "url": "file:///private/tmp/p6-perf-review/B/src/ext/modules/growth/statSources.ts",
+            "percent": 2.6038514040246175
+          },
+          {
+            "function": "collectModifiers",
+            "url": "file:///private/tmp/p6-perf-review/B/src/ext/modules/growth/evaluator.ts",
+            "percent": 1.9149001774542322
+          },
+          {
+            "function": "rows",
+            "url": "file:///private/tmp/p6-perf-review/B/src/engine/Stats/StatPipeline.ts",
+            "percent": 1.9104423725894963
+          },
+          {
+            "function": "seal",
+            "url": "file:///private/tmp/p6-perf-review/B/src/ext/json.ts",
+            "percent": 1.8474465147758694
+          },
+          {
+            "function": "(program)",
+            "url": "",
+            "percent": 1.5769912767187748
+          },
+          {
+            "function": "find",
+            "url": "",
+            "percent": 1.2870918128871507
+          },
+          {
+            "function": "nativeStatFacts",
+            "url": "file:///private/tmp/p6-perf-review/B/src/engine/Stats/NativeStatSources.ts",
+            "percent": 1.1823982418812673
+          }
+        ],
+        "changedCodeSelf": [],
+        "gcPercent": 4.800844925475901
+      }
+    },
+    "files": {
+      "profile.mjs": "f927b0c74a276655f35c09b8aac2c21f53356f5973b94253d2479250a729cda1",
+      "profile-A.json": "f1a7db5ad0433c8305a726cea3eb45f4fe6752b3f7f183e6f691a1df1aabdc1a",
+      "profile-B.json": "de8fb89fc9c3da54043e917d96a9979230650ef1e8eebd28fd0646829e06501b",
+      "profile-A.cpuprofile": "0bd4d28d417a92b43a1010276231ac0281644803196412328b40f265a182df7f",
+      "profile-B.cpuprofile": "c590e1ca1bf0be084626a07560e0b2296d04c18ac2029c95d2718f26c192f42a",
+      "cpu-summary.json": "1090e00e6bfd904941ff698d699fd88e7e7947fdc7ba9a386da66cd0573cf183"
+    },
+    "interpretation": "No station/reforge/craft entry in this replay; 145 shared rollback-protected transactions before D19 are real new internal work. D20 tails favor noise but pure noise and absence of a small allocation/GC regression are not proved."
+  },
+  "validation": [
+    {
+      "command": [
+        "node",
+        "scripts/test-ext-perf-selection.mjs"
+      ],
+      "exit": 0,
+      "seconds": 0.07930898666381836,
+      "log": "/private/tmp/p6-perf-review/test-1.log",
+      "logSha256": "eedf7a4fc0a8b593e66aeca2fc85c74c6f861ddd8ff1631195ca11199402ec05"
+    },
+    {
+      "command": [
+        "node",
+        "scripts/test-ext-perf-ab.mjs"
+      ],
+      "exit": 0,
+      "seconds": 1.769132137298584,
+      "log": "/private/tmp/p6-perf-review/test-2.log",
+      "logSha256": "33f87e47403f179a74835550711ff692d585bf6eb954cc434f57c6f654b72e52"
+    },
+    {
+      "command": [
+        "node",
+        "scripts/test-ext-perf-split.mjs"
+      ],
+      "exit": 0,
+      "seconds": 15.601010084152222,
+      "log": "/private/tmp/p6-perf-review/test-3.log",
+      "logSha256": "87a9909d942734de6a35c33032b52f12c8a763f4518eb344e4abcee9b86025c8"
+    },
+    {
+      "command": [
+        "npm",
+        "run",
+        "check:test-dependencies"
+      ],
+      "exit": 0,
+      "seconds": 3.277125120162964,
+      "log": "/private/tmp/p6-perf-review/test-4.log",
+      "logSha256": "d5e0ad18b503d8ea5cc805fd30e5d3457e37d054f13c0876c57b499179cb33b6"
+    }
+  ],
+  "reproduction": {
+    "historicalControl": "109480110a77b022013757f6f6b4fa40897dd387",
+    "merge": "Use scripts from historical control (including original selection registry), linked node_modules. node scripts/merge-ext-perf-ab.mjs NEW_OUT CLASSIC_DIR ALL_FULL_DIR ALL_PREFIX_DIR; original hard/gates/status must match. Current accepted registry deliberately has a different provenance hash.",
+    "freeze": "node scripts/ext-perf-budget.mjs freeze-split NEW_MANIFEST classic=CLASSIC_SOURCE,B_CLASSIC_ROUND1,B_CLASSIC_ROUND2,B_CLASSIC_ROUND3 all=ALL_SOURCE,B_ALL_ROUND1,B_ALL_ROUND2,B_ALL_ROUND3",
+    "check": "node scripts/ext-perf-budget.mjs check MANIFEST classic=CLASSIC_PREFIX all=ALL_PREFIX (B rounds 1/2/3; additionally C4 A rounds 1/2/3 against C3 manifest)",
+    "profile": "git archive 33d7aba / 0d2e98a into isolated temporary directories; linked existing node_modules, diagnostic entry counters only. Replay original all-full inputs from origin; CPU sampling only D19/D20. Assert exact own-cloud final state hash and 0 OOS. No local wall sample used for budget.",
+    "rawRoot": "/private/tmp/p6-perf-review"
+  },
+  "artifacts": {
+    "scripts/perf/ext-6c3-late-classic.route.json": "e7cb8fb05a58b7d1c87b9f12c5703abefac9b949dcbb71a3231f188a851d2b23",
+    "scripts/perf/ext-6c3-late-classic.source.json": "1678bce72ecd59dd0e6906285f310e3dfb753c73239b1313847872ed5ba094de",
+    "scripts/perf/ext-6c3-late-all.route.json": "3520f7e3eab925ba1458d698f3728a956bc7ebed428e6d75c8002a582da1c4a7",
+    "scripts/perf/ext-6c3-late-all.source.json": "1c6dab3283000f0cc48ac11f24fbd8d3631a234a506d190abd1fe52e9f94a662",
+    "scripts/ext-perf-6c3-budget.json": "c497c6788b394da0f2ce5d69d5913b8eaca859b3b24d749a70bc5bdc693e9924",
+    "scripts/perf/ext-6c4-late-classic.route.json": "e91af962431f0ea13267eabb5e648d8775332b373f2d711b9e4d9e62d0936495",
+    "scripts/perf/ext-6c4-late-classic.source.json": "f70fad6c2084f66ca43e12addcc0685255cc10ae370799d532d9c6e07bf18b28",
+    "scripts/perf/ext-6c4-late-all.route.json": "69c75db9f47f06c5142db9ef613eb1fdf96a4b3f3b5ce4b436d9d1240912b4a6",
+    "scripts/perf/ext-6c4-late-all.source.json": "31ff5614c91424ee8b8a372ebac4123c18ea5e6829d3900cb2cde0515884a1be",
+    "scripts/ext-perf-6c4-budget.json": "8820ca2e4da1bc69af1a95fddbfc17a3479bf98fce35a0b801a38927377c9557"
+  },
+  "adoption": {
+    "6c3": {
+      "accepted": true,
+      "manifest": "scripts/ext-perf-6c3-budget.json",
+      "manifestSha256": "c497c6788b394da0f2ce5d69d5913b8eaca859b3b24d749a70bc5bdc693e9924",
+      "acceptance": "known-tail-risk",
+      "originalStatus": "regression",
+      "timingStatus": "regression",
+      "independentPostFreezeReplay": false,
+      "independentHeldOutReplay": false
+    },
+    "6c4": {
+      "accepted": true,
+      "manifest": "scripts/ext-perf-6c4-budget.json",
+      "manifestSha256": "8820ca2e4da1bc69af1a95fddbfc17a3479bf98fce35a0b801a38927377c9557",
+      "acceptance": "offline-passing-timing",
+      "originalStatus": "incomplete",
+      "timingStatus": "pass",
+      "independentPostFreezeReplay": false,
+      "independentHeldOutReplay": false
+    }
+  },
+  "validationToolHashes": {
+    "review-artifacts.mjs": "2b89b2a5819d4560cb8b52d77aee20657cf0c43d8b0cd0e754d6a90360721a34",
+    "freeze.mjs": "6e0acf87bc4d13bc3b17d387b436f45f6fca60af9883b229f712402dd17108d8",
+    "summarize.py": "0743d5d594be538ca87d9d9794f8385a6674722dd034340d700fc3957623576e",
+    "cpu-summary.py": "6aaee32ec08936511a604eb5f81272b26ba14ae9e56d91643c1d4156a0eac6e5"
+  }
+}
