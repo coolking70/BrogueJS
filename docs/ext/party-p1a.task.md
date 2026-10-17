@@ -1,6 +1,6 @@
 # P1a 任务书：多成员底座与单步闭环
 
-> 原稿：2026-10-11，`origin/ext/party-design` 文档提交 `8bd271b4bc26dea697ca8af1257240d848f3665d`（原稿所列生产基线 `79bb26e`）。刷新：**2026-10-18**，`ext/phase6` / HEAD `0e684d100146af38b1e2056811fef821001f7555`，并只读核对当前试玩未提交差量。依据：[已批准设计](https://github.com/coolking70/BrogueJS/blob/8bd271b4bc26dea697ca8af1257240d848f3665d/docs/ext/party-multiplayer-design.md)、[刷新合同](party-contract.md)、[P0 审计](https://github.com/coolking70/BrogueJS/blob/8bd271b4bc26dea697ca8af1257240d848f3665d/docs/ext/party-p0.report.md)。D-01～D-17 保持；§8 **M1–M5 已由维护者 2026-10-18 裁定**，M5 以本版精简门禁为准；§10 新问题仍待决定。本次仅新增三份文档，不启动实施、不改代码、不 commit，不覆盖或提交试玩改动。
+> 原稿：2026-10-11，`origin/ext/party-design` 文档提交 `8bd271b4bc26dea697ca8af1257240d848f3665d`（原稿所列生产基线 `79bb26e`）。刷新：**2026-10-18**，`ext/phase6` / HEAD `0e684d100146af38b1e2056811fef821001f7555`，并只读核对当前试玩未提交差量。依据：[已批准设计](https://github.com/coolking70/BrogueJS/blob/8bd271b4bc26dea697ca8af1257240d848f3665d/docs/ext/party-multiplayer-design.md)、[刷新合同](party-contract.md)、[P0 审计](https://github.com/coolking70/BrogueJS/blob/8bd271b4bc26dea697ca8af1257240d848f3665d/docs/ext/party-p0.report.md)。D-01～D-17 保持；§8 **M1–M11 已由维护者 2026-10-18 裁定**，M5 以本版精简门禁为准；§10 M6–M11 全部按推荐批准。本轮在 `ext/party-p1a` / `e3ec8f49f8a7c6f827ecb04dac7304a441c960e6` 实施；开工工作区干净，loot 0.9.1 试玩修复已在基线内。不 commit。
 
 ## 1 目标、范围与开工基线
 
@@ -97,7 +97,7 @@ P1a采用严格的 `party:actor-step` schema1输入：`expectedRevision`、`issu
 
 ## 6 当前 ext 精简门禁与运行纪律（M5，2026-10-18）
 
-本节按维护者本次明确裁定，覆盖旧稿援引 development 全量档的 P1a 执行要求。**不跑完整 npm test、test:ext、drift 套件，不跑256/512组合穷举，不恢复 test:full/强制test:gen**；现行 package.json 也已没有 ce:fetch/test:full/test:gen 入口。正确性合同仍严格，节省的是运行集合和重复成本，不是断言/写集/失败披露。本次纯文档刷新不执行下述生产门禁。
+本节按维护者本次明确裁定，覆盖旧稿援引 development 全量档的 P1a 执行要求。**不跑完整 npm test、test:ext、drift 套件，不跑256/512组合穷举，不恢复 test:full/强制test:gen**；现行 package.json 也已没有 ce:fetch/test:full/test:gen 入口。正确性合同仍严格，节省的是运行集合和重复成本，不是断言/写集/失败披露。2026-10-18 实施轮按下述精简集合运行，实际结果见实施报告。
 
 ### 6.1 影响面与静态门禁
 
@@ -161,7 +161,7 @@ P1a先报告1/2/4人的真实单步耗时（含零tick、强制状态、多行�
 | 扩展接口/模块 | `src/ext/{runtime,types,actorQuery,world,world5}.ts`及新增party能力文件；growth/loot/foraging/crafting/settlement/narrative/combat/giants的实际命令/组件/view接线；新增`src/ext/modules/party/` | 冻结SDK审计、optional查询、奖励归属与模块删除，禁止隐式leader回退 |
 | UI与登记 | `src/App.vue`、`components/{MainMenu,GameCanvas,Sidebar,InventoryOverlay,DetailPanel}.vue`、`src/ui/commands.ts`/`displayProjection.ts`/actor输入相关工具；`src/locales/`；`scripts/u03-state-contract.json`、`scripts/recording-digest-contract.json`、`scripts/test-suites.json`及必要组合/删除脚本 | actor inputState、焦点session、中文文案、源码守卫、域写入登记、测试发现 |
 
-phase6补充候选写集（供未来P1a确定实施范围；本次一律不写生产文件）：
+phase6补充写集（2026-10-18 实施范围，实际修改以报告为准）：
 
 | 新增范围 | 实际路径 / 必须登记的写入 |
 |---|---|
@@ -175,11 +175,11 @@ phase6补充候选写集（供未来P1a确定实施范围；本次一律不写�
 
 交付路径：`docs/ext/party-p1a.report.md`（实际范围/版本/决定落实/源码身份/门禁/失败与反事实/逐字段重录/遗留）、`docs/ext/party-p1a.review-findings.md`（如维护者安排审查）、`docs/ext/party-p1a.manual-checklist.md`（最小浏览器路径与真机待验）、同步已批准的 `party-contract.md` 差量。原始JSON/日志/录像/截图放 `/private/tmp/party-p1a/`，只提交小型汇总，>1MiB证据不进仓库。报告逐项回填A01–A13，未运行明确写not-run，不累计重叠通过数；不要只交“全部通过”。
 
-未来实施提交/推送按届时维护者授权；本次文档任务没有提交授权，也不等于开工、合main或发布授权。测试与推送分别执行。
+本次已授权实施和精简验收，未授权 commit、推送、合 main、发布或云端执行；本轮不执行这些操作。
 
 ## 8 维护者已裁定事项（2026-10-18）
 
-用户本次指令确认M1–M5全部按推荐，其中M5改为当前ext精简门禁。本表覆盖原稿的“待确认”，不再重复请示；新问题仅见§10。
+维护者2026-10-18指令确认M1–M11全部按推荐，其中M5使用当前ext精简门禁。本表覆盖原稿的“待确认”，不再重复请示；M6–M11详细裁定见§10。
 
 | 编号 | 2026-10-18 裁定 | 落实位置 / 边界 |
 |---|---|---|
@@ -209,15 +209,15 @@ M3后置不减少非主成员现有营地/采食/合成、居民运作、袭击�
 | `Game.recordInputEvent` 撤销非256末行临时 fullCheckpoint并重算前链；`exportRecordingAsync/toSaveSnapshot`、5Y Worker 冻结 job 与消费者栅栏 | party 身份贯穿 header/codec/checkpoint/Worker/seek/origin。非周期保存→继续→再保存与不保存路线相等；只清临时导出边界，不能清将来 P1b 有语义的段末 full；同一单步不重复执行 | A09/A11；255/256/257、2047/2048/2049、非整块末行、读档续录、延迟/乱序/取消 |
 | `.github/workflows/ext-perf.yml` / `run-ext-perf-ab.mjs` / `merge-ext-perf-ab.mjs`：classic/all-full/all-prefix 三分片，输入身份仍仅 phase6 | M11 新身份接入前不声称工具支持 party；最终树含试玩差量须独立绑定 SHA/文件 hash。沿 M5/D6，完整 all 工作量变化仅报告，可比前缀才参与相对退化判定 | A13、§6.3；缺分片/缺轮/短跑/哈希漂移不得输出正式 pass |
 
-## 10 新增待维护者决定（不回开 M1–M5）
+## 10 M6–M11维护者裁定（2026-10-18，全部按推荐批准）
 
-| 编号 | 新问题（截至本次仍待决定） | 推荐 | 影响 / 决定前边界 |
+| 编号 | 裁定主题 | 2026-10-18按推荐批准 | 实施边界 |
 |---|---|---|---|
-| M6 | growth 1.10 XP 增益、辅助白名单、盟友旧分账与死亡参与者如何衔接 M4？ | 先按现有资格/总池/一次收据取基础 XP，再按 M4 等权整数分池，最后各领取者各调用一次 `growth.xp-gain`；倍率后总和可变，不再次均分。辅助先限成功造成实际治疗/护盾吸收/有效增益或控制的权威结果，禁止仅按施放、日志或 UI 声明入集；逐事件映射审后入指纹；缺权威事实的辅助暂不列入，不借此新增技能。party 成员不再走原 player/ally 二次分账；未升格盟友仍走原规则，把原 player 份作为队伍池，不能直接变成员。死亡/离层保留参与席位，冻结存活者可领取 XP；死者份记入终结收据但不复活、不转赠 | M4 未决定倍率先后、辅助事件全集和死者发奖细则；B 段 XP 实现前定案。故事奖保持原显式收据语义，本步不扩叙事招募；不能以本建议冒称已批准 |
+| M6 | growth 1.10 XP 增益、辅助白名单、盟友旧分账与死亡参与者如何衔接 M4？ | 先按现有资格/总池/一次收据取基础 XP，再按 M4 等权整数分池，最后各领取者各调用一次 `growth.xp-gain`；倍率后总和可变，不再次均分。辅助先限成功造成实际治疗/护盾吸收/有效增益或控制的权威结果，禁止仅按施放、日志或 UI 声明入集；逐事件映射审后入指纹；缺权威事实的辅助暂不列入，不借此新增技能。party 成员不再走原 player/ally 二次分账；未升格盟友仍走原规则，把原 player 份作为队伍池，不能直接变成员。死亡/离层保留参与席位，冻结存活者可领取 XP；死者份记入终结收据但不复活、不转赠 | M4 未决定倍率先后、辅助事件全集和死者发奖细则；B 段 XP 实现前定案。故事奖保持原显式收据语义，本步不扩叙事招募；本推荐已于2026-10-18批准 |
 | M7 | 共享掉落下 rarity-find 从谁取值，拾取过滤和金币归谁？ | D-16 共享地面掉落保持；kill/part 用权威 `EffectOrigin.creditActorId`（不合资格则固定主成员基准），floor/vault/encounter 用固定 primaryActorId，均不取 focus/leader/最近查看者；成员死亡后允许读取其冻结终态属性。唯一/套装/part/encounter 收据仍全局一次。拾取归实际位移/手动命令 actor，沿当前局级 loot 过滤偏好，不在 P1a 新增每人过滤配置；金币沿现有局级权威账，独立背包不自动改为四份钱 | `DropEvent.playerId` 与宿主取值守卫需 actor 适配，字段名不能直接换成未经授权的 payload；B/C 段前定案。此推荐为首版稳定口径，非 D-16 自动推导 |
 | M8 | 非主成员如何获得 growth 身份/装备属性，又避免被 loot 当怪物缩放？ | 增加明确受控成员能力/身份读取，不篡改 `Game.player` 或全局 `ActorFacts.player` 语义；成员使用各自 creation identity、装备、L0 原生基值与 L2 装备→growth 属性→派生值；loot 怪物环境缩放排除全部 party 成员。原非成员 NPC 的模板白名单保留；容量增长政策沿来源 `grantPolicy`（装备容量升不补、降钳制；永久成长保原授予） | 已批准独立成长不等于已批准把所有 Monster 标成 player；A/B 段能力分类与版本/规则指纹前定案 |
-| M9 | MainMenu 如何同时收集多成员身份并维持每模块一个 initialCommand？ | 在现有创建会话中增加 party roster 草稿；growth 一步收齐各成员身份并输出一个版本化批量 initialCommand，party 步收成员数/稳定槽。最终配置与全部初始命令统一预检、只发一次 new-game；引擎内 roster→actor 映射→按 actor 初始化，实际命令按公开录制边界执行。不靠 UI 预分配实体 ID，不改成多个同 owner 字符串绕过计数检查 | 具体跨模块步骤依赖/批量 payload 与成长模块有效版本仍待定；需保留无 growth 的两人创建。不能仅复制现有单角色面板、按数组顺序猜执行 actor |
+| M9 | MainMenu 如何同时收集多成员身份并维持每模块一个 initialCommand？ | 在现有创建会话中增加 party roster 草稿；growth 一步收齐各成员身份并输出一个版本化批量 initialCommand，party 步收成员数/稳定槽。最终配置与全部初始命令统一预检、只发一次 new-game；引擎内 roster→actor 映射→按 actor 初始化，实际命令按公开录制边界执行。不靠 UI 预分配实体 ID，不改成多个同 owner 字符串绕过计数检查 | 具体跨模块步骤依赖/批量 payload 与成长模块有效版本由实施冻结；需保留无 growth 的两人创建。不能仅复制现有单角色面板、按数组顺序猜执行 actor |
 | M10 | 留守冻结与 growth 的全局 `objectiveClock` 到期清理冲突如何处理？ | 单世界时钟保持；成员冻结时保存效果/冷却/focus 的剩余时长或冻结起点，恢复时平移绝对截止值，使非活动期间不扣时；不整体回退 growth 时钟、不冻结居民经济或普通 NPC。XP 收据可在冻结期间发布，计时仍不前进 | 合同“普通成员冻结”已定；需决定具体表示与 `extensions` 写集/容量，A/C 段前定案，并测长跳、恢复、seek |
 | M11 | 如何给尚不存在的 party 接入云端 A/B，而不冒用 6C4 基准？ | 保留 classic/现有八模块无 party 的可比路线作为回归对照；新增显式 party-only / party+all 的 1/2/4 人固定命令场景、独立 identity/路线/预算来源，分别测单步、摘要、体积。为 runner/selector/workflow 增加已审 party 身份后沿用三分片与汇总校验；四人数据不能拿单人路线直接判退。P1a 不设新绝对性能硬阈值，P1b 据云端完整样本定案 | M5 的云端/D6 方法已定，此项决定新增场景与工具写集。现有工具仅有 p0/6b4/6c1–6c4 身份，尚不能直接选择 party；不得改旧输入 hash 或用 `--limit` 当正式结果 |
 
-以上各项均为推荐、未批准；本次只刷新文档，不需要据此暂停文档交付。未来实施在对应分段前取得裁定，独立工作可继续；不得把等待新决定扩大成重新审批已批准的 P1a 目标。
+M6–M11全部按上表推荐实施，不再等待确认。无法按推荐推进且确需维护者裁定的事项记入 `party-p1a.report.md`，其余实施继续。浏览器清单留维护者；P1a只实测单步/摘要/体积，不跑长基准；M11工具本地rounds=1冒烟后交付。

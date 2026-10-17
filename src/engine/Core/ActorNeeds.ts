@@ -94,7 +94,7 @@ export function triggerActorNeeds(
   const s = edibleState(game.extensionRuntime),
     now = game.world5.simulationTicks;
   for (const actor of [...actors].sort((a, b) => a.id - b.id)) {
-    if (actor.hp <= 0 || actor.id === game.player.id) continue;
+    if (actor.hp <= 0 || game.controlledActors.some(a=>a.id===actor.id)) continue;
     const group = actor.spatial?.bodyMember,
       role = group
         ? game.bodyGroups?.find((g) => g.groupId === group.groupId)?.coreId === actor.id

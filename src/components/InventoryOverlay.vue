@@ -23,7 +23,7 @@ const inventoryAction = ref<typeof activeGame.inventoryAction>(null);
 // Uncommitted selection is UI-only. The final equip command carries both
 // letters, so replay/seek needs no pending world state or save migration.
 const ringReplacementTarget = ref<Item | null>(null);
-let ringSelectionPlayer = activeGame.player;
+let ringSelectionPlayer = activeGame.focusedActor;
 // B-1b：鉴定目标待选态与 call 输入态（引擎态是普通单例，沿用本组件 100ms
 // 轮询的既有模式镜像进 ref）
 const pendingIdentify = ref(false);
@@ -42,11 +42,11 @@ const updateInventoryState = () => {
         isVisible.value = false;
         return;
     }
-    const playerChanged = ringSelectionPlayer !== activeGame.player;
+    const playerChanged = ringSelectionPlayer !== activeGame.focusedActor;
     if (!activeGame.isInventoryOpen || playerChanged
         || inventoryAction.value !== activeGame.inventoryAction) {
         ringReplacementTarget.value = null;
-        ringSelectionPlayer = activeGame.player;
+        ringSelectionPlayer = activeGame.focusedActor;
     }
     if (playerChanged || inventoryAction.value !== activeGame.inventoryAction || !activeGame.isInventoryOpen) {
         selectedItem.value = null;
@@ -61,7 +61,7 @@ const updateInventoryState = () => {
     canCancelEnchantment.value = activeGame.canCancelEnchantment;
     pendingUseConfirm.value = activeGame.pendingUseConfirm;
     if (isVisible.value) {
-        inventoryItems.value = [...activeGame.player.inventory.items];
+        inventoryItems.value = [...activeGame.focusedActor.inventory.items];
         if (selectedItem.value && !inventoryItems.value.some(item => item.id === selectedItem.value?.id)) selectedItem.value = null;
     }
     dialogs?.sync();
@@ -92,7 +92,7 @@ onMounted(() => {
 let closeDeferred = false;
 const flushDeferredClose = () => {
     if (!closeDeferred) return;
-    if (ringSelectionPlayer !== activeGame.player || !activeGame.isInventoryOpen || activeGame.pendingEnchantment || activeGame.pendingIdentify
+    if (ringSelectionPlayer !== activeGame.focusedActor || !activeGame.isInventoryOpen || activeGame.pendingEnchantment || activeGame.pendingIdentify
         || activeGame.pendingUseConfirm || activeGame.replayRecording) {
         closeDeferred = false;
         return;
@@ -219,10 +219,10 @@ const isEquippable = (item: Item) => {
 };
 
 const isEquipped = (item: Item) => {
-    return activeGame.player.equippedWeapon?.id === item.id
-        || activeGame.player.equippedArmor?.id === item.id
-        || activeGame.player.ringLeft?.id === item.id
-        || activeGame.player.ringRight?.id === item.id;
+    return activeGame.focusedActor.equippedWeapon?.id === item.id
+        || activeGame.focusedActor.equippedArmor?.id === item.id
+        || activeGame.focusedActor.ringLeft?.id === item.id
+        || activeGame.focusedActor.ringRight?.id === item.id;
 };
 
 const isPotion = (item: Item) => item.category === ItemCategory.POTION;
@@ -322,11 +322,11 @@ const performInspect = (item: Item) => {
 
 const performEquip = (item: Item) => {
     const chooseRing = item.category === ItemCategory.RING && !isEquipped(item)
-        && activeGame.player.ringLeft && activeGame.player.ringRight;
+        && activeGame.focusedActor.ringLeft && activeGame.focusedActor.ringRight;
     activeGame.executeItemCommand('equip', toRaw(item));
     if (chooseRing) {
         ringReplacementTarget.value = item;
-        ringSelectionPlayer = activeGame.player;
+        ringSelectionPlayer = activeGame.focusedActor;
         selectedItem.value = null;
         updateInventoryState();
         return;
@@ -489,7 +489,7 @@ const handleInventoryKey = (event: KeyboardEvent): boolean => {
   <div v-if="isVisible" class="inventory-overlay" @click.self="closeInventory">
     <div class="inventory-modal">
       <div class="modal-header">
-        <h2>{{ t('Your Inventory') || 'Your Inventory' }}</h2>
+        <h2>{{ t('Your Inventory') || 'Your Inventory' }}<small v-if="activeGame.party"> · {{ t('ext.party.member',{number:activeGame.party.state.members.findIndex(m=>m.actorId===activeGame.focusedActor.id)+1}) }}</small></h2>
         <button class="close-btn" :disabled="pendingEnchantment && !canCancelEnchantment" @click="closeInventory">×</button>
       </div>
       
@@ -524,7 +524,7 @@ const handleInventoryKey = (event: KeyboardEvent): boolean => {
                     <span class="item-name">
                        {{ getLocalizedName(entry.item) }}<span v-if="entry.item.quantity > 1"> ×{{ entry.item.quantity }}</span>
                        <span v-if="isEquipped(entry.item)" class="equipped-tag">{{ t('(equipped)') || '(equipped)' }}</span>
-                       <span v-if="entry.item.strengthRequired && activeGame.player.effectiveStrength < entry.item.strengthRequired" class="strength-warning">
+                       <span v-if="entry.item.strengthRequired && activeGame.focusedActor.effectiveStrength < entry.item.strengthRequired" class="strength-warning">
                            {{ t('[Req Str:') || '[Req Str:' }} {{ entry.item.strengthRequired }}]
                        </span>
                     </span>

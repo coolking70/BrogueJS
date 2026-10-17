@@ -30,7 +30,7 @@ function refresh() {
   const pending = pendingSkill;
   if (!pending || game.pendingCommandConfirmation?.ownerCommandId === pending.ownerCommandId) return;
   pendingSkill = null; growthSubmitting.value = false;
-  const event = game.recordedInputEvents.slice(pending.eventOffset).find(entry => entry.action === 'ext:command' && entry.data === pending.command);
+  const event = game.recordedInputEvents.slice(pending.eventOffset).find(entry => {if(entry.action==='ext:command')return entry.data===pending.command;if(entry.action!=='party:actor-step')return false;try{const p=JSON.parse(String(entry.data)),c=JSON.parse(pending.command);return p.intent?.owner===c.module&&p.intent?.commandId===c.action&&JSON.stringify(Object.fromEntries(Object.entries(p.intent.payload).filter(([key])=>key!=='actorId')))===JSON.stringify(c.payload);}catch{return false;}});
   // A stale/lifecycle-cancelled plan has no event; the shared Host owns its
   // changed-state notice. Never infer success from an unrelated revision.
   if (!event) return;

@@ -290,3 +290,7 @@ Node24、3GiB、2workers，resident_sources + settlement_runtime：2文件5测�
 - P2 第1轮审查修复（未commit/push）：R1-F1跨角色组件GC漏失效已复现/修复，补8项生命周期/派生来源/嵌套及原生退休回滚回归；另经全生产HEAD反事实确认并修复世界GC多hook失败的属性账本/资源恢复遗漏。两条P0完整重放及相对审查前final、最初HEAD的双重逐域/终态比较全部零差异、零OOS、稳定计数通过；all 425.31s，命令P95 375.83ms（较审查前+2.53%，不声称提速）。相关43文件/761项、boundary/依赖/vue-tsc/build全部通过，未跑全量。原居民测试3轮均过50ms，64峰值26.49/25.44/24.71ms；同worker诊断发现两次提交之间31.52ms major GC（该区间含存档恢复与摘要构造），为历史59/51ms候选解释但未确诊，旧失败保留且不放宽门限。详见docs/ext/perf-p2.report.md审查处理节，证据/private/tmp/ext-perf-p2/r1/。tracked-src hash aaad60a9d5c14bfc8c382f6d91ed85d0f475581620512ac6b347b2bc9251efac。
 
 - 2026-10-18：按维护者试玩录像诊断；原始440命令Node全回放0 OOS。普通装备被magic过滤而探索反复追逐；第439命令麻痹26次MORE。修正寻路/拾取目标一致性、麻痹刷新仅呈现首个ACK，loot身份升0.9.1避免旧路线静默OOS。已完成相关13文件/289项覆盖（原批6项前提/快照失败经单变量反事实后定向关闭）、boundary/依赖/vue-tsc/build；原440命令及麻痹单变量回放0 OOS，新0.9.1原生录制440命令回放/seek 0 OOS；浏览器启动被沙箱拒绝，视觉/FPS留验。报告见docs/ext/playtest-1018.report.md；未commit。
+
+
+## 2026-10-18 Party P1a
+维护者2026-10-18批准 M1–M11，任务单/合同已回填。P1a 已实现独立受控成员、单世界调度、成长/掉落/阶段5、冻结迁移、F21/S8/R5/O3 与创建/HUD；无party保持F20/S7/R4/O2并通过五配置开工字节基线。报告 docs/ext/party-p1a.report.md 按批次和A01–A13登记自动证据及未验范围；证据 /private/tmp/party-p1a。boundary/依赖/vue-tsc/build与全删九模块限定门禁通过，真实party档缺包拒绝保活局。M11 party-v1 三人数/两配置rounds=1 A/A本地短跑已通，不作预算或提速结论；云端参数已交付、未dispatch。浏览器/真机留维护者，未跑全量或长性能基准，未commit/push。

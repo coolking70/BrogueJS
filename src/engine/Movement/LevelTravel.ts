@@ -2,7 +2,7 @@ import { isIncapacitated } from '../Status/Incapacitation';
 import { nativeStat } from '../Stats/NativeStatSources';
 import { RigidPosePathing } from '../Map/RigidPosePathing';
 import { squarePlacementCandidates } from './SquarePlacement';
-import { CreatureSpatial, isSquareFootprint } from './CreatureSpatial';
+import { creatureAtCell, CreatureSpatial, isSquareFootprint } from './CreatureSpatial';
 import { squareListUsers } from '../Core/MonsterLifecycle';
 import { FootprintPathing } from '../Map/FootprintPathing';
 import { commitCreatureAnchor, footprintContains, footprintOf } from './CreatureSpatial';
@@ -136,7 +136,7 @@ export function travelPlacement(world: PlacementWorld, target: Creature, origin:
         return !!cell && !(excludeOrigin && p.x === origin.x && p.y === origin.y) && !(cellTerrainFlags(grid,p.x,p.y)&(forbidden|blocking))
             && !cell.layers.includes(TerrainType.STAIRS_UP) && !cell.layers.includes(TerrainType.STAIRS_DOWN) && !cell.layers.includes(TerrainType.DUNGEON_PORTAL)
             && (!machines || cell.machineNumber===0)
-            && (!occupied || ![world.player,...world.monsters, ...(squareListUsers(world.dormantMonsters ?? []) ? world.dormantMonsters!.filter(c => c.spatial) : [])].some(c=>c!==target && c.hp>0 && footprintContains(c, p)));
+            && (!occupied || ![...(world.inactivePlayer?[]:[world.player]),...(world.controlled??[]),...world.monsters, ...(squareListUsers(world.dormantMonsters ?? []) ? world.dormantMonsters!.filter(c => c.spatial) : [])].some(c=>c!==target && c.hp>0 && footprintContains(c, p)));
     };
     if (qualifies(origin)) return {...origin};
     const map=travelDistanceMap(grid,[],origin,blocking,false,true);
@@ -178,8 +178,15 @@ export function restoreTravelPosition(grid: Grid, m: Monster, map: number[][]): 
  * contact map replaces the point map; each skipped action still checks the
  * complete conservative edge against current reservations, without RNG. */
 export function restoreSquareTravelPosition(world: PlacementWorld, m: Monster, exit: Pos): void {
-    const target = { id: Number.MAX_SAFE_INTEGER, hp: 1, loc: exit } as Creature;
-    const spatial = new CreatureSpatial({ grid: world.grid, player: target, monsters: world.monsters, dormantMonsters: world.dormantMonsters });
+    if (world.controlled && footprintContains(m, exit)) return;
+    // Contact pathing requires an owned target. Reuse the real exit occupant;
+    // publish a point goal only when empty, alongside all real party occupants.
+    const occupant = world.controlled ? creatureAtCell(world, exit, 'active', new Set([m])) : undefined;
+    const target = occupant ?? { id: Number.MAX_SAFE_INTEGER, hp: 1, loc: exit } as Creature;
+    const spatial = new CreatureSpatial(occupant ? world : {
+        grid: world.grid, player: target, monsters: world.monsters, dormantMonsters: world.dormantMonsters,
+        ...(world.controlled ? { controlled: [...(world.inactivePlayer ? [] : [world.player]), ...world.controlled] } : {}),
+    });
     try {
         const pathing = isSquareFootprint(m) ? new FootprintPathing(spatial) : new RigidPosePathing(spatial), policy = { forbiddenFlags: travelAvoidedFlags(m), allowSecretDoors: true };
         const distance = pathing.planStep(m, { kind: 'contact', target }, policy, true).distance ?? Infinity;

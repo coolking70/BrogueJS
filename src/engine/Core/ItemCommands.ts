@@ -18,8 +18,8 @@ import { worldText } from '../../ext/worldText';
 export interface ItemCommandPlan { readonly confirmation:string|null; readonly chargedTicks:number; readonly stamp:string }
 interface Sealed {game:Game;runtime:NonNullable<Game['extensionRuntime']>;owner:string;kind:string;proposal:ItemCommandProposal;stamp:string;items:readonly Item[];equipment:readonly (Item|null)[];used:boolean}
 const plans=new WeakMap<ItemCommandPlan,Sealed>();
-const equipment=(g:Game)=>[g.player.equippedWeapon,g.player.equippedArmor,g.player.ringLeft,g.player.ringRight];
-function stamp(g:Game,owner:string):string {return JSON.stringify([g.extensionRuntime!.itemCommandState(owner),g.player.inventory.items.map(serializeItem),equipment(g).map(i=>i?.id??null),g.player.id,g.player.loc,g.player.inventory.capacity,reservedInventorySlots(g)]);}
+const equipment=(g:Game)=>[g.commandActor.equippedWeapon,g.commandActor.equippedArmor,g.commandActor.ringLeft,g.commandActor.ringRight];
+function stamp(g:Game,owner:string):string {return JSON.stringify([g.extensionRuntime!.itemCommandState(owner),g.commandActor.inventory.items.map(serializeItem),equipment(g).map(i=>i?.id??null),g.commandActor.id,g.commandActor.loc,g.commandActor.inventory.capacity,reservedInventorySlots(g)]);}
 const keys=(v:object,want:string)=>Object.keys(v).sort().join(',')===want.split(',').sort().join(',');
 const positive=(n:unknown)=>Number.isSafeInteger(n)&&Number(n)>0;
 function requireValid(ok:unknown):asserts ok {if(!ok)throw new Error('C6_COMMAND');}
@@ -32,7 +32,7 @@ function prepareUnchecked(g:Game,data:unknown):ItemCommandPlan|null {
   const payload=input.payload as Record<string,ReadonlyJson>;requireValid(payload&&typeof payload==='object'&&!Array.isArray(payload)&&payload.v===1);
   const state=runtime.itemCommandState(owner) as Record<string,ReadonlyJson>,revision=state.revision;
   requireValid(Number.isSafeInteger(revision)&&Number(revision)>=0&&Number(revision)<Number.MAX_SAFE_INTEGER);
-  const inv=g.player.inventory.items,eq=equipment(g),ids=eq.filter((i):i is Item=>!!i).map(i=>i.id);
+  const inv=g.commandActor.inventory.items,eq=equipment(g),ids=eq.filter((i):i is Item=>!!i).map(i=>i.id);
   if(kind==='create')requireValid(keys(payload,'v,presetId')&&revision===0&&typeof payload.presetId==='string'&&payload.presetId===(runtime.itemCommandConfiguration(owner) as Record<string,ReadonlyJson>)?.presetId);
   else {requireValid(payload.revision===revision);
    if(kind==='filter') {requireValid(keys(payload,'v,revision,minRarity,classes,autoPickupGold')&&typeof payload.minRarity==='string'&&typeof payload.autoPickupGold==='boolean'&&Array.isArray(payload.classes)&&payload.classes.every(c=>typeof c==='string'&&['weapon','armor','ring'].includes(c)));payload.classes=[...new Set(payload.classes)].sort();}
@@ -73,7 +73,7 @@ function prepareUnchecked(g:Game,data:unknown):ItemCommandPlan|null {
   }
   let confirmation:string|null=null;if(proposal.confirmation){const ref=proposal.confirmation;requireValid(keys(ref,'nameKey,params')&&ref.nameKey.startsWith(`ext.${owner}.`)&&ref.params&&Object.values(ref.params).every(v=>typeof v==='string'||typeof v==='number'));confirmation=worldText(ref.nameKey,ref.params);}
   const remaining=inv.filter(i=>consumed.get(i.id)!==i.quantity).map(i=>Object.assign(Object.create(Item.prototype),copyItemValue(i),{quantity:i.quantity-(consumed.get(i.id)??0)})) as Item[];
-  const extra=additionalItemSlots(g,remaining,outputs);requireValid(remaining.length+extra+reservedInventorySlots(g)<=g.player.inventory.capacity);checkItemBudget(g,extra-(inv.length-remaining.length));
+  const extra=additionalItemSlots(g,remaining,outputs);requireValid(remaining.length+extra+reservedInventorySlots(g)<=g.commandActor.inventory.capacity);checkItemBudget(g,extra-(inv.length-remaining.length));
   const plan=Object.freeze({confirmation,chargedTicks:proposal.chargedTicks,stamp:stamp(g,owner)});plans.set(plan,{game:g,runtime,owner,kind,proposal:freezeItemValue(copyItemValue(proposal)),stamp:plan.stamp,items:[...inv],equipment:eq,used:false});return plan;
  }catch{return null;}
 }
@@ -89,20 +89,20 @@ export function prepareItemCommand(g:Game,data:unknown):ItemCommandPlan|null {
 }
 export function commitItemCommand(g:Game,plan:ItemCommandPlan):boolean {
  const s=plans.get(plan);if(!s||s.used||s.game!==g||s.runtime!==g.extensionRuntime)return false;s.used=true;
- if(stamp(g,s.owner)!==s.stamp||s.items.some((i,n)=>g.player.inventory.items[n]!==i)||s.equipment.some((i,n)=>equipment(g)[n]!==i))return false;
- if(s.kind==='identify'&&!ItemLoader.canIdentifyItem(g.player.inventory.items.find(i=>i.id===s.proposal.updateOwnData[0]!.itemId)!))return false;
+ if(stamp(g,s.owner)!==s.stamp||s.items.some((i,n)=>g.commandActor.inventory.items[n]!==i)||s.equipment.some((i,n)=>equipment(g)[n]!==i))return false;
+ if(s.kind==='identify'&&!ItemLoader.canIdentifyItem(g.commandActor.inventory.items.find(i=>i.id===s.proposal.updateOwnData[0]!.itemId)!))return false;
  const restore=g.checkpointWorldWork(),restoreAuxiliary=checkpointGenerationWorld(()=>({shallow:[],deep:[rng,ItemLoader.identifiedItems,ItemLoader.callTitles,ItemLoader.magicPolarityRevealed]}));
  try{return s.runtime.itemCommandTransaction(()=>{
-  for(const row of s.proposal.consume){const item=g.player.inventory.items.find(i=>i.id===row.itemId)!;if(item.quantity===row.quantity)g.player.inventory.items.splice(g.player.inventory.items.indexOf(item),1);else item.quantity-=row.quantity;markRecordingRoot(item);}
-  for(const row of s.proposal.updateOwnData){const item=g.player.inventory.items.find(i=>i.id===row.itemId)!;
+  for(const row of s.proposal.consume){const item=g.commandActor.inventory.items.find(i=>i.id===row.itemId)!;if(item.quantity===row.quantity)g.commandActor.inventory.items.splice(g.commandActor.inventory.items.indexOf(item),1);else item.quantity-=row.quantity;markRecordingRoot(item);}
+  for(const row of s.proposal.updateOwnData){const item=g.commandActor.inventory.items.find(i=>i.id===row.itemId)!;
    if(s.kind==='identify') {
     ItemLoader.identifyInstance(item,()=>s.runtime.revealItemKnowledge(item,'command'));
     requireValid(JSON.stringify(item.moduleData![s.owner])===JSON.stringify(row.data));
    } else {item.moduleData={...copyItemValue(item.moduleData!),[s.owner]:copyItemValue(row.data) as Json};if(s.kind!=='socket'){item.identified=s.runtime.itemKnown(item);item.canBeIdentified=!item.identified;}}s.runtime.validateItemData(item,'update');if(s.kind==='socket')markItemStatsDirty(item);else markItemKnowledgeDirty(item);markRecordingRoot(item);}
-  for(const row of s.proposal.materials)for(let left=row.quantity;left>0;left-=99){const item=assembleWorldItem(itemDefinition(g,row.definitionId),Math.min(left,99));if(!g.player.inventory.addItem(item))throw new Error('C6_CAPACITY');}
+  for(const row of s.proposal.materials)for(let left=row.quantity;left>0;left-=99){const item=assembleWorldItem(itemDefinition(g,row.definitionId),Math.min(left,99));if(!g.commandActor.inventory.addItem(item))throw new Error('C6_CAPACITY');}
   s.runtime.commitItemCommandState(s.owner,s.proposal.revision,s.proposal.nextState);
-  s.runtime.stats.validateSources(g.player.id);
-  if(plan.chargedTicks){g.player.ticksUntilTurn=plan.chargedTicks;timeSystem.currentTick+=plan.chargedTicks;}
+  s.runtime.stats.validateSources(g.commandActor.id);
+  if(plan.chargedTicks){g.commandActor.ticksUntilTurn=plan.chargedTicks;if(!g.party)timeSystem.currentTick+=plan.chargedTicks;}
   return true;
  });}catch{restore();restoreAuxiliary();return false;}
 }

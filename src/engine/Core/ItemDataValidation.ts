@@ -23,7 +23,7 @@ export function validateLiveItemRoots(game: Game, phase: ItemDataPhase): void {
  * Entity graph history is validated without counting it as mechanical ownership. */
 export function validateSnapshotItems(s: GameSnapshot, runtime: ExtensionRuntime | null, phase: ItemDataPhase): void {
   const levels = [s, ...s.levels];
-  const rows = [...levels.flatMap(l => l.items), ...s.player.inventory,
+  const rows = [...levels.flatMap(l => l.items), ...s.player.inventory, ...(s.party?.actors.flatMap(a=>a.inventory)??[]),
     ...s.pendingFallenItemsByDepth.flatMap(q => q.items), ...s.entityGraph.items];
   const items = new Map<number, GameSnapshotItem>();
   for (const row of rows) {
@@ -42,7 +42,7 @@ export function validateSnapshotItems(s: GameSnapshot, runtime: ExtensionRuntime
   if (items.has(s.player.id)) fail();
   const owners = new Set<number>();
   const own = (id: number) => { if (!items.has(id) || owners.has(id) && hasItemData(items.get(id)!)) fail(); owners.add(id); };
-  [...levels.flatMap(l => l.items), ...s.player.inventory, ...s.pendingFallenItemsByDepth.flatMap(q => q.items)].forEach(i => own(i.id));
+  [...levels.flatMap(l => l.items), ...s.player.inventory, ...(s.party?.actors.flatMap(a=>a.inventory)??[]), ...s.pendingFallenItemsByDepth.flatMap(q => q.items)].forEach(i => own(i.id));
   const visited = new Set<number>();
   const visit = (row: GameSnapshotMonster) => {
     if (visited.has(row.id)) return;
@@ -57,6 +57,8 @@ export function validateSnapshotItems(s: GameSnapshot, runtime: ExtensionRuntime
   roots.forEach(visit);
   for (const c of s.run.world5?.containers ?? []) c.itemIds.forEach(own);
 
-  const equipped = [s.player.equippedWeaponId, s.player.equippedArmorId, s.player.ringLeftId, s.player.ringRightId].filter((id): id is number => id !== null);
-  if (equipped.some(id => items.has(id) && hasItemData(items.get(id)!) && (equipped.filter(v => v === id).length !== 1 || !s.player.inventory.some(i => i.id === id)))) fail();
+  for(const actor of [s.player,...(s.party?.actors??[])]){
+  const equipped = [actor.equippedWeaponId, actor.equippedArmorId, actor.ringLeftId, actor.ringRightId].filter((id): id is number => id !== null);
+  if (equipped.some(id => items.has(id) && hasItemData(items.get(id)!) && (equipped.filter(v => v === id).length !== 1 || !actor.inventory.some(i => i.id === id)))) fail();
+  }
 }

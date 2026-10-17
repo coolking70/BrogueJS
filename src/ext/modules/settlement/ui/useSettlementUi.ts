@@ -78,13 +78,13 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
   }
   function read() {
     if (blocked()) return null;
-    return readView(runtime?.readModuleView('settlement')?.state);
+    return readView((game.party?game.readFocusedModuleView.bind(game):runtime?.readModuleView.bind(runtime))?.('settlement')?.state);
   }
   // Only read the player's known inventory after the presentation gate. Native
   // food identity is not part of ItemRead; never infer it from translated names.
   function prefillFood(v: SettlementView, force = false) {
     const available = v.inventory.filter(i => i.food).flatMap(i => {
-      const item = game.player.inventory.items.find(item => item.id === i.id);
+      const item = (game.party?game.focusedActor:game.player).inventory.items.find(item => item.id === i.id);
       const kind = item?.consumableId ?? item?.identityId;
       return kind === 'ration_of_food' || kind === 'mango'
         ? [{ id: i.id, quantity: Math.min(i.quantity, i.available), priority: kind === 'ration_of_food' ? 0 : 1 }]

@@ -510,5 +510,9 @@
   "pendingEnchantmentScrollId": {
     "kind": "run",
     "contract": "6B4：延迟消费的强化卷轴ID，run.enchantmentScrollId保存；成功/取消/新局清空；load校验背包卷轴所有权；非延迟原生路径null。"
+  },
+  "party": {
+    "kind": "run",
+    "contract": "P1a：仅party局创建；state只存成员/控制权/就绪revision，actors拥有非主成员原生实体，Game.player保持主成员；whole-run8.party持久化，state归party摘要，actors归native/knowledge，作用域和focus不持久化。"
   }
 }

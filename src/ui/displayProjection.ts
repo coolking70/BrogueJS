@@ -1,3 +1,4 @@
+import {withPartyActor} from '../engine/Core/PartyRuntime';
 import type { Game } from '../engine/Core/Game';
 import { observeFloatingText } from './floatingTextPresentation';
 import type { ReadonlyJson } from '../ext/types';
@@ -43,8 +44,8 @@ export function freezeDisplay<T>(value: T): T {
  * discovery or simulation RNG. The display owner has its own random stream. */
 export function observeDisplayMap(game: Game, previous?: DisplayMap,
     interactables = game.readVisibleInteractables()): DisplayMap {
-    const hallucinating = !!game.player.statusDurations.hallucinating;
-    const telepathy = !!game.player.statusDurations.telepathy;
+    const hallucinating = !!(game.focusedActor ?? game.player).statusDurations.hallucinating;
+    const telepathy = !!(game.focusedActor ?? game.player).statusDurations.telepathy;
     const random = displayRandom(game.grid);
     const cosmetic: CosmeticRng = { percent: p => random.randPercent(p),
         pick: list => list[random.randRange(0, list.length - 1)]! };
@@ -92,17 +93,16 @@ export function observeDisplayMap(game: Game, previous?: DisplayMap,
     // presentation must neither erase these markers nor query the future world.
     const occupied = new Set([
         ...game.items.filter(item => game.grid.getCell(item.x, item.y)?.isVisible).map(item => `${item.x},${item.y}`),
-        ...game.monsters.flatMap(monster => publicMonsterMapCells(game.player, game.grid, monster).map(p => `${p.x},${p.y}`)),
+        ...game.monsters.flatMap(monster => publicMonsterMapCells((game.focusedActor ?? game.player), game.grid, monster).map(p => `${p.x},${p.y}`)),
     ]);
     for (const marker of readInteractableMapMarkers(interactables, {
-        depth: game.depth, player: game.player.loc, occupied, cellAt: (x, y) => game.grid.getCell(x, y),
+        depth: game.depth, player: (game.focusedActor ?? game.player).loc, occupied, cellAt: (x, y) => game.grid.getCell(x, y),
     })) place({ color: marker.color, interactive: true }, marker.x, marker.y, marker.semantic);
     for (const monster of game.monsters) {
         const display = observeDisplayMonster(game, monster, cosmetic, gasBackgrounds);
         if (display) { entities.push(display.entity); if (display.body) bodies.push(display.body); }
     }
-    const player = playerAppearance(game.player);
-    place(player, game.player.x, game.player.y, playerSemantic(player.char));
+    for(const actor of game.activeControlledActors){const visual=playerAppearance(actor);place(visual,actor.x,actor.y,playerSemantic(visual.char));}
     return freezeDisplay({ columns: Object.freeze(columns), entities, bodies });
 }
 
@@ -117,21 +117,24 @@ function observeModuleViews(game: Game): Readonly<Record<string, Readonly<Record
 }
 
 export function observeDisplayFrame(game: Game, log: Logger, previous?: { map: DisplayMap }) {
+    return withPartyActor(game,game.focusedActor??game.player,()=>observeActorDisplayFrame(game,log,previous));
+}
+function observeActorDisplayFrame(game: Game, log: Logger, previous?: { map: DisplayMap }) {
     const preview = game.getArcanaPreview();
     const aim = game.pendingArcana?.cursor ?? targetingState.aim;
     const aimedMonster = aim ? game.getMonsterAt(aim.x, aim.y) : undefined;
-    const aimedZone = aim && aimedMonster ? publicZoneAt(game.player, game.grid, aimedMonster, aim) : undefined;
+    const aimedZone = aim && aimedMonster ? publicZoneAt((game.focusedActor ?? game.player), game.grid, aimedMonster, aim) : undefined;
     const interactables = game.readVisibleInteractables().map(entity => ({ ...entity }));
     return freezeDisplay({
         displayTurn: game.absoluteTurnNumber, messageTurn: log.turn, depth: game.depth,
-        player: { x: game.player.x, y: game.player.y, hp: game.player.hp, maxHp: game.player.maxHp, nutrition: game.player.nutrition,
-            statuses: { ...game.player.statusDurations } },
-        stats: sidebarPlayerStats(game.player, game.stats.gold, game['calculateStealthRange']()),
+        player: { x: (game.focusedActor ?? game.player).x, y: (game.focusedActor ?? game.player).y, hp: (game.focusedActor ?? game.player).hp, maxHp: (game.focusedActor ?? game.player).maxHp, nutrition: (game.focusedActor ?? game.player).nutrition,
+            statuses: { ...(game.focusedActor ?? game.player).statusDurations } },
+        stats: sidebarPlayerStats((game.focusedActor ?? game.player), game.stats.gold, game['calculateStealthRange']()),
         statuses: playerHudStatusRows(game),
         rows: publicSidebarEntityRows(game),
         ...(game.bodyGroups?.length ? { bodyGroups: publicMonsterGroups(game) } : {}),
-        ...(game.extensionRuntime?.hasPublicActorTags ? { actorTags: Object.fromEntries(sidebarEntityRows(game.player,game.grid,game.monsters,[],null,game.depth).filter(r=>r.kind==='monster').map(r=>[r.id,game.extensionRuntime!.publicActorTags(Number(r.id))])) } : {}),
-        ...(game.extensionRuntime?.hasPublicActorTags ? { actorGroups: Object.fromEntries(sidebarEntityRows(game.player,game.grid,game.monsters,[],null,game.depth)
+        ...(game.extensionRuntime?.hasPublicActorTags ? { actorTags: Object.fromEntries(sidebarEntityRows((game.focusedActor ?? game.player),game.grid,game.monsters,[],null,game.depth).filter(r=>r.kind==='monster').map(r=>[r.id,game.extensionRuntime!.publicActorTags(Number(r.id))])) } : {}),
+        ...(game.extensionRuntime?.hasPublicActorTags ? { actorGroups: Object.fromEntries(sidebarEntityRows((game.focusedActor ?? game.player),game.grid,game.monsters,[],null,game.depth)
             .filter(r=>r.kind==='monster' && r.direct).flatMap(r=> { const group = game.extensionRuntime!.publicActorGroup(Number(r.id)); return group ? [[r.id,group]] : []; })) } : {}),
         logs: log.messages.map(message => ({ ...message })),
         hoverText: game.hoveredText || game.flavorText,

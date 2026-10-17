@@ -1,3 +1,4 @@
+import { hasPartyIdentity } from '../../ext/partyIdentity';
 import type { ExtensionManifest } from '../../ext/types';
 import type { LevelRef } from '../../ext/world5';
 import type { RandomState } from '../Random';
@@ -13,7 +14,9 @@ export const DIGEST_DOMAINS = [
   'random'
 ] as const;
 export const EVENT_DOMAINS = ['extensions', 'world5', 'actorActions'] as const;
-export type DigestDomain = (typeof DIGEST_DOMAINS)[number];
+export type DigestDomain = (typeof DIGEST_DOMAINS)[number] | 'party';
+export const digestDomains = (manifest: ExtensionManifest | null) => hasPartyIdentity(manifest) ? [...DIGEST_DOMAINS,'party'] as const : DIGEST_DOMAINS;
+export const eventDomains = (manifest: ExtensionManifest | null) => hasPartyIdentity(manifest) ? [...EVENT_DOMAINS,'party'] as const : EVENT_DOMAINS;
 /** Session-only OOS evidence; never serialized into a recording or save. */
 export interface ReplayDiagnostic {
   readonly command: number;
@@ -28,11 +31,11 @@ export interface ReplayDiagnostic {
 }
 export interface MechanicalDigest {
   root: Digest;
-  domains: Record<DigestDomain, Digest>;
+  domains: Record<(typeof DIGEST_DOMAINS)[number], Digest> & {party?: Digest};
 }
 export interface EventDigest {
   root: Digest;
-  domains: Record<(typeof EVENT_DOMAINS)[number], Digest>;
+  domains: Record<(typeof EVENT_DOMAINS)[number], Digest> & {party?: Digest};
 }
 export interface RecordingInputStateV2 {
   inventoryOpen: boolean;
@@ -61,13 +64,13 @@ export interface RecordingEventV4 {
   chainDigest: Digest;
 }
 export interface RecordingV4 {
-  version: 4;
+  version: 4 | 5;
   recordedAt: number;
   seed: string;
   mode: GameMode;
   initialLevel: LevelRef;
   extensions: ExtensionManifest | null;
-  codec: { wholeRun: 7; foundation: typeof import('../../ext/descriptor').FOUNDATION_PROTOCOL; origin: 2 };
+  codec: { wholeRun: 7 | 8; foundation: typeof import('../../ext/descriptor').FOUNDATION_PROTOCOL | 21; origin: 2 | 3 };
   digestAlgorithm: 'sha256-c5-merkle-v1';
   digestChunk: 256;
   checkpointPeriod: 2048;
@@ -83,13 +86,13 @@ export interface ReplaySnapshotV4 {
   levelRef: LevelRef;
   prefixDigest: Digest;
   checkpoint: MechanicalDigest;
-  snapshotCodec: 'brogue-web-whole-run-v7';
+  snapshotCodec: 'brogue-web-whole-run-v7' | 'brogue-web-whole-run-v8';
   snapshotDigest: Digest;
   world: GameSnapshot;
   inputState: RecordingInputStateV2;
 }
 export interface RecordingOriginV2 {
-  version: 2;
+  version: 2 | 3;
   header: RecordingHeaderV4;
   events: RecordingEventV4[];
   prefixDigest: Digest;

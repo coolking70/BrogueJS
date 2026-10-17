@@ -1,8 +1,9 @@
+import {partyVariant} from './partyVariants';
+import { effectivePartyCodec, hasPartyIdentity } from './partyIdentity';
 import { validateContent, type ContentContribution } from './content';
 import { extensionDataFingerprint } from './fingerprint';
 import { validateEdibleTemplates } from '../engine/Core/EdibleDefinitions';
 import { validateWorldModule } from '../engine/Core/WorldDefinitions';
-import { FOUNDATION_PROTOCOL } from './descriptor';
 import type { ExtensionModule, ExtensionManifest, ExtensionRulesIdentity } from './types';
 import { c5Canonical } from './worldJson';
 import { validId, canonical, isJson } from './json';
@@ -26,16 +27,19 @@ export class ExtensionRegistry {
     }
     private contentIdentity(ids:readonly string[],id:string,rules:ExtensionRulesIdentity|undefined):ExtensionRulesIdentity|undefined {
         const content=this.contributions(ids,id);
-        if(!content.length)return rules;
+        if(!content.length)return this.partyRules(ids,rules);
         if(!rules)throw new Error('Content target requires rules identity');
-        return {...rules,fingerprint:extensionDataFingerprint({base:rules.fingerprint,content})};
+        return this.partyRules(ids,{...rules,fingerprint:extensionDataFingerprint({base:rules.fingerprint,content})});
+    }
+    private partyRules(ids: readonly string[], rules: ExtensionRulesIdentity | undefined): ExtensionRulesIdentity | undefined {
+        return rules && ids.includes('party') ? {...rules, fingerprint:extensionDataFingerprint({base:rules.fingerprint,party:1})} : rules;
     }
     /** Registration never runs factories. Enable only at a new-run/load boundary. */
     manifest(ids: readonly string[], configurations: Readonly<Record<string, import("./types").Json>> = {}): ExtensionManifest {
         c5Canonical(configurations);
         if (!isJson(configurations) || Object.keys(configurations).some(id => !ids.includes(id) || !this.factories.get(id)?.runConfiguration)) throw new Error("Invalid run configuration");
         if (new Set(ids).size !== ids.length) throw new Error('Duplicate enabled extension');
-        return { schema: 1, foundation: FOUNDATION_PROTOCOL, modules: [...ids].sort().map(id => {
+        return { schema: 1, foundation: effectivePartyCodec({modules:ids.map(id=>({id,version:''}))}).foundation, modules: [...ids].sort().map(id => {
             const registration = this.factories.get(id);
             if (!registration) throw new Error(`Unavailable extension: ${id}`);
             const declaration = registration.runConfiguration;
@@ -53,7 +57,7 @@ export class ExtensionRegistry {
             || Object.keys(header).some(key => key !== 'schema' && key !== 'modules' && key !== 'foundation')) throw new Error('Invalid extension manifest');
         // Keep malformed headers on the existing generic path. For otherwise
         // valid identities, report the first mismatch in stable module-ID order.
-        if (header.foundation === FOUNDATION_PROTOCOL && new Set(header.modules.map(entry => entry.id)).size === header.modules.length
+        if (header.foundation === effectivePartyCodec(header).foundation && new Set(header.modules.map(entry => entry.id)).size === header.modules.length
             && header.modules.every(entry => /^\d+\.\d+\.\d+$/.test(entry.version)
                 && (entry.rules === undefined || (entry.rules && Number.isSafeInteger(entry.rules.schema)
                     && entry.rules.schema >= 1 && /^\d+\.\d+\.\d+$/.test(entry.rules.version)
@@ -83,6 +87,13 @@ export class ExtensionRegistry {
                 if(canonical(module.rules)!==canonical(base.runConfiguration?base.runConfiguration.identity(configuration!):base.rules)||!module.assembleContent||!rules)throw new Error('Invalid content target');
                 const texts=manifest.modules.flatMap(m=>Object.values(this.factories.get(m.id)!.locales??{}).flatMap(l=>Object.keys(l)));
                 module=module.assembleContent(contributions,rules,texts);
+            }
+            if(hasPartyIdentity(manifest)){const count=(manifest.modules.find(m=>m.id==='party')!.configuration as {members:number}).members;module=partyVariant(module,count);}
+            if (hasPartyIdentity(manifest) && !contributions.length) {
+                const declared=this.factories.get(id)!;
+                const base=declared.runConfiguration ? declared.runConfiguration.identity(configuration!) : declared.rules;
+                if(canonical(module.rules)!==canonical(base))throw new Error('Extension factory identity mismatch');
+                module={...module,...(rules?{rules}: {})};
             }
             if (module.id !== id || module.version !== version || canonical(module.rules) !== canonical(rules)) throw new Error('Extension factory identity mismatch');
             const declaration=this.factories.get(id)!;

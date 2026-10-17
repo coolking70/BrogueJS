@@ -1,3 +1,4 @@
+import { ControlledActor } from '../../entities/ControlledActor';
 import { isIncapacitated } from '../Status/Incapacitation';
 /** Engine-owned authority for native melee and bounded locked body segments.
  * Nothing installs this on Game or changes ordinary CombatSystem.attack calls.
@@ -184,7 +185,7 @@ export class ActorCombatResolutionAuthority {
         if (options && !isProductionActorActionSession(game)) fail('production authority requires a bound engine session');
         validateActorCombatResolutionState(state);
         this.player = game.player; this.grid = game.grid; this.depth = game.depth;
-        for (const actor of [game.player, ...game.monsters]) {
+        for (const actor of [...game.controlledActors, ...game.monsters]) {
             if (this.cohort.has(actor.id)) fail('duplicate world actor identity');
             this.cohort.set(actor.id, actor);
         }
@@ -204,7 +205,7 @@ export class ActorCombatResolutionAuthority {
         if (this.options && !isProductionActorActionSession(this.game)) fail('production authority session closed');
     }
     private liveActor(actorId: number): Creature | undefined {
-        const actor = this.game.player.id === actorId ? this.game.player : this.game.monsters.find(m => m.id === actorId);
+        const actor = this.game.controlledActors.find(a=>a.id===actorId) ?? this.game.monsters.find(m => m.id === actorId);
         return actor && actor === this.cohort.get(actorId) ? actor : undefined;
     }
     private defense(actorId: number): ActorDefenseState | undefined {
@@ -310,7 +311,7 @@ export class ActorCombatResolutionAuthority {
         if (!monstersAreEnemies(owner, d) || a.spatial?.bodyMember && d.spatial?.bodyMember?.groupId===a.spatial.bodyMember.groupId) return null;
         if (!segment && !this.game.meleeContact(a, d)) return null;
         if (segment && this.sourceVersion(a) !== segment.sourceFootprintVersion) return null;
-        if (a instanceof Player) {
+        if (a instanceof ControlledActor) {
             if (!canObserveBoltCreature(a, this.game.grid, d)) return null;
             const risks = this.game.prepareActorAttackRisks(a.id, [...footprintOf(d)]);
             const approved = segment?.approvedRisks.find(approval => approval.targetId === d.id)?.risks ?? [];
@@ -324,7 +325,7 @@ export class ActorCombatResolutionAuthority {
         const saved = this.plans.get(plan);
         if (!saved) fail('unrecognized or consumed melee plan');
         assertActorActionScope(scope, this.game, plan.intent.sourceEntityId,
-            saved.attacker === this.game.player ? 'player-command' : 'npc-scheduler');
+            saved.attacker instanceof ControlledActor ? 'player-command' : 'npc-scheduler');
         validateActorCombatResolutionState(this.state);
         const pair = this.eligible(plan.intent, saved.segment);
         this.plans.delete(plan);

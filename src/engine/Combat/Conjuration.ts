@@ -1,3 +1,4 @@
+import { controlledOccupies } from '../Movement/CreatureSpatial';
 import { footprintContains } from '../Movement/CreatureSpatial';
 /** W-16: CE PowerTables.c:54, Items.c:5494-5514, Grid.c:287-360.
  * Dedicated to conjuration; P4-2 horde placement and P4-4 cloning are unchanged.
@@ -30,12 +31,12 @@ export function bladeDiagonalBlocked(grid: Grid, from: Pos, to: Pos): boolean {
  * x-major. Creatures/stairs forbid destinations but only the player blocks paths.
  * Dormant monsters do not carry CE HAS_MONSTER and intentionally do not occupy.
  */
-export function bladeSpawnLocation(world: Pick<PlacementWorld, 'grid' | 'player' | 'monsters' | 'dormantMonsters'>, origin: Pos, avoidedFlags = SPAWN_FORBIDDEN): Pos | null {
+export function bladeSpawnLocation(world: PlacementWorld, origin: Pos, avoidedFlags = SPAWN_FORBIDDEN): Pos | null {
     const { grid } = world;
     if (!grid.isValidPos(origin.x, origin.y)) return null;
     const qualifies = (p: Pos) => grid.isValidPos(p.x, p.y)
         && !(cellTerrainFlags(grid, p.x, p.y) & avoidedFlags) && !stairs(grid, p)
-        && !footprintContains(world.player, p) && !world.monsters.some(m => m.hp > 0 && !m.isDormant && footprintContains(m, p));
+        && !controlledOccupies(world, p) && !world.monsters.some(m => m.hp > 0 && !m.isDormant && footprintContains(m, p));
     if (qualifies(origin)) return { ...origin };
     const distances = Array.from({ length: grid.width }, () => Array<number>(grid.height).fill(Infinity));
     distances[origin.x]![origin.y] = 0;
@@ -45,7 +46,7 @@ export function bladeSpawnLocation(world: Pick<PlacementWorld, 'grid' | 'player'
         for (const [dx, dy] of BLADE_DIRECTIONS) {
             const q = { x: p.x + dx, y: p.y + dy };
             if (!grid.isValidPos(q.x, q.y) || distances[q.x]![q.y] !== Infinity
-                || footprintContains(world.player, q) || (cellTerrainFlags(grid, q.x, q.y) & (T_DIVIDES_LEVEL & avoidedFlags))
+                || controlledOccupies(world, q) || (cellTerrainFlags(grid, q.x, q.y) & (T_DIVIDES_LEVEL & avoidedFlags))
                 || bladeDiagonalBlocked(grid, p, q)) continue;
             distances[q.x]![q.y] = distances[p.x]![p.y]! + 1;
             queue.push(q);

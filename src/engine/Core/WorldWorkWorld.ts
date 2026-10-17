@@ -112,7 +112,7 @@ function activeIndex(game: Game) {
   }
   return index;
 }
-export const activeTicket = (game: Game, actorId = game.player.id) =>
+export const activeTicket = (game: Game, actorId = game.commandActor.id) =>
   activeIndex(game)?.actors.get(actorId) ?? null;
 export const activeTicketById = (game: Game, ticketId: number) =>
   activeIndex(game)?.ids.get(ticketId) ?? null;
@@ -166,7 +166,7 @@ export function clearWorldCell(game: Game, at: Position, ignoreEntityId?:number)
     !game.extensionRuntime?.worldWorkPlacementProtected(at, game.depth) &&
     !game.items.some((i) => i.x === at.x && i.y === at.y) &&
     !game.monsters.some((m) => game.footprintOf(m).some((p) => p.x === at.x && p.y === at.y)) &&
-    !(game.player.x === at.x && game.player.y === at.y) &&
+    !(game.party ? game.controlledOccupies(at) : game.commandActor.x === at.x && game.commandActor.y === at.y) &&
     !game.extensionRuntime
       ?.worldWorkEntities()
       .some((e) => e.id!==ignoreEntityId&&e.depth === game.depth && e.x === at.x && e.y === at.y) &&
@@ -176,23 +176,23 @@ export function clearWorldCell(game: Game, at: Position, ignoreEntityId?:number)
 export function nearbyCells(game: Game): Position[] {
   const rows: Position[] = [];
   for (
-    let y = Math.max(0, game.player.y - 4);
-    y <= Math.min(game.grid.height - 1, game.player.y + 4);
+    let y = Math.max(0, game.commandActor.y - 4);
+    y <= Math.min(game.grid.height - 1, game.commandActor.y + 4);
     y++
   )
     for (
-      let x = Math.max(0, game.player.x - 4);
-      x <= Math.min(game.grid.width - 1, game.player.x + 4);
+      let x = Math.max(0, game.commandActor.x - 4);
+      x <= Math.min(game.grid.width - 1, game.commandActor.x + 4);
       x++
     )
       rows.push({ x, y });
   return rows.sort(
-    (a, b) => distance(a, game.player.loc) - distance(b, game.player.loc) || a.y - b.y || a.x - b.x
+    (a, b) => distance(a, game.commandActor.loc) - distance(b, game.commandActor.loc) || a.y - b.y || a.x - b.x
   );
 }
-export function threat(game: Game, actorId = game.player.id): boolean {
+export function threat(game: Game, actorId = game.commandActor.id): boolean {
   const actor =
-    actorId === game.player.id ? game.player : game.monsters.find((m) => m.id === actorId);
+    game.controlledActors.find(a=>a.id===actorId) ?? game.monsters.find((m) => m.id === actorId);
   if (!actor) return true;
   return game.monsters.some(
     (m) =>
@@ -202,7 +202,7 @@ export function threat(game: Game, actorId = game.player.id): boolean {
       !m.isDormant &&
       !m.deathProcessed &&
       !bodyDecisionActor(m).isCaged &&
-      canDirectlySeeMonster(game.player, game.grid, m)
+      canDirectlySeeMonster(game.commandActor, game.grid, m)
   );
 }
 export function itemRead(game: Game, item: Item): ItemRead {
@@ -307,10 +307,10 @@ export function reservedInventorySlots(game: Game): number {
       n +
       (publishing.get(game) === t.ticketId
         ? 0
-        : t.kind==='item-operation'?Math.max(t.outputReservation?.slots??0,t.refundReservation?.slots??0):[t.outputReservation, t.refundReservation].reduce(
+        : t.kind==='item-operation'?t.actorId===game.commandActor.id?Math.max(t.outputReservation?.slots??0,t.refundReservation?.slots??0):0:[t.outputReservation, t.refundReservation].reduce(
             (v, r) =>
               v +
-              (r?.destination.kind === 'inventory' && r.destination.actorId === game.player.id
+              (r?.destination.kind === 'inventory' && r.destination.actorId === game.commandActor.id
                 ? r.slots
                 : 0),
             0
@@ -353,7 +353,7 @@ export function readWorkContext(
   owner: string,
   query: KnownWorkQuery,
   virtual = true,
-  actorId = game.player.id
+  actorId = game.commandActor.id
 ): WorldResult<WorkContext> {
   return result(() => {
     worldPack(game, owner);
@@ -373,7 +373,7 @@ export function readWorkContext(
         throw new World5Error('C5_UNKNOWN_TARGET');
     } else if (query.kind !== 'inventory') throw new World5Error('C5_BAD_PAYLOAD');
     const actor =
-      actorId === game.player.id ? game.player : game.monsters.find((m) => m.id === actorId);
+      game.controlledActors.find(a=>a.id===actorId) ?? game.monsters.find((m) => m.id === actorId);
     if (!actor) throw new World5Error('C5_UNKNOWN_TARGET');
     return {
       contract: 'C5-1' as const,
@@ -382,8 +382,8 @@ export function readWorkContext(
       levelRef: { kind: 'dungeon' as const, depth: game.depth },
       at: { ...actor.loc },
       inventoryStamp: inventoryStamp(
-        actorId === game.player.id
-          ? game.player.inventory.items
+        actorId === game.commandActor.id
+          ? game.commandActor.inventory.items
           : [(actor as any).carriedItem].filter(Boolean)
       ),
       available:
@@ -393,8 +393,8 @@ export function readWorkContext(
         !game.actorActions?.bundles.some((b) => b.decisionOwnerId === actorId),
       node,
       stations: queryStations(game, owner),
-      inventory: (actorId === game.player.id
-        ? game.player.inventory.items
+      inventory: (actorId === game.commandActor.id
+        ? game.commandActor.inventory.items
         : [(actor as any).carriedItem].filter(Boolean)
       ).map((i) => itemRead(game, i)),
       containers: game
@@ -453,7 +453,7 @@ export function placementDraw(
 }
 export function placementCandidates(game: Game): Position[] {
   const visited = new Set<string>(),
-    queue: Position[] = [{ ...game.player.loc }];
+    queue: Position[] = [{ ...game.commandActor.loc }];
   for (let head = 0; head < queue.length; head++) {
     const from = queue[head]!;
     for (let y = from.y - 1; y <= from.y + 1; y++)
@@ -661,7 +661,7 @@ export function outputSlots(
 }
 
 export function putInventory(game: Game, item: Item): void {
-  if (!game.player.inventory.addItem(item)) throw new World5Error('C5_CAPACITY');
+  if (!game.commandActor.inventory.addItem(item)) throw new World5Error('C5_CAPACITY');
 }
 /** Uses native stack conflation while retiring a merged source ID in the same transaction. */
 export function putContainer(game: Game, id: number, item: Item): void {

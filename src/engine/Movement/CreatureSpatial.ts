@@ -23,7 +23,7 @@ export const EFFECT_TARGET_POLICY: Readonly<Record<EffectTargetCategory, TargetK
     direct: 'part', geometry: 'part', 'area-damage': 'part', mental: 'group', identity: 'group', healing: 'group', environment: 'entity', death: 'group',
 });
 export interface SpatialWorld {
-    grid: Grid; player?: Creature; monsters: readonly Creature[]; dormantMonsters?: readonly Creature[];
+    grid: Grid; player?: Creature; inactivePlayer?:boolean; controlled?: readonly Creature[]; monsters: readonly Creature[]; dormantMonsters?: readonly Creature[];
     /** CE clears HAS_MONSTER after the death DF/drop window, not at zero HP. */
     inDeathWindow?: (creature: Creature) => boolean;
     /** Pure decode/fixture port; live grids carry their session resolver. */
@@ -196,14 +196,22 @@ export function nearestContact(a: FootprintActor, b: FootprintActor, catalog?: S
     }
     return deepFreeze(result!);
 }
+/** HAS_PLAYER for placement: frozen/dead party roots are not physical occupants.
+ * Optional fields keep the native single-player policy and call order intact. */
+export function controlledOccupies(world: Pick<SpatialWorld, 'player' | 'controlled' | 'inactivePlayer'>, at: Pos, ignore?: Creature): boolean {
+    return (!!world.player && !world.inactivePlayer && world.player !== ignore && footprintContains(world.player, at))
+        || !!world.controlled?.some(c => c !== ignore && c.hp > 0 && footprintContains(c, at));
+}
+
 function eligible(world: SpatialWorld, c: Creature, policy: OccupancyPolicy, reserved: boolean): boolean {
+    if(c===world.player&&world.inactivePlayer)return false;
     if (reserved) return policy === 'active-or-reserved' && c.hp > 0;
     return c.hp > 0 || (policy === 'death-contact' && !!world.inDeathWindow?.(c));
 }
 /** Generic lightweight native port; the indexed fixture facade below adds the
  * same policy, with a separate reserved table and dynamic death eligibility. */
 export function creatureAtCell(world: SpatialWorld, at: Pos, policy: OccupancyPolicy = 'active', ignore?: ReadonlySet<Creature>): Creature | undefined {
-    const candidates = world.player ? [world.player, ...world.monsters] : world.monsters;
+    const candidates = [...(world.player?[world.player]:[]),...(world.controlled??[]),...world.monsters];
     const active = candidates.find(c => !ignore?.has(c) && eligible(world, c, policy, false) && footprintContains(c, at));
     return active ?? (policy === 'active-or-reserved' ? world.dormantMonsters?.find(c => !ignore?.has(c) && eligible(world, c, policy, true) && footprintContains(c, at)) : undefined);
 }
@@ -239,7 +247,7 @@ export class CreatureSpatial {
     constructor(private world: SpatialWorld, readonly catalog = spatialCatalogFor(world.monsters.find(c => c.spatial) ?? {})) { this.replaceWorld(world); }
     replaceWorld(world: SpatialWorld): void {
         // Preflight before publishing ownership/listener/count changes.
-        const ownership = [...(world.player ? [world.player] : []), ...world.monsters, ...(world.dormantMonsters ?? [])];
+        const ownership = [...(world.player ? [world.player] : []), ...(world.controlled??[]), ...world.monsters, ...(world.dormantMonsters ?? [])];
         const cohort = [...new Set(ownership)];
         if (cohort.length !== ownership.length) throw new SpatialValidationError('Multiple spatial ownership');
         let users = 0, occupiedCells = 0;
@@ -297,7 +305,7 @@ export class CreatureSpatial {
     get terrainRevision(): number { return spatialTerrainRevision(this.world.grid, this); }
     /** Trusted engine/fixture lookup. Never exposed through module contexts. */
     entityById(id: number): Creature | undefined { return this.cohort.find(c => c.id === id); }
-    isActive(c: Creature): boolean { return c.hp > 0 && (c === this.world.player || this.world.monsters.includes(c)); }
+    isActive(c: Creature): boolean { return c.hp > 0 && (c === this.world.player&&!this.world.inactivePlayer || !!this.world.controlled?.includes(c) || this.world.monsters.includes(c)); }
     footprintOf(c: Creature): readonly FootprintCell[] { return footprintOf(c, this.catalog); }
     spatialOf(id: number | Creature): CreatureSpatialView {
         const c = typeof id === 'number' ? this.cohort.find(c => c.id === id) : id;
@@ -317,14 +325,15 @@ export class CreatureSpatial {
         const add = (map: Map<string, Creature[]>, c: Creature) => {
             for (const p of this.footprintOf(c)) { const key = `${p.x},${p.y}`, list = map.get(key) ?? []; list.push(c); map.set(key, list); }
         };
-        if (this.world.player) add(active, this.world.player);
+        if (this.world.player&&!this.world.inactivePlayer) add(active, this.world.player);
+        this.world.controlled?.forEach(c=>add(active,c));
         this.world.monsters.forEach(c => add(active, c)); this.world.dormantMonsters?.forEach(c => add(reserved, c));
         for (const list of active.values()) if (list.filter(c => c.hp > 0).length > 1) throw new SpatialValidationError('Overlapping active footprints');
         this.activeIndex = active; this.reservedIndex = reserved;
     }
     occupantsAtCell(at: Pos, policy: OccupancyPolicy = 'active'): readonly BodyTarget[] {
         this.buildIndex(); const key = `${at.x},${at.y}`;
-        const active = this.activeIndex?.get(key) ?? (this.activeIndex ? [] : [...(this.world.player ? [this.world.player] : []), ...this.world.monsters].filter(c => footprintContains(c, at, this.catalog)));
+        const active = this.activeIndex?.get(key) ?? (this.activeIndex ? [] : [...(this.world.player ? [this.world.player] : []), ...(this.world.controlled??[]), ...this.world.monsters].filter(c => footprintContains(c, at, this.catalog)));
         const reserved = policy === 'active-or-reserved' ? (this.reservedIndex?.get(key) ?? (this.reservedIndex ? [] : this.world.dormantMonsters?.filter(c => footprintContains(c, at, this.catalog)) ?? [])) : [];
         return Object.freeze([...active.filter(c => eligible(this.world, c, policy, false)), ...reserved.filter(c => eligible(this.world, c, policy, true))].map(c => this.target(c, at, 'part')));
     }

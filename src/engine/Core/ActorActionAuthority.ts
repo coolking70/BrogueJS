@@ -57,19 +57,20 @@ export class ActorActionAuthority {
     constructor(private readonly game: Game, private readonly resources: ActorActionResources, private readonly sink: ActorActionSink) {
         validateActorActionResources(resources);this.actionRoot=game.actorActions??createActorActionsRoot();this.actionRoot.nextActionId=Math.max(this.actionRoot.nextActionId,resources.nextActionId);
     }
-    private actor(id: number): Creature | undefined { return id === this.game.player.id ? this.game.player : this.game.monsters.find(m => m.id === id); }
+    private actor(id: number): Creature | undefined { return this.game.activeControlledActors.find(a=>a.id===id)??this.game.monsters.find(m=>m.id===id); }
     private facts(source: Creature): string {
         return JSON.stringify({ hp: source.hp, statuses: source.statusDurations, timer: source.ticksUntilTurn,
             gameOver: this.game.isGameOver, depth: this.game.depth, resources: this.resources,
             footprint: sourceFootprintVersion(this.game.spatialOf(source)),
             monsters: this.game.monsters.map(m => [m.id, m.hp, m.loc, m.isAlly, m.isCaged, m.statusDurations]),
-            weapon: this.game.player.equippedWeapon, armor: this.game.player.equippedArmor });
+            weapon: this.game.commandActor.equippedWeapon, armor: this.game.commandActor.equippedArmor });
     }
     prepareActorAction(value: unknown): ActorActionPreparation {
         if (this.closed) throw new Error('Closed actor action authority');
         const request = readRequest(value); validateActorActionResources(this.resources);
-        const source = this.actor(request.sourceEntityId), isPlayer = source === this.game.player;
+        const source = this.actor(request.sourceEntityId), isPlayer = !!source&&this.game.activeControlledActors.some(a=>a===source);
         if (!source || source.hp <= 0 || this.game.isGameOver || this.game.interactionActive
+            || (isPlayer&&source!==this.game.commandActor)
             || (isPlayer ? request.origin !== 'player-command' : request.origin !== 'npc-scheduler')
             || source.ticksUntilTurn > 0 || isIncapacitated(source) || source.hasStatus('entranced') || source.hasStatus('confused')
             || (source instanceof Monster && (source.isCaged || source.isDormant || source.deathProcessed || source.state === MonsterState.ASLEEP || source.hasBehavior('MONST_IMMOBILE')

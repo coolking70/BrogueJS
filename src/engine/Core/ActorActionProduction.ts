@@ -17,6 +17,8 @@ import {
 } from './ActorActionScheduler';
 
 export interface ActorActionProductionWorld {
+    /** Primary compatibility identity may belong to a frozen party floor. */
+    playerDepth?: number;
     depth: number;
     player: Creature;
     levels: readonly { depth: number; actors: readonly Creature[] }[];
@@ -46,7 +48,7 @@ export interface ProductionActorActionOptions {
 interface ProductionBinding { options: ProductionActorActionOptions; scheduler: ActorActionScheduler; suspendedDepth: number | null; interruption: ActorActionInterruptionReason; resolving: boolean; changedSources: Set<number>; resumePending: boolean }
 const bindings = new WeakMap<Game, ProductionBinding>();
 function actorMap(world: ActorActionProductionWorld): Map<number, { actor: Creature; depth: number }> {
-    const actors = new Map<number, { actor: Creature; depth: number }>([[world.player.id, { actor: world.player, depth: world.depth }]]);
+    const actors = new Map<number, { actor: Creature; depth: number }>([[world.player.id, { actor: world.player, depth: world.playerDepth??world.depth }]]);
     for (const level of world.levels) for (const actor of level.actors) {
         if (actors.has(actor.id) && actors.get(actor.id)!.actor !== actor) throw new Error('Duplicate action world actor');
         actors.set(actor.id, { actor, depth: level.depth });
@@ -162,6 +164,7 @@ export function createProductionActorActionSession(game: Game, options: Producti
 }
 export function productionActorActionScheduler(game: Game): ActorActionScheduler | undefined { return bindings.get(game)?.scheduler; }
 export function productionActorActionInputLocked(game: Game): boolean {
+    if(game.party)return isProductionActorActionRunInvalid(game)||game.readyPartyActorId===null&&(!!bindings.get(game)?.options.inputLocked?.()||!!bindings.get(game)?.options.state.bundles.some(bundle=>game.activeControlledActors.some(a=>a.id===bundle.decisionOwnerId)&&bundle.depth===game.depth));
     return isProductionActorActionRunInvalid(game) || !!bindings.get(game)?.options.inputLocked?.() || !!bindings.get(game)?.options.state.bundles.some(bundle => bundle.decisionOwnerId === game.player.id && bundle.depth === game.depth);
 }
 /** Load binds only; the first explicit simulation update resumes the pending work. */
@@ -172,7 +175,7 @@ export function consumeProductionActorActionResume(game: Game): boolean {
     const binding = bindings.get(game);
     if (!binding?.resumePending) return false;
     binding.resumePending = false;
-    return productionActorActionInputLocked(game) && game.player.hp > 0 && !game.isGameOver;
+    return productionActorActionInputLocked(game) && (game.party?game.activeControlledActors.length>0:game.player.hp > 0) && !game.isGameOver;
 }
 export function disposeProductionActorActionSession(game: Game): void { bindings.delete(game); unbindProductionActorActionSession(game); }
 export function reconcileProductionActorActions(game: Game): void {

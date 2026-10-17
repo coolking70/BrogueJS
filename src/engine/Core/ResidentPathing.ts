@@ -104,7 +104,7 @@ export function residentBlockedMap(
       .filter((a) => a.hp > 0 && a.id !== actorId)
       .flatMap((a) => g.footprintOf(a).map(key))
   );
-  if (g.player.hp > 0) blocked.add(key(g.player.loc));
+  for (const actor of g.party ? g.activeControlledActors : [g.player]) if (actor.hp > 0) blocked.add(key(actor.loc));
   distance[target.x]![target.y] = 0;
   const queue = [target];
   for (let head = 0; head < queue.length; head++) {

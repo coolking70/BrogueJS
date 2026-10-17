@@ -7,6 +7,7 @@
     "growth",
     "loot",
     "narrative",
+    "party",
     "settlement"
   ],
   "tests": {
@@ -19,7 +20,8 @@
         "growth",
         "loot",
         "narrative",
-        "settlement"
+        "settlement",
+        "party"
       ],
       "optional": []
     },
@@ -604,6 +606,23 @@
     "src/ext/modules/loot/tests/loot_sources_recording.test.ts": {
       "required": [
         "giants"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_lifecycle.test.ts": {
+      "required": [
+        "growth"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_extensions.test.ts": {
+      "required": [
+        "crafting",
+        "foraging",
+        "growth",
+        "loot",
+        "settlement",
+        "combat"
       ],
       "optional": []
     }

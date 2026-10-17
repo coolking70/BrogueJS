@@ -109,7 +109,7 @@ export function anyoneWantABite(g: Game, decedent: Monster,
 }
 
 function absorptionMessage(g: Game, m: Monster, finished: boolean): void {
-    if (!canObserveBoltCreature(g.player, g.grid, m)) return;
+    if (!canObserveBoltCreature(g.commandActor, g.grid, m)) return;
     const verb = (verbs as Record<string, string>)[m.typeId] ?? 'studying';
     const action = i18next.t(`learning.verbs.${verb}`, { defaultValue: verb });
     logger.log(i18next.t(finished ? 'learning.finished' : 'learning.begins', {
@@ -203,7 +203,7 @@ export function passiveCorpseStep(g: Game, m: Monster, target: Pos, move: (p: Po
     const dx = Math.sign(target.x - x), dy = Math.sign(target.y - y);
     if (!dx && !dy) return false;
     const attempt = (sx: number, sy: number) => (sx !== 0 || sy !== 0)
-        && !same({ x: x + sx, y: y + sy }, g.player.loc)
+        && !g.activeControlledActors.some(actor=>same({ x: x + sx, y: y + sy }, actor.loc))
         && !monsterBlinkAvoids(g, m, { x: x + sx, y: y + sy }) && move({ x: x + sx, y: y + sy });
     // isAlly is CE's distinct ALLY state even when web.state is HUNTING.
     if (dx && dy) {

@@ -7,7 +7,6 @@
   "ext.growth.ui.tree_learned": "已学",
   "ext.growth.ui.tree_unlearned": "未学",
   "ext.growth.ui.tree_requires": "前置：{{names}}",
-
   "ext.growth.skill.steady-hand.name": "稳手",
   "ext.growth.skill.steady-hand.description": "普通投掷命中修正，保留原必中特例。",
   "ext.growth.skill.close-guard.name": "近身防御",
@@ -370,5 +369,6 @@
   "ext.growth.view.port.staminaCapacity": "体力上限",
   "ext.growth.view.port.poiseCapacity": "韧性上限",
   "ext.growth.describe.port.staminaCapacity": "体力上限",
-  "ext.growth.describe.port.poiseCapacity": "韧性上限"
+  "ext.growth.describe.port.poiseCapacity": "韧性上限",
+  "ext.growth.creation.member_title": "成员 {{number}} · 身份"
 }

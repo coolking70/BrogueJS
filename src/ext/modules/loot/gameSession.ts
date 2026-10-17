@@ -12,13 +12,14 @@ export function useLootUi(host:ModuleUiHost):ModuleUiSession {
  const game=host.game(),runtime=game.extensionRuntime!;
  const opened=ref(false),comparing=ref(false),tab=ref('items'),selected=ref<number|null>(null),batch=ref<number[]>([]),submitting=ref(false),feedback=ref('');
  const view=shallowRef<ReturnType<typeof readLootGameView>|null>(null);
- let retired=false,pending:{revision:number;events:number;cancelled:boolean}|null=null,cursor=game.replayCursor;
+ let retired=false,pending:{revision:number;events:number;cancelled:boolean}|null=null,cursor=game.replayCursor,subject=game.party?game.focusedActor.id:game.player.id;
  const live=()=>!retired&&host.game()===game&&game.extensionRuntime===runtime;
  const readOnly=()=>!!game.replayRecording||game.isGameOver;
  function close(){const was=opened.value;opened.value=false;selected.value=null;batch.value=[];feedback.value='';view.value=null;tab.value='items';comparing.value=false;if(was){host.cancelHeldKeys?.();host.afterClosePanel();}}
  function back(){if(comparing.value){comparing.value=false;}else if(selected.value!==null){selected.value=null;refresh();}else if(tab.value!=='items'){tab.value='items';refresh();}else close();}
  function refresh(){
-  if(!live()||game.isGameOver||cursor!==game.replayCursor){cursor=game.replayCursor;close();pending=null;submitting.value=false;return;}
+  const nextSubject=game.party?game.focusedActor.id:game.player.id;if(subject!==nextSubject){subject=nextSubject;close();pending=null;submitting.value=false;return;}
+  if(!live()||game.isGameOver||cursor!==game.replayCursor){cursor=game.replayCursor,subject=game.party?game.focusedActor.id:game.player.id;close();pending=null;submitting.value=false;return;}
   if(!opened.value)return;
   if(host.canPresentInteraction?.()===false){close();return;}
   if(game.pendingCommandConfirmation&&pending)pending.cancelled=false;
@@ -56,7 +57,7 @@ export function useLootUi(host:ModuleUiHost):ModuleUiSession {
  }
  function enchant(){
   if(!live()||!opened.value||readOnly()||submitting.value||game.isAdvancing||game.isInputLocked()||host.isPresentationBusy?.())return;
-  const target=game.player.inventory.items.find(i=>i.id===selected.value),scroll=game.player.inventory.items.find(i=>i.consumableId==='scroll_of_enchantment');
+  const target=(game.party?game.focusedActor:game.player).inventory.items.find(i=>i.id===selected.value),scroll=(game.party?game.focusedActor:game.player).inventory.items.find(i=>i.consumableId==='scroll_of_enchantment');
   if(!target||!scroll||!game.canEnchantTarget(target))return;
   submitting.value=true;close();
   try{game.executeItemCommand('read',scroll);}finally{submitting.value=false;}
@@ -67,7 +68,7 @@ export function useLootUi(host:ModuleUiHost):ModuleUiSession {
   if(unequip?entry.location!=='equipped':entry.location!=='pack')return;
   let replacement;
   if(!unequip&&entry.item.category===ItemCategory.RING){
-   const rings=[game.player.ringLeft,game.player.ringRight],allowed=lootRingEquipSlots(entry.item.id,rings.map(i=>i?.id??null));
+   const rings=[(game.party?game.focusedActor:game.player).ringLeft,(game.party?game.focusedActor:game.player).ringRight],allowed=lootRingEquipSlots(entry.item.id,rings.map(i=>i?.id??null));
    const slot=replace==='left'?0:replace==='right'?1:allowed.length===1?allowed[0]:undefined;
    if(slot===undefined||!allowed.includes(slot)){feedback.value=i18next.t('ext.loot.ui.live.rejected');return;}
    replacement=rings[slot];

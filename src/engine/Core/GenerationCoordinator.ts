@@ -1,5 +1,5 @@
 import { generationReserved, bindGenerationReservation } from '../Generator/GenerationReservation';
-import { commitCreatureAnchor, footprintContains } from '../Movement/CreatureSpatial';
+import { controlledOccupies, commitCreatureAnchor, footprintContains } from '../Movement/CreatureSpatial';
 import { monsterCanSubmergeNow } from '../Movement/Submersion';
 import { travelPlacement } from '../Movement/LevelTravel';
 /**
@@ -148,7 +148,8 @@ export function createMachineRuntime(ports: GenerationPorts, depth: number): Mac
                 return abort;
             },
             hasItem: (x, y) => ports.items.some(i => i.x === x && i.y === y),
-            hasMonster: (x, y) => ports.monsters.some(m => m.hp > 0 && footprintContains(m, { x, y })),
+            hasMonster: (x, y) => ports.monsters.some(m => m.hp > 0 && footprintContains(m, { x, y }))
+                || !!ports.controlled && controlledOccupies(ports, {x,y}),
             spawn: (spawn, machineNumber) => {
                 const made: Monster[] = [];
                 // Both CE spawnHorde and the explicit monsterID branch quietly

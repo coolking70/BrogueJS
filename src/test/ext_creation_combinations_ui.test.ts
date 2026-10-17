@@ -6,6 +6,7 @@ import '../i18n';
 import { createSfcHarness } from './support/sfcHarness';
 import * as creation from '../ext/ui/creation';
 import { createExtensionRegistry } from '../ext/catalog';
+import {logger} from '../engine/Systems/Logger';
 import { Game } from '../engine/Core/Game';
 
 type N = { tag: string; text: string; props: Record<string, any>; children: N[]; parent: N | null;
@@ -33,10 +34,12 @@ const renderer = Vue.createRenderer<N, N>({
 });
 
 const modules = ['combat', 'crafting', 'foraging', 'giants', 'growth', 'loot', 'narrative', 'settlement'];
+const installed=[...modules,'party'].sort();
 let Menu: Vue.Component;
 let failure: Error | undefined;
 let capturedError: unknown;
 beforeAll(async () => {
+    expect(createExtensionRegistry().manifest(['party']).modules.map(m=>m.id)).toEqual(['party']);
     expect(createExtensionRegistry().manifest(modules).modules.map(m => m.id)).toEqual(modules);
     vi.stubGlobal('window', { innerWidth: 800, innerHeight: 900, addEventListener() {}, removeEventListener() {},
         localStorage: { getItem: () => null, setItem() {} } });
@@ -44,6 +47,7 @@ beforeAll(async () => {
         addEventListener() {}, removeEventListener() {}, querySelector: () => null });
     const harness = createSfcHarness({ baseURL: import.meta.url });
     const steps: Record<string, Vue.Component> = {
+        party: await harness.load('../ext/modules/party/ui/PartyCreationStep.vue'),
         growth: await harness.load('../ext/modules/growth/ui/GrowthCreationStep.vue'),
         loot: await harness.load('../ext/modules/loot/ui/creation/LootCreationStep.vue'),
     };
@@ -77,7 +81,7 @@ async function click(n: N) {
     expect(n).toBeDefined(); expect(n.props.disabled).not.toBe(true);
     n.props.onClick?.({ detail: 1, preventDefault() {}, stopPropagation() {} }); await flush();
 }
-async function openCreation(ids: readonly string[], options: { preset?: string; raids?: boolean } = {}) {
+async function openCreation(ids: readonly string[], options: { preset?: string; raids?: boolean; classic?:boolean } = {}) {
     vi.useFakeTimers();
     const submitted = vi.fn(), root = node();
     const app = renderer.createApp(Menu, { inGame: false, hasSave: false, hasReplay: false, saveInfo: null, replayInfo: null, onNewGame: submitted });
@@ -87,14 +91,14 @@ async function openCreation(ids: readonly string[], options: { preset?: string; 
         await click(button(i18next.t('menu.actions.new_game')));
         find('data-testid', 'rule-set', root).props['onUpdate:modelValue']('extended'); await flush();
         // Start from no modules, then select loot before growth to exercise its recommendation.
-        for (const id of modules) { find('data-module', id, root).props.onChange({ target: { checked: false } }); await flush(); }
+        for (const id of installed) { find('data-module', id, root).props.onChange({ target: { checked: false } }); await flush(); }
         for (const id of [...ids].sort((a, b) => Number(b === 'loot') - Number(a === 'loot'))) {
             const checkbox = find('data-module', id, root);
             if (!checkbox.props.checked) { checkbox.props.onChange({ target: { checked: true } }); await flush(); }
             if (id === 'loot') expect(find('data-module', 'growth', root).props.checked).toBe(true);
         }
         if (!ids.includes('growth')) { find('data-module', 'growth', root).props.onChange({ target: { checked: false } }); await flush(); }
-        expect(modules.filter(id => find('data-module', id, root).props.checked)).toEqual([...ids].sort());
+        expect(installed.filter(id => find('data-module', id, root).props.checked)).toEqual([...ids].sort());
         const seed = all(root).find(n => n.tag === 'input' && n.props.type === 'text')!;
         seed.props['onUpdate:modelValue']('42'); await flush();
         if (options.raids) {
@@ -102,8 +106,10 @@ async function openCreation(ids: readonly string[], options: { preset?: string; 
             const control = all(label).find(n => n.tag === 'input')!;
             control.props['onUpdate:modelValue'](true); await flush();
         }
+        if(options.classic){find('data-testid','rule-set',root).props['onUpdate:modelValue']('classic');await flush();}
         await click(button(i18next.t('title.begin')));
-        if (ids.includes('growth')) {
+        if(ids.includes('party')){await click(all(body).find(n=>n.props['data-party-next']!==undefined)!);vi.advanceTimersByTime(600);await flush();}
+        if (ids.includes('growth')) for(let member=0;member<(ids.includes('party')?2:1);member++){
             for (let i = 0; i < 3; i++) { await click(find('data-creation', 'next')); vi.advanceTimersByTime(600); await flush(); }
             await click(find('data-creation', 'submit')); vi.advanceTimersByTime(600); await flush();
         }
@@ -115,17 +121,18 @@ async function openCreation(ids: readonly string[], options: { preset?: string; 
     } catch (error) { app.unmount(); throw error; }
 }
 
-const seven = [
-    ['all', modules], ['none', []], ['loot+growth', ['growth', 'loot']], ['loot', ['loot']], ['growth', ['growth']],
-    ['all-minus-loot', modules.filter(id => id !== 'loot')], ['all-minus-growth', modules.filter(id => id !== 'growth')],
+const selected = [
+ ['none',[]],['E',modules],['P',['party']],['P+growth',['party','growth']],['P+loot',['party','loot']],['P+growth+loot',['party','growth','loot']],
+ ['P+camp',['party','settlement','crafting','foraging']],['P+combat+giants',['party','combat','giants']],['E+P',installed],['E-growth+P',installed.filter(id=>id!=='growth')],['E-loot+P',installed.filter(id=>id!=='loot')],
 ] as const;
-describe('6Z UI creation combinations', () => {
-    it.each([...seven, ['settlement-minimal', ['settlement']]] as const)('%s reaches a real new run with matching manifest and initial inputs', async (_name, ids: readonly string[]) => {
+describe('P1a selected UI creation combinations', () => {
+    it.each(selected)('%s reaches a real new run with matching manifest and initial inputs', async (_name, ids: readonly string[]) => {
         const ui = await openCreation(ids);
         try {
             expect(ui.submitted, String(capturedError)).toHaveBeenCalledTimes(1);
             const payload = ui.submitted.mock.calls[0]![0];
             expect(payload.extensionConfigurations).toEqual({
+                ...(ids.includes('party') ? {party:{schema:1,members:2}}:{}),
                 ...(ids.includes('settlement') ? { settlement: { raids: false } } : {}),
                 ...(ids.includes('loot') ? { loot: { presetId: 'standard' } } : {}),
             });
@@ -154,11 +161,14 @@ function assertStarted(payload: CreationPayload, ids: readonly string[]) {
         expect(g.extensionRuntime!.manifest).toEqual(expectedManifest);
         expect(g.extensionRuntime!.readyToSave).toBe(true);
         expect(g.recordedInputEvents.filter(e => e.action === 'ext:command').map(e => e.data)).toEqual(payload.initialCommands);
-        const recording = g.exportRecording();
+        g.animationEnabled=false;
+        for(const actor of g.controlledActors){while(logger.pendingAcknowledgment)logger.acknowledgeNext();if(g.party)g.submitPartyIntent({kind:'wait'},actor.id);else g.executeCommand('wait');}
+        const save=g.toSaveSnapshot(),recording = g.exportRecording();
+        const h=new Game({seed:1});try{const errors:string[]=[];const loaded=h.loadSnapshot(JSON.parse(JSON.stringify(save)),e=>errors.push(e));expect(loaded,errors.join(';')).toBe(true);expect(h.loadReplay(recording)).toBe(true);while(h.replayCursor<recording.events.length&&!h.replayError)h.replayStep(true);expect(h.replayError).toBeNull();h.replaySeek(recording.events.length);expect(h.replayError).toBeNull();const branch=JSON.parse(JSON.stringify(h.toSaveSnapshot()));expect(h.loadSnapshot(branch)).toBe(true);while(logger.pendingAcknowledgment)logger.acknowledgeNext();if(h.party)h.submitPartyIntent({kind:'wait'},h.readyPartyActorId!);else h.executeCommand('wait');expect(h.exportRecording().events.length).toBe(recording.events.length+1);}finally{h.disposeRecording();}
         expect(recording.extensions).toEqual(expectedManifest);
         if (ids.includes('growth')) {
             const input = payload.initialCommands.map(c => JSON.parse(c)).find(c => c.module === 'growth');
-            expect(input.payload).toMatchObject({ professionId: 'growth.profession.guardian', lineageId: 'growth.lineage.human', faithId: 'growth.faith.unaffiliated' });
+            for(const selection of ids.includes('party')?input.payload.members.map((m:{creation:unknown})=>m.creation):[input.payload])expect(selection).toMatchObject({ professionId: 'growth.profession.guardian', lineageId: 'growth.lineage.human', faithId: 'growth.faith.unaffiliated' });
         }
         if (ids.includes('loot')) {
             const config = expectedManifest.modules.find(m => m.id === 'loot')!.configuration;
@@ -196,4 +206,9 @@ it.each([['loot'], ['settlement']])('logs the original submission error and allo
         if (id === 'loot') expect(payload.extensionConfigurations.loot).toEqual({ presetId: 'scarce' });
         assertStarted(payload, ids);
     } finally { ui.app.unmount(); }
+});
+
+it('classic uses the real menu payload and keeps the phase6 codec',async()=>{
+ const ui=await openCreation([],{classic:true});const g=new Game({seed:1}),h=new Game({seed:1});
+ try{expect(ui.submitted).toHaveBeenCalledTimes(1);g.startNewGame(ui.submitted.mock.calls[0]![0]);g.animationEnabled=false;expect(g.party).toBeUndefined();while(logger.pendingAcknowledgment)logger.acknowledgeNext();g.executeCommand('wait');const save=g.toSaveSnapshot(),record=g.exportRecording();expect(save.version).toBe(7);expect(record.version).toBe(4);expect(h.loadSnapshot(JSON.parse(JSON.stringify(save)))).toBe(true);expect(h.loadReplay(record)).toBe(true);while(h.replayCursor<record.events.length&&!h.replayError)h.replayStep(true);expect(h.replayError).toBeNull();h.replaySeek(record.events.length);expect(h.replayError).toBeNull();const branch=JSON.parse(JSON.stringify(h.toSaveSnapshot()));expect(h.loadSnapshot(branch)).toBe(true);while(logger.pendingAcknowledgment)logger.acknowledgeNext();h.executeCommand('wait');expect(h.exportRecording().events.length).toBe(record.events.length+1);}finally{ui.app.unmount();g.disposeRecording();h.disposeRecording();}
 });

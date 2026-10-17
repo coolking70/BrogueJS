@@ -1,7 +1,7 @@
+import { ControlledActor } from '../../entities/ControlledActor';
 import { statQuery } from '../Stats/NativeStatSources';
 import type { Creature } from '../../entities/Creature';
 import { Monster, monstersAreEnemies } from '../../entities/Monster';
-import { Player } from '../../entities/Player';
 import { reflectionChance } from './CombatFormulas';
 import { rng } from '../Random';
 
@@ -35,7 +35,7 @@ export function projectileReflects(defender: Creature, attacker: Creature | null
         const chance = defender.reflectChance();
         return chance > 0 && rng.randPercent(chance);
     }
-    if (defender instanceof Player) {
+    if (defender instanceof ControlledActor) {
         const armor = defender.equippedArmor;
         if (armor?.runicType === 'immunity' && armor.vorpalEnemy && attacker instanceof Monster
             && IMMUNITY_CLASSES[armor.vorpalEnemy]?.includes(attacker.typeId)

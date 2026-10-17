@@ -39,6 +39,6 @@ export function createCombatModuleFromPack(pack: CombatPack): ExtensionModule {
                 && state.actors.every(row=>row.actorId<world.nextEntityId && actors.some(actor=>actor.id===row.actorId))
                 && state.actions.every(action=>action.subactions.every(sub=>sub.approvedRisks.every(approval=>approval.targetId<world.nextEntityId)));
         },
-        projectView:context=>projectCombatView(context.state,definitions,context.depth,context.playerId,context.nearbyInteractables,context.worldRestUnavailable, context.actorActionBundles,context.stats),
+        projectView:context=>{const party=context.queryOptional('foundation.party.actor.v1',{}),actorId=party.status==='available'?(party.value as {actorId:number}).actorId:context.playerId;return projectCombatView(context.state,definitions,context.depth,actorId,context.nearbyInteractables,context.worldRestUnavailable,context.actorActionBundles,context.stats);},
     };
 }

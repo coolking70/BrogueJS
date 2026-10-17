@@ -14,6 +14,7 @@ import {hash,write} from './ext-perf-common.mjs';
 import {perfIdentity,loadPerfIdentity,comparablePrefix,pendingPerfBaseline} from './ext-perf-selection.mjs';
 import {parseOptions,kindsFor,validateRun,withObjectiveP99,evaluateGates,overallStatus,policyVersion,timingPolicy} from './ext-perf-ab-policy.mjs';
 
+if(process.argv.includes('--party')){const {runPartyAb}=await import('./run-party-perf-ab.mjs');await runPartyAb(process.argv.slice(2).filter(a=>a!=='--party'));process.exit(0);}
 const options=parseOptions(process.argv.slice(2));
 const control=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const roots={A:realpathSync(options.base),B:realpathSync(options.head)};

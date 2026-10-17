@@ -63,7 +63,7 @@ export function validateWorldWorkReferences(game: Game): void {
   if (
     w.tickets.some(
       (t) =>
-        t.actorId === game.player.id &&
+        !game.party && t.actorId === game.player.id &&
         t.status === 'working' &&
         t.totalBatches > 1 &&
         (!auto || auto.kind !== 'auto_work' || auto.ticketId !== t.ticketId)
@@ -75,7 +75,7 @@ export function validateWorldWorkReferences(game: Game): void {
     pendingFallenByDepth: Map<number, any[]>;
   };
   const actors = [
-    game.player,
+    ...game.controlledActors,
     ...game.monsters,
     ...(game.dormantMonsters ?? []),
     ...[...internal.levels].flatMap(([, l]) => [...l.monsters, ...(l.dormantMonsters ?? [])]),
@@ -302,7 +302,7 @@ export function validateWorldWorkReferences(game: Game): void {
         const destination = r.destination;
         const items =
           destination.kind === 'inventory'
-            ? game.player.inventory.items
+            ? game.controlledActors.find(a=>a.id===destination.actorId)?.inventory.items
             : w.containers
                 .find(
                   (c) => c.id === (destination.kind === 'container' ? destination.containerId : -1)
@@ -332,10 +332,10 @@ export function validateWorldWorkReferences(game: Game): void {
     }
     if(t.itemOperation){
       const op=t.itemOperation,items=containerItemsForValidation(game,t.inputEscrowId!),target=items.find(i=>i.id===op.targetItemId),detail=game.worldWorkDetails!.find(d=>d.ticketId===t.ticketId)!;
-      if(!target||workItemStamp(target)!==op.targetStamp||t.actorId!==game.player.id||items.filter(i=>!i.worldItem).length!==1)fail('operation target');
+      if(!target||workItemStamp(target)!==op.targetStamp||!game.controlledActors.some(a=>a.id===t.actorId)||items.filter(i=>!i.worldItem).length!==1)fail('operation target');
       const prep={inputs:t.refundReservation!.counts,outputs:t.outputReservation!.counts,workTicks:detail.workTicks};
       if(target!.worldItem||target!.quantity!==1||![0,1,8].includes(target!.category)||!runtime.validateStoredWorkItem(`${t.owner}.item-operation.v1`,workOperationInput(t.owner,op.operationId,target!,op.rowId),prep))fail('operation contract');
-      if(t.outputReservation!.slots!==1+outputSlots(game,game.player.inventory.items,prep.outputs)||t.refundReservation!.slots!==1+outputSlots(game,game.player.inventory.items,prep.inputs)
+      if(t.outputReservation!.slots!==1+outputSlots(game,game.controlledActors.find(a=>a.id===t.actorId)!.inventory.items,prep.outputs)||t.refundReservation!.slots!==1+outputSlots(game,game.controlledActors.find(a=>a.id===t.actorId)!.inventory.items,prep.inputs)
         ||t.outputReservation!.destination.kind!=='inventory'||t.refundReservation!.destination.kind!=='inventory')fail('operation reservation');
       const station=w.stations.find(s=>s.interactableId===t.stationId);
       if(!packs.flatMap(p=>p.stations).find(s=>s.id===station?.definitionId)?.stationTags.includes('station.forge'))fail('operation station');

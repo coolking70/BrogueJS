@@ -17,14 +17,16 @@ export type GrowthReward = CreatureBirth & { rewardId: string; threatRank: numbe
 export type GrowthPending = { kind: 'kill'; actor: ActorFacts; origin: EffectOrigin | null; administrative: boolean }
     | { kind: 'visit'; depth: number; actorIds: number[] }
     | { kind: 'story'; recipientId: number; rewardKey: string; definitionId: string; amount: number; reasonKey: string };
+export type GrowthParty = {members:number[]; participants:Record<string,number[]>; receipts:{rewardId:string;shares:{actorId:number;base:number;alive:boolean}[]}[]};
 export type GrowthState = {
+    party?:GrowthParty;
     created: boolean; playerId: number; revision: number; objectiveClock: number; objectiveRemainder: number; nextEffectId: number; nextActionId: number;
     visitedDepths: number[]; identifiedKinds: string[]; identificationAwarded: number; visitAwarded: number;
     rewardReceipts: string[]; storyReceipts: string[]; resourceReceipts: string[];
     actors: Record<string, GrowthActor>; pending: GrowthPending[];
 };
-export function initialGrowthState(): GrowthState {
-    return { created: false, playerId: 0, revision: 0, objectiveClock: 0, objectiveRemainder: 0, nextEffectId: 1, nextActionId: 1, visitedDepths: [], identifiedKinds: [], identificationAwarded: 0,
+export function initialGrowthState(party=false): GrowthState {
+    return { ...(party?{party:{members:[],participants:{},receipts:[]}}:{}),created: false, playerId: 0, revision: 0, objectiveClock: 0, objectiveRemainder: 0, nextEffectId: 1, nextActionId: 1, visitedDepths: [], identifiedKinds: [], identificationAwarded: 0,
         visitAwarded: 0, rewardReceipts: [], storyReceipts: [], resourceReceipts: [], actors: {}, pending: [] };
 }
 const integer = (value: unknown, min = 0): value is number => Number.isSafeInteger(value) && (value as number) >= min;
@@ -43,8 +45,8 @@ export function isGrowthReward(value: unknown): value is GrowthReward {
         && (value.sourceId === null || integer(value.sourceId, 1)) && text(value.rewardId)
         && integer(value.threatRank) && integer(value.amount) && typeof value.nativeStatsCopied === 'boolean';
 }
-export function isGrowthState(value: unknown, pack: DeepReadonly<GrowthDefinitionPack>): value is GrowthState {
-    if (!isJson(value) || !record(value, Object.keys(initialGrowthState())) || typeof value.created !== 'boolean'
+export function isGrowthState(value: unknown, pack: DeepReadonly<GrowthDefinitionPack>, party=false): value is GrowthState {
+    if (!isJson(value) || !record(value, Object.keys(initialGrowthState(party))) || typeof value.created !== 'boolean'
         || !integer(value.objectiveClock) || !integer(value.objectiveRemainder) || value.objectiveRemainder >= pack.config.focus.objectiveTicksPerBlock
         || !integer(value.nextEffectId,1) || !integer(value.nextActionId,1) || !integer(value.playerId) || !integer(value.revision) || (value.created && (value.playerId === 0 || value.revision < 1))
         || !sorted(value.visitedDepths, (v): v is number => integer(v, 1)) || !sorted(value.identifiedKinds, text)
@@ -52,6 +54,16 @@ export function isGrowthState(value: unknown, pack: DeepReadonly<GrowthDefinitio
         || !integer(value.visitAwarded) || (pack.config.experience.firstVisits.cap !== null && value.visitAwarded > pack.config.experience.firstVisits.cap)
         || !sorted(value.rewardReceipts,text) || !sorted(value.storyReceipts,text) || !sorted(value.resourceReceipts,text)
         || !record(value.actors) || !Array.isArray(value.pending)) return false;
+    if(party){
+        const p=value.party;
+        if(!record(p,['members','participants','receipts'])||!sorted(p.members,(v):v is number=>integer(v,1))||p.members.length>4
+            ||(value.created&&(!p.members.length||!p.members.includes(value.playerId)))||!record(p.participants)||!Array.isArray(p.receipts))return false;
+        const memberIds=p.members;
+        for(const [id,ids] of Object.entries(p.participants))if(!/^[1-9]\d*$/.test(id)||!sorted(ids,(v):v is number=>integer(v,1)&&memberIds.includes(v)))return false;
+        const receipts=new Set<string>();
+        for(const r of p.receipts){if(!record(r,['rewardId','shares'])||!text(r.rewardId)||receipts.has(r.rewardId)||!Array.isArray(r.shares)||r.shares.length>4)return false;receipts.add(r.rewardId);
+            let last=0;for(const share of r.shares){if(!record(share,['actorId','base','alive'])||!integer(share.actorId,last+1)||!p.members.includes(share.actorId)||!integer(share.base)||typeof share.alive!=='boolean')return false;last=share.actorId;}}
+    }
     // An issuer may no longer be installed, and disabled legacy story grants still leave quoted receipts.
     // The provider owns the reward definition, so each durable key must name one of its own quotes.
     const storyQuote = (receipt: unknown) => {
@@ -101,7 +113,7 @@ export function validGrowthComponents(state: GrowthState, components: ExtensionS
         if (!summary || !isGrowthReward(reward) || reward.rewardId !== `birth:${id}`) return false;
         const quote = config.experience.kills.monsterQuotes.find(quote => quote.monsterId === reward.originalMonsterType);
         if (reward.threatRank !== (quote?.threatRank ?? 0) || reward.amount !== (quote ? quote.amount ?? config.experience.kills.base + config.experience.kills.perThreatRank * quote.threatRank : 0)) return false;
-        const disabledNpc = !summary.player && !config.monsters.enabled;
+        const disabledNpc = !summary.player && !state.party?.members.includes(Number(id)) && !config.monsters.enabled;
         const identity = entries['growth:identity'];
         if (!disabledNpc && !isGrowthIdentityBuild(identity,pack,true)) return false;
         if (!isGrowthSkillBuild(build,pack,Number(id),state.objectiveClock,state.nextEffectId,disabledNpc ? undefined : identity as never)) return false;

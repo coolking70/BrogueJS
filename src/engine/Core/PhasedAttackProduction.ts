@@ -1,3 +1,4 @@
+import {ControlledActor} from '../../entities/ControlledActor';
 import {advanceResidentLabor,residentWorkClockFinished,selectResidentDecision} from './ResidentJobs';
 import { isIncapacitated } from '../Status/Incapacitation';
 import type { CombatCapacities } from '../../ext/combatStats';
@@ -61,7 +62,7 @@ function bumpRevision(state:ProductionActorAttackState):void {
     state.revision++;
 }
 const facings:ActorAttackFacing[]=['n','ne','e','se','s','sw','w','nw'];
-const actor=(game:Game,id:number):Creature|undefined=>id===game.player.id?game.player:game.monsters.find(m=>m.id===id);
+const actor=(game:Game,id:number):Creature|undefined=>game.activeControlledActors.find(a=>a.id===id)??game.monsters.find(m=>m.id===id);
 function shapeFor(attack:ActorAttackDefinition,index:number,facing:ActorAttackFacing):AttackShapeRequest {
     const shape=attack.segments[index]!.shape;
     return {schema:1,kind:'footprint-offset-union',offsets:shape.offsets[facing].map(p=>({...p})),selfExclusion:shape.selfExclusion};
@@ -88,7 +89,7 @@ function profileId(session:Session,game:Game,source:Creature):string|undefined {
     const declared = game.bodyAttackProfileIds(source);
     if (declared?.length) return declared.find(id => nativeZoneAttackAvailable(source,id)
         && session.definitions.profiles.some(p => p.id === id));
-    return source===game.player?session.definitions.playerProfileId:source instanceof Monster?
+    return source instanceof ControlledActor?session.definitions.playerProfileId:source instanceof Monster?
         session.definitions.nativeProfiles.find(binding=>binding.monsterId===source.typeId)?.profileId:undefined;
 }
 /** Resource policy is independent of whether the actor has a phased attack profile. */
@@ -210,7 +211,7 @@ export function isActorDodgeProtected(game:Game,actorId:number):boolean {
         &&!!bound&&bound.actor===source&&bound.depth===game.depth&&bound.revision===actorSourceRevision(source);
 }
 function advanceResources(game:Game,session:Session,delta:number):void {
-    const resolved=new Map<Creature,ReturnType<typeof resourcesFor>>([game.player,...game.monsters].filter(source=>source.hp>0).map(source=>{
+    const resolved=new Map<Creature,ReturnType<typeof resourcesFor>>([...game.activeControlledActors,...game.monsters].filter(source=>source.hp>0).map(source=>{
         const row=session.state.actors.find(row=>row.actorId===source.id);
         const busy=game.actorActions!.bundles.some(bundle=>bundle.depth===game.depth&&(bundle.decisionOwnerId===source.id
             ||bundle.subactions.some(child=>child.sourceEntityId===source.id&&child.phaseIndex<child.phases.length)));
@@ -221,7 +222,7 @@ function advanceResources(game:Game,session:Session,delta:number):void {
     if(session.state.actors.length+missing>4096)throw new Error('Actor resource budget exhausted');
     // An implicit initial pool is equivalent to a stored pool. Materialize it
     // when elapsed recovery can change it, including an initially empty NPC.
-    for(const source of [game.player,...game.monsters]){
+    for(const source of [...game.activeControlledActors,...game.monsters]){
         if(source.hp<=0||(source instanceof Monster&&(source.isDormant||source.deathProcessed)))continue;
         const {profile,base,policy,stats,row}=resolved.get(source)!;
         if(!row&&(policy.initialStamina<policy.staminaCapacity||!!stats)){
@@ -276,7 +277,7 @@ function prepare(game:Game,source:Creature,attackId:string,facing:ActorAttackFac
     if (Math.min(resource?.stamina??policy.initialStamina,policy.staminaCapacity)<attack.cost || (!resource && session.state.actors.length>=4096)) return null;
     const shape=shapeFor(attack,0,facing),cells=cellsFor(game,source,shape);
     const approvedRisks:PhasedAttackPlan['approvedRisks']=[];
-    if(source===game.player) {
+    if(source instanceof ControlledActor) {
         const allCells=attack.segments.flatMap((_,index)=>cellsFor(game,source,shapeFor(attack,index,facing)));
         for(const target of game.collectBodyTargets(allCells,{effect:'area-damage'},new Set())) {
             if(target.entity===source || approvedRisks.some(approval => approval.targetId === target.entityId)) continue;
@@ -286,15 +287,15 @@ function prepare(game:Game,source:Creature,attackId:string,facing:ActorAttackFac
     }
     return deepFreeze({moduleId:session.moduleId,sessionRevision:session.sessionRevision,sourceEntityId:source.id,attackId,facing,revision:session.state.revision,
         sourceVersion:sourceFootprintVersion(game.spatialOf(source)),profileId:profile.id,cost:attack.cost,shape,cells,
-        facts:canonical({resource:resource??null,capacities:capacities(game,source,session.definitions.resourcePolicies.find(p=>p.id===profile.resourcePolicyId)!)??null,weapon:game.player.equippedWeapon,armor:game.player.equippedArmor,depth:game.depth,grid:game.grid.width,sourceHp:source.hp,status:source.statusDurations,
-            actors:[game.player,...game.monsters].map(a=>({id:a.id,form:a instanceof Monster?a.typeId:'player',hp:a.hp,loc:a.loc,sourceRevision:actorSourceRevision(a),status:a.statusDurations,spatial:sourceFootprintVersion(game.spatialOf(a)),...(a.spatial?.zoneState?{zones:a.spatial.zoneState}:{})}))}),
+        facts:canonical({resource:resource??null,capacities:capacities(game,source,session.definitions.resourcePolicies.find(p=>p.id===profile.resourcePolicyId)!)??null,weapon:game.commandActor.equippedWeapon,armor:game.commandActor.equippedArmor,depth:game.depth,grid:game.grid.width,sourceHp:source.hp,status:source.statusDurations,
+            actors:[...game.activeControlledActors,...game.monsters].map(a=>({id:a.id,form:a instanceof Monster?a.typeId:'player',hp:a.hp,loc:a.loc,sourceRevision:actorSourceRevision(a),status:a.statusDurations,spatial:sourceFootprintVersion(game.spatialOf(a)),...(a.spatial?.zoneState?{zones:a.spatial.zoneState}:{})}))}),
         risks:approvedRisks.flatMap(target=>target.risks),approvedRisks});
 }
 function commit(game:Game,plan:PhasedAttackPlan,scope:ActorActionScope):boolean {
     const session=sessions.get(game),source=actor(game,plan.sourceEntityId);
     if (!session||!source||session.runtime!==game.extensionRuntime) throw new Error('Stale phased attack session');
-    assertActorActionScope(scope,game,source.id,source===game.player?'player-command':'npc-scheduler');
-    if(source!==game.player)assertNativeActorDecisionScope(scope,game,source.id);
+    assertActorActionScope(scope,game,source.id,source instanceof ControlledActor?'player-command':'npc-scheduler');
+    if(!(source instanceof ControlledActor))assertNativeActorDecisionScope(scope,game,source.id);
     const current=prepare(game,source,plan.attackId,plan.facing);
     if(!current||canonical(current)!==canonical(plan))throw new Error('Stale phased attack preparation');
     const {state,definitions}=session,attack=definitions.attacks.find(a=>a.id===plan.attackId)!;
@@ -359,7 +360,7 @@ function commitBody(game:Game,core:Monster,plans:readonly PhasedAttackPlan[],sco
 function selectBody(game:Game,session:Session,core:Monster,scope:ActorActionScope):'handled'|'native-fallback' {
     if(!eligible(game,core,session)||core.hasStatus('confused')||core.hasStatus('magical_fear')||core.state!==MonsterState.HUNTING&&!core.isAlly)return 'native-fallback';
     const group=game.bodyGroups!.find(g=>g.coreId===core.id)!,plans:PhasedAttackPlan[]=[];
-    const targets=[game.player,...game.monsters].filter(target=>target.hp>0&&target.spatial?.bodyMember?.groupId!==core.id&&monstersAreEnemies(core,target));
+    const targets=[...game.activeControlledActors,...game.monsters].filter(target=>target.hp>0&&target.spatial?.bodyMember?.groupId!==core.id&&monstersAreEnemies(core,target));
     targets.sort((a,b)=>game.nearestContact(core,a).distance-game.nearestContact(core,b).distance||a.id-b.id);
     for(const slot of [...group.members].sort((a,b)=>a.partId<b.partId?-1:a.partId>b.partId?1:0)){
         if(plans.length===4)break;
@@ -390,7 +391,7 @@ function resolveCommitted(game:Game,session:Session,boundary:Readonly<ActorActio
         sourceFootprintVersion:child.sourceFootprintVersion,shape:sub.shape,lockedCells:sub.lockedCells,
         approvedRisks:sub.approvedRisks,dodgeable:segment.dodgeable,parryable:segment.parryable});
     let hitCount=0,hpLost=0;
-    withActorActionScope(game,source===game.player?'player-command':'npc-scheduler',source.id,scope=>{
+    withActorActionScope(game,source instanceof ControlledActor?'player-command':'npc-scheduler',source.id,scope=>{
         for(const plan of plans){
             if(source.hp<=0||game.isGameOver||isActorStaggered(game,source.id))break;
             const target=actor(game,plan.intent.targetEntityId);
@@ -429,7 +430,7 @@ export function bindPhasedAttackProduction(game:Game):void {
         resolveSegment:boundary=>resolve(game,session,boundary),breakRecoveryTicks:()=>session.definitions.breakRecoveryTicks,
         elapsed:delta=>{advanceResidentLabor(game,delta);if(session.state.bonfires?.active?.phase==='resting')timeSystem.currentTick+=delta;advanceResources(game,session,delta);mirrorWorldWorkTicks(game,delta);},advanced:()=>mirrorWorldWorkTicks(game,0),
         handlesInterruption:bundle=>bundle.owner==='foundation'||session.state.bonfires?.active?.actionId===bundle.actionId,
-        inputLocked:()=>session.state.actors.some(row=>row.actorId===game.player.id&&nativeRecovery(row)>0),
+        inputLocked:()=>session.state.actors.some(row=>row.actorId===game.commandActor.id&&nativeRecovery(row)>0),
         resumeResources:()=>{for(const row of session.state.actors){const source=actor(game,row.actorId);if(source&&nativeRecovery(row)>0)source.ticksUntilTurn=nativeRecovery(row);}},
         sourceChanged:id=>{interruptWorldWork(game,id,'moved');worldRestSourceChanged(game,id);const row=session.state.actors.find(r=>r.actorId===id);if(row&&(row.dodgeRemainingTicks||row.parryRemainingTicks)){row.dodgeRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;bumpRevision(session.state);}
             const source=actor(game,id);if(source)synchronizeIdleResource(game,session,source);
@@ -453,7 +454,7 @@ export function bindPhasedAttackProduction(game:Game):void {
                 || source.hasStatus('magical_fear') || (!source.isAlly && source.state!==MonsterState.HUNTING)
                 || game.footprintOf(source).some(cell=>monsterBlinkAvoids(game,source,cell))) return 'native-fallback';
             const profile=session.definitions.profiles.find(p=>p.id===profileId(session,game,source));if(!profile)return 'native-fallback';
-            const targets=source.isAlly?game.monsters.filter(target=>target!==source&&monstersAreEnemies(source,target)):[game.player];
+            const targets=source.isAlly?game.monsters.filter(target=>target!==source&&monstersAreEnemies(source,target)):game.activeControlledActors;
             const target=targets.find(target=>target.hp>0&&bodySightContact(game.grid,source,target,(x,y,tx,ty)=>game.hasLineOfSight(x,y,tx,ty)));if(!target)return 'native-fallback';
             if (source.isAlly && target instanceof Monster && (blinkAllyFlees(game,source,target) || !allyShouldPursue(game,source,target))) return 'native-fallback';
             const dx=Math.sign(target.loc.x-source.loc.x),dy=Math.sign(target.loc.y-source.loc.y);
@@ -463,7 +464,7 @@ export function bindPhasedAttackProduction(game:Game):void {
             // action/source order and no random draw; no future player input.
             for(const bundle of [...game.actorActions!.bundles].sort((a,b)=>a.decisionOwnerId-b.decisionOwnerId)){
                 const threat=actor(game,bundle.decisionOwnerId);
-                if(!threat||threat===source||!(threat===game.player?!source.isAlly:threat instanceof Monster&&monstersAreEnemies(source,threat)))continue;
+                if(!threat||threat===source||!(threat instanceof ControlledActor?!source.isAlly:threat instanceof Monster&&monstersAreEnemies(source,threat)))continue;
                 if(!bodySightContact(game.grid,source,threat,(x,y,tx,ty)=>game.hasLineOfSight(x,y,tx,ty)))continue;
                 const contact=game.meleeContact(threat,source);if(!contact)continue;
                 const metadata=session.state.actions.find(action=>action.actionId===bundle.actionId);
@@ -513,10 +514,10 @@ export function preparePhasedAttackCommand(game:Game,data:unknown):PhasedAttackP
     if(Object.keys(input).sort().join(',')!=='action,module,payload'||!isPhasedAttackCommand(game,data)
         ||!input.payload||Object.keys(input.payload).sort().join(',')!=='attackId,facing'
         ||typeof input.payload.attackId!=='string'||!facings.includes(input.payload.facing))throw new Error('Invalid phased attack input');
-    return prepare(game,game.player,input.payload.attackId,input.payload.facing);
+    return prepare(game,game.commandActor,input.payload.attackId,input.payload.facing);
 }
 export function commitPhasedAttackCommand(game:Game,plan:PhasedAttackPlan):boolean {
-    return withActorActionScope(game,'player-command',game.player.id,scope=>commit(game,plan,scope));
+    return withActorActionScope(game,'player-command',game.commandActor.id,scope=>commit(game,plan,scope));
 }
 
 /** Safe-boundary GC never pins dead or observation-only actors. */
@@ -638,8 +639,8 @@ export function prepareActorDodge(game:Game,sourceId:number,facing:ActorAttackFa
 export function commitActorDodge(game:Game,plan:ActorDodgePlan,scope:ActorActionScope):boolean {
     const session=sessions.get(game),source=actor(game,plan.sourceEntityId);
     if(!session||!source||session.runtime!==game.extensionRuntime)throw new Error('Stale dodge session');
-    assertActorActionScope(scope,game,source.id,source===game.player?'player-command':'npc-scheduler');
-    if(source!==game.player)assertNativeActorDecisionScope(scope,game,source.id);
+    assertActorActionScope(scope,game,source.id,source instanceof ControlledActor?'player-command':'npc-scheduler');
+    if(!(source instanceof ControlledActor))assertNativeActorDecisionScope(scope,game,source.id);
     const current=prepareActorDodge(game,source.id,plan.facing);
     if(!current||canonical(current)!==canonical(plan))throw new Error('Stale dodge preparation');
     if(!pay(game,session,source,session.definitions.dodge.cost))return false;
@@ -666,10 +667,10 @@ export function prepareActorDodgeCommand(game:Game,data:unknown):ActorDodgePlan|
     const input=JSON.parse(data);
     if(Object.keys(input).sort().join(',')!=='action,module,payload'||!isActorDodgeCommand(game,data)
         ||!input.payload||Object.keys(input.payload).join(',')!=='facing'||!facings.includes(input.payload.facing))throw new Error('Invalid dodge input');
-    return prepareActorDodge(game,game.player.id,input.payload.facing);
+    return prepareActorDodge(game,game.commandActor.id,input.payload.facing);
 }
 export function commitActorDodgeCommand(game:Game,plan:ActorDodgePlan):boolean {
-    return withActorActionScope(game,'player-command',game.player.id,scope=>commitActorDodge(game,plan,scope));
+    return withActorActionScope(game,'player-command',game.commandActor.id,scope=>commitActorDodge(game,plan,scope));
 }
 
 function nativeRecovery(row:ProductionActorAttackState['actors'][number]|undefined):number {
@@ -773,8 +774,8 @@ export function prepareActorParry(game:Game,sourceId:number,facing:ActorAttackFa
 export function commitActorParry(game:Game,plan:ActorParryPlan,scope:ActorActionScope):boolean {
     const session=sessions.get(game),source=actor(game,plan.sourceEntityId);
     if(!session||!source||session.runtime!==game.extensionRuntime)throw new Error('Stale parry session');
-    assertActorActionScope(scope,game,source.id,source===game.player?'player-command':'npc-scheduler');
-    if(source!==game.player)assertNativeActorDecisionScope(scope,game,source.id);
+    assertActorActionScope(scope,game,source.id,source instanceof ControlledActor?'player-command':'npc-scheduler');
+    if(!(source instanceof ControlledActor))assertNativeActorDecisionScope(scope,game,source.id);
     const current=prepareActorParry(game,source.id,plan.facing);
     if(!current||canonical(current)!==canonical(plan))throw new Error('Stale parry preparation');
     if(!pay(game,session,source,session.definitions.parry.cost))return false;
@@ -795,10 +796,10 @@ export function prepareActorParryCommand(game:Game,data:unknown):ActorParryPlan|
     const input=JSON.parse(data);
     if(Object.keys(input).sort().join(',')!=='action,module,payload'||!isActorParryCommand(game,data)
         ||!input.payload||Object.keys(input.payload).join(',')!=='facing'||!facings.includes(input.payload.facing))throw new Error('Invalid parry input');
-    return prepareActorParry(game,game.player.id,input.payload.facing);
+    return prepareActorParry(game,game.commandActor.id,input.payload.facing);
 }
 export function commitActorParryCommand(game:Game,plan:ActorParryPlan):boolean {
-    return withActorActionScope(game,'player-command',game.player.id,scope=>commitActorParry(game,plan,scope));
+    return withActorActionScope(game,'player-command',game.commandActor.id,scope=>commitActorParry(game,plan,scope));
 }
 
 /** Native attack epilogues and poise break share max recovery, never add a second fee or clock. */
@@ -813,11 +814,11 @@ export function reconcileActorNativeRecovery(game:Game,actorId:number):void {
 /** Trusted completed-rest resource commit, with current authoritative policy. */
 export function restoreActorRestResources(game:Game,restore:{stamina:string;poise:string}):void {
     const session=sessions.get(game);if(!session)throw new Error('Missing rest resource session');
-    const {profile,base,policy,stats,row}=resourcesFor(game,session,game.player);
+    const {profile,base,policy,stats,row}=resourcesFor(game,session,game.commandActor);
     // An unchanged implicit full pool remains implicit; no budget slot is needed.
     if(!row&&!stats&&(restore.stamina!=='full'||policy.initialStamina===policy.staminaCapacity))return;
     if(!row&&session.state.actors.length>=4096)throw new Error('Actor resource budget exhausted');
-    const resource=row??initialResource(game.player.id,profile.id,base,stats);
+    const resource=row??initialResource(game.commandActor.id,profile.id,base,stats);
     synchronizeResource(resource,profile.id,policy,stats);
     if(restore.stamina==='full'){resource.stamina=policy.staminaCapacity;resource.regenRemainder=0;resource.regenDelayRemaining=0;}
     if(restore.poise==='full'){resource.poise=policy.poiseCapacity;resource.poiseRecoveryRemainder=0;resource.poiseRecoveryDelayRemaining=0;}

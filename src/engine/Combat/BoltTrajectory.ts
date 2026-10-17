@@ -1,9 +1,9 @@
+import { ControlledActor } from '../../entities/ControlledActor';
 import { cellProjectileFlags, structureBlocking } from '../Map/CellProperties';
 import { isSubmerged, hiddenBySubmersion } from '../Movement/Submersion';
 import type { Pos } from '../../types';
 import type { Creature } from '../../entities/Creature';
 import { Monster, monstersAreEnemies, monstersAreTeammates } from '../../entities/Monster';
-import { Player } from '../../entities/Player';
 import { DungeonLayer, type Grid, type Cell } from '../Map/Grid';
 import { cellTerrainFlags, cellTerrainMechFlags } from '../Map/DungeonFeature';
 import { T_IS_FLAMMABLE, T_OBSTRUCTS_PASSABILITY, T_OBSTRUCTS_VISION, TM_REFLECTS_BOLTS } from '../Map/TerrainCatalog';
@@ -104,7 +104,7 @@ export function boltLine(grid: Grid, from: Pos, to: Pos, bolt?: BoltConfig, worl
                 }
                 break;
             }
-            if (world.caster instanceof Player && !cell.isVisible && !cell.hasMemory) {
+            if (world.caster instanceof ControlledActor && !cell.isVisible && !cell.hasMemory) {
                 unknown = true;
                 continue;
             }

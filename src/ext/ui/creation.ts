@@ -17,6 +17,7 @@ export function prepareModuleCreation(extensions: readonly string[], contributio
         const ui = contributions.find(entry => entry.moduleId === module.id);
         return ui?.creationStep || ui?.loadCreationStep ? [{ moduleId: module.id, definitions: module.view?.definitions, component: ui.creationStep, load: ui.loadCreationStep }] : [];
     });
+    steps.sort((a,b)=>Number(b.moduleId==='party')-Number(a.moduleId==='party'));
     return { extensions: manifest.modules.map(entry => entry.id), modules, steps };
 }
 /** UI overrides only its owner's initial input. No-UI modules use declared defaults. */

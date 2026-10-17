@@ -28,7 +28,7 @@ export function useForagingUi(host: ModuleUiHost,
   function read(): Presentation | null {
     if (!live() || busy()) return null;
     try {
-      const source = runtime?.readModuleView('foraging'), data = readForagingUiView(source?.state);
+      const source = (game.party?game.readFocusedModuleView.bind(game):runtime?.readModuleView.bind(runtime))?.('foraging'), data = readForagingUiView(source?.state);
       if (!data || !source?.session || typeof source.session !== 'object') return null;
       return { data, session: source.session, frame: host.readDisplayFrame?.() ?? null,
         readOnly: !!game.replayRecording || game.isGameOver || !source.canManageCharacter,

@@ -1,3 +1,4 @@
+import {PartyFailure} from '../../ext/party';
 import { isIncapacitated } from '../Status/Incapacitation';
 import { nativeStat } from '../Stats/NativeStatSources';
 /** CE objective time and environment scheduling. No Game instance crosses this boundary. */
@@ -8,7 +9,7 @@ import type { Pos } from '../../types';
 import type { PromotionUpdateResult } from '../Map/Promotion';
 import type { Monster } from '../../entities/Monster';
 import type { Item } from '../Items/Item';
-import type { StatusId } from '../../entities/Creature';
+import type { Creature, StatusId } from '../../entities/Creature';
 import { ItemCategory } from '../Items/Item';
 import { rng } from '../Random';
 import { logger } from '../Systems/Logger';
@@ -115,6 +116,7 @@ export interface EffectsPort {
 
 export interface TimePorts {
     world: WorldPort; clock: ClockPort; effects: EffectsPort;
+    party?: { actors():readonly Creature[]; onStairs():boolean; runAs<T>(actor:Creature,work:()=>T):T; hasReady():boolean; hasActive():boolean; nextBoundary():number; advance(elapsed:number):void; accepted():void; settleDeaths():void; settleDue():void; forEachActive(work:()=>void):void };
     bodies?: { isDecisionOwner(id: number): boolean; advanceElapsed(ticks: number): void };
     /** Opt-in foundation scheduling; absence retains the native iteration/order. */
     actions?: ActorActionSchedulerPort;
@@ -124,8 +126,8 @@ export interface TimePorts {
 export function* advancementLoop(ports: TimePorts, stealthRange: number): Generator<number, void, void> {
         // CE Time.c:2471：fastForward 是 playerTurnEnded 内的局部变量，
         // 置位后本回合不再进入暂停分支（E1-修订：锁存，至多暂停一次）
-        let fastForward = false;
-        while (ports.world.player.ticksUntilTurn > 0) {
+        let fastForward = false,zeroBoundaries=0;
+        while (ports.party ? ports.party.hasActive() && !ports.party.hasReady() : ports.world.player.ticksUntilTurn > 0) {
             const observeWork = ports.effects.observeObjectiveWork;
             let segmentStart = observeWork ? performance.now() : 0, workBeforeYield = 0;
             let objectiveBoundary = false;
@@ -133,7 +135,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
             const actions = ports.actions;
             actions?.cancelDeadActions();
             const playerWasBusy = actions?.isBusy(ports.world.player.id) ?? false;
-            let soonestTurn = ports.world.player.ticksUntilTurn;
+            let soonestTurn = ports.party?.nextBoundary() ?? ports.world.player.ticksUntilTurn;
             for (const m of ports.world.monsters) {
                 if (m.hp > 0 && (!ports.bodies || ports.bodies.isDecisionOwner(m.id)) && (!actions || actions.isDecisionOwner(m.id)) && m.ticksUntilTurn < soonestTurn) {
                     soonestTurn = m.ticksUntilTurn;
@@ -149,6 +151,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
             if(ports.effects.residentBoundaryTicks)soonestTurn=Math.min(soonestTurn,ports.effects.residentBoundaryTicks());
             // Native readiness may start at zero (or overdue). It consumes no new elapsed time.
             if (actions) soonestTurn = Math.max(0, soonestTurn);
+            if(ports.party){if(soonestTurn===0){if(++zeroBoundaries>1024)throw new PartyFailure('ZERO_TIME_LOOP');}else zeroBoundaries=0;}
             if (soonestTurn > 0) ports.worldClock?.validate?.(soonestTurn);
             for (const m of ports.world.monsters) {
                 if (soonestTurn > 0 && m.spatial?.actionLockInTicks !== undefined) {
@@ -161,6 +164,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
             }
             if (soonestTurn > 0) ports.bodies?.advanceElapsed(soonestTurn);
             // Busy native timers are mirrors written by this one countdown owner.
+            if (soonestTurn > 0) ports.party?.advance(soonestTurn);
             if (actions && soonestTurn > 0) actions.advanceActionTime(soonestTurn);
             if (soonestTurn > 0) ports.worldClock?.advance(soonestTurn);
 
@@ -175,6 +179,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                     objectiveBoundary = true;
                     completeObjective = ports.effects.beginObjectiveTime?.();
                     ports.effects.objectiveTimeBlock();
+                    ports.party?.settleDeaths();
                     actions?.cancelDeadActions();
                     // C-5：CE Time.c:2866-2871——客观块内（环境瞬时结算）置位的
                     // 玩家坠落旗标在本圈循环立即结算（CE 的 do-while 每圈在
@@ -191,7 +196,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                         return;
                     }
                     // CE Time.c:2713-2715：岩浆/毒气等致死后立即退出推进
-                    if (ports.clock.isGameOver || ports.world.player.hp <= 0) return;
+                    if (ports.clock.isGameOver || (!ports.party && ports.world.player.hp <= 0)) return;
                     // CE Time.c:2704-2707：仅当玩家本次动作慢于一个标准回合
                     //（>100 tick；此刻玩家 tick 尚未递减，口径与 CE 一致）才暂停。
                     // 自动寻路/探索对应 rogue.playbackFastForward——锁存但不暂停。
@@ -221,19 +226,19 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                 // 同边界攻击可能建立新的防御恢复镜像：先扣已过去的时间，
                 // 再允许攻击建立完整新债务。忙碌玩家的镜像由 advanceActionTime
                 // 唯一倒计时；没有 scheduler 的经典路径仍保持 CE 原顺序。
-                if (actions && !playerWasBusy) ports.world.player.ticksUntilTurn -= soonestTurn;
+                if (!ports.party && actions && !playerWasBusy) ports.world.player.ticksUntilTurn -= soonestTurn;
                 const dueActors = actions
-                    ? [...ports.world.monsters, ...(playerWasBusy ? [ports.world.player] : [])]
+                    ? [...ports.world.monsters, ...(ports.party?ports.party.actors().filter(a=>actions.isBusy(a.id)):playerWasBusy ? [ports.world.player] : [])]
                         .filter(actor => actions.isDecisionOwner(actor.id)).sort((a, b) => a.id - b.id)
                     : [...ports.world.monsters];
                 for (const actor of dueActors) {
-                    if (actor !== ports.world.player && !ports.world.monsters.includes(actor as Monster)) continue;
+                    if (actor !== ports.world.player && !ports.party?.actors().includes(actor) && !ports.world.monsters.includes(actor as Monster)) continue;
                     if (ports.bodies && !ports.bodies.isDecisionOwner(actor.id)) continue;
                     if (ports.clock.isGameOver) break; // CE Time.c:2721 的 gameHasEnded 守卫
                     if (!(actor.hp > 0 && actor.ticksUntilTurn <= 0)) continue;
                     if (actions) {
                         const wasBusy = actions.isBusy(actor.id);
-                        const result = actions.dispatchActorBoundary(actor.id);
+                        const result = ports.party?.actors().includes(actor)?ports.party.runAs(actor,()=>actions.dispatchActorBoundary(actor.id)):actions.dispatchActorBoundary(actor.id);
                         // A completed foundation phase publishes its custody/output
                         // before this now-free actor may choose or move again.
                         if (wasBusy && result === 'native-fallback')
@@ -253,7 +258,9 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                     if (m.hp > 0 && ports.world.monsters.includes(m) && !actions?.isBusy(m.id)) ports.effects.sweepDeepWaterItem(m, m.ticksUntilTurn);
                 }
 
-                if (!actions && !playerWasBusy) ports.world.player.ticksUntilTurn -= soonestTurn;
+                if (!ports.party && !actions && !playerWasBusy) ports.world.player.ticksUntilTurn -= soonestTurn;
+                ports.party?.settleDeaths();
+                if(ports.party&&ports.clock.playerFalling){ports.effects.playerFalls();return;}
                 completedBoundary = true;
                 if (actions) ports.effects.observeActorActionBoundary?.();
                 if (ports.clock.isGameOver) return; // CE Time.c:2756-2758
@@ -261,7 +268,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                 // Same-tick monster resolutions still see effects valid through this block.
                 // A yielded block is incomplete: retiring that iterator must not publish it.
                 if (!suspended && completeObjective) stealthRange = completeObjective();
-                if (!suspended && completedBoundary) ports.effects.settleWorldRest?.();
+                if (!suspended && completedBoundary) { ports.effects.settleWorldRest?.(); ports.party?.settleDue(); }
                 if (!suspended && observeWork) observeWork(workBeforeYield + performance.now() - segmentStart, objectiveBoundary, soonestTurn);
             }
         }
@@ -314,55 +321,13 @@ export function objectiveTimeBlock(ports: TimePorts): void {
         // 开门被同一回合的环境晋升立即回弹——门西侧的气味（updateScent 的
         // T_OBSTRUCTS_SCENT 掩码穿不过关着的门）因此比 CE 少刷新一轮。此处按
         // CE 顺序补踩门晋升；promoteTile 本体无 RNG（Promotion.ts），不移流。
-        const playerStepPromotions = promoteLayersWithMechFlag(ports.world.grid, ports.world.player.x, ports.world.player.y, TM_PROMOTES_ON_CREATURE | TM_PROMOTES_ON_PLAYER_ENTRY);
-        if (playerStepPromotions.length > 0) {
-            ports.clock.lastPromotionUpdate!.promotions.push(...playerStepPromotions);
-            if (playerStepPromotions.some((r) => r.mutated)) ports.clock.needsRender = true;
-        }
-        // U14a: CE player exposure follows the objective decrement and gas update.
-        ports.effects.applyNauseaFromTerrain(ports.world.player);
-
-        // （F-2b：applyEnvironmentalEffects 已上移到晋升驱动之前——见块首注释。
-        // 燃烧/毒气等对生物的结算因此使用本块火/气演化**之前**的状态，与 CE
-        // :2671 怪物 tile 段先于 updateEnvironment :2695 的取态一致。）
-
-        const expiredImmunities = ports.world.player.tickTemporaryImmunities();
-        for (const im of expiredImmunities) {
-            logger.log(i18next.t('status.player.immunity_off', { status: ports.effects.getStatusLabel(im), defaultValue: `Your immunity to ${ports.effects.getStatusLabel(im)} fades.` }), '#cccccc');
-        }
-
-        // CE Time.c:2213-2220 calls checkNutrition only outside paralysis.
-        ports.world.player.tickNutrition();
-        const hungerTransition = ports.world.player.consumeHungerTransition();
-        if (hungerTransition && ports.world.player.nutrition > 1) {
-            ports.effects.logHungerTransition(hungerTransition);
-        }
-        if (!ports.world.player.hasStatus('paralyzed') && ports.world.player.nutrition <= 1) {
-            // Time.c:949-963 scans pack order, not food type or nutritional value.
-            const food = ports.world.player.inventory.items.find(i => i.category === ItemCategory.FOOD);
-            if (food) {
-                const name = (food as Item & { consumableId?: string }).consumableId === 'mango'
-                    ? i18next.t('name.Mango', { defaultValue: 'mango' })
-                    : i18next.t('name.Ration of Food', { defaultValue: 'ration of food' });
-                logger.log(i18next.t('food.auto_eat', {
-                    food: name, defaultValue: `Unable to control your hunger, you eat a ${name}.`,
-                }), '#ffcc44', { acknowledge: true });
-                if (ports.effects.consumeFood(food, false)) {
-                    // CE calls playerTurnEnded within checkNutrition. The pending player
-                    // ticks are consumed by that nested turn, with no new action delay.
-                    ports.effects.playerTurnEnded();
-                }
-            } else if (ports.world.player.nutrition === 1) {
-                ports.world.player.nutrition = 0;
-                ports.world.player.refreshHungerState();
-                ports.effects.logHungerTransition('starving');
-            }
-        }
+        if(ports.party)ports.party.forEachActive(()=>objectiveMemberTime(ports));
+        else objectiveMemberTime(ports);
 
         // P4-10：滚动 waypoint 刷新（CE Time.c:2710-2714）——客观时间块的
         // 最后一步（CE 里在 monstersApproachStairs 之后）。每 100 tick 恰好
         // 重算一个 waypoint；全量重建只在关卡生成/重访时发生。
-        if (ports.clock.isGameOver || ports.world.player.hp <= 0) return;
+        if (ports.clock.isGameOver || (!ports.party && ports.world.player.hp <= 0)) return;
         ports.effects.settleEdibleClocks?.();
         ports.effects.monstersApproachStairs();
         ports.world.waypoints.rollingRefresh(ports.effects.wpContext());
@@ -423,7 +388,7 @@ export function updateEnvironment(ports: TimePorts): void {
         const depressed = ports.clock.displacementTrapDepressions?.get(ports.world.grid);
         if (depressed) for (const key of depressed) {
             const x = key % DCOLS, y = Math.floor(key / DCOLS);
-            if (!(ports.world.player.x === x && ports.world.player.y === y) && !ports.effects.getMonsterAt(x, y)
+            if (!(ports.party?ports.party.actors():[ports.world.player]).some(a=>a.x===x&&a.y===y) && !ports.effects.getMonsterAt(x, y)
                 && !ports.world.items.some(item => item.loc.x === x && item.loc.y === y)) depressed.delete(key);
         }
 
@@ -447,6 +412,8 @@ export function updateEnvironment(ports: TimePorts): void {
     }
 
 export function playerTurnEnded(ports: TimePorts, continuingParalysis = false): void {
+    ports.party?.settleDeaths();
+    if(ports.party&&ports.clock.isGameOver)return;
     ports.effects.settlePendingResidentNeeds?.();
         // An animated action resumes inside CE's do/while, not at the function
         // entry: in particular its DF message eligibility must not be reset.
@@ -461,7 +428,7 @@ export function playerTurnEnded(ports: TimePorts, continuingParalysis = false): 
             // 坠落回合没有气味刷新、没有怪物推进。
             if (ports.clock.playerFalling) {
                 ports.effects.playerFalls();
-                if (!(ports.actions?.isBusy(ports.world.player.id) || ports.effects.hasPendingPlayerAction?.()) || ports.clock.isGameOver || ports.world.player.hp <= 0) return;
+                if (!(ports.actions?.isBusy(ports.world.player.id) || ports.effects.hasPendingPlayerAction?.()) || ports.clock.isGameOver || (!ports.party && ports.world.player.hp <= 0)) return;
             }
 
             // C-5：CE Time.c:2486-2492——每个玩家回合末怪物坠落（注释原文：
@@ -562,6 +529,12 @@ export function playerTurnEnded(ports: TimePorts, continuingParalysis = false): 
             if (!ports.actions?.isBusy(ports.world.player.id)) {
                 ports.effects.sweepDeepWaterItem(ports.world.player, ports.world.player.ticksUntilTurn);
             }
+            if(ports.party){
+                ports.party.accepted();
+                const iter=ports.effects.advancementLoop(stealthRange);
+                while(!iter.next().done) { /* P1a accepts one atomic command; presentation observes boundaries. */ }
+                return;
+            }
             if (ports.clock.animationEnabled && !ports.effects.isAutoTraveling()
                 && !isIncapacitated(ports.world.player)) {
                 ports.effects.beginAdvancement(stealthRange);
@@ -633,3 +606,52 @@ export function finishTurnEpilogue(ports: TimePorts): void {
         ports.effects.updateVision();
         ports.clock.needsRender = true;
     }
+
+/** Per-member objective work, separate from the single world/environment block. */
+function objectiveMemberTime(ports: TimePorts): void {
+        const playerStepPromotions = ports.party?.onStairs()?[]:promoteLayersWithMechFlag(ports.world.grid, ports.world.player.x, ports.world.player.y, TM_PROMOTES_ON_CREATURE | TM_PROMOTES_ON_PLAYER_ENTRY);
+        if (playerStepPromotions.length > 0) {
+            ports.clock.lastPromotionUpdate!.promotions.push(...playerStepPromotions);
+            if (playerStepPromotions.some((r) => r.mutated)) ports.clock.needsRender = true;
+        }
+        // U14a: CE player exposure follows the objective decrement and gas update.
+        ports.effects.applyNauseaFromTerrain(ports.world.player);
+
+        // （F-2b：applyEnvironmentalEffects 已上移到晋升驱动之前——见块首注释。
+        // 燃烧/毒气等对生物的结算因此使用本块火/气演化**之前**的状态，与 CE
+        // :2671 怪物 tile 段先于 updateEnvironment :2695 的取态一致。）
+
+        const expiredImmunities = ports.world.player.tickTemporaryImmunities();
+        for (const im of expiredImmunities) {
+            logger.log(i18next.t('status.player.immunity_off', { status: ports.effects.getStatusLabel(im), defaultValue: `Your immunity to ${ports.effects.getStatusLabel(im)} fades.` }), '#cccccc');
+        }
+
+        // CE Time.c:2213-2220 calls checkNutrition only outside paralysis.
+        ports.world.player.tickNutrition();
+        const hungerTransition = ports.world.player.consumeHungerTransition();
+        if (hungerTransition && ports.world.player.nutrition > 1) {
+            ports.effects.logHungerTransition(hungerTransition);
+        }
+        if (!ports.world.player.hasStatus('paralyzed') && ports.world.player.nutrition <= 1) {
+            // Time.c:949-963 scans pack order, not food type or nutritional value.
+            const food = ports.world.player.inventory.items.find(i => i.category === ItemCategory.FOOD);
+            if (food) {
+                const name = (food as Item & { consumableId?: string }).consumableId === 'mango'
+                    ? i18next.t('name.Mango', { defaultValue: 'mango' })
+                    : i18next.t('name.Ration of Food', { defaultValue: 'ration of food' });
+                logger.log(i18next.t('food.auto_eat', {
+                    food: name, defaultValue: `Unable to control your hunger, you eat a ${name}.`,
+                }), '#ffcc44', { acknowledge: true });
+                if (ports.effects.consumeFood(food, false)) {
+                    // CE calls playerTurnEnded within checkNutrition. The pending player
+                    // ticks are consumed by that nested turn, with no new action delay.
+                    if(!ports.party)ports.effects.playerTurnEnded();
+                }
+            } else if (ports.world.player.nutrition === 1) {
+                ports.world.player.nutrition = 0;
+                ports.world.player.refreshHungerState();
+                ports.effects.logHungerTransition('starving');
+            }
+        }
+
+}

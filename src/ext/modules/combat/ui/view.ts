@@ -83,7 +83,7 @@ export const combatDirections: readonly { readonly facing: Facing; readonly name
     { facing: 'se', nameKey: 'ext.combat.ui.direction.se', glyph: '↘' },
 ];
 export function readCombatUiView(game: Game): CombatUiView | null {
-    const source = game.extensionRuntime?.readModuleView('combat');
+    const source = game.party?game.readFocusedModuleView('combat'):game.extensionRuntime?.readModuleView('combat');
     if (!source || source.state.schema !== 1 || !Number.isSafeInteger(source.state.revision) || !Array.isArray(source.state.actions)) return null;
     const actions = source.state.actions.filter((entry): entry is { id: string; nameKey: string; canUse: boolean; cost?: number;
         windowTicks?: number; recoveryTicks?: number; unavailableKey?: string } =>

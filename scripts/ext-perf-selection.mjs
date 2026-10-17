@@ -13,12 +13,14 @@ const identities=Object.freeze({
  '6c2':{manifest:'scripts/ext-perf-6c2-budget.json',stem:'ext-6c2-late',accepted:true,generate:true},
 });
 export function perfIdentity(id){
+ if(id==='party-v1')return {id,suite:'party',accepted:false,generate:false,manifest:null};
  assert.ok(Object.hasOwn(identities,id),'Unknown or unimplemented benchmark identity');
  const entry=identities[id];
  return {...entry,id,route:which=>{assert.ok(['classic','all'].includes(which),'Unknown benchmark case');return `scripts/perf/${entry.stem}-${which}.route.json`;},source:which=>{assert.ok(['classic','all'].includes(which),'Unknown benchmark case');return `scripts/perf/${entry.stem}-${which}.source.json`;}};
 }
 export function loadPerfIdentity(root,id){
  const entry=perfIdentity(id),read=path=>{assert.ok(existsSync(resolve(root,path)),`Missing ${id} artifact ${path}`);return JSON.parse(readFileSync(resolve(root,path),'utf8'));};
+ assert.ok(entry.suite!=='party','Party uses run-ext-perf-ab.mjs --party, not the phase6 frozen route loader');
  const manifest=read(entry.manifest);assert.deepEqual(Object.keys(manifest.cases).sort(),['all','classic']);
  const routes={},sources={};
  for(const which of ['classic','all']){

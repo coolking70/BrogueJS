@@ -3,7 +3,7 @@ import type { Creature } from '../entities/Creature';
 import type { ActorActionProductionWorld } from '../engine/Core/ActorActionProduction';
 /** Native/candidate worlds are supplied only by engine callers, never JSON commands. */
 export function resolveActorQueryScope(world: ActorActionProductionWorld, actor: Creature): { depth:number;partId:string|null;generation:number|null } | null {
-    const rows = [{depth:world.depth,actor:world.player},...world.levels.flatMap(level=>level.actors.map(actor=>({depth:level.depth,actor})))];
+    const rows = [{depth:world.playerDepth??world.depth,actor:world.player},...world.levels.flatMap(level=>level.actors.map(actor=>({depth:level.depth,actor})))];
     // Retained carried/leader closure owns components even while not spatially
     // scheduled. Direct level ownership always wins over a relationship edge.
     const direct=new Map(rows.map(row=>[row.actor,row.depth]));

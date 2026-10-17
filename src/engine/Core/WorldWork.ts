@@ -1,3 +1,4 @@
+import {withPartyActor} from './PartyRuntime';
 import { workItemStamp, prepareWorkOperation, bindCraftRoll, completeWorkOperation, completeCraftRoll } from './WorldWorkItems';
 import { cancelResidentOrder } from './ResidentOrders';
 import { isIncapacitated } from '../Status/Incapacitation';
@@ -161,7 +162,7 @@ export function withWorldActorScope<T>(
   }
   if (
     (kind === 'player-command' &&
-      (!game.isExecutingRecordedCommand() || actorId !== game.player.id)) ||
+      (!game.isExecutingRecordedCommand() || actorId !== game.commandActor.id)) ||
     (kind === 'trusted-world' && !import.meta.env.DEV)
   )
     throw new World5Error('C5_SCOPE');
@@ -226,7 +227,7 @@ export function isCancelWorkCommand(game: Game, data: unknown): boolean {
   }
 }
 function actor(game: Game, id: number) {
-  return id === game.player.id ? game.player : game.monsters.find((m) => m.id === id);
+  return game.controlledActors.find(a=>a.id===id) ?? game.monsters.find((m) => m.id === id);
 }
 function tool(
   game: Game,
@@ -235,8 +236,8 @@ function tool(
 ): { id: number | null; cost: number; durability: number } {
   if (tag === null) return { id: null, cost: 0, durability: 0 };
   const held =
-    actorId === game.player.id
-      ? game.player.inventory.items
+    actorId === game.commandActor.id
+      ? game.commandActor.inventory.items
       : ([(actor(game, actorId) as any)?.carriedItem].filter(Boolean) as Item[]);
   const i = held.find(
     (i) =>
@@ -335,7 +336,7 @@ function preparePlan(
     int(request.ticketId, 1);
     int(request.ticketRevision);
     const t = activeTicketById(game, request.ticketId);
-    if (!t || t.owner !== owner || t.actorId !== actorId || actorId !== game.player.id)
+    if (!t || t.owner !== owner || t.actorId !== actorId || actorId !== game.commandActor.id)
       reject('C5_UNKNOWN_TARGET');
     if (t.revision !== request.ticketRevision) reject('C5_STALE');
     if (t.status !== 'working' || t.bundleActionId !== null) reject('C5_BUSY');
@@ -344,15 +345,15 @@ function preparePlan(
     if (
       request.inventoryStamp !==
       inventoryStamp(
-        actorId === game.player.id
-          ? game.player.inventory.items
+        actorId === game.commandActor.id
+          ? game.commandActor.inventory.items
           : [(a as any).carriedItem].filter(Boolean)
       )
     )
       reject('C5_STALE');
     casKeys = [{ kind: 'inventory', actorId, stamp: request.inventoryStamp }];
     if (
-      actorId !== game.player.id &&
+      actorId !== game.commandActor.id &&
       (request.kind !== 'harvest' || request.destinationId === null)
     )
       reject('C5_UNSUPPORTED');
@@ -361,8 +362,8 @@ function preparePlan(
       int(request.itemId,1);int(request.stationId,1);int(request.stationRevision);
       if(request.rowId!==undefined&&(typeof request.rowId!=='string'||! /^[a-z][a-z0-9.-]{0,127}$/.test(request.rowId)))reject('C5_BAD_PAYLOAD');
       if(typeof request.operationId!=='string'||!request.operationId.startsWith(owner+'.work.')||typeof request.itemRevision!=='string')reject('C5_BAD_PAYLOAD');
-      const item=game.player.inventory.items.find(i=>i.id===request.itemId);
-      if(!item||[game.player.equippedWeapon,game.player.equippedArmor,game.player.ringLeft,game.player.ringRight].includes(item))reject('C5_BAD_OWNERSHIP');
+      const item=game.commandActor.inventory.items.find(i=>i.id===request.itemId);
+      if(!item||[game.commandActor.equippedWeapon,game.commandActor.equippedArmor,game.commandActor.ringLeft,game.commandActor.ringRight].includes(item))reject('C5_BAD_OWNERSHIP');
       if(workItemStamp(item)!==request.itemRevision)reject('C5_STALE');
       const station=queryStations(game,owner).find(s=>s.interactableId===request.stationId);
       if(!station||!station.tags.includes('station.forge'))reject('C5_UNKNOWN_TARGET');
@@ -472,7 +473,7 @@ function preparePlan(
       checkInteractableBudget(game);
       const kit =
         d.kitDefinitionId &&
-        game.player.inventory.items.find(
+        game.commandActor.inventory.items.find(
           (i) => i.worldItem?.definitionId === d.kitDefinitionId && i.quantity >= 1
         );
       inputs = kit
@@ -482,17 +483,17 @@ function preparePlan(
     }
   }
   const selectedTool = tool(game, tag, actorId),
-    source = sourceId === null ? game.player.inventory.items : containerItems(game, sourceId);
+    source = sourceId === null ? game.commandActor.inventory.items : containerItems(game, sourceId);
   if (!continuing) amountsEnough(game, source, inputs, batches);
   const after = afterEscrow(source, inputs, batches).filter(i=>i.id!==targetId),
-    outputBase = sourceId === null ? after : game.player.inventory.items;
+    outputBase = sourceId === null ? after : game.commandActor.inventory.items;
   // Equipment work reserves the actual remaining stack capacity; other C5 recipes retain their standalone fallback.
   const output = outputSlots(game, targetId===null?[]:outputBase, outputs, batches)+(targetId===null?0:1);
   const refund = (inputs.length ? outputSlots(game, targetId===null?[]:outputBase, inputs, batches) : 0)+(targetId===null?0:1);
   if (!continuing) {
     if (
       destinationId === null &&
-      game.player.inventory.capacity <
+      game.commandActor.inventory.capacity <
         outputBase.reduce(
           (n, i) =>
             n +
@@ -555,7 +556,7 @@ function issue(game: Game, plan: Plan): WorldPlanHandle {
     operation: plan.request.kind,
     casKeys: casFor(plan)
   }) as unknown as WorldPlanHandle;
-  handles.set(handle, { game, world: game.world5, plan, used: false, epoch: game.worldWorkCommandEpoch, ...(plan.request.kind==='item-operation'?{target:game.player.inventory.items.find(i=>i.id===(plan.request as Extract<Request,{kind:'item-operation'}>).itemId)}:{}) });
+  handles.set(handle, { game, world: game.world5, plan, used: false, epoch: game.worldWorkCommandEpoch, ...(plan.request.kind==='item-operation'?{target:game.commandActor.inventory.items.find(i=>i.id===(plan.request as Extract<Request,{kind:'item-operation'}>).itemId)}:{}) });
   return handle;
 }
 function casFor(p: Plan): WorldPlanHandle['casKeys'] {
@@ -606,7 +607,7 @@ export function prepareWorldWorkCommand(
     const attempt = (request: Request): WorldResult<WorldPlanHandle> => {
       if (!active) return { ok: false, code: 'C5_SCOPE', field: null };
       try {
-        return { ok: true, value: issue(game, preparePlan(game, owner, game.player.id, request)) };
+        return { ok: true, value: issue(game, preparePlan(game, owner, game.commandActor.id, request)) };
       } catch (error) {
         return {
           ok: false,
@@ -617,7 +618,7 @@ export function prepareWorldWorkCommand(
     };
     const sdk: WorldWorkPrepareSDK = {
       owner,
-      actorId: game.player.id,
+      actorId: game.commandActor.id,
       readWorkContext: (q) =>
         active
           ? readWorkContext(game, owner, q, true)
@@ -679,7 +680,7 @@ function escrowInputs(game: Game, plan: Plan, batches: number, ticketId: number)
   const w = game.world5!,
     id = allocateWorldId(game),
     source =
-      plan.sourceId === null ? game.player.inventory.items : containerItems(game, plan.sourceId),
+      plan.sourceId === null ? game.commandActor.inventory.items : containerItems(game, plan.sourceId),
     ids: number[] = [];
   for (const row of plan.inputs) {
     let remaining = row.count * batches;
@@ -689,7 +690,7 @@ function escrowInputs(game: Game, plan: Plan, batches: number, ticketId: number)
       let detached: Item;
       if (count === item.quantity) {
         detached = item;
-        if (plan.sourceId === null) game.player.inventory.removeItem(item);
+        if (plan.sourceId === null) game.commandActor.inventory.removeItem(item);
         else {
           const c = w.containers.find((c) => c.id === plan.sourceId)!;
           c.itemIds.splice(c.itemIds.indexOf(item.id), 1);
@@ -712,8 +713,8 @@ function escrowInputs(game: Game, plan: Plan, batches: number, ticketId: number)
     if (remaining) reject('C5_INPUT');
   }
   if(plan.request.kind==='item-operation'){
-    const item=game.player.inventory.items.find(i=>i.id===(plan.request as Extract<Request,{kind:'item-operation'}>).itemId)!;
-    game.player.inventory.removeItem(item);ids.push(item.id);game.worldContainerItems!.set(item.id,item);
+    const item=game.commandActor.inventory.items.find(i=>i.id===(plan.request as Extract<Request,{kind:'item-operation'}>).itemId)!;
+    game.commandActor.inventory.removeItem(item);ids.push(item.id);game.worldContainerItems!.set(item.id,item);
   }
   w.containers.push({
     id,
@@ -750,7 +751,7 @@ export function commitWorldWork(
   entry.used = true;
   return result(() => {
     const plan = preparePlan(game, entry.plan.owner, entry.plan.actorId, entry.plan.request);
-    if (plan.canonical !== entry.plan.canonical || (entry.target && !game.player.inventory.items.includes(entry.target))) reject('C5_STALE');
+    if (plan.canonical !== entry.plan.canonical || (entry.target && !game.commandActor.inventory.items.includes(entry.target))) reject('C5_STALE');
     return transactWorldWork(game, () => {
       const request = plan.request;
       if (request.kind === 'cancel-work') {
@@ -863,14 +864,14 @@ export function commitWorldWork(
         reason: null,
         tick: w.simulationTicks
       });
-      if (batches > 1 && plan.actorId === game.player.id) game.beginWorldAutoWork(ticketId);
+      if (!game.party && batches > 1 && plan.actorId === game.commandActor.id) game.beginWorldAutoWork(ticketId);
       updateWorldReasons(game);
-      if (plan.actorId === game.player.id) startWorldWorkBatch(game, ticketId);
+      if (plan.actorId === game.commandActor.id) startWorldWorkBatch(game, ticketId);
       return {
         operation: request.kind,
         receiptIdentity: `accept.${ticketId}`,
         ticketId,
-        chargedTicks: plan.actorId === game.player.id ? plan.workTicks : 0
+        chargedTicks: plan.actorId === game.commandActor.id ? plan.workTicks : 0
       };
     });
   });
@@ -893,8 +894,8 @@ export function startWorldWorkBatch(game: Game, ticketId: number): void {
     reject('C5_DISTANCE');
   if (d.toolId !== null) {
     const held =
-        t.actorId === game.player.id
-          ? game.player.inventory.items
+        t.actorId === game.commandActor.id
+          ? game.commandActor.inventory.items
           : ([(a as any).carriedItem].filter(Boolean) as Item[]),
       item = held.find((i) => i.id === d.toolId);
     if (
@@ -965,7 +966,7 @@ export function worldWorkClockFinished(
   t.bundleActionId = null;
   t.remainingTicks = 0;
   t.laborCreditTicks = bundle.elapsedActionTicks;
-  if (t.actorId !== game.player.id) {
+  if (!game.controlledActors.some(a=>a.id===t.actorId)) {
     const why = interruptReason(game, t, d);
     if (why) cancelWorldWork(game, t.ticketId, why);
     else
@@ -987,8 +988,8 @@ export function mirrorWorldWorkTicks(game: Game, delta: number): void {
     }
   }
   if (
-    game.actorActions?.bundles.some(
-      (b) => b.owner === 'foundation' && b.decisionOwnerId === game.player.id
+    !game.party && game.actorActions?.bundles.some(
+      (b) => b.owner === 'foundation' && b.decisionOwnerId === game.commandActor.id
     )
   )
     timeSystem.currentTick += delta;
@@ -1031,7 +1032,7 @@ function interruptReason(
 /** Read the same interruption predicates before the generic disturbance flag
  * cancels an auto_work command, preserving the specific mechanical source. */
 export function worldWorkInterruptionReason(game: Game): string | null {
-  const ticket = activeTicket(game, game.player.id);
+  const ticket = activeTicket(game, game.commandActor.id);
   const detail = ticket && game.worldWorkDetails?.find((d) => d.ticketId === ticket.ticketId);
   return ticket && detail ? interruptReason(game, ticket, detail) : null;
 }
@@ -1102,6 +1103,8 @@ export function cancelWorldWork(
 ): void {
   const order=game.world5?.orders.find(o=>o.production&&o.ticketId===ticketId);if(order){cancelResidentOrder(game,order.actorId,reason);return;}
   const t = activeTicketById(game, ticketId);
+  const member=t&&game.party&&game.controlledActors.find(a=>a.id===t.actorId);
+  if(member&&game.commandActor!==member)return withPartyActor(game,member,()=>cancelWorldWork(game,ticketId,reason,participant));
   if (!t || t.status === 'cancelled' || t.status === 'completed') return;
   transactWorldWork(game, () =>
     withPublishingTicket(game, ticketId, () => {
@@ -1173,6 +1176,8 @@ function completeBatch(
   t: MutableWorld<import('../../ext/worldSdk').WorkTicket>,
   d: WorldWorkDetail
 ): void {
+  const member=game.party&&game.controlledActors.find(a=>a.id===t.actorId);
+  if(member&&game.commandActor!==member)return withPartyActor(game,member,()=>completeBatch(game,t,d));
   transactWorldWork(game, () =>
     withPublishingTicket(game, t.ticketId, () => {
       const pack = worldPack(game, t.owner);
@@ -1231,14 +1236,14 @@ function completeBatch(
       );
       if (d.toolId !== null) {
         const item =
-          game.player.inventory.items.find((i) => i.id === d.toolId) ??
+          game.commandActor.inventory.items.find((i) => i.id === d.toolId) ??
           (actor(game, t.actorId) as any)?.carriedItem;
         if (!item?.worldItem) reject('C5_TOOL');
         item.worldItem.toolDurability -= itemDefinition(
           game,
           item.worldItem.definitionId
         ).tool!.durabilityPerBatch;
-        markItemStatsDirty(game.player.inventory);
+        markItemStatsDirty(game.commandActor.inventory);
       }
       t.completedBatches++;
       t.lastCompletionOrdinal = checkedAdd(t.lastCompletionOrdinal, 1);
@@ -1338,7 +1343,7 @@ export function selectWorldWorkDecision(
   scope: ActorActionScope
 ): boolean {
   const t = activeTicket(game, actorId);
-  if (!t || game.world5!.orders.some(o=>o.production&&o.ticketId===t.ticketId) || actorId === game.player.id || t.bundleActionId !== null) return false;
+  if (!t || game.world5!.orders.some(o=>o.production&&o.ticketId===t.ticketId) || actorId === game.commandActor.id || t.bundleActionId !== null) return false;
   assertNativeActorDecisionScope(scope, game, actorId);
   return withWorldActorScope(
     game,
@@ -1366,7 +1371,7 @@ export function previewWorldRecipe(
     let plan: Plan | undefined,
       reason: WorldErrorCode | null = null;
     try {
-      plan = preparePlan(game, owner, game.player.id, {
+      plan = preparePlan(game, owner, game.commandActor.id, {
         kind: 'craft',
         recipeId: id,
         batchCount,
@@ -1374,7 +1379,7 @@ export function previewWorldRecipe(
         stationRevision: station?.revision ?? null,
         sourceContainerId,
         sourceRevision: source?.revision ?? null,
-        inventoryStamp: inventoryStamp(game.player.inventory.items)
+        inventoryStamp: inventoryStamp(game.commandActor.inventory.items)
       });
     } catch (e) {
       reason = e instanceof World5Error ? e.code : 'C5_PROVIDER';

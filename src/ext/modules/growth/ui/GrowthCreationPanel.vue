@@ -5,7 +5,7 @@ import { inputManager } from '../../../../engine/Input';
 import type { GrowthCreationView } from '../view';
 import type { GrowthIdentity } from '../types';
 
-const props = defineProps<{ model: GrowthCreationView; submitting: boolean; error: string | null }>();
+const props = defineProps<{ memberNumber?: number; model: GrowthCreationView; submitting: boolean; error: string | null }>();
 const emit = defineEmits<{ cancel: []; select: [kind: GrowthIdentity['kind'], id: string]; adjust: [identityId: string, choiceIndex: number, attributeId: string, delta: number]; submit: [] }>();
 const { t } = useTranslation();
 const text = (key: string) => t(`ext.${key.slice(4)}`);
@@ -62,7 +62,7 @@ onUnmounted(() => { clearNavigationLock(); removeKeyboard?.(); });
     <div class="growth-creation-backdrop" @click.self="cancel" @pointerdown.stop @pointerup.stop @touchstart.stop @touchend.stop @keydown.esc.prevent.stop="cancel" @keydown.stop="cycleFocus" @keyup.stop @dblclick.prevent.stop>
       <section ref="panel" class="growth-creation-panel" tabindex="-1" role="dialog" aria-modal="true" :aria-label="t('ext.growth.creation.title')">
         <header class="growth-creation-header">
-          <div><p>{{ t('ext.growth.creation.eyebrow') }}</p><h2>{{ t('ext.growth.creation.title') }}</h2></div>
+          <div><p>{{ t('ext.growth.creation.eyebrow') }}</p><h2>{{ memberNumber ? t('ext.growth.creation.member_title',{number:memberNumber}) : t('ext.growth.creation.title') }}</h2></div>
           <button data-creation="cancel" :disabled="submitting" @click="cancel">{{ t('ext.growth.creation.cancel') }}</button>
         </header>
         <nav class="growth-creation-steps" :aria-label="t('ext.growth.creation.steps')">

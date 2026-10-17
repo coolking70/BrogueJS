@@ -27,8 +27,8 @@ export function forEachItemRoot(
     };
     monsters.forEach(held);
   };
-  for (const item of game.player.inventory.items)
-    visit(item, { kind: 'inventory', actorId: game.player.id });
+  for(const actor of game.party ? [game.player,...game.party.actors.values()] : [game.player])for (const item of actor.inventory.items)
+    visit(item, { kind: 'inventory', actorId: actor.id });
   floor(game.items, game.depth);
   carriers([...game.monsters, ...game.dormantMonsters]);
   for (const [depth, level] of [...internal.levels]

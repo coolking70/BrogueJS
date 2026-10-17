@@ -1,3 +1,4 @@
+import { isPartyMember } from '../Core/PartyActorIdentity';
 import { itemRunicPower } from '../Items/ItemExtensionBindings';
 import { hasItemData, copyItemValue, freezeItemValue } from '../Items/ItemData';
 import type { EquippedStatItem } from '../../ext/stats';
@@ -63,7 +64,7 @@ export function nativeStatSignature(actor:Creature):string {
 export function nativeStatFacts(actor:Creature,playerId:number):StatActorFacts {
   const a=actor as EquippedActor, player=actor.id===playerId, allied=player||a.isAlly===true;
   const bodyTags=[footprintOf(actor).length>1?'body.large':'body.single',...(actor.spatial?.bodyMember?['body.composite',actor.spatial.bodyMember.groupId===actor.id?'body.core':'body.member']:[])];
-  return Object.freeze({id:actor.id,name:actor.name,hp:actor.hp,maxHp:actor.maxHp,x:actor.loc.x,y:actor.loc.y,player,allied,hostile:!allied&&!a.isCaged,monsterId:a.typeId??null,statuses:Object.freeze(Object.keys(actor.statusDurations).filter(s=>actor.hasStatus(s as Parameters<Creature['hasStatus']>[0]))),tags:Object.freeze([...bodyTags,...Object.entries(MONSTER_CLASS_MEMBERS).filter(([,members])=>members.includes(a.typeId??'')).map(([key])=>key)])});
+  return Object.freeze({id:actor.id,name:actor.name,hp:actor.hp,maxHp:actor.maxHp,x:actor.loc.x,y:actor.loc.y,player,allied,hostile:!allied&&!a.isCaged,monsterId:a.typeId??null,statuses:Object.freeze(Object.keys(actor.statusDurations).filter(s=>actor.hasStatus(s as Parameters<Creature['hasStatus']>[0]))),tags:Object.freeze([...(isPartyMember(actor)?['party.member']:[]),...bodyTags,...Object.entries(MONSTER_CLASS_MEMBERS).filter(([,members])=>members.includes(a.typeId??'')).map(([key])=>key)])});
 }
 export function nativeEquippedItems(actor:Creature,change?:EquipChange):readonly Item[] {
   const a=actor as EquippedActor, slots=[a.equippedWeapon,a.equippedArmor,a.ringLeft,a.ringRight].filter((i):i is Item=>!!i&&(!bindings.has(actor)||a.inventory?.items.includes(i)===true));

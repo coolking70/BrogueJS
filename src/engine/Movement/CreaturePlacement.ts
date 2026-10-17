@@ -1,5 +1,5 @@
 import { composedCellFlags } from '../Map/CellProperties';
-import { assertNativeSpatial, footprintContains, footprintOf, canFitAt } from './CreatureSpatial';
+import { controlledOccupies, assertNativeSpatial, footprintContains, footprintOf, canFitAt } from './CreatureSpatial';
 import { DijkstraMap, MAX_DISTANCE } from '../Map/Pathfinding';
 /** W-11: destination policy is separate from the displacement commit.
  * CE Monsters.c:650-670,1155-1204; Dijkstra.c:209-255; Grid.c:224-244.
@@ -21,6 +21,8 @@ import {
 export interface PlacementWorld {
     grid: Grid;
     player: Creature;
+    controlled?: readonly Creature[];
+    inactivePlayer?: boolean;
     monsters: readonly Monster[];
     dormantMonsters?: readonly Monster[];
 }
@@ -29,7 +31,7 @@ export interface PlacementWorld {
  * stairs or machines. Caller owns effect immunity, range and destination policy.
  * Dormant living creatures count as occupied too (stronger than CE HAS_MONSTER).
  */
-export function canPlaceCreature(world: Pick<PlacementWorld, 'grid' | 'player' | 'monsters' | 'dormantMonsters'>, target: Creature, at: Pos, walkingSecretDoor = false): boolean {
+export function canPlaceCreature(world: PlacementWorld, target: Creature, at: Pos, walkingSecretDoor = false): boolean {
     assertNativeSpatial(target);
     if (target.spatial && walkingSecretDoor) return canFitAt(world, target, at, { allowsTerrain: p => {
         const cell = world.grid.getCell(p.x, p.y);
@@ -123,13 +125,13 @@ export function teleportCandidates(world: PlacementWorld, target: Creature, resp
  * Grid.c:287-360). Query only; caller chooses uniformly among x-major ties.
  * Does not reject other monsters or machines: neither is a forbidden map flag.
  */
-export function captiveItemDropCandidates(world: Pick<PlacementWorld, 'grid' | 'player' | 'monsters'>, origin: Pos, items: readonly { loc: Pos }[]): Pos[] {
+export function captiveItemDropCandidates(world: PlacementWorld, origin: Pos, items: readonly { loc: Pos }[]): Pos[] {
     const { grid } = world;
     const flags = (x: number, y: number) => cellTerrainFlags(grid, x, y);
     const qualifies = (x: number, y: number) => {
         const cell = grid.getCell(x, y);
         return !!cell && !(flags(x, y) & T_OBSTRUCTS_ITEMS)
-            && !(footprintContains(world.player, { x, y }))
+            && !(controlledOccupies(world, { x, y }))
             && !cell.layers.includes(TerrainType.STAIRS_UP) && !cell.layers.includes(TerrainType.STAIRS_DOWN) && !cell.layers.includes(TerrainType.DUNGEON_PORTAL)
             && !items.some(item => item.loc.x === x && item.loc.y === y);
     };
@@ -140,10 +142,10 @@ export function captiveItemDropCandidates(world: Pick<PlacementWorld, 'grid' | '
 /** CE Movement.c:1451-1454: the player has moved and the ally's old
  * HAS_MONSTER bit is cleared. Terrain blocks paths, but only occupied cells
  * and stairs forbid destinations. Use permanent species flags, as CE does. */
-export function allySwapCandidates(world: PlacementWorld, ally: Monster): Pos[] {
-    return qualifyingPathCandidates(world.grid, world.player.loc, teleportForbiddenFlags(ally), 0, (x, y) => {
+export function allySwapCandidates(world: PlacementWorld, ally: Monster, origin: Pos = world.player.loc): Pos[] {
+    return qualifyingPathCandidates(world.grid, origin, teleportForbiddenFlags(ally), 0, (x, y) => {
         const cell = world.grid.getCell(x, y)!;
-        return (footprintContains(world.player, { x, y }))
+        return (controlledOccupies(world, { x, y }))
             || world.monsters.some(m => m !== ally && !m.isDormant && !m.deathProcessed && m.hp > 0 && footprintContains(m, { x, y }))
             || cell.layers.some(t => t === TerrainType.STAIRS_UP || t === TerrainType.STAIRS_DOWN || t === TerrainType.DUNGEON_PORTAL);
     });

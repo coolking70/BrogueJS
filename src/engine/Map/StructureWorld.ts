@@ -678,7 +678,7 @@ function protectedCell(
   )
     fail('C5_PROTECTED');
   if (
-    [game.player, ...game.monsters, ...game.dormantMonsters].some(
+    [...game.activeControlledActors, ...game.monsters, ...game.dormantMonsters].some(
       (a) => a.hp > 0 && game.footprintOf(a).some((p) => p.x === at.x && p.y === at.y)
     ) ||
     game.items.some((i) => i.x === at.x && i.y === at.y)
@@ -696,7 +696,7 @@ function protectedCell(
     fail('C5_PROTECTED');
   if (blocking) {
     for (const actor of [
-      game.player,
+      game.commandActor,
       ...[...game.monsters, ...game.dormantMonsters].filter(
         (m) => m.hp > 0 && game.world5!.residents.some((r) => r.actorId === m.id)
       )
@@ -710,7 +710,7 @@ function jobInRegion(
   actorId: number,
   ticketId: number | null
 ): boolean {
-  const actor = [game.player, ...game.monsters, ...game.dormantMonsters].find(
+  const actor = [...game.activeControlledActors, ...game.monsters, ...game.dormantMonsters].find(
       (a) => a.id === actorId
     ),
     ticket = game.world5!.tickets.find((t) => t.ticketId === ticketId);
@@ -728,8 +728,8 @@ function jobInRegion(
 }
 function adjacent(game: Game, at: Position): void {
   if (
-    distance(game.player.loc, at) !== 1 ||
-    playerTravelDiagonalBlocked(game.grid, game.player.loc, at, false)
+    distance(game.commandActor.loc, at) !== 1 ||
+    playerTravelDiagonalBlocked(game.grid, game.commandActor.loc, at, false)
   )
     fail('C5_DISTANCE');
 }
@@ -869,9 +869,9 @@ function validate(game: Game, owner: string, request: Request): string {
     };
     for (const e of runtime.worldWorkEntities().filter((e) => e.depth === game.depth))
       cutsBoundary([e, ...workPositions(game, e, e.interactionDistance)]);
-    for (const actor of [game.player, ...game.monsters, ...game.dormantMonsters])
+    for (const actor of [...game.activeControlledActors, ...game.monsters, ...game.dormantMonsters])
       cutsBoundary(game.footprintOf(actor));
-    if (!escapes(game, game.player.loc, null)) fail('C5_PROTECTED');
+    if (!escapes(game, game.commandActor.loc, null)) fail('C5_PROTECTED');
     return c5Canonical([c, old?.revision ?? null]);
   }
   if (request.family === 'placement') {
@@ -900,18 +900,19 @@ function validate(game: Game, owner: string, request: Request): string {
     ref(game, r!.levelRef);
     const d = restPointDefinition(game, r!.definitionId),
       e = runtime.worldWorkEntities().find((e) => e.id === r!.interactableId)!;
-    if (game.player.hp <= 0 || game.isGameOver) fail('C5_DEAD');
+    if (game.commandActor.hp <= 0 || game.isGameOver) fail('C5_DEAD');
     if (
       activeTicket(game) ||
-      game.actorActions?.bundles.some((b) => b.decisionOwnerId === game.player.id) ||
+      game.actorActions?.bundles.some((b) => b.decisionOwnerId === game.commandActor.id) ||
       game.hasFoundationRestPoint()
     )
       fail('C5_BUSY');
     if (
-      distance(game.player.loc, e) > d.interactionDistance ||
-      !hasInteractionLine(game.grid, game.player.loc, e)
+      distance(game.commandActor.loc, e) > d.interactionDistance ||
+      !hasInteractionLine(game.grid, game.commandActor.loc, e)
     )
       fail('C5_DISTANCE');
+    if(game.party){if(game.activeControlledActors.some(a=>a.ticksUntilTurn>0||game.actorActions?.bundles.some(b=>b.decisionOwnerId===a.id)))fail('C5_BUSY');if(game.activeControlledActors.some(a=>distance(a.loc,e)>d.interactionDistance||!hasInteractionLine(game.grid,a.loc,e)))fail('C5_DISTANCE');}
     if (threat(game)) fail('C5_THREAT');
     return c5Canonical([c, r!.lastUseOrdinal]);
   }
@@ -1018,7 +1019,7 @@ function validate(game: Game, owner: string, request: Request): string {
     }
     for (const a of request.materials ?? d.constructionCost)
       if (
-        (request.sourceContainerId == null ? game.player.inventory.items : containerItems(game,request.sourceContainerId))
+        (request.sourceContainerId == null ? game.commandActor.inventory.items : containerItems(game,request.sourceContainerId))
           .filter((i) => i.worldItem?.definitionId === a.itemDefinitionId)
           .reduce((n, i) => n + i.quantity, 0) < a.count
       )
@@ -1026,7 +1027,7 @@ function validate(game: Game, owner: string, request: Request): string {
     return c5Canonical([
       c,
       r!.revision,
-      inventoryStamp(game.player.inventory.items),
+      inventoryStamp(game.commandActor.inventory.items),
       station?.revision ?? null,
       request.materials ?? null,
       request.sourceContainerId == null ? null : [request.sourceContainerId, game.world5!.containers.find(c=>c.id===request.sourceContainerId)?.revision]
@@ -1041,11 +1042,11 @@ function validate(game: Game, owner: string, request: Request): string {
   if (c.kind === 'door') {
     if (typeof c.open !== 'boolean' || v.c.doorOpen === null) fail('C5_BAD_PAYLOAD');
     if (!c.open) protectedCell(game, v.row.at, true);
-    if (distance(game.player.loc, v.row.at) > 1) fail('C5_DISTANCE');
+    if (distance(game.commandActor.loc, v.row.at) > 1) fail('C5_DISTANCE');
   }
   if (c.kind === 'dismantle') {
     if (!game.grid.getCell(v.row.at.x, v.row.at.y)?.isVisible) fail('C5_BLOCKED');
-    if (distance(game.player.loc, v.row.at) > 1) fail('C5_DISTANCE');
+    if (distance(game.commandActor.loc, v.row.at) > 1) fail('C5_DISTANCE');
   }
   if(c.kind==='repair'){
     uint(c.amount,'amount',1);const d=structureDefinition(game,v.c.definitionId);
@@ -1054,7 +1055,7 @@ function validate(game: Game, owner: string, request: Request): string {
     adjacent(game,v.row.at);
     const expected=d.constructionCost.map(a=>({...a,count:Math.ceil(a.count*c.amount/d.maxHp)}));
     if(c5Canonical(request.materials)!==c5Canonical(expected))fail('C5_INPUT');
-    for(const a of expected)if((request.sourceContainerId==null?game.player.inventory.items:containerItems(game,request.sourceContainerId)).filter(i=>i.worldItem?.definitionId===a.itemDefinitionId).reduce((n,i)=>n+i.quantity,0)<a.count)fail('C5_INPUT');
+    for(const a of expected)if((request.sourceContainerId==null?game.commandActor.inventory.items:containerItems(game,request.sourceContainerId)).filter(i=>i.worldItem?.definitionId===a.itemDefinitionId).reduce((n,i)=>n+i.quantity,0)<a.count)fail('C5_INPUT');
   }
   if (c.kind === 'damage') {
     uint(c.amount, 'amount', 1);
@@ -1068,7 +1069,7 @@ function plan(
 ): WorldResult<{ handle: WorldPlanHandle; stamp: string; request: Request }> {
   return result(() => {
     const a = worldActorAuthority(scope);
-    if (a.actorId !== a.game.player.id) fail('C5_SCOPE');
+    if (a.actorId !== a.game.commandActor.id) fail('C5_SCOPE');
     const stamp = validate(a.game, a.owner, request);
     const change = request.change as any,
       casKeys: import('../../ext/worldSdk').CasKey[] = [];
@@ -1098,7 +1099,7 @@ function plan(
         {
           kind: 'inventory',
           actorId: a.actorId,
-          stamp: inventoryStamp(a.game.player.inventory.items)
+          stamp: inventoryStamp(a.game.commandActor.inventory.items)
         }
       );
       const station = a.game.world5!.stations.find(
@@ -1298,7 +1299,7 @@ function ensureRemains(game: Game, d: StructureDefinition, origin: Position): vo
 function build(game: Game, owner: string, c: Extract<StructureChange, { kind: 'build' }>, materials?:readonly import('../../ext/worldSdk').ItemAmount[], sourceId?:number|null): void {
   const w = game.world5!,
     d = structureDefinition(game, c.definitionId);
-  const source=sourceId==null?game.player.inventory.items:containerItems(game,sourceId);
+  const source=sourceId==null?game.commandActor.inventory.items:containerItems(game,sourceId);
   for (const a of materials ?? d.constructionCost) {
     let remaining = a.count;
     for (const i of [...source])
@@ -1306,7 +1307,7 @@ function build(game: Game, owner: string, c: Extract<StructureChange, { kind: 'b
         const n = Math.min(remaining, i.quantity);
         remaining -= n;
         i.quantity -= n;
-        if (!i.quantity) {if(sourceId==null)game.player.inventory.removeItem(i);else {const box=w.containers.find(c=>c.id===sourceId)!;box.itemIds.splice(box.itemIds.indexOf(i.id),1);game.worldContainerItems!.delete(i.id);}}
+        if (!i.quantity) {if(sourceId==null)game.commandActor.inventory.removeItem(i);else {const box=w.containers.find(c=>c.id===sourceId)!;box.itemIds.splice(box.itemIds.indexOf(i.id),1);game.worldContainerItems!.delete(i.id);}}
         if(sourceId!=null){const box=w.containers.find(c=>c.id===sourceId)!;box.revision=checkedAdd(box.revision,1);}
         if (!remaining) break;
       }
@@ -1510,7 +1511,7 @@ export function destroyComponent(game: Game, id: number, refund: boolean, reason
             !runtime.worldWorkEntities().some((e) => e.depth === depth && e.x === x && e.y === y) &&
             !(
               depth === game.depth
-                ? [game.player, ...game.monsters, ...game.dormantMonsters]
+                ? [...(game.party ? game.activeControlledActors : [game.player]), ...game.monsters, ...game.dormantMonsters]
                 : [
                     ...game.levels.get(depth)!.monsters,
                     ...(game.levels.get(depth)!.dormantMonsters ?? [])
@@ -1519,7 +1520,7 @@ export function destroyComponent(game: Game, id: number, refund: boolean, reason
             hasInteractionLine(grid, row.at, { x, y })
           )
             candidates.push({ x, y });
-      const at = candidates[0];
+      const at = game.party?candidates.find(p=>!game.party!.state.members.some(m=>m.life!=='dead'&&m.level.kind==='dungeon'&&m.level.depth===depth&&game.controlledActors.some(a=>a.id===m.actorId&&a.x===p.x&&a.y===p.y))):candidates[0];
       if (at) {
         item.loc = { ...at };
         items.push(item);
@@ -1561,10 +1562,10 @@ export function destroyComponent(game: Game, id: number, refund: boolean, reason
       .map((a) => ({ ...a, count: Math.floor((((a.count * c.hp) / d.maxHp) * 1) / 2) }))
       .filter((a) => a.count > 0);
     if (
-      outputSlots(game, game.player.inventory.items, amounts) +
-        game.player.inventory.packCount() +
+      outputSlots(game, game.commandActor.inventory.items, amounts) +
+        game.commandActor.inventory.packCount() +
         reservedInventorySlots(game) >
-      game.player.inventory.capacity
+      game.commandActor.inventory.capacity
     )
       fail('C5_CAPACITY');
     for (const fake of amountStacks(game, amounts)) {
@@ -1681,8 +1682,8 @@ export function commitStructureWorld(
         } else if(c.kind==='repair'){
           const v=component(game,c.componentId),d=structureDefinition(game,v.c.definitionId);
           // The same synchronous paid construction contract: no HP or material publication before CAS.
-          const source=r.sourceContainerId==null?game.player.inventory.items:containerItems(game,r.sourceContainerId);
-          for(const a of r.materials!){let left=a.count;for(const i of [...source])if(i.worldItem?.definitionId===a.itemDefinitionId){const n=Math.min(left,i.quantity);i.quantity-=n;left-=n;if(!i.quantity){if(r.sourceContainerId==null)game.player.inventory.removeItem(i);else{const box=w.containers.find(b=>b.id===r.sourceContainerId)!;box.itemIds=box.itemIds.filter(id=>id!==i.id);game.worldContainerItems!.delete(i.id);}}if(!left)break;}}
+          const source=r.sourceContainerId==null?game.commandActor.inventory.items:containerItems(game,r.sourceContainerId);
+          for(const a of r.materials!){let left=a.count;for(const i of [...source])if(i.worldItem?.definitionId===a.itemDefinitionId){const n=Math.min(left,i.quantity);i.quantity-=n;left-=n;if(!i.quantity){if(r.sourceContainerId==null)game.commandActor.inventory.removeItem(i);else{const box=w.containers.find(b=>b.id===r.sourceContainerId)!;box.itemIds=box.itemIds.filter(id=>id!==i.id);game.worldContainerItems!.delete(i.id);}}if(!left)break;}}
           if(r.sourceContainerId!=null){const box=w.containers.find(b=>b.id===r.sourceContainerId)!;box.revision=checkedAdd(box.revision,1);}
           v.c.hp+=c.amount;v.c.revision=checkedAdd(v.c.revision,1);ticks=Math.max(100,Math.ceil(d.constructionTicks*c.amount/d.maxHp));
         } else if (c.kind === 'dismantle')
@@ -1795,7 +1796,7 @@ function withStructureFixtureScope<T>(
 ): T {
   if (!game.extensionRuntime?.isWorldStructureFixture(owner) || !game.isExecutingRecordedCommand())
     fail('C5_SCOPE');
-  return withWorldActorScope(game, owner, game.player.id, 'player-command', work);
+  return withWorldActorScope(game, owner, game.commandActor.id, 'player-command', work);
 }
 
 /** Trusted static raid damage: bounded non-destructive, with the same physical resistance as damage plans. */

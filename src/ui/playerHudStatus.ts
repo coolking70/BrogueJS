@@ -4,9 +4,9 @@ import { creatureStatusRows, isSidebarVisibleStatus } from '../engine/Status/sta
 
 /** CE IO.c:4824: searching uses the same progress row as other visible statuses.
  * Keep its existing Game counter out of the creature's decaying status store. */
-export function playerHudStatusRows(game: Pick<Game, 'player' | 'searchProgress'>, visible = isSidebarVisibleStatus) {
-    const rows = creatureStatusRows(game.player, visible);
-    const charge = game.searchProgress;
+export function playerHudStatusRows(game: Pick<Game, 'player' | 'searchProgress'> & Partial<Pick<Game,'focusedActor'|'party'>>, visible = isSidebarVisibleStatus) {
+    const rows = creatureStatusRows(game.focusedActor??game.player, visible);
+    const charge = game.party?.native[(game.focusedActor??game.player).id]?.searchingCharge??game.searchProgress;
     if (charge > 0 && visible('searching')) {
         rows.unshift({ id: 'searching', label: i18next.t('sidebar.searching', { defaultValue: 'Searching' }),
             color: '#93c5fd', value: `${charge}/5`, fraction: Math.max(0, Math.min(1, charge / 5)) });

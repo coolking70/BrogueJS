@@ -190,7 +190,7 @@ export function departureStep(game: Game, actor: Monster): boolean {
   })).filter(
     (p) =>
       game.grid.isValidPos(p.x, p.y) &&
-      !(p.x === game.player.x && p.y === game.player.y) &&
+      (game.party ? !game.controlledOccupies(p) : !(p.x === game.player.x && p.y === game.player.y)) &&
       game.canMoveDepartingActor(
         actor,
         p,

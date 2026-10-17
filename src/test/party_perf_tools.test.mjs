@@ -1,0 +1,10 @@
+import {it,expect} from 'vitest';
+import {PARTY_PERF_ID,partyShardActors,validatePartyMeasurement} from '../../scripts/party-perf-identity.mjs';
+import {mergePartyAb} from '../../scripts/merge-party-perf-ab.mjs';
+import {perfIdentity,loadPerfIdentity} from '../../scripts/ext-perf-selection.mjs';
+const stat={n:4,p50:1,p95:2,p99:2,max:2,total:5};
+const fixture=()=>({identity:PARTY_PERF_ID,status:'measurement-only',actors:2,mode:'party-only',steps:4,step:{...stat},projection:{...stat},event:{...stat},full:{...stat},encoding:{...stat},flush:{...stat},oos:0,zeroTicks:2,rowsHash:'a'.repeat(64),rngHash:'b'.repeat(64),fullDigest:'c'.repeat(64),sourceHash:'d'.repeat(64),bytes:{save:1,recording:1,partyControl:1,extraActors:1}});
+it('routes party through a distinct measurement identity and 1/2/4 shards',()=>{expect(['classic','all-full','all-prefix'].map(partyShardActors)).toEqual([1,2,4]);expect(perfIdentity(PARTY_PERF_ID).accepted).toBe(false);expect(()=>loadPerfIdentity('.',PARTY_PERF_ID)).toThrow('Party uses');});
+it('accepts complete short measurements without certifying a budget',()=>{expect(validatePartyMeasurement(fixture(),{actors:2,mode:'party-only',steps:4}).status).toBe('measurement-only');});
+it.each(['oos','hash','bytes','samples','timing','status'])('rejects corrupted measurement %s',kind=>{const row=fixture();if(kind==='oos')row.oos=1;if(kind==='hash')row.rowsHash='';if(kind==='bytes')row.bytes.save=-1;if(kind==='samples')row.step.n=3;if(kind==='timing')row.full.p95=NaN;if(kind==='status')row.status='pass';expect(()=>validatePartyMeasurement(row,{actors:2,mode:'party-only',steps:4})).toThrow();});
+it('rejects incomplete shard sets before publication',()=>{expect(()=>mergePartyAb('/private/tmp/unused-party-merge',[])).toThrow();});

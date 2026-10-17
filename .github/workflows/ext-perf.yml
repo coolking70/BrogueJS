@@ -3,6 +3,11 @@ name: ext phase6 performance A/B
 on:
   workflow_dispatch:
     inputs:
+      suite:
+        description: 'phase6 keeps D6; party measures separate 1/2/4 actor scenes without a budget'
+        type: choice
+        default: phase6
+        options: [phase6, party]
       base_ref:
         description: A revision (latest reviewed candidate)
         required: true
@@ -99,6 +104,7 @@ jobs:
           npm ci --prefix base
           npm ci --prefix head
       - name: Stage frozen classic planner and all-only recovery on both historical checkouts
+        if: inputs.suite != 'party'
         run: |
           node --input-type=module <<'JS'
           import {copyFileSync} from 'node:fs';
@@ -108,7 +114,17 @@ jobs:
             }
           }
           JS
+      - name: Party A/B (both refs must support party; no budget verdict)
+        if: inputs.suite == 'party'
+        env:
+          PERF_ROUNDS: ${{ inputs.rounds }}
+          PERF_SHARD: ${{ matrix.shard }}
+        run: >-
+          node control/scripts/run-ext-perf-ab.mjs --party
+          --base "$GITHUB_WORKSPACE/base" --head "$GITHUB_WORKSPACE/head"
+          --out "$RUNNER_TEMP/ext-perf" --shard "$PERF_SHARD" --rounds "$PERF_ROUNDS"
       - name: Interleaved A/B and B calibration
+        if: inputs.suite != 'party'
         timeout-minutes: 345
         env:
           PERF_BASE_IDENTITY: ${{ inputs.base_identity }}

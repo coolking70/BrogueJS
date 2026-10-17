@@ -193,19 +193,20 @@ function previewPorts(pack: GrowthPack, actor: GrowthRuleActor, nextActor: Growt
 export function readGrowthCharacterView(game: Game | null | undefined, draft?: GrowthAllocationDraft | null): GrowthCharacterViewModel | null {
     const runtime = game?.extensionRuntime;
     if (!runtime || !game?.player) return null;
-    const source = runtime.readModuleView('growth');
-    if (!source || source.playerId !== game.player.id) return null;
+    const member=game.party?runtime.readPartyModuleView('growth',game.focusedActor.id):null;
+    const source=member?{...member,playerId:member.actorId}:runtime.readModuleView('growth');
+    if (!source || source.playerId !== game.focusedActor.id) return null;
     const components = source.components;
     if (!components.progression || !components.attributes || !components.focus || !components.skills) return null;
     const pack = source.definitions as unknown as GrowthPack;
-    const input: CharacterInput = {previewStats:attributes=>runtime.hypotheticalComponents('growth',game.player.id,{attributes:attributes as unknown as import('../../types').Json},true),stats:runtime.stats.hypothetical(game.player.id,{},true), pack, session: source.session, revision: source.state.revision as number,
-        created: source.state.created === true, playerId: source.playerId, canManage: source.canManageCharacter,
+    const input: CharacterInput = {previewStats:attributes=>runtime.hypotheticalComponents('growth',game.focusedActor.id,{attributes:attributes as unknown as import('../../types').Json},true),stats:runtime.stats.hypothetical(game.focusedActor.id,{},true), pack, session: source.session, revision: source.state.revision as number,
+        created: source.state.created === true, playerId: source.playerId, canManage: source.canManageCharacter&&(!game.party||game.readyPartyActorId===game.focusedActor.id),
         replay: !!game.replayRecording, progression: components.progression as unknown as GrowthProgression,
-        attributes: components.attributes as unknown as GrowthAttributes, derived: {appliedStrength:game.extensionRuntime!.stats.applied(game.player.id,'native.strength'),appliedMaxHp:game.extensionRuntime!.stats.applied(game.player.id,'native.max-hp')},
+        attributes: components.attributes as unknown as GrowthAttributes, derived: {appliedStrength:game.extensionRuntime!.stats.applied(game.focusedActor.id,'native.strength'),appliedMaxHp:game.extensionRuntime!.stats.applied(game.focusedActor.id,'native.max-hp')},
         focus: components.focus as unknown as GrowthFocus, skills: components.skills as unknown as GrowthSkills,
         identity: { ...initialGrowthIdentityBuild(), ...(components.identity as unknown as Partial<GrowthIdentityBuild> | undefined) },
         skillBuild: (components['skill-build'] as unknown as GrowthPublicSkillBuild | undefined) ?? projectGrowthSkillBuild(pack, initialGrowthSkillBuild()), clock: (source.state.objectiveClock as number | undefined) ?? 0,
-        hp: game.player.hp, maxHp: game.player.maxHp, strength: game.player.strength, effectiveStrength: game.player.effectiveStrength, gold: game.stats.gold };
+        hp: game.focusedActor.hp, maxHp: game.focusedActor.maxHp, strength: game.focusedActor.strength, effectiveStrength: game.focusedActor.effectiveStrength, gold: game.stats.gold };
     const knownStats=input.stats!;
     input.maxHp=knownStats['native.max-hp']!;input.strength=knownStats['native.strength']!;input.effectiveStrength=knownStats['native.effective-strength']!;
     input.hp=Math.min(input.hp,input.maxHp);
@@ -241,9 +242,9 @@ export function readGrowthCharacterView(game: Game | null | undefined, draft?: G
             try { plan(input, 'allocate', { ...increments, [definition.id]: increment + 1 }); canIncrease = true; } catch { /* Unaffordable or capped. */ }
         }
         const stat=`growth.attribute:${definition.id}`;
-        const sources=runtime.stats.breakdown(game.player.id,stat,{},true).rows.filter(row=>row.category==='flat'&&row.known!==false).map(row=>{
+        const sources=runtime.stats.breakdown(game.focusedActor.id,stat,{},true).rows.filter(row=>row.category==='flat'&&row.known!==false).map(row=>{
             const itemId=Number(/\.item\.(\d+)/.exec(row.sourceId)?.[1]);
-            const item=game.player.inventory.items.find(item=>item.id===itemId);
+            const item=game.focusedActor.inventory.items.find(item=>item.id===itemId);
             const definition=pack.definitions.find(d=>row.sourceId.startsWith(`${d.id}.`));
             const name=item?itemDisplayName(item,'equipped'):definition?i18next.t(definition.nameKey):row.sourceKind==='allocated-attribute'?i18next.t('ext.growth.ui.allocated_source'):row.sourceKind==='initial-attribute'?i18next.t('ext.growth.ui.initial_source'):i18next.t('ext.growth.ui.external_source');
             return {id:row.sourceId,name,amount:row.value};
@@ -337,9 +338,9 @@ export interface GrowthTargetChoice {
  * full-world eligibility belongs exclusively to the later command preflight. */
 function knownGrowthMoveCandidate(game: Game, x: number, y: number): boolean {
     const cell = game.grid.getCell(x, y);
-    if (!cell || game.player.hasStatus('confused') || isIncapacitated(game.player)) return false;
-    if (game.monsters.some(monster => monster.x === x && monster.y === y && canDisplayMonster(game.player, game.grid, monster))) return false;
-    if (playerTravelDiagonalBlocked(game.grid, game.player.loc, { x, y }, true)) return false;
+    if (!cell || game.focusedActor.hasStatus('confused') || isIncapacitated(game.focusedActor)) return false;
+    if (game.monsters.some(monster => monster.x === x && monster.y === y && canDisplayMonster(game.focusedActor, game.grid, monster))) return false;
+    if (playerTravelDiagonalBlocked(game.grid, game.focusedActor.loc, { x, y }, true)) return false;
     return knownCellAllowsMovePreview(cell);
 }
 /** Target choices disclose no unobserved creature identity or hidden occupancy/terrain.
@@ -352,12 +353,12 @@ export function readGrowthSkillTargets(game: Game, view: GrowthCharacterViewMode
         ['sw', -1, 1], ['s', 0, 1], ['se', 1, 1],
     ] as const;
     return freeze(directions.map(([direction, dx, dy]) => {
-        const x = game.player.x + dx, y = game.player.y + dy;
+        const x = game.focusedActor.x + dx, y = game.focusedActor.y + dy;
         if (skill.action!.kind === 'move') return { direction, target: { kind: 'cell' as const, x, y }, enabled: knownGrowthMoveCandidate(game, x, y) };
-        const creature = game.monsters.find(monster => monster.x === x && monster.y === y && canSeeMonster(game.player, game.grid, monster));
+        const creature = game.monsters.find(monster => monster.x === x && monster.y === y && canSeeMonster(game.focusedActor, game.grid, monster));
         const enabled = !!creature && !creature.isCaged && (!creature.isAlly || creature.hasStatus('discordant'))
-            && !game.player.hasStatus('confused') && !isIncapacitated(game.player)
-            && (!playerTravelDiagonalBlocked(game.grid, game.player.loc, { x, y }, true) || creature.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'));
+            && !game.focusedActor.hasStatus('confused') && !isIncapacitated(game.focusedActor)
+            && (!playerTravelDiagonalBlocked(game.grid, game.focusedActor.loc, { x, y }, true) || creature.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'));
         return { direction, target: { kind: 'creature' as const, id: enabled ? creature.id : 0 }, enabled };
     }));
 }
@@ -368,7 +369,7 @@ export function buildGrowthSkillCommand(view: GrowthCharacterViewModel, game: Ga
     const skill = current.skills.find(entry => entry.id === skillId);
     if (!skill || !(action === 'learn' ? skill.canLearn : action === 'equip' ? skill.canEquip : action === 'unequip' ? skill.canUnequip : skill.canUse)) return null;
     if (action === 'use') {
-        if (!target || !skill.action || !game.validateControlledAction({ actorId: game.player.id, action: skill.action.kind, target })) return null;
+        if (!target || !skill.action || !game.previewFocusedAction({ actorId: game.focusedActor.id, action: skill.action.kind, target })) return null;
         return JSON.stringify({ module: 'growth', action: 'use-skill', payload: { revision: current.revision, skillId, target } });
     }
     if (action === 'learn') return JSON.stringify({ module: 'growth', action: 'learn-skill', payload: { revision: current.revision, skillId } });

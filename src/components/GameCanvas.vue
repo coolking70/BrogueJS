@@ -282,7 +282,7 @@ onMounted(async () => {
     const selectionCells = (at: { x: number; y: number }, frame?: DisplayFrame) => {
         if (frame) return selectedBodyCells(frame.map.bodies, at);
         const monster = activeGame.getMonsterAt(at.x, at.y);
-        const body = monster && publicMonsterBody(activeGame.player, activeGame.grid, monster);
+        const body = monster && publicMonsterBody((activeGame.focusedActor ?? activeGame.player), activeGame.grid, monster);
         return body?.cells.some(p => p.x === at.x && p.y === at.y) ? body.cells : null;
     };
     const drawHover = () => {
@@ -373,7 +373,7 @@ onMounted(async () => {
             ? computeMapLayout(usable.width, usable.height, 'uniform')
             : preferredLayout;
         // zoom=1 时保留原桌面布局；主动放大或小屏自动放大后使用跟随相机。
-        const focus = displayedFrame(activeGame)?.player ?? activeGame.player?.loc ?? { x: 0, y: 0 };
+        const focus = displayedFrame(activeGame)?.player ?? (activeGame.focusedActor ?? activeGame.player)?.loc ?? { x: 0, y: 0 };
         const cam = cameraState.fit ? { ...base, follow: false, panX: 0, panY: 0 } : computeMapCamera(
             usable.width, usable.height, base, DCOLS, DROWS, TILE_SIZE,
             focus, cameraState.zoom, { x: cameraState.panX, y: cameraState.panY },
@@ -520,7 +520,7 @@ onMounted(async () => {
         drawHover();
         // FE-1：玩家移动后相机回到跟随（清掉临时平移）并重算视口
         const projection = displayedFrame(game);
-        const focus = projection?.player ?? game.player.loc;
+        const focus = projection?.player ?? (game.focusedActor ?? game.player).loc;
         if (focus.x !== lastFocusX || focus.y !== lastFocusY) {
             cameraState.panX = 0;
             cameraState.panY = 0;
@@ -557,7 +557,7 @@ onMounted(async () => {
         // FE-1：触屏投掷的 UI 瞄准格（纯绘制；投掷模式结束即清除）
         const aim = targetingState.aim;
         const aimedMonster = aim ? game.getMonsterAt(aim.x, aim.y) : undefined;
-        const brokenAim = aim && aimedMonster ? publicZoneAt(game.player, game.grid, aimedMonster, aim)?.broken : false;
+        const brokenAim = aim && aimedMonster ? publicZoneAt((game.focusedActor ?? game.player), game.grid, aimedMonster, aim)?.broken : false;
         if (aim && (!game.isThrowing || brokenAim)) clearAim();
         else if (aim && !selection) {
             drawTargetBody(aim, THROW_AIM_STROKE);
@@ -565,8 +565,8 @@ onMounted(async () => {
             arcanaCursor.rect(aim.x * TILE_SIZE, aim.y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
                 .stroke({ width: 2, color: THROW_AIM_STROKE });
         }
-        const hallucinating = !!game.player.statusDurations.hallucinating;
-        const telepathyRevealed = !!game.player.statusDurations.telepathy;
+        const hallucinating = !!(game.focusedActor ?? game.player).statusDurations.hallucinating;
+        const telepathyRevealed = !!(game.focusedActor ?? game.player).statusDurations.telepathy;
         // 和动态光照使用同一张地图持有的显示随机流，避免重绘改变录像 RNG 检查点。
         // 仍由 Appearance 的 ctx 决定何时取数；这里仅绑定显示流 owner。
         const displayRng = displayRandom(game.grid);
@@ -700,10 +700,10 @@ onMounted(async () => {
             const occupied = new Set([
                 ...game.items.filter(item => game.grid.getCell(item.loc.x, item.loc.y)?.isVisible)
                     .map(item => `${item.loc.x},${item.loc.y}`),
-                ...game.monsters.flatMap(monster => publicMonsterMapCells(game.player, game.grid, monster).map(p => `${p.x},${p.y}`)),
+                ...game.monsters.flatMap(monster => publicMonsterMapCells((game.focusedActor ?? game.player), game.grid, monster).map(p => `${p.x},${p.y}`)),
             ]);
             for (const marker of readInteractableMapMarkers(interactables, {
-                depth: game.depth, player: game.player.loc, occupied,
+                depth: game.depth, player: (game.focusedActor ?? game.player).loc, occupied,
                 cellAt: (x, y) => game.grid.getCell(x, y),
             })) placeEntity(marker.glyph, marker.color, marker.x, marker.y, true, marker.semantic);
         }
@@ -720,15 +720,15 @@ onMounted(async () => {
                 continue;
             }
             const cell = game.grid.getCell(m.loc.x, m.loc.y);
-            const direct = canDirectlySeeMonster(game.player, game.grid, m);
-            const known = canSeeMonster(game.player, game.grid, m);
+            const direct = canDirectlySeeMonster((game.focusedActor ?? game.player), game.grid, m);
+            const known = canSeeMonster((game.focusedActor ?? game.player), game.grid, m);
             const visual = monsterAppearance(m, {
                 cellVisible: !!cell?.isVisible,
                 cellHasMemory: !!cell?.hasMemory,
                 telepathy: telepathyRevealed || m.hasStatus('entranced'),
                 hallucinating,
                 cosmetic,
-                monsterVisibility: direct ? 'direct' : known ? 'known' : canDisplayMonster(game.player, game.grid, m) ? 'marker' : 'hidden',
+                monsterVisibility: direct ? 'direct' : known ? 'known' : canDisplayMonster((game.focusedActor ?? game.player), game.grid, m) ? 'marker' : 'hidden',
                 gasBackground: monsterInGas(game.grid, m)
                     ? gasBackgrounds.get(`${m.loc.x},${m.loc.y}`) : undefined,
             });
@@ -738,8 +738,7 @@ onMounted(async () => {
         }
 
         // Player (always visible)
-        const playerVisual = playerAppearance(game.player);
-        placeEntity(playerVisual.char, playerVisual.color, game.player.loc.x, game.player.loc.y, playerVisual.interactive, playerSemantic(playerVisual.char));
+        for(const actor of game.activeControlledActors){const visual=playerAppearance(actor);placeEntity(visual.char,visual.color,actor.x,actor.y,visual.interactive,playerSemantic(visual.char));}
 
         // Hide unused entity sprites
         for (let i = entityIdx; i < MAX_ENTITY_SPRITES; i++) {
@@ -808,7 +807,7 @@ onMounted(async () => {
     (window as Window & { render_game_to_text?: () => string }).render_game_to_text = () => {
         const frame = displayedFrame(game);
         const visibleMonsters = game.monsters
-            .filter((m) => canSeeMonster(game.player, game.grid, m))
+            .filter((m) => canSeeMonster((game.focusedActor ?? game.player), game.grid, m))
             .map((m) => ({ name: m.name, x: m.loc.x, y: m.loc.y, hp: m.hp,
                 maxHp: m.maxHp, weaknessAmount: m.weaknessAmount, maxStatus: { ...m.maxStatus }, accuracy: m.accuracy, defense: m.defense, damage: m.damageString,
                 newPowerCount: m.newPowerCount, totalPowerCount: m.totalPowerCount,
@@ -824,7 +823,7 @@ onMounted(async () => {
                 poisonAmount: m.poisonAmount, poisoned: m.getStatusDuration('poisoned'),
                 shield: m.getStatusDuration('shielded'), maxShield: m.maxShield }));
         const revealedLocations = game.monsters
-            .filter((m) => !canSeeMonster(game.player, game.grid, m) && canDisplayMonster(game.player, game.grid, m))
+            .filter((m) => !canSeeMonster((game.focusedActor ?? game.player), game.grid, m) && canDisplayMonster((game.focusedActor ?? game.player), game.grid, m))
             .map((m) => ({ x: m.loc.x, y: m.loc.y, marker: 'x' }));
         const visibleItems = game.items
             .filter((i) => game.grid.getCell(i.loc.x, i.loc.y)?.isVisible)
@@ -840,19 +839,19 @@ onMounted(async () => {
             confirmation: game.pendingCommandConfirmation?.message ?? null,
             mode: frame ? frame.targeting : game.pendingEnchantment ? 'enchantment_target' : game.pendingArcana ? 'arcana_target' : game.isInventoryOpen ? 'inventory' : (game.isThrowing ? 'throw_target' : 'explore'),
             enchantmentTargets: game.pendingEnchantment
-                ? game.player.inventory.items.filter(item => game.canEnchantTarget(item)).map(item => ({ id: item.id, name: item.displayName })) : [],
+                ? (game.focusedActor ?? game.player).inventory.items.filter(item => game.canEnchantTarget(item)).map(item => ({ id: item.id, name: item.displayName })) : [],
             arcanaPreview: frame ? frame.arcana : game.getArcanaPreview(),
             arcanaTarget: game.pendingArcana ? { name: game.pendingArcana.item.displayName, ...game.pendingArcana.cursor } : null,
             coordinateSystem: { origin: 'top-left', xAxis: 'right', yAxis: 'down' },
             player: frame ? { ...frame.player, statuses: frame.player.statuses } : {
-                weaknessAmount: game.player.weaknessAmount, effectiveStrength: game.player.effectiveStrength, maxStatus: { ...game.player.maxStatus },
-                x: game.player.loc.x,
-                y: game.player.loc.y,
-                hp: game.player.hp,
-                nutrition: game.player.nutrition,
-                poisonAmount: game.player.poisonAmount,
-                maxShield: game.player.maxShield,
-                statuses: { ...game.player.statusDurations }
+                weaknessAmount: (game.focusedActor ?? game.player).weaknessAmount, effectiveStrength: (game.focusedActor ?? game.player).effectiveStrength, maxStatus: { ...(game.focusedActor ?? game.player).maxStatus },
+                x: (game.focusedActor ?? game.player).loc.x,
+                y: (game.focusedActor ?? game.player).loc.y,
+                hp: (game.focusedActor ?? game.player).hp,
+                nutrition: (game.focusedActor ?? game.player).nutrition,
+                poisonAmount: (game.focusedActor ?? game.player).poisonAmount,
+                maxShield: (game.focusedActor ?? game.player).maxShield,
+                statuses: { ...(game.focusedActor ?? game.player).statusDurations }
             },
             replay: {
                 status: game.replayStatus,
@@ -870,7 +869,7 @@ onMounted(async () => {
                 };
                 return { down: known(s?.downStairsLoc), up: known(s?.upStairsLoc) };
             })(),
-            inventory: game.player.inventory.items.map((i) => ({ letter: i.inventoryLetter, name: i.displayName, category: i.category })),
+            inventory: (game.focusedActor ?? game.player).inventory.items.map((i) => ({ letter: i.inventoryLetter, name: i.displayName, category: i.category })),
             isThrowing: game.isThrowing,
             referenceScreen: game.referenceScreen,
             // 画布内格子 → CSS 像素：x = offsetX + (cell + 0.5) * tile * scaleX
@@ -992,7 +991,7 @@ onMounted(async () => {
 
     const publicSquareAt = (x: number, y: number) => {
         const monster = game.getMonsterAt(x, y);
-        return !!monster?.spatial && canSeeMonsterAt(game.player, game.grid, monster, { x, y });
+        return !!monster?.spatial && canSeeMonsterAt((game.focusedActor ?? game.player), game.grid, monster, { x, y });
     };
 
     // FE-1：触屏目标选择的命令落地（全部经 ui/commands 的录制边界）。
@@ -1026,7 +1025,7 @@ onMounted(async () => {
         if (game.pendingArcana) {
             if (pointer === 'touch' || publicSquareAt(mapX, mapY)) {
                 if (button === 2) { dispatchCommand('escape'); return; }
-                runTapCommand(targetingTapCommand('arcana', { x: mapX, y: mapY }, null, game.pendingArcana.cursor, game.player.loc));
+                runTapCommand(targetingTapCommand('arcana', { x: mapX, y: mapY }, null, game.pendingArcana.cursor, (game.focusedActor ?? game.player).loc));
                 return;
             }
             if (button === 2) inputManager.triggerAction('escape');
@@ -1044,18 +1043,18 @@ onMounted(async () => {
 
         if (game.isThrowing && game.throwItemTarget && !game.isInventoryOpen) {
             if (pointer === 'touch' || publicSquareAt(mapX, mapY)) {
-                runTapCommand(targetingTapCommand('throw', { x: mapX, y: mapY }, targetingState.aim, null, game.player.loc));
+                runTapCommand(targetingTapCommand('throw', { x: mapX, y: mapY }, targetingState.aim, null, (game.focusedActor ?? game.player).loc));
                 return;
             }
-            if (mapX !== game.player.loc.x || mapY !== game.player.loc.y) {
+            if (mapX !== (game.focusedActor ?? game.player).loc.x || mapY !== (game.focusedActor ?? game.player).loc.y) {
                 game.executeCommand('mouse_travel', { x: mapX, y: mapY });
                 game.update();
             }
             return;
         }
 
-        const dx = mapX - game.player.loc.x;
-        const dy = mapY - game.player.loc.y;
+        const dx = mapX - (game.focusedActor ?? game.player).loc.x;
+        const dy = mapY - (game.focusedActor ?? game.player).loc.y;
 
         if (dx === 0 && dy === 0) {
             inputManager.triggerAction('move');
@@ -1142,7 +1141,7 @@ onMounted(async () => {
         syncHeldInputContext();
         const profileNow = frameProfile ? performance.now() : 0;
         frameProfile?.frame(profileNow, game.isAutoTraveling());
-        const report = frameProfile?.report(profileNow, { seed: game.currentSeed, depth: game.depth, turn: game.absoluteTurnNumber, mode: mapMode.value, geometryContexts: vectorGeometry?.size, position: [game.player.loc.x, game.player.loc.y], hp: game.player.hp, nutrition: game.player.nutrition, commands: game.recordedInputEvents.length });
+        const report = frameProfile?.report(profileNow, { seed: game.currentSeed, depth: game.depth, turn: game.absoluteTurnNumber, mode: mapMode.value, geometryContexts: vectorGeometry?.size, position: [(game.focusedActor ?? game.player).loc.x, (game.focusedActor ?? game.player).loc.y], hp: (game.focusedActor ?? game.player).hp, nutrition: (game.focusedActor ?? game.player).nutrition, commands: game.recordedInputEvents.length });
         if (report) performanceReport.value = report;
         try {
             // Browsing freezes replay/auto travel. A skill may have already committed
@@ -1181,7 +1180,7 @@ onMounted(async () => {
             const terrainChanged = tickTerrainColors(game.grid, animationMs, game.depth);
             colorTimer += animationMs;
             let lightChanged = false;
-            if (colorTimer >= 50) { colorTimer %= 50; lightChanged = game.danceLighting() || !!game.player.statusDurations.hallucinating; }
+            if (colorTimer >= 50) { colorTimer %= 50; lightChanged = game.danceLighting() || !!(game.focusedActor ?? game.player).statusDurations.hallucinating; }
             if (boltChanged || flareChanged || terrainChanged || lightChanged) renders.request();
 
             pathingTimer = stepCadence(pathingTimer, autoWasAllowed ? elapsedMs : 0,
@@ -1206,7 +1205,7 @@ onMounted(async () => {
             // A module panel suspends automatic actions, but accepted native
             // commands may move the player. Update follow geometry independently
             // of a render request, using the actual remaining map viewport.
-            const focus=nextProjection?.player??game.player.loc;
+            const focus=nextProjection?.player??(game.focusedActor ?? game.player).loc;
             if(focus.x!==lastFocusX||focus.y!==lastFocusY){cameraState.panX=0;cameraState.panY=0;applyLayout();renders.request();}
             // Present requested overlays and final states even while paused.
             renders.flush(() => { render(); canvasDirty = true; });

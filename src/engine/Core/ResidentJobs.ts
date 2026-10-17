@@ -116,7 +116,7 @@ export function stepResident(
         !playerTravelDiagonalBlocked(g.grid, a.loc, p, false) &&
         a.canEnterMovementTerrain(g, p.x, p.y) &&
         !g.getMonsterAt(p.x, p.y) &&
-        (g.player.x !== p.x || g.player.y !== p.y)
+        (g.party ? !g.controlledOccupies(p) : (g.player.x !== p.x || g.player.y !== p.y))
     );
   // Every actual neighbor has already passed the live occupancy/terrain checks.
   // A new gradient cannot supply a move when that list is empty.

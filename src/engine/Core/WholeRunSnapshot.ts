@@ -1,3 +1,8 @@
+import {c5Canonical} from '../../ext/worldJson';
+import { effectivePartyCodec, hasPartyIdentity } from '../../ext/partyIdentity';
+import { validatePartyState, type PartyState } from '../../ext/party';
+import { PartyMember } from './PartyRuntime';
+import type { ControlledActor } from '../../entities/ControlledActor';
 import { validateWorld5, assertWorldLevelOwnership } from '../../ext/world5';
 import { isLoggerSnapshot } from '../Systems/Logger';
 import { getNextEntityId, restoreNextEntityId } from '../../entities/Creature';
@@ -70,7 +75,8 @@ export interface GameSnapshot extends LevelSnapshot {
     extensions?: ExtensionSnapshot;
     /** Shared whole-run envelope; entity row/graph codec has no independent version slot. */
     version: number;
-    schema: typeof WHOLE_RUN_SCHEMA;
+    schema: typeof WHOLE_RUN_SCHEMA | 'brogue-web-whole-run-v8';
+    party?: { state: PartyState; actors: GameSnapshotPlayer[]; native: import('./PartyRuntime').PartyRuntime['native'] };
     savedAt: number;
     seed: string;
     rngState: RandomState;
@@ -134,6 +140,7 @@ export interface WholeRunProjection {
     dormantMonsters: Monster[];
     items: Item[];
     player: Player;
+    controlledActors?: readonly ControlledActor[];
     containerItems?: readonly Item[];
     everSeenMonsters: ReadonlySet<Monster>;
     everSeenItems: ReadonlySet<Item>;
@@ -171,7 +178,7 @@ export function toWholeRunSnapshot(source: WholeRunProjection): GameSnapshot {
     const roots = [...source.monsters, ...source.dormantMonsters, ...source.purgatory, ...levelRoots, ...[...source.pendingFallenByDepth.values()].flat()];
     const pendingFallenItemsByDepth = [...source.pendingFallenItemsByDepth].sort(([a], [b]) => a - b)
         .map(([depth, items]) => ({ depth, items: items.map(serializeItem) }));
-    const ownedItems = [...[...source.pendingFallenItemsByDepth.values()].flat(), ...source.items, ...source.player.inventory.items, ...levels.flatMap(([, l]) => l.items)];
+    const ownedItems = [...[...source.pendingFallenItemsByDepth.values()].flat(), ...source.items, ...(source.controlledActors??[source.player]).flatMap(a=>a.inventory.items), ...levels.flatMap(([, l]) => l.items)];
     const graph = collectEntityGraph([...roots, ...source.everSeenMonsters,
         ...source.visibleMonsters, ...levels.flatMap(([, l]) => [...l.visibleMonsters])], [...ownedItems, ...(source.containerItems??[]), ...source.everSeenItems,
         ...source.visibleItems, ...levels.flatMap(([, l]) => [...l.visibleItems]),
@@ -212,13 +219,13 @@ export function toWholeRunSnapshot(source: WholeRunProjection): GameSnapshot {
     };
 }
 
-export function decodePlayer(saved: GameSnapshot['player'], items: Map<number, Item>): Player {
+export function decodePlayer(saved: GameSnapshot['player'], items: Map<number, Item>, member = false): Player {
     assertSingleCellPlayer(saved);
     const nextId = getNextEntityId();
     let player: Player;
     // Detached validation must not advance the live allocator, including a
     // rejection later in pending/cached-layer footprint validation.
-    try { player = new Player(saved.loc.x, saved.loc.y); }
+    try { player = member ? new PartyMember(saved.loc.x, saved.loc.y) : new Player(saved.loc.x, saved.loc.y); }
     finally { restoreNextEntityId(nextId); }
     Object.assign(player, copyFields(saved, PLAYER_FIELDS));
     player.statusImmunities = new Set(saved.statusImmunities);
@@ -243,7 +250,7 @@ export function decodeWholeRunWorld(snapshot: GameSnapshot, deps: EntityCodecDep
     const entityGraph = restoreEntityGraph(
         [...levelRows.flatMap(l => [...l.monsters, ...l.dormantMonsters]),
              ...snapshot.pendingFallenByDepth.flatMap(q => q.monsters), ...(snapshot.purgatory ?? []), ...snapshot.entityGraph.monsters],
-        [...levelRows.flatMap(l => l.items), ...snapshot.pendingFallenItemsByDepth.flatMap(q => q.items), ...snapshot.player.inventory, ...snapshot.entityGraph.items],
+        [...levelRows.flatMap(l => l.items), ...snapshot.pendingFallenItemsByDepth.flatMap(q => q.items), ...snapshot.player.inventory, ...(snapshot.party?.actors.flatMap(a=>a.inventory)??[]), ...snapshot.entityGraph.items],
         [], [], deps);
     const resolve = <T>(map: Map<number, T>, id: number): T => {
         const value = map.get(id);
@@ -266,6 +273,16 @@ export function decodeWholeRunWorld(snapshot: GameSnapshot, deps: EntityCodecDep
             awaySince: saved.awaySince, playerExitedVia: { ...saved.playerExitedVia }, pendingCaughtFireCells: saved.pendingCaughtFireCells.map(p => ({ ...p })),
         }];
     }));
+    // Validate party occupancy on each owned floor before any live publication.
+    // Dormant 1x1 creatures retain CE's non-occupying policy; spatial reservations do not.
+    if (snapshot.party) for (const member of snapshot.party.state.members) {
+        if (member.life === 'dead' || member.level.kind !== 'dungeon') continue;
+        const actor = member.actorId === snapshot.player.id ? snapshot.player : snapshot.party.actors.find(a=>a.id===member.actorId)!;
+        const level = restored.get(member.level.depth)!;
+        if ([...level.monsters, ...(level.dormantMonsters ?? []).filter(m=>m.spatial)].some(m=>m.hp>0
+            && footprintOf(m, deps.spatialCatalog ?? nativeSpatialCatalog).some(p=>p.x===actor.loc.x&&p.y===actor.loc.y)))
+            throw new SpatialValidationError('Overlapping party and monster footprints');
+    }
     const result = { entityGraph, restored };
     const regions = snapshot.extensions?.foundation.world.regions;
     if (regions !== undefined) {
@@ -295,7 +312,7 @@ export function decodeWholeRunWorld(snapshot: GameSnapshot, deps: EntityCodecDep
             const player = decodePlayer(snapshot.player, entityGraph.items);
             if (snapshot.run.spatialWorld.groups.length) validateProductionGroupOwnership(snapshot.run.spatialWorld.groups, deps.spatialCatalog!,
                 [...restored].map(([depth, level]) => ({ grid: level.grid, monsters: level.monsters, dormantMonsters: level.dormantMonsters,
-                    ...(depth === snapshot.depth ? { player } : {}), inRegion: (id: number, at: Readonly<Pos>) => inRegion(id, depth, at) })),
+                    ...(depth === snapshot.depth && (!snapshot.party || snapshot.party.state.members.some(m=>m.actorId===player.id&&m.life==='active')) ? { player } : {}), inRegion: (id: number, at: Readonly<Pos>) => inRegion(id, depth, at) })),
                 snapshot.pendingFallenByDepth.map(q => q.monsters.map(m => resolve(entityGraph.monsters, m.id))));
             // Validate physical ownership and full footprints on each independent
             // layer. Pending/carry/purgatory retain component truth, with no index.
@@ -305,7 +322,7 @@ export function decodeWholeRunWorld(snapshot: GameSnapshot, deps: EntityCodecDep
                 for (const c of cohort) { if (owned.has(c.id)) throw new SpatialValidationError('Multiple square ownership'); owned.add(c.id); }
                 if (!cohort.some(c => c.spatial)) continue;
                 const service = new CreatureSpatial({ grid: level.grid, monsters: level.monsters, dormantMonsters: level.dormantMonsters, inRegion: (id, at) => inRegion(id, depth, at),
-                    ...(depth === snapshot.depth ? { player } : {}) }, deps.spatialCatalog);
+                    ...(depth === snapshot.depth && (!snapshot.party || snapshot.party.state.members.some(m=>m.actorId===player.id&&m.life==='active')) ? { player } : {}) }, deps.spatialCatalog);
                 try {
                     for (const c of cohort) if (c.hp > 0 && !service.canFitAt(c, c.loc, { allowsTerrain: () => true, inRegion: (id, at) => inRegion(id, depth, at) })) throw new SpatialValidationError('Overlapping square footprints');
                 } finally { service.dispose(); }
@@ -478,7 +495,8 @@ export function world5SnapshotContext(s: GameSnapshot) {
     const layers = [s, ...s.levels];
     const actors = new Map(layers.flatMap(l => [...l.monsters, ...l.dormantMonsters].map(m => [m.id, l.depth] as const)));
     for (const pending of s.pendingFallenByDepth) for (const actor of pending.monsters) actors.set(actor.id, pending.depth);
-    const occupiedEntityIds = new Set([s.player.id, ...s.entityGraph.items.map(i => i.id),
+    for(const member of s.party?.state.members??[])if(member.level.kind==='dungeon'&&member.life!=='dead')actors.set(member.actorId,member.level.depth);
+    const occupiedEntityIds = new Set([s.player.id, ...(s.party?.actors.flatMap(a=>[a.id,...a.inventory.map(i=>i.id)])??[]), ...s.entityGraph.items.map(i => i.id),
         ...s.items.map(i => i.id), ...s.player.inventory.map(i => i.id), ...s.levels.flatMap(l => l.items.map(i => i.id)),
         ...s.pendingFallenItemsByDepth.flatMap(q => q.items.map(i => i.id)),
         ...[...s.entityGraph.monsters, ...(s.purgatory ?? []), ...s.pendingFallenByDepth.flatMap(q => q.monsters)]
@@ -490,7 +508,7 @@ export function world5SnapshotContext(s: GameSnapshot) {
 
 export function isWholeRunSnapshot(value: unknown, spatialCatalog?: SpatialCatalog): value is GameSnapshot {
     const s = value as GameSnapshot | null;
-    if (!s || s.version !== 7 || s.schema !== WHOLE_RUN_SCHEMA || !isSeed(s.seed)
+    if (!s || s.version !== effectivePartyCodec(s.extensions?.manifest).wholeRun || s.schema !== effectivePartyCodec(s.extensions?.manifest).schema || !isSeed(s.seed)
         || !Random.isState(s.rngState) || !isLevelSeeds(s.levelSeeds)
         || s.currentLevelDepth !== s.depth || !s.run || !s.flavors || !s.player || !s.entityGraph
         || !Number.isFinite(s.ticksTillUpdateEnvironment) || typeof s.pendingEnchantment !== 'boolean'
@@ -508,6 +526,46 @@ export function isWholeRunSnapshot(value: unknown, spatialCatalog?: SpatialCatal
             || s.run.seenBodyCoreIds.some(id => !Number.isSafeInteger(id) || id < 1 || id >= s.run.nextEntityId)))
         || !Array.isArray(s.levels) || !Array.isArray(s.pendingFallenByDepth) || !Array.isArray(s.pendingFallenItemsByDepth)
         || (s.purgatory !== undefined && !Array.isArray(s.purgatory))) return false;
+    if (hasPartyIdentity(s.extensions?.manifest) !== Object.prototype.hasOwnProperty.call(s,'party')) return false;
+    if (s.party) {
+        try {
+            if(Object.keys(s.party).sort().join(',')!=='actors,native,state')return false;
+            validatePartyState(s.party.state);
+            const configuration=s.extensions?.manifest.modules.find(m=>m.id==='party')?.configuration as {members?:number}|undefined;
+            if(configuration?.members!==s.party.state.members.length)return false;
+            if(s.party.state.primaryActorId!==s.player.id || !Array.isArray(s.party.actors)
+                || s.party.actors.length!==s.party.state.members.length-1)return false;
+            if(!s.party.native||Object.keys(s.party.native).sort().join(',')!==s.party.state.members.map(m=>String(m.actorId)).sort().join(','))return false;
+            for(const row of Object.values(s.party.native))if(!row||Object.keys(row).sort().join(',')!=='falling,justRested,justSearched,lastDamageSource,modal,pendingTurn,poisonedDuringTurn,receivedLevitationWarning,searchingCharge'||typeof row.justRested!=='boolean'||typeof row.lastDamageSource!=='string'||typeof row.receivedLevitationWarning!=='boolean'||typeof row.modal!=='boolean'||typeof row.falling!=='boolean'||typeof row.pendingTurn!=='boolean'||typeof row.poisonedDuringTurn!=='boolean'||typeof row.justSearched!=='boolean'||!Number.isSafeInteger(row.searchingCharge)||row.searchingCharge<0)return false;
+            const ids=new Set<number>([s.player.id]);
+            for(const actor of s.party.actors){
+                if(ids.has(actor.id)||actor.id>=s.run.nextEntityId)return false;
+                ids.add(actor.id);
+                if(!s.party.state.members.some(m=>m.actorId===actor.id))return false;
+                if(!validControlledSnapshot(actor))return false;
+            }
+            const itemIds=new Set(s.player.inventory.map(i=>i.id));
+            for(const actor of s.party.actors)for(const item of actor.inventory){if(itemIds.has(item.id))return false;itemIds.add(item.id);}
+            const memberCells=new Set<string>();
+            for(const m of s.party.state.members){const actor=m.actorId===s.player.id?s.player:s.party.actors.find(a=>a.id===m.actorId);
+                if(!actor||actor.spatial||(actor.statusDurations.lifespan_remaining??0)>0
+                    ||!s.levelSeeds[m.level.kind==='dungeon'?m.level.depth-1:-1]?.visited
+                    ||m.level.kind==='dungeon'&&m.level.depth!==s.depth&&!s.levels.some(l=>l.depth===(m.level as {depth:number}).depth)
+                    ||m.life==='frozen'&&m.level.kind==='dungeon'&&m.level.depth===s.depth
+                    ||s.run.world5?.residents.some(r=>r.actorId===m.actorId)
+                    ||s.run.world5?.raidCamps.some(c=>c.event?.actorIds.includes(m.actorId))
+                    ||actor.loc.x<0||actor.loc.y<0||actor.loc.x>=s.width||actor.loc.y>=s.height
+                    ||(m.life==='dead')!==(actor.hp<=0)||m.level.kind!=='dungeon'
+                    ||m.life==='active'&&m.level.depth!==s.depth)return false;
+                if(m.life!=='dead'){
+                    const key=`${m.level.depth}:${actor.loc.x},${actor.loc.y}`;
+                    if(memberCells.has(key))return false;
+                    memberCells.add(key);
+                }
+            }
+            if(s.party.state.members.every(m=>m.life==='dead')&&!s.run.isGameOver)return false;
+        } catch {return false;}
+    }
     const identities = s.flavors.identities;
     const flavorId = (v: unknown) => typeof v === 'string' && /^(?:(potion|wand|staff|ring|charm)\.(0|[1-9][0-9]*)|scroll\.(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*)){2,3})$/.test(v);
     if (!identities || !Array.isArray(identities.kinds) || !Array.isArray(identities.staffSlots)
@@ -554,7 +612,7 @@ export function isWholeRunSnapshot(value: unknown, spatialCatalog?: SpatialCatal
         try { assertWorldLevelOwnership(s, new Map(s.levels.map(l => [l.depth,l])), { monsters: s.pendingFallenByDepth.flatMap(q => q.monsters), items: s.pendingFallenItemsByDepth.flatMap(q => q.items) }); }
         catch { return false; }
     }
-    const items = [...s.items, ...s.player.inventory, ...s.entityGraph.items,
+    const items = [...s.items, ...s.player.inventory, ...(s.party?.actors.flatMap(a=>a.inventory)??[]), ...s.entityGraph.items,
         ...s.levels.flatMap(l => l.items), ...s.pendingFallenItemsByDepth.flatMap(q => q.items)];
     if(items.some(item=>item.category===13?(!s.run.world5||!Object.prototype.hasOwnProperty.call(item,'worldItem')||!item.worldItem):Object.prototype.hasOwnProperty.call(item,'worldItem')))return false;
     for(const key of ['actorActions','worldWorkFacts','worldWorkDetails'] as const)if(Object.prototype.hasOwnProperty.call(s.run,key)&&(s.run as any)[key]===undefined)return false;
@@ -578,6 +636,7 @@ export function isWholeRunSnapshot(value: unknown, spatialCatalog?: SpatialCatal
     if (Object.prototype.hasOwnProperty.call(s.run, 'spatialWorld') && s.run.spatialWorld === undefined) return false;
     const rows = [...s.monsters, ...s.dormantMonsters, ...(s.purgatory ?? []), ...s.entityGraph.monsters,
         ...s.levels.flatMap(l => [...l.monsters, ...l.dormantMonsters]), ...s.pendingFallenByDepth.flatMap(l => l.monsters)];
+    if(s.party){const memberIds=new Set(s.party.state.members.map(m=>m.actorId));if(rows.some(row=>memberIds.has(row.id))||new Set(items.map(i=>i.id)).size!==items.length||items.some(i=>memberIds.has(i.id)))return false;}
     try {
         assertSingleCellPlayer(s.player);
         for (const row of rows) if (Object.prototype.hasOwnProperty.call(row, 'spatial')) {
@@ -596,4 +655,27 @@ export function isWholeRunSnapshot(value: unknown, spatialCatalog?: SpatialCatal
     }
     if (s.mode !== 'test' && s.levelSeeds.some((level, i) => level.visited && !depths.has(i + 1))) return false;
     return true;
+}
+
+/** Same entity codec for each member; roster contains references only. */
+export function serializeControlledActor(actor: ControlledActor): GameSnapshotPlayer {
+    return JSON.parse(JSON.stringify({...copyFields(actor,PLAYER_FIELDS),statusImmunities:[...actor.statusImmunities],
+        hungerTransition:actor.snapshotHungerTransition(),inventoryCapacity:actor.inventory.capacity,
+        inventory:actor.inventory.items.map(serializeItem),equippedWeaponId:actor.equippedWeapon?.id??null,
+        equippedArmorId:actor.equippedArmor?.id??null,ringLeftId:actor.ringLeft?.id??null,ringRightId:actor.ringRight?.id??null}));
+}
+
+/** Member native roots are validated directly, without inventing a second whole world. */
+function validControlledSnapshot(actor:GameSnapshotPlayer):boolean {
+    try{c5Canonical(actor,true);assertSingleCellPlayer(actor);}catch{return false;}
+    const allowed=new Set<string>([...PLAYER_FIELDS,'statusImmunities','hungerTransition','inventoryCapacity','inventory','equippedWeaponId','equippedArmorId','ringLeftId','ringRightId']);
+    if(Object.keys(actor).some(key=>!allowed.has(key))||!Array.isArray(actor.inventory)||!Array.isArray(actor.statusImmunities))return false;
+    if(!['id','hp','maxHp','strength','nutrition','maxNutrition','ticksUntilTurn','movementSpeed','attackSpeed','inventoryCapacity'].every(key=>Number.isSafeInteger((actor as unknown as Record<string,unknown>)[key])))return false;
+    if(actor.id<1||actor.hp<0||actor.hp>actor.maxHp||actor.maxHp<1||actor.inventoryCapacity<0||actor.inventory.length>actor.inventoryCapacity||actor.ticksUntilTurn<0||actor.nutrition<0||actor.nutrition>actor.maxNutrition||actor.movementSpeed<1||actor.attackSpeed<1)return false;
+    if(!actor.loc||!Number.isSafeInteger(actor.loc.x)||!Number.isSafeInteger(actor.loc.y))return false;
+    for(const values of [actor.statusDurations,actor.maxStatus,actor.temporaryImmunities])if(!values||typeof values!=='object'||Array.isArray(values)||Object.values(values).some(v=>!Number.isSafeInteger(v)||Number(v)<0))return false;
+    if(!Number.isFinite(actor.regenCarry)||actor.regenCarry<0||actor.loc.x<0||actor.loc.y<0||actor.loc.x>=DCOLS||actor.loc.y>=DROWS)return false;
+    const ids=new Set(actor.inventory.map(item=>item.id));if(ids.size!==actor.inventory.length)return false;
+    const equipment=[actor.equippedWeaponId,actor.equippedArmorId,actor.ringLeftId,actor.ringRightId].filter(id=>id!==null);
+    return new Set(equipment).size===equipment.length&&equipment.every(id=>ids.has(id));
 }

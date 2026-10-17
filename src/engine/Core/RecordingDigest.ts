@@ -1,9 +1,10 @@
+import { effectivePartyCodec, hasPartyIdentity } from '../../ext/partyIdentity';
+import { digestDomains, eventDomains } from './RecordingV4';
 import { FOUNDATION_PROTOCOL } from '../../ext/descriptor';
 import { recordingRootRevision, markRecordingRoot } from '../../ext/recordingRevisions';
 import { sha256 } from '../../ext/fingerprint';
 import { c5Canonical, compareCodePoints } from './WorldCanonical';
 import {
-  DIGEST_DOMAINS,
   EVENT_DOMAINS,
   type DigestDomain,
   type MechanicalDigest,
@@ -37,7 +38,7 @@ export function digestRoot(
 ): string {
   return hashJson([
     'c5-root-v1',
-    codecIdentity,
+    hasPartyIdentity(manifest) ? [effectivePartyCodec(manifest).schema,8,21,3] : codecIdentity,
     manifestFingerprint(manifest),
     order.map((d) => domains[d])
   ]);
@@ -164,15 +165,17 @@ export function eventDigest(
   manifest: ExtensionManifest | null,
   actorActions: import('./ActorActionsRoot').ActorActionsRoot | null = null,
   workFacts: readonly import('../../ext/worldSdk').CommittedWorkFact[] | null = null,
-  workDetails: readonly import('./WorldWork').WorldWorkDetail[] | null = null
+  workDetails: readonly import('./WorldWork').WorldWorkDetail[] | null = null,
+  party: import('../../ext/party').PartyState | null = null
 ): EventDigest | null {
   if (!extensions && !world5) return null;
   const domains = {
     extensions: merkleDomain('extensions', { root: extensions }),
     world5: merkleDomain('world5', world5DigestLeaves(world5, workFacts, workDetails)),
-    actorActions: merkleDomain('actorActions', { root: actorActions })
+    actorActions: merkleDomain('actorActions', { root: actorActions }),
+    ...(hasPartyIdentity(manifest)?{party:merkleDomain('party',{root:party})}:{})
   };
-  return { domains, root: digestRoot(domains, manifest, EVENT_DOMAINS) };
+  return { domains, root: digestRoot(domains, manifest, eventDomains(manifest)) };
 }
 /** Event domains reuse only explicitly clean roots. The full implementation above
  * and mechanicalDigest remain independent oracles, including at chunk boundaries. */
@@ -194,7 +197,7 @@ export function dirtyEventDigest(
         canonicalLeaf?(key: string, value: unknown): string;
       }
     >
-  >
+  > & {party?: {token: readonly unknown[]; leaves(): Readonly<Record<string,unknown>>; leafToken?(key:string):readonly unknown[]; canonicalLeaf?(key:string,value:unknown):string}}
 ): EventDigest | null {
   if (!manifest) return null;
   let cache = eventCaches.get(owner);
@@ -203,8 +206,8 @@ export function dirtyEventDigest(
     eventCaches.set(owner, cache);
   }
   const domains = {} as EventDigest['domains'];
-  for (const domain of EVENT_DOMAINS) {
-    const source = sources[domain],
+  for (const domain of eventDomains(manifest)) {
+    const source = sources[domain]!,
       old = cache.get(domain);
     if (
       old &&
@@ -245,7 +248,7 @@ export function dirtyEventDigest(
       domains[domain] = hash;
     }
   }
-  return { domains, root: digestRoot(domains, manifest, EVENT_DOMAINS) };
+  return { domains, root: digestRoot(domains, manifest, eventDomains(manifest)) };
 }
 const cellKnowledge = new Set([
   'isExplored',
@@ -334,6 +337,7 @@ export function mechanicalDigest(
   const items = [
     ...root.items,
     ...root.player.inventory,
+    ...(root.party?.actors.flatMap((a:any)=>a.inventory)??[]),
     ...root.levels.flatMap((l: any) => l.items),
     ...root.pendingFallenItemsByDepth.flatMap((q: any) => q.items),
     ...root.entityGraph.items
@@ -384,6 +388,9 @@ export function mechanicalDigest(
       ({ name: _name, ...row }: any) => row
     );
   root.run.lastDamageSource = !!root.run.lastDamageSource;
+  // Member-local death labels have the same presentation-only contract as the
+  // legacy primary label. Causal ownership remains in extension facts.
+  if(root.party)for(const state of Object.values(root.party.native) as Record<string,unknown>[])state.lastDamageSource=!!state.lastDamageSource;
   for (const key of unorderedSets)
     if (knownRun[key]) knownRun[key].sort((a: number, b: number) => a - b);
   for (const key of ['signTexts'])
@@ -421,6 +428,8 @@ export function mechanicalDigest(
     workDetails = root.run.worldWorkDetails ?? null,
     actorActions = root.run.actorActions ?? null,
     random = root.rngState;
+  const party = root.party?.state;
+  if(root.party) delete root.party.state;
   delete root.extensions;
   delete root.run.world5;
   delete root.run.worldWorkFacts;
@@ -440,7 +449,7 @@ export function mechanicalDigest(
     ...root.entityGraph.monsters,
     ...root.levels.flatMap((l: any) => [...l.monsters, ...l.dormantMonsters]),
     ...root.pendingFallenByDepth.flatMap((q: any) => q.monsters),
-    root.player
+    root.player, ...(root.party?.actors??[])
   ]) {
     delete actor.mapToMe;
     actor.name = actor.typeId ?? 'entity.' + actor.id;
@@ -461,11 +470,12 @@ export function mechanicalDigest(
     world5: merkleDomain('world5', world5DigestLeaves(world5, workFacts, workDetails)),
     actorActions: merkleDomain('actorActions', { root: actorActions }),
     knowledge: merkleDomain('knowledge', knowledge),
-    random: merkleDomain('random', { root: random })
+    random: merkleDomain('random', { root: random }),
+    ...(party?{party:merkleDomain('party',{root:party})}:{})
   };
   return {
     domains,
-    root: digestRoot(domains, snapshot.extensions?.manifest ?? null, DIGEST_DOMAINS)
+    root: digestRoot(domains, snapshot.extensions?.manifest ?? null, digestDomains(snapshot.extensions?.manifest ?? null))
   };
 }
 /** Real inventory, no revision counters and no new RNG stream. */

@@ -1,3 +1,4 @@
+import { ControlledActor } from '../../entities/ControlledActor';
 import { isIncapacitated } from '../Status/Incapacitation';
 import { nativeProjectileProbability, nativeProjectileRoll, nativeProjectileRunic, nativeWeaknessFactor, nativeStat, nativePair, nativeHitChance, nativeHitBase, nativeRolledDamage } from '../Stats/NativeStatSources';
 import type { ExtensionRuleInput } from '../../ext/types';
@@ -110,9 +111,9 @@ export class CombatSystem {
         const inanimate = defender instanceof Monster && defender.hasBehavior('MONST_INANIMATE');
         const autoHit = opts?.lungeAttack === true || isIncapacitated(defender) || defender.hasStatus('stuck')
             || (defender instanceof Monster && (defender.isCaged || (!inanimate && (bodyDecisionActor(defender).state === MonsterState.ASLEEP
-                || (attacker instanceof Player && !bodyDecisionActor(defender).isAlly && bodyDecisionActor(defender).state === MonsterState.WANDERING)))));
+                || (attacker instanceof ControlledActor && !bodyDecisionActor(defender).isAlly && bodyDecisionActor(defender).state === MonsterState.WANDERING)))));
         const forcedProbability = defender.seized && attacker.seizing
-            || (attacker instanceof Player && defender instanceof Monster
+            || (attacker instanceof ControlledActor && defender instanceof Monster
                 && weaponSlaysMonster(attacker.equippedWeapon, defender.typeId));
         const probability = forcedProbability ? 100 : nativeHitBase(attacker,defender);
         const rule = (port:'hitChance'|'physicalDamage',input:ExtensionRuleInput)=>combatStatPair(attacker,defender,port,input);
@@ -202,7 +203,7 @@ export class CombatSystem {
         if (attacker instanceof Monster && opts?.isWeaponAttack !== false
             && !(attacker.hasAbility('MA_SEIZES') && !attacker.seizing && legalSeizeContact(attacker, defender, opts?.grid))) attacker.submerged = false;
         // --- Determine attacker stats ---
-        if (attacker instanceof Player) {
+        if (attacker instanceof ControlledActor) {
             if (attacker.equippedWeapon && attacker.equippedWeapon.damage) {
                 damageString = attacker.equippedWeapon.damage;
                 clumping = attacker.equippedWeapon.clumping;
@@ -218,7 +219,7 @@ export class CombatSystem {
 
         // --- Determine defender stats ---
         if (defender instanceof Monster) {
-        } else if (defender instanceof Player) {
+        } else if (defender instanceof ControlledActor) {
             // Player defense comes from equipped armor.
             // CE 内部 ×10 标度（Items.c:8515-8523），只降低被命中概率（Combat.c:140），
             // 不参与伤害结算——CE 的护甲没有任何"减伤"步骤。
@@ -242,7 +243,7 @@ export class CombatSystem {
         const defenderStuck = !inanimateDefender && isIncapacitated(defender);
         const defenderAsleep = !inanimateDefender && (defender instanceof Monster) &&
             (bodyDecisionActor(defender).state === MonsterState.ASLEEP);
-        const sneakAttack = !inanimateDefender && (attacker instanceof Player) &&
+        const sneakAttack = !inanimateDefender && (attacker instanceof ControlledActor) &&
             (defender instanceof Monster) && !bodyDecisionActor(defender).isAlly &&
             bodyDecisionActor(defender).state === MonsterState.WANDERING;
         const lungeAttack = opts?.lungeAttack === true;
@@ -263,7 +264,7 @@ export class CombatSystem {
         // defender 完全不受影响。三只膨胀怪的 damage 都是 0d1，真正的杀伤来自
         // 死亡时触发的 DF（Game.triggerDeathFeatures），不是这次攻击本身。
         if (attacker instanceof Monster && attacker.hasAbility('MA_KAMIKAZE')) {
-            if (defender instanceof Player && !logger.blockCombatText) logger.disturb();
+            if (defender instanceof ControlledActor && !logger.blockCombatText) logger.disturb();
             attacker.drainCurrentHp();
             return { damage: 0, weaponName, hit: true, backstab: false, kamikazeSelfDestruct: true };
         }
@@ -277,7 +278,7 @@ export class CombatSystem {
         }
 
         // CE Combat.c:1179: attempts involving the player disturb even on a miss.
-        if (!logger.blockCombatText && (attacker instanceof Player || defender instanceof Player)) logger.disturb();
+        if (!logger.blockCombatText && (attacker instanceof ControlledActor || defender instanceof ControlledActor)) logger.disturb();
 
         // W-18 CE Combat.c:1183: attempts release entrancement even on a miss.
         // U06 handles BE_DAMAGE aggression in its separate damage path.
@@ -297,7 +298,7 @@ export class CombatSystem {
             && legalSeizeContact(attacker, defender, opts?.grid)) {
             attacker.seizing = true;
             defender.seized = true;
-            if (defender instanceof Player && attacker.submerged && opts?.grid
+            if (defender instanceof ControlledActor && attacker.submerged && opts?.grid
                 && canSeeMonster(defender, opts.grid, attacker)) attacker.submerged = false;
             return { damage: 0, weaponName, hit: false, backstab: false, seized: true };
         }
@@ -306,7 +307,7 @@ export class CombatSystem {
         // then the player's equipped slaying rune, then the clamped formula.
         // Seizing and slaying are probability=100 and still roll 0..99 here.
         const forcedProbability = defender.seized && attacker.seizing
-            || (attacker instanceof Player && defender instanceof Monster && weaponSlaysMonster(attacker.equippedWeapon, defender.typeId));
+            || (attacker instanceof ControlledActor && defender instanceof Monster && weaponSlaysMonster(attacker.equippedWeapon, defender.typeId));
         const hit = autoHit || rng.randPercent(forcedProbability ? 100 : nativeHitChance(attacker,defender));
         if (!autoHit && !forcedProbability) {
             attacker.extensionHooks?.itemStatsCommitted?.(['native.accuracy'],defender);
@@ -352,7 +353,7 @@ export class CombatSystem {
         // 只收 sneakAttack || asleep || paralyzed，不含 lungeAttack），突进只
         // 走下面的倍率与自动命中，不置 backstab。
         if (backstab || lungeAttack) {
-            const daggerSneak = attacker instanceof Player &&
+            const daggerSneak = attacker instanceof ControlledActor &&
                 attacker.equippedWeapon?.flags?.includes('ITEM_SNEAK_ATTACK_BONUS');
             damage *= daggerSneak ? 5 : 3;
         }
@@ -371,7 +372,7 @@ export class CombatSystem {
 
         // CE Combat.c:1275-1289: only attack(), before inflictDamage/shielding,
         // capped by current HP. Thrown weapons and bolts do not enter this path.
-        if (attacker instanceof Player
+        if (attacker instanceof ControlledActor
             && !(defender instanceof Monster && (defender.hasCEBehavior('MONST_INANIMATE') || defender.isInvulnerable()))) {
             const reaping = nativeStat(attacker,'native.reaping');
             if (reaping) {
@@ -406,7 +407,7 @@ export class CombatSystem {
             const hpDamage = applyTo.absorbShieldDamage(damage);
             let effectivePhysicalDamage = 0;
             const transfer = (actual: number) => { effectivePhysicalDamage = actual; CombatSystem.transferMonsterHealth(attacker, applyTo, actual); };
-            if (applyTo instanceof Player) applyTo.takeCombatDamage(hpDamage, true, opts?.grid, transfer);
+            if (applyTo instanceof ControlledActor) applyTo.takeCombatDamage(hpDamage, true, opts?.grid, transfer);
             else applyTo.takeDamage(hpDamage, true, opts?.grid, transfer, 'physical'); // shield applied exactly once
             if (isNativeMeleeAttack(attacker, defender, opts))
                 settleNativeMeleePoise(opts?.grid, attacker, defender, { hit: true, damage: effectivePhysicalDamage });
@@ -418,7 +419,7 @@ export class CombatSystem {
         }
 
         // --- Check for runic trigger ---
-        if (weaponRunic && attacker instanceof Player && attacker.equippedWeapon) {
+        if (weaponRunic && attacker instanceof ControlledActor && attacker.equippedWeapon) {
             // CE Combat.c:666-677：触发率取 runicWeaponChance——内部按 CE netEnchant
             // （含力量修正，PowerTables.c:306-308）与武器基础伤害中值计算；此处传
             // 已算好的净附魔 weaponEnchant 与 parseDamageString 的基础伤害区间
@@ -449,12 +450,12 @@ export class CombatSystem {
             defender.weaken(300); // GlobalsBrogue.c:onHitWeakenDuration, survivor gate; damage is the pre-shield roll.
         }
 
-        if (isWeaponAttack && defender instanceof Player && defender.hp > 0 && attacker instanceof Monster) {
+        if (isWeaponAttack && defender instanceof ControlledActor && defender.hp > 0 && attacker instanceof Monster) {
             stealFromPlayer(attacker, defender, () => defender.hasStatus('stuck') || isIncapacitated(defender)
                 || rng.randPercent(defender.seized && attacker.seizing ? 100 : nativeHitChance(attacker,defender)), opts?.itemGenerationDepth ?? 1);
         }
         if (defender instanceof Monster) defender.enrageAfterAttack();
-        const adjustment = attacker instanceof Player ? 1 : nativeWeaknessFactor(attacker);
+        const adjustment = attacker instanceof ControlledActor ? 1 : nativeWeaknessFactor(attacker);
         const percentile = Math.trunc(Math.max(damage - Math.trunc(min * adjustment), 0) * 100
             / Math.max(1, Math.trunc((max - min) * adjustment)));
         const circumstance: AttackCircumstance = damage === 0 ? 'zero' : lungeAttack ? 'lunge'
@@ -499,7 +500,7 @@ export class CombatSystem {
         if (attacker instanceof Monster && opts?.isWeaponAttack !== false
             && !(attacker.hasAbility('MA_SEIZES') && !attacker.seizing && legalSeizeContact(attacker, defender, opts?.grid))) attacker.submerged = false;
         // --- Determine attacker stats ---
-        if (attacker instanceof Player) {
+        if (attacker instanceof ControlledActor) {
             if (attacker.equippedWeapon && attacker.equippedWeapon.damage) {
                 damageString = attacker.equippedWeapon.damage;
                 clumping = attacker.equippedWeapon.clumping;
@@ -515,7 +516,7 @@ export class CombatSystem {
 
         // --- Determine defender stats ---
         if (defender instanceof Monster) {
-        } else if (defender instanceof Player) {
+        } else if (defender instanceof ControlledActor) {
             // Player defense comes from equipped armor.
             // CE 内部 ×10 标度（Items.c:8515-8523），只降低被命中概率（Combat.c:140），
             // 不参与伤害结算——CE 的护甲没有任何"减伤"步骤。
@@ -539,7 +540,7 @@ export class CombatSystem {
         const defenderStuck = !inanimateDefender && isIncapacitated(defender);
         const defenderAsleep = !inanimateDefender && (defender instanceof Monster) &&
             (bodyDecisionActor(defender).state === MonsterState.ASLEEP);
-        const sneakAttack = !inanimateDefender && (attacker instanceof Player) &&
+        const sneakAttack = !inanimateDefender && (attacker instanceof ControlledActor) &&
             (defender instanceof Monster) && !bodyDecisionActor(defender).isAlly &&
             bodyDecisionActor(defender).state === MonsterState.WANDERING;
         const lungeAttack = opts?.lungeAttack === true;
@@ -560,7 +561,7 @@ export class CombatSystem {
         // defender 完全不受影响。三只膨胀怪的 damage 都是 0d1，真正的杀伤来自
         // 死亡时触发的 DF（Game.triggerDeathFeatures），不是这次攻击本身。
         if (attacker instanceof Monster && attacker.hasAbility('MA_KAMIKAZE')) {
-            if (defender instanceof Player && !logger.blockCombatText) logger.disturb();
+            if (defender instanceof ControlledActor && !logger.blockCombatText) logger.disturb();
             attacker.drainCurrentHp();
             return { damage: 0, weaponName, hit: true, backstab: false, kamikazeSelfDestruct: true };
         }
@@ -574,7 +575,7 @@ export class CombatSystem {
         }
 
         // CE Combat.c:1179: attempts involving the player disturb even on a miss.
-        if (!logger.blockCombatText && (attacker instanceof Player || defender instanceof Player)) logger.disturb();
+        if (!logger.blockCombatText && (attacker instanceof ControlledActor || defender instanceof ControlledActor)) logger.disturb();
 
         // W-18 CE Combat.c:1183: attempts release entrancement even on a miss.
         // U06 handles BE_DAMAGE aggression in its separate damage path.
@@ -594,7 +595,7 @@ export class CombatSystem {
             && legalSeizeContact(attacker, defender, opts?.grid)) {
             attacker.seizing = true;
             defender.seized = true;
-            if (defender instanceof Player && attacker.submerged && opts?.grid
+            if (defender instanceof ControlledActor && attacker.submerged && opts?.grid
                 && canSeeMonster(defender, opts.grid, attacker)) attacker.submerged = false;
             return { damage: 0, weaponName, hit: false, backstab: false, seized: true };
         }
@@ -603,7 +604,7 @@ export class CombatSystem {
         // a 100% probability draw; they do not join the native auto-hit short circuit.
         const rule=(port:'hitChance'|'physicalDamage',input:ExtensionRuleInput)=>combatStatPair(attacker,defender,port,input);
         const forcedProbability = defender.seized && attacker.seizing
-            || (attacker instanceof Player && defender instanceof Monster
+            || (attacker instanceof ControlledActor && defender instanceof Monster
                 && weaponSlaysMonster(attacker.equippedWeapon, defender.typeId));
         const probability = forcedProbability ? 100 : nativeHitBase(attacker,defender);
         const adjustedProbability = Math.floor(rule('hitChance', {
@@ -657,7 +658,7 @@ export class CombatSystem {
         // 只收 sneakAttack || asleep || paralyzed，不含 lungeAttack），突进只
         // 走下面的倍率与自动命中，不置 backstab。
         if (backstab || lungeAttack) {
-            const daggerSneak = attacker instanceof Player &&
+            const daggerSneak = attacker instanceof ControlledActor &&
                 attacker.equippedWeapon?.flags?.includes('ITEM_SNEAK_ATTACK_BONUS');
             damage *= daggerSneak ? 5 : 3;
         }
@@ -676,7 +677,7 @@ export class CombatSystem {
 
         // CE Combat.c:1275-1289: only attack(), before inflictDamage/shielding,
         // capped by current HP. Thrown weapons and bolts do not enter this path.
-        if (attacker instanceof Player
+        if (attacker instanceof ControlledActor
             && !(defender instanceof Monster && (defender.hasCEBehavior('MONST_INANIMATE') || defender.isInvulnerable()))) {
             const reaping = nativeStat(attacker,'native.reaping');
             if (reaping) {
@@ -713,7 +714,7 @@ export class CombatSystem {
             const hpBefore = applyTo.hp;
             let effectivePhysicalDamage = 0;
             const transfer = (actual: number) => { effectivePhysicalDamage = actual; CombatSystem.transferMonsterHealth(attacker, applyTo, actual); };
-            if (applyTo instanceof Player) applyTo.takeCombatDamage(hpDamage, true, opts?.grid, transfer);
+            if (applyTo instanceof ControlledActor) applyTo.takeCombatDamage(hpDamage, true, opts?.grid, transfer);
             else applyTo.takeDamage(hpDamage, true, opts?.grid, transfer, 'physical'); // shield applied exactly once
             if (trace) trace.hpLost = Math.max(0, hpBefore - applyTo.hp);
             if (isNativeMeleeAttack(attacker, defender, opts))
@@ -726,7 +727,7 @@ export class CombatSystem {
         }
 
         // --- Check for runic trigger ---
-        if (weaponRunic && attacker instanceof Player && attacker.equippedWeapon) {
+        if (weaponRunic && attacker instanceof ControlledActor && attacker.equippedWeapon) {
             // CE Combat.c:666-677：触发率取 runicWeaponChance——内部按 CE netEnchant
             // （含力量修正，PowerTables.c:306-308）与武器基础伤害中值计算；此处传
             // 已算好的净附魔 weaponEnchant 与 parseDamageString 的基础伤害区间
@@ -757,12 +758,12 @@ export class CombatSystem {
             defender.weaken(300); // GlobalsBrogue.c:onHitWeakenDuration, survivor gate; damage is the pre-shield roll.
         }
 
-        if (isWeaponAttack && defender instanceof Player && defender.hp > 0 && attacker instanceof Monster) {
+        if (isWeaponAttack && defender instanceof ControlledActor && defender.hp > 0 && attacker instanceof Monster) {
             stealFromPlayer(attacker, defender, () => defender.hasStatus('stuck') || isIncapacitated(defender)
                 || rng.randPercent(defender.seized && attacker.seizing ? 100 : nativeHitChance(attacker,defender)), opts?.itemGenerationDepth ?? 1);
         }
         if (defender instanceof Monster) defender.enrageAfterAttack();
-        const adjustment = attacker instanceof Player ? 1 : nativeWeaknessFactor(attacker);
+        const adjustment = attacker instanceof ControlledActor ? 1 : nativeWeaknessFactor(attacker);
         const percentile = Math.trunc(Math.max(damage - Math.trunc(min * adjustment), 0) * 100
             / Math.max(1, Math.trunc((max - min) * adjustment)));
         const circumstance: AttackCircumstance = damage === 0 ? 'zero' : lungeAttack ? 'lunge'
@@ -775,7 +776,7 @@ export class CombatSystem {
     public static transferMonsterHealth(attacker: Creature, defender: Creature, hpDamage: number): void {
         if (defender instanceof Monster && (defender.hasCEBehavior('MONST_INANIMATE') || defender.isInvulnerable())) return;
         const dealt = Math.min(hpDamage, defender.hp);
-        if (attacker instanceof Player) {
+        if (attacker instanceof ControlledActor) {
             const bonus = nativeStat(attacker,'native.transference');
             if (!bonus) return;
             const amount = Math.trunc(dealt * ringTransferencePercent(bonus) / 100);

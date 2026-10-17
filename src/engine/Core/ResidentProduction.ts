@@ -114,10 +114,10 @@ function prepareResidentCommandInternal(
     const owner = x.module as string,
       state = g.extensionRuntime!.worldCampState(owner),
       c = residentCamp(g, owner, p.campId);
-    if (g.isGameOver || g.player.hp <= 0) failResident('C5_TERMINAL');
+    if (g.isGameOver || g.commandActor.hp <= 0) failResident('C5_TERMINAL');
     if (
-      residentDisabled(g.player as unknown as Monster) ||
-      productionActorActionScheduler(g)?.isBusy(g.player.id)
+      residentDisabled(g.commandActor as unknown as Monster) ||
+      productionActorActionScheduler(g)?.isBusy(g.commandActor.id)
     )
       failResident('C5_BUSY');
     if (state.revision !== p.stateRevision || c.revision !== p.campRevision)
@@ -133,8 +133,8 @@ function prepareResidentCommandInternal(
       if (b.revision !== p.containerRevision) failResident('C5_STALE');
       if (
         !g.grid.getCell(at.x, at.y)?.isVisible ||
-        Math.max(Math.abs(at.x - g.player.x), Math.abs(at.y - g.player.y)) > 1 ||
-        !hasInteractionLine(g.grid, g.player.loc, at)
+        Math.max(Math.abs(at.x - g.commandActor.x), Math.abs(at.y - g.commandActor.y)) > 1 ||
+        !hasInteractionLine(g.grid, g.commandActor.loc, at)
       )
         failResident('C5_DISTANCE');
       if (b.id === c.supplyId && !p.enabled) failResident('C5_RESERVED');
@@ -142,10 +142,10 @@ function prepareResidentCommandInternal(
       uint(p.targetId, 'targetId', 1);
       uint(p.targetRevision, 'targetRevision');
       const a = g.monsters.find((a) => a.id === p.targetId);
-      if (!a || !canDirectlySeeMonster(g.player, g.grid, a)) failResident('C5_UNKNOWN_TARGET');
+      if (!a || !canDirectlySeeMonster(g.commandActor, g.grid, a)) failResident('C5_UNKNOWN_TARGET');
       if (
-        Math.max(Math.abs(a!.x - g.player.x), Math.abs(a!.y - g.player.y)) > 1 ||
-        !hasInteractionLine(g.grid, g.player.loc, a!.loc)
+        Math.max(Math.abs(a!.x - g.commandActor.x), Math.abs(a!.y - g.commandActor.y)) > 1 ||
+        !hasInteractionLine(g.grid, g.commandActor.loc, a!.loc)
       )
         failResident('C5_DISTANCE');
       if (!residentEligible(g, a!)) failResident('C5_GATE');
@@ -178,7 +178,7 @@ function prepareResidentCommandInternal(
         if (r!.revision !== p.targetRevision) failResident('C5_STALE');
         if (['order-work','resupply-work','cancel-order'].includes(String(x.action))){
           if(!inResidentCamp(g,c,a!.loc))failResident('C5_WRONG_LEVEL');
-          if(x.action!=='cancel-order'&&p.inventoryStamp!==inventoryStamp(g.player.inventory.items))failResident('C5_STALE');
+          if(x.action!=='cancel-order'&&p.inventoryStamp!==inventoryStamp(g.commandActor.inventory.items))failResident('C5_STALE');
           prepareResidentOrder(g,c,String(x.action),p);
         }
         if (x.action === 'set-residence') {
@@ -193,7 +193,7 @@ function prepareResidentCommandInternal(
         }
         if (x.action === 'assign-job') {
           assertResidentJob(p.job);
-          if (p.inventoryStamp !== inventoryStamp(g.player.inventory.items))
+          if (p.inventoryStamp !== inventoryStamp(g.commandActor.inventory.items))
             failResident('C5_STALE');
           if (p.job.kind === 'idle' || p.job.kind === 'guard') {
             if (
@@ -391,7 +391,7 @@ export function commitResidentCommand(g: Game, plan: ResidentCommandPlan) {
       freezeResidentCamps(g, c.depth);
       g.world5!.revision = checkedAdd(g.world5!.revision, 1);
       if (plan.chargedTicks) {
-        g.player.ticksUntilTurn = plan.chargedTicks;
+        g.commandActor.ticksUntilTurn = plan.chargedTicks;
         g.requestEdibleRender();
       }
       return { ok: true as const, value: { chargedTicks: plan.chargedTicks } };
@@ -446,7 +446,7 @@ export function spawnResidentCandidates(
     const state = runtime.worldCampState(owner),
       slot = state.spawnSlots.find((s) => s.depth === g.depth);
     if (slot && slot.status !== 'deferred') continue;
-    const map = travelDistanceMap(g.grid, g.monsters, g.player.loc, T_PATHING_BLOCKER),
+    const map = travelDistanceMap(g.grid, g.monsters, g.commandActor.loc, T_PATHING_BLOCKER),
       positions: { x: number; y: number }[] = [];
     for (let y = 1; y < g.grid.height - 1; y++)
       for (let x = 1; x < g.grid.width - 1; x++) {
@@ -461,7 +461,7 @@ export function spawnResidentCandidates(
           !unsafeResidentCell(g, { x, y }) &&
           !g.getMonsterAt(x, y) &&
           !g.dormantMonsters.some((a) => g.footprintOf(a).some((p) => p.x === x && p.y === y)) &&
-          !g.footprintOf(g.player).some((p) => p.x === x && p.y === y) &&
+          !(g.party ? g.controlledOccupies({x,y}) : g.footprintOf(g.commandActor).some((p) => p.x === x && p.y === y)) &&
           !runtime.worldWorkEntities().some((e) => e.depth === g.depth && e.x === x && e.y === y) &&
           !runtime
             .worldStructureRegions()
@@ -539,7 +539,7 @@ export function removeResident(
             owner: rec.owner,
             reason,
             visibleGraceTicks:
-              g.monsters.includes(a) && canDirectlySeeMonster(g.player, g.grid, a) ? 300 : 0,
+              g.monsters.includes(a) && canDirectlySeeMonster(g.commandActor, g.grid, a) ? 300 : 0,
             occurredTick
           },
           !g.monsters.includes(a),
@@ -579,7 +579,7 @@ export function terminateResidentSource(g: Game, id: number): void {
   else g.extensionRuntime!.worldCampReplace(source.owner, state);
 }
 export function residentRead(g: Game, owner: string): ResidentRead {
-  const visible = (a: Monster) => canDirectlySeeMonster(g.player, g.grid, a);
+  const visible = (a: Monster) => canDirectlySeeMonster(g.commandActor, g.grid, a);
   return {
     tick: g.world5?.simulationTicks ?? 0,
     candidates: g.monsters

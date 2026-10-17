@@ -21,7 +21,7 @@ export function lootStatSources(catalog:()=>EffectiveLootCatalog):StatSourceProv
   keys:[{id:'loot.rarity-find',owner:'loot',unit:'bp',kind:'query',minimum:0,maximum:1000000,rounding:'floor',categories:['flat','increased','more','clamp'],increased:{minimum:-9000,maximum:50000},moreSlots:[],base:0}],
   collect(actor,context){
    const c=catalog(),preset=c.pack.presets.presets.find(p=>p.id===stateOf(context.state).presetId)!;
-   if(!actor.player){
+   if(!actor.player&&!actor.tags.includes('party.member')){
     if(!actor.hostile||(context.depth??0)<1)return [];
     const scale=monsterScalingAt(preset,context.depth!);
     return [['native.max-hp',scale.hpBp],['native.physical-damage-dealt',scale.damageBp],['native.accuracy',scale.accuracyBp]].filter(([,n])=>n!==0).map(([stat,value])=>({stat:String(stat),value:Number(value),category:'increased',layer:'environment',sourceKind:'loot-scaling',sourceId:`loot.scaling.${stat}`}));

@@ -1,3 +1,4 @@
+import { ControlledActor } from '../../entities/ControlledActor';
 import { markStatsDirty } from '../Stats/NativeStatSources';
 import { bodyDecisionActor, bodyGroupActors } from '../Status/BodyStatuses';
 import { distanceBetweenFootprints } from '../Movement/CreatureSpatial';
@@ -17,7 +18,7 @@ const immobile = (m: Monster) => m.hasBehavior('MONST_IMMOBILE') || m.hasBehavio
 export function alertMonster(g: Game, m: Monster): void {
     m = bodyDecisionActor(m);
     m.state = m.creatureMode === MonsterMode.PERM_FLEEING ? MonsterState.FLEEING : MonsterState.HUNTING;
-    m.lastSeenPlayerAt = { ...g.player.loc };
+    m.lastSeenPlayerAt = { ...g.commandActor.loc };
 }
 
 export function wakeMonster(g: Game, m: Monster, stealthRange: number): void {
@@ -57,7 +58,7 @@ export function monsterFleesFrom(m: Monster, target: Creature): boolean {
     if (target === m || m.hp <= 0 || distance(m, target) >= 4) return false;
     // CE monsterWillAttackTarget(target, m), in its original priority order.
     let attacks: boolean;
-    if (target instanceof Player && allyState(m)) attacks = m.hasStatus('discordant');
+    if (target instanceof ControlledActor && allyState(m)) attacks = m.hasStatus('discordant');
     else if (target.hasStatus('entranced') && !allyState(m)) attacks = true;
     else if (target instanceof Monster && allyState(target) && m.hasStatus('entranced')) attacks = false;
     else if (m.isCaged) attacks = false;
@@ -83,8 +84,8 @@ export function updateMonsterState(g: Game, m: Monster, stealthRange: number): v
         tracking: !allyState(m) && m.state === MonsterState.HUNTING, stealthRange,
     };
     const cohort = bodyGroupActors(m);
-    const aware = cohort.length === 1 ? scent.awareOfBodyTarget(g.grid,m,g.player,awareness)
-        : scent.awareOfGroupTarget(g.grid,cohort,g.player,awareness);
+    const aware = cohort.length === 1 ? scent.awareOfBodyTarget(g.grid,m,g.commandActor,awareness)
+        : scent.awareOfGroupTarget(g.grid,cohort,g.commandActor,awareness);
     if (immobile(m) && !allyState(m)) {
         m.state = aware ? MonsterState.HUNTING : MonsterState.ASLEEP;
         return;
@@ -93,14 +94,14 @@ export function updateMonsterState(g: Game, m: Monster, stealthRange: number): v
         && (m.state === MonsterState.WANDERING || m.state === MonsterState.HUNTING)) m.state = MonsterState.FLEEING;
 
     let closest = g.grid.width + g.grid.height;
-    for (const target of [g.player, ...iterateCreatures(g.monsters)]) {
+    for (const target of [g.commandActor, ...iterateCreatures(g.monsters)]) {
         if (!monsterFleesFrom(m, target) || distance(m, target) >= closest) continue;
         // CE tests traversibility from the feared enemy, then an open sight path.
         const traversible = target instanceof Monster ? blinkTraversiblePath(g, target, m)
             : playerTraversiblePath(g, target as Player, m);
         if (traversible && openCreaturePath(g, m, target)) closest = distance(m, target);
     }
-    if (!allyState(m) && m.state === MonsterState.WANDERING && aware && g.grid.getCell(g.player.x, g.player.y)?.isVisible) {
+    if (!allyState(m) && m.state === MonsterState.WANDERING && aware && g.grid.getCell(g.commandActor.x, g.commandActor.y)?.isVisible) {
         alertMonster(g, m);
     } else if (!allyState(m) && m.state === MonsterState.ASLEEP) {
         if (aware) wakeMonster(g, m, stealthRange);
@@ -116,12 +117,12 @@ export function updateMonsterState(g: Game, m: Monster, stealthRange: number): v
     } else if (m.creatureMode === MonsterMode.PERM_FLEEING && m.state === MonsterState.FLEEING
         && m.hasAbility('MA_HIT_STEAL_FLEE') && !m.hasStatus('magical_fear') && !m.carriedItem) {
         m.creatureMode = MonsterMode.NORMAL;
-        if (m.isAlly || m.leader instanceof Player) { m.isAlly = true; markStatsDirty(m); m.state = MonsterState.WANDERING; }
+        if (m.isAlly || m.leader instanceof ControlledActor) { m.isAlly = true; markStatsDirty(m); m.state = MonsterState.WANDERING; }
         else alertMonster(g, m);
     } else if (m.creatureMode === MonsterMode.NORMAL && m.state === MonsterState.FLEEING
         && m.hasBehavior('MONST_FLEES_NEAR_DEATH') && !m.hasStatus('magical_fear') && m.hp >= Math.trunc(3 * m.maxHp / 4)) {
-        if (m.isAlly || m.leader instanceof Player) { m.isAlly = true; markStatsDirty(m); m.state = MonsterState.WANDERING; }
+        if (m.isAlly || m.leader instanceof ControlledActor) { m.isAlly = true; markStatsDirty(m); m.state = MonsterState.WANDERING; }
         else alertMonster(g, m);
     }
-    if (aware && !allyState(m) && (m.state === MonsterState.FLEEING || m.state === MonsterState.HUNTING)) m.lastSeenPlayerAt = { ...g.player.loc };
+    if (aware && !allyState(m) && (m.state === MonsterState.FLEEING || m.state === MonsterState.HUNTING)) m.lastSeenPlayerAt = { ...g.commandActor.loc };
 }

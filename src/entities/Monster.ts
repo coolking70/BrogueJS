@@ -1,3 +1,4 @@
+import { ControlledActor } from './ControlledActor';
 import { isIncapacitated, wakeSlumber } from '../engine/Status/Incapacitation';
 import { markStatsDirty } from '../engine/Stats/NativeStatSources';
 import { nativeStat } from '../engine/Stats/NativeStatSources';
@@ -67,7 +68,7 @@ type Faction = 'player' | 'hostile';
 
 function factionOf(c: Creature): Faction {
     c = bodyDecisionActor(c);
-    if (c instanceof Player) return 'player';
+    if (c instanceof ControlledActor) return 'player';
     if (c instanceof Monster) return c.isAlly ? 'player' : 'hostile';
     return 'hostile';
 }
@@ -160,7 +161,7 @@ export function applyShieldStatus(c: Creature, tenths: number): void {
  */
 export function generallyValidBoltTarget(caster: Monster, target: Creature, game: Game): boolean {
     if (caster === target) return false;
-    if (caster.hasStatus('discordant') && caster.state === MonsterState.WANDERING && target === game.player) {
+    if (caster.hasStatus('discordant') && caster.state === MonsterState.WANDERING && target === game.commandActor) {
         return false;
     }
     if (target instanceof Monster && (target.isDormant || target.submerged)) return false;
@@ -232,7 +233,7 @@ export function specificallyValidBoltTarget(caster: Monster, target: Creature, c
             break;
         }
         case BoltEffect.DISCORD:
-            if (target.hasStatus('discordant') || target === game.player) return false;
+            if (target.hasStatus('discordant') || target === game.commandActor) return false;
             break;
         case BoltEffect.NEGATION:
             // CE MC:2613 reflective hostile gate, then :2681-2726 reasons.
@@ -275,9 +276,8 @@ export function specificallyValidBoltTarget(caster: Monster, target: Creature, c
 
 /** P4-6：CE monsterAtLoc 的 web 等价（含玩家）：该格上的玩家或存活怪物。 */
 function creatureAtLoc(game: Game, x: number, y: number): Creature | undefined {
-    if (game.player.hp > 0 && footprintContains(game.player, { x, y })) {
-        return game.player;
-    }
+    const member=game.activeControlledActors.find(a=>a.hp>0&&footprintContains(a,{x,y}));
+    if(member)return member;
     return game.getMonsterAt(x, y);
 }
 
@@ -953,7 +953,7 @@ export class Monster extends Creature {
         }
         if (expired.includes('magical_fear')) {
             // CE restores ALLY if the leader is the player; web stores allegiance separately.
-            if(!this.isAlly&&this.leader instanceof Player){this.isAlly=true;markStatsDirty(this);}
+            if(!this.isAlly&&this.leader instanceof ControlledActor){this.isAlly=true;markStatsDirty(this);}
             this.state = MonsterState.HUNTING;
         }
         return expired;
@@ -1242,7 +1242,7 @@ export class Monster extends Creature {
     public tryUseBolt(game: Game): boolean {
         if (this.bolts.length === 0) return false;
 
-        const candidates: Creature[] = [game.player, ...game.monsters.filter(m => m !== this && m.hp > 0)];
+        const candidates: Creature[] = [game.commandActor, ...game.monsters.filter(m => m !== this && m.hp > 0)];
         for (const target of candidates) {
             if (target.hp <= 0) continue;
             if (!generallyValidBoltTarget(this, target, game)) continue;
@@ -1281,7 +1281,7 @@ export class Monster extends Creature {
      */
     private willAttackTarget(defender: Creature): boolean {
         if (defender === this || defender.hp <= 0) return false;
-        const ally = defender instanceof Player || (defender instanceof Monster && defender.isAlly);
+        const ally = defender instanceof ControlledActor || (defender instanceof Monster && defender.isAlly);
         if (this.hasStatus('entranced') && !ally) return true;
         if (this.isAlly && defender.hasStatus('entranced')) return false;
         if (defender instanceof Monster && defender.isCaged) return false;
@@ -1553,7 +1553,7 @@ export class Monster extends Creature {
 
     private resolveGeometryAttackAt(game: Game, target: Creature, voice: 'ally' | 'discordant' | 'hostile'): AttackResult {
         const result = CombatSystem.attack(this, target, { grid: game.grid, itemGenerationDepth: game.depth,
-            beforeDamage: target === game.player ? damage => game.tryTriggerArmorRunic(this, damage, true) : undefined,
+            beforeDamage: target === game.commandActor ? damage => game.tryTriggerArmorRunic(this, damage, true) : undefined,
         });
         if (result.hit && !result.kamikazeSelfDestruct && !result.seized && target.hp > 0
             && this.hasAbility('MA_HIT_BURN')) game.exposeCreatureToFire(target as Player | Monster);
@@ -1574,38 +1574,38 @@ export class Monster extends Creature {
                 attacker: game.monsterDisplayName(this), target: game.monsterDisplayName(target),
                 defaultValue: `The ${game.monsterDisplayName(this)} seizes the ${game.monsterDisplayName(target)}!`
             }), '#ffcc88');
-        } else if (target === game.player) {
+        } else if (target === game.commandActor) {
             if (result.damage > 0) {
-                game.lastDamageSource = game.monsterDisplayName(this);
-                game.reportAttack(this, game.player, result);
-                game.spawnFloatingText(`-${result.damage}`, game.player.loc.x, game.player.loc.y, 0xff5555);
+                game.setActorDamageSource(game.commandActor,game.monsterDisplayName(this));
+                game.reportAttack(this, game.commandActor, result);
+                game.spawnFloatingText(`-${result.damage}`, game.commandActor.loc.x, game.commandActor.loc.y, 0xff5555);
                 if (this.hasEffectiveOnHitStatus() && rng.randPercent(Math.floor(this.onHitChance * 100))) {
-                    game.applyMonsterOnHitStatus(game.player, game.monsterDisplayName(this), this.onHitStatus!, this.onHitDuration, this);
+                    game.applyMonsterOnHitStatus(game.commandActor, game.monsterDisplayName(this), this.onHitStatus!, this.onHitDuration, this);
                 }
                 if (this.hasAbility('MA_HIT_HALLUCINATE')) {
-                    game.applyMonsterOnHitStatus(game.player, game.monsterDisplayName(this), 'hallucinating', 15, this);
+                    game.applyMonsterOnHitStatus(game.commandActor, game.monsterDisplayName(this), 'hallucinating', 15, this);
                 }
                 if (this.hasAbility('MA_HIT_DEGRADE_ARMOR')) {
                     // I-1：ITEM_PROTECTED 豁免（CE Combat.c:425-431——带保护则完全
                     // 跳过腐蚀，无任何消息；isProtected 由 protect_weapon/armor
                     // 卷轴置位，Game.protectEquippedGear）。
-                    if (game.player.equippedArmor && !game.player.equippedArmor.isProtected && game.player.equippedArmor.enchantment > -3) {
-                        game.player.equippedArmor.enchantment -= 1;
-                        markStatsDirty(game.player);
+                    if (game.commandActor.equippedArmor && !game.commandActor.equippedArmor.isProtected && game.commandActor.equippedArmor.enchantment > -3) {
+                        game.commandActor.equippedArmor.enchantment -= 1;
+                        markStatsDirty(game.commandActor);
                         logger.log(i18next.t('combat.armor_degraded', { defaultValue: 'Your armor is corroded by acid!' }), '#ffaaaa');
                     }
                 }
-                if (game.player.hp <= 0) {
+                if (game.commandActor.hp <= 0) {
                     logger.log(i18next.t('combat.you_have_been_slain', {
                         defaultValue: 'You have been slain.'
                     }), '#ff0000');
                 }
             } else {
-                game.reportAttack(this, game.player, result);
+                game.reportAttack(this, game.commandActor, result);
                 game.spawnFloatingText(
                     i18next.t('combat.miss_short', { defaultValue: 'Miss' }),
-                    game.player.loc.x,
-                    game.player.loc.y,
+                    game.commandActor.loc.x,
+                    game.commandActor.loc.y,
                     0xaaaaaa
                 );
             }
@@ -1752,6 +1752,7 @@ export class Monster extends Creature {
         }
         // Commit the safe anchor without terrain promotion/DF side effects.
         // Departure settlement retires stair arrivals before native contacts.
+        if (game.party && game.controlledOccupies(at)) return;
         commitCreatureAnchor(this,at,'mutate');
         surfaceOnDryLand(this,game.grid);
         if (!(cellTerrainFlags(game.grid,at.x,at.y)&T_ENTANGLES)) this.setStatusDuration('stuck',0);
@@ -1875,7 +1876,7 @@ export class Monster extends Creature {
             const independentBlade = this.typeId === 'spectral_blade' && this.doesNotTrackLeader;
             const canBladeStep = (p: { x: number; y: number }) => !(p.x === this.loc.x && p.y === this.loc.y)
                 && !bladeAvoids(game.grid, p) && !bladeDiagonalBlocked(game.grid, this.loc, p)
-                && !game.getMonsterAt(p.x, p.y) && !(footprintContains(game.player, p));
+                && !game.getMonsterAt(p.x, p.y) && !((game.party ? game.controlledOccupies(p) : footprintContains(game.commandActor, p)));
             // CE selects by the ally's traversible path, even outside player FOV.
             // The leash and futile-attack gates apply after selecting the closest enemy.
             const target = allyShouldPursue(game, this, blinkEnemy) ? blinkEnemy : null;
@@ -1968,13 +1969,13 @@ export class Monster extends Creature {
                 }
                 // CE moveAlly: near the player, mill about; farther away, follow
                 // scent until it fails, then path toward the leader.
-                const distToPlayer = distanceBetweenFootprints(this, game.player);
+                const distToPlayer = distanceBetweenFootprints(this, game.commandActor);
                 if (this.doesNotTrackLeader || (distToPlayer < 3 && game.grid.getCell(this.x, this.y)?.isVisible)) {
                     this.givenUpOnScent = false;
                     if (rng.randPercent(30)) {
                         const steps = BLADE_DIRECTIONS.map(([dx, dy]) => ({ x: this.x + dx, y: this.y + dy }))
                             .filter(p => this.canEnterMovementTerrain(game, p.x, p.y) && !game.getMonsterAt(p.x, p.y)
-                                && !(footprintContains(game.player, p)));
+                                && !((game.party ? game.controlledOccupies(p) : footprintContains(game.commandActor, p))));
                         if (steps.length) {
                             const step = steps[rng.randRange(0, steps.length - 1)]!;
                             this.tryMoveTo(step.x, step.y, game);
@@ -1983,7 +1984,7 @@ export class Monster extends Creature {
                 } else {
                     const dir = this.givenUpOnScent ? null : game.scent.stepDirection(game.grid, this.x, this.y, {
                         canEnter: (x, y) => this.canEnterMovementTerrain(game, x, y) && !game.getMonsterAt(x, y)
-                            && !(footprintContains(game.player, { x, y })),
+                            && !((game.party ? game.controlledOccupies({ x, y }) : footprintContains(game.commandActor, { x, y }))),
                     });
                     if (dir) this.tryMoveTo(this.x + dir[0], this.y + dir[1], game);
                     else {
@@ -1997,8 +1998,8 @@ export class Monster extends Creature {
             return;
         }
 
-        const distToPlayer = distanceBetweenFootprints(this, game.player);
-        const canSeePlayer = !!bodySightContact(game.grid, this, game.player, game.hasLineOfSight.bind(game));
+        const distToPlayer = distanceBetweenFootprints(this, game.commandActor);
+        const canSeePlayer = !!bodySightContact(game.grid, this, game.commandActor, game.hasLineOfSight.bind(game));
         if (this.hasStatus('confused')) {
             if (rng.randPercent(70)) {
                 const dirs = [[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [1, 1], [-1, 1], [1, -1]];
@@ -2006,7 +2007,7 @@ export class Monster extends Creature {
                 const nx = this.loc.x + dir[0]!;
                 const ny = this.loc.y + dir[1]!;
                 const c = game.grid.getCell(nx, ny);
-                if (c && this.canEnterMovementTerrain(game, nx, ny) && !game.getMonsterAt(nx, ny) && !(footprintContains(game.player, { x: nx, y: ny }))) {
+                if (c && this.canEnterMovementTerrain(game, nx, ny) && !game.getMonsterAt(nx, ny) && !((game.party ? game.controlledOccupies({ x: nx, y: ny }) : footprintContains(game.commandActor, { x: nx, y: ny })))) {
                     this.tryMoveTo(nx, ny, game);
                 }
                 return;
@@ -2025,7 +2026,7 @@ export class Monster extends Creature {
                     const c = game.grid.getCell(x, y);
                     if (!c) return false;
                     if (!this.canEnterMovementTerrain(game, x, y)) return false;
-                    return !game.getMonsterAt(x, y) && !(footprintContains(game.player, { x, y }));
+                    return !game.getMonsterAt(x, y) && !((game.party ? game.controlledOccupies({ x, y }) : footprintContains(game.commandActor, { x, y })));
                 };
                 const map = getSafetyMapForMonster(game, this);
                 const dir = safetyNextStep(map, game.grid, this.loc.x, this.loc.y);
@@ -2052,15 +2053,15 @@ export class Monster extends Creature {
                 // 玩家：过几何分发后走标准近战。
                 if (distToPlayer <= 1 && !this.hasStatus('magical_fear')) {
                     if (this.waitForNativeAttackStamina(game)) return;
-                    if (this.spatial && this.resolveBodyMeleeAdjacent(game, game.player, 'hostile')) return;
+                    if (this.spatial && this.resolveBodyMeleeAdjacent(game, game.commandActor, 'hostile')) return;
                     if (!this.commitNativeAttackOrWait(game)) return;
                     if (this.hasStatus('nauseous') && game.tryVomit(this)) return;
-                    if (this.tryGeometryMeleeAdjacent(game, game.player)) {
+                    if (this.tryGeometryMeleeAdjacent(game, game.commandActor)) {
                         return;
                     }
-                    const result = CombatSystem.attack(this, game.player, { grid: game.grid, itemGenerationDepth: game.depth });
-                    if (result.hit && !result.kamikazeSelfDestruct && !result.seized && game.player.hp > 0
-                        && this.hasAbility('MA_HIT_BURN')) game.exposeCreatureToFire(game.player);
+                    const result = CombatSystem.attack(this, game.commandActor, { grid: game.grid, itemGenerationDepth: game.depth });
+                    if (result.hit && !result.kamikazeSelfDestruct && !result.seized && game.commandActor.hp > 0
+                        && this.hasAbility('MA_HIT_BURN')) game.exposeCreatureToFire(game.commandActor);
                     if (result.kamikazeSelfDestruct) {
                         logger.log(i18next.t('combat.monster_kamikaze', {
                             monster: game.monsterDisplayName(this),
@@ -2072,11 +2073,11 @@ export class Monster extends Creature {
                             defaultValue: `The ${game.monsterDisplayName(this)} seizes you!`
                         }), '#ffcc88');
                     } else if (result.damage > 0) {
-                        game.lastDamageSource = game.monsterDisplayName(this);
-                        game.reportAttack(this, game.player, result);
-                        game.spawnFloatingText(`-${result.damage}`, game.player.loc.x, game.player.loc.y, 0xff5555);
+                        game.setActorDamageSource(game.commandActor,game.monsterDisplayName(this));
+                        game.reportAttack(this, game.commandActor, result);
+                        game.spawnFloatingText(`-${result.damage}`, game.commandActor.loc.x, game.commandActor.loc.y, 0xff5555);
                     } else {
-                        game.reportAttack(this, game.player, result);
+                        game.reportAttack(this, game.commandActor, result);
                     }
                     this.endTurnWithAttack();
                 }
@@ -2087,7 +2088,7 @@ export class Monster extends Creature {
         // No target visibility gate: the preference is the existing scent map.
         if (blinkReady && this.state === MonsterState.HUNTING
             && (!this.hasBehavior('MONST_RESTRICTED_TO_LIQUID')
-                || (cellTerrainMechFlags(game.grid, game.player.x, game.player.y) & TM_ALLOWS_SUBMERGING))
+                || (cellTerrainMechFlags(game.grid, game.commandActor.x, game.commandActor.y) & TM_ALLOWS_SUBMERGING))
             && blinkChance(this)
             && monsterBlinkToPreferenceMap(game, this, p => game.scent.get(p.x, p.y), true)) return;
 
@@ -2102,7 +2103,7 @@ export class Monster extends Creature {
         // gain this branch unless W-17 actually converts them with domination.
         if ((this.state === MonsterState.HUNTING || this.state === MonsterState.WANDERING)
             && (this.state !== MonsterState.HUNTING || distToPlayer > 1
-                || bladeDiagonalBlocked(game.grid, this.loc, game.player.loc))) {
+                || bladeDiagonalBlocked(game.grid, this.loc, game.commandActor.loc))) {
             const blade = game.monsters.find(m => ((m.typeId === 'spectral_blade' && m.boundToPlayer) || (m.dominated && m.isAlly))
                 && this.willAttackTarget(m) && distanceBetweenFootprints(m, this) === 1
                 && !bladeDiagonalBlocked(game.grid, this.loc, m.loc)
@@ -2192,19 +2193,19 @@ export class Monster extends Creature {
             // Adjacent to player -> Melee Attack!
             if (distToPlayer <= 1) {
                 if (this.waitForNativeAttackStamina(game)) return;
-                if (this.spatial && this.resolveBodyMeleeAdjacent(game, game.player, 'hostile')) return;
+                if (this.spatial && this.resolveBodyMeleeAdjacent(game, game.commandActor, 'hostile')) return;
                 // P4-6：同 ally 分支——怪物贴脸玩家的近战先过几何分发
                 // （矛会顺带打中玩家身后的目标，斧会扫掉全部相邻敌人）。
                 if (!this.commitNativeAttackOrWait(game)) return;
                 if (this.hasStatus('nauseous') && game.tryVomit(this)) return;
-                if (this.tryGeometryMeleeAdjacent(game, game.player)) {
+                if (this.tryGeometryMeleeAdjacent(game, game.commandActor)) {
                     return;
                 }
-                const result = CombatSystem.attack(this, game.player, { grid: game.grid, itemGenerationDepth: game.depth,
+                const result = CombatSystem.attack(this, game.commandActor, { grid: game.grid, itemGenerationDepth: game.depth,
                     beforeDamage: damage => game.tryTriggerArmorRunic(this, damage, true),
                 });
-                if (result.hit && !result.kamikazeSelfDestruct && !result.seized && game.player.hp > 0
-                    && this.hasAbility('MA_HIT_BURN')) game.exposeCreatureToFire(game.player);
+                if (result.hit && !result.kamikazeSelfDestruct && !result.seized && game.commandActor.hp > 0
+                    && this.hasAbility('MA_HIT_BURN')) game.exposeCreatureToFire(game.commandActor);
                 if (result.kamikazeSelfDestruct) {
                     // P4-4：CE MA_KAMIKAZE（Combat.c:1159-1162）——攻击者自毁代替
                     // 造成伤害；三只膨胀怪的 damage 都是 0d1，本来也打不出伤害，
@@ -2215,7 +2216,7 @@ export class Monster extends Creature {
                     }), '#ff8800');
                     game.spawnFloatingText(
                         i18next.t('combat.kamikaze_short', { defaultValue: 'Boom!' }),
-                        game.player.loc.x, game.player.loc.y, 0xff8800
+                        game.commandActor.loc.x, game.commandActor.loc.y, 0xff8800
                     );
                 } else if (result.seized) {
                     // P4-5：CE MA_SEIZES（Combat.c:1212-1237）——第一次贴脸抓住玩家，
@@ -2226,44 +2227,44 @@ export class Monster extends Creature {
                         defaultValue: `The ${game.monsterDisplayName(this)} seizes you!`
                     }), '#ffcc88');
                 } else if (result.damage > 0) {
-                    game.lastDamageSource = game.monsterDisplayName(this);
-                    game.reportAttack(this, game.player, result);
-                    game.spawnFloatingText(`-${result.damage}`, game.player.loc.x, game.player.loc.y, 0xff5555);
+                    game.setActorDamageSource(game.commandActor,game.monsterDisplayName(this));
+                    game.reportAttack(this, game.commandActor, result);
+                    game.spawnFloatingText(`-${result.damage}`, game.commandActor.loc.x, game.commandActor.loc.y, 0xff5555);
                     if (this.hasEffectiveOnHitStatus() && rng.randPercent(Math.floor(this.onHitChance * 100))) {
-                        game.applyMonsterOnHitStatus(game.player, game.monsterDisplayName(this), this.onHitStatus!, this.onHitDuration, this);
+                        game.applyMonsterOnHitStatus(game.commandActor, game.monsterDisplayName(this), this.onHitStatus!, this.onHitDuration, this);
                     }
                     if (this.hasAbility('MA_HIT_HALLUCINATE')) {
-                        game.applyMonsterOnHitStatus(game.player, game.monsterDisplayName(this), 'hallucinating', 15, this);
+                        game.applyMonsterOnHitStatus(game.commandActor, game.monsterDisplayName(this), 'hallucinating', 15, this);
                     }
                     if (this.hasAbility('MA_HIT_DEGRADE_ARMOR')) {
                         // I-1：ITEM_PROTECTED 豁免（CE Combat.c:425-431——带保护则
                         // 完全跳过腐蚀，无任何消息）。与 resolveGeometryAttackOn
                         // 的近战支同款（P4-6 几何分发的两处落点都要过这道门）。
-                        if (game.player.equippedArmor && !game.player.equippedArmor.isProtected && game.player.equippedArmor.enchantment > -3) {
-                            game.player.equippedArmor.enchantment -= 1;
-                            markStatsDirty(game.player);
+                        if (game.commandActor.equippedArmor && !game.commandActor.equippedArmor.isProtected && game.commandActor.equippedArmor.enchantment > -3) {
+                            game.commandActor.equippedArmor.enchantment -= 1;
+                            markStatsDirty(game.commandActor);
                             logger.log(i18next.t('combat.armor_degraded', { defaultValue: 'Your armor is corroded by acid!' }), '#ffaaaa');
                         }
                     }
-                    if (game.player.hp <= 0) {
+                    if (game.commandActor.hp <= 0) {
                         logger.log(i18next.t('combat.you_have_been_slain', {
                             defaultValue: 'You have been slain.'
                         }), '#ff0000');
                     }
                 } else {
-                    game.reportAttack(this, game.player, result);
+                    game.reportAttack(this, game.commandActor, result);
                     game.spawnFloatingText(
                         i18next.t('combat.miss_short', { defaultValue: 'Miss' }),
-                        game.player.loc.x,
-                        game.player.loc.y,
+                        game.commandActor.loc.x,
+                        game.commandActor.loc.y,
                         0xaaaaaa
                     );
                 }
                 // P4-5：同上——命中且未被杀死时才推（kamikaze/seize 分支已经不会
                 // 走到这里之外的判断，此处再显式排除一次以防未来分支顺序调整）。
                 if (result.hit && !result.kamikazeSelfDestruct && !result.seized &&
-                    game.player.hp > 0 && this.hasAbility('MA_ATTACKS_STAGGER')) {
-                    (game as any).processStaggerHit(this, game.player);
+                    game.commandActor.hp > 0 && this.hasAbility('MA_ATTACKS_STAGGER')) {
+                    (game as any).processStaggerHit(this, game.commandActor);
                 }
                 this.endTurnWithAttack();
             } else {
@@ -2278,8 +2279,8 @@ export class Monster extends Creature {
                             const nx = this.loc.x + dx;
                             const ny = this.loc.y + dy;
                             const c = game.grid.getCell(nx, ny);
-                            if (c && this.canEnterMovementTerrain(game, nx, ny) && !game.getMonsterAt(nx, ny) && !(footprintContains(game.player, { x: nx, y: ny }))) {
-                                const dist = distanceToFootprint(game.player, { x: nx, y: ny });
+                            if (c && this.canEnterMovementTerrain(game, nx, ny) && !game.getMonsterAt(nx, ny) && !((game.party ? game.controlledOccupies({ x: nx, y: ny }) : footprintContains(game.commandActor, { x: nx, y: ny })))) {
+                                const dist = distanceToFootprint(game.commandActor, { x: nx, y: ny });
                                 if (dist > bestScore) {
                                     bestScore = dist;
                                     bestCell = { x: nx, y: ny };
@@ -2301,7 +2302,7 @@ export class Monster extends Creature {
                 // scentDirection，不绕开友军——Monsters.c:3473/3488 → 3817-3818；
                 // 置于 MAINTAINS_DISTANCE 判定之后：保持距离的怪先撤退，撤退方向
                 // 上的几何尝试由 tryMoveTo 的移动钩子承担，与 CE 一致）。
-                if (this.tryGeometryRayTo(game, game.player)) {
+                if (this.tryGeometryRayTo(game, game.commandActor)) {
                     return;
                 }
 
@@ -2311,7 +2312,7 @@ export class Monster extends Creature {
                     const c = game.grid.getCell(x, y);
                     if (!c) return false;
                     if (!this.canEnterWaterTerrain(game, x, y)) return false;
-                    return this.canEnterMovementTerrain(game, x, y) && !game.getMonsterAt(x, y) && !(footprintContains(game.player, { x, y }));
+                    return this.canEnterMovementTerrain(game, x, y) && !game.getMonsterAt(x, y) && !((game.party ? game.controlledOccupies({ x, y }) : footprintContains(game.commandActor, { x, y })));
                 };
 
                 if (!canSeePlayer && !(this.hasBehavior('MONST_ALWAYS_HUNTING') && this.givenUpOnScent)) {
@@ -2346,7 +2347,7 @@ export class Monster extends Creature {
                 }
 
                 if (blinkReady && this.hasBehavior('MONST_ALWAYS_HUNTING') && this.givenUpOnScent
-                    && blinkTowardCreature(game, this, game.player)) return;
+                    && blinkTowardCreature(game, this, game.commandActor)) return;
                 const path = this.findPlayerPath(game, (x, y) => {
                     const c = game.grid.getCell(x, y);
                     if (!c) return false;
@@ -2416,8 +2417,8 @@ export class Monster extends Creature {
         const region=id===undefined?null:game.extensionRuntime?.ownedRegion(id,game.depth);
         if(!region || region.guard!=='return-to-spawn' || this.isAlly || this.state===MonsterState.FLEEING
             || this.hasStatus('discordant') || this.hasStatus('confused') || this.hasStatus('magical_fear'))return false;
-        const b=region.bounds,inside=game.player.x>=b.x&&game.player.y>=b.y&&game.player.x<b.x+b.width&&game.player.y<b.y+b.height;
-        if((inside && this.state===MonsterState.HUNTING) || game.meleeContact(this,game.player))return false;
+        const b=region.bounds,inside=game.commandActor.x>=b.x&&game.commandActor.y>=b.y&&game.commandActor.x<b.x+b.width&&game.commandActor.y<b.y+b.height;
+        if((inside && this.state===MonsterState.HUNTING) || game.meleeContact(this,game.commandActor))return false;
         const step=game.planSquareStep(this,{kind:'anchors',anchors:[this.spawnLoc]});
         this.applyPlannedBodyStep(game, step);
         if(this.ticksUntilTurn<=0)this.ticksUntilTurn=nativeStat(this,'native.move-speed');
@@ -2431,7 +2432,7 @@ export class Monster extends Creature {
                 .find(c => c !== this && this.willAttackTarget(c) && game.meleeContact(this, c));
             if (enemy) return this.resolveBodyMeleeAdjacent(game, enemy, 'discordant');
         }
-        const threat = normalAlly ? allyEnemy : game.player;
+        const threat = normalAlly ? allyEnemy : game.commandActor;
         const distance = threat ? distanceBetweenFootprints(this, threat) : Infinity;
         // Adjacent native attacks share the body contact gate below.
         if (threat && distance <= 1 && this.state !== MonsterState.FLEEING && game.meleeContact(this, threat)) return false;
@@ -2439,7 +2440,7 @@ export class Monster extends Creature {
             && this.tryGeometryRayTo(game, threat, normalAlly ? 'ally' : 'hostile')) return true;
         if (normalAlly && blinkAllyAfterMagic(game, this, allyEnemy)) return true;
         if (!normalAlly && this.state === MonsterState.HUNTING && blinkChance(this)
-            && monsterBlinkToPreferenceMap(game, this, game.squareDistanceValues(this, { kind: 'contact', target: game.player }), false)) return true;
+            && monsterBlinkToPreferenceMap(game, this, game.squareDistanceValues(this, { kind: 'contact', target: game.commandActor }), false)) return true;
         if (this.hasStatus('confused') && rng.randPercent(70)) {
             const direction = this.randFlittingDirection(game);
             if (direction) this.tryMoveTo(this.x + direction[0], this.y + direction[1], game);
@@ -2447,10 +2448,10 @@ export class Monster extends Creature {
         }
         let step;
         if (this.state === MonsterState.FLEEING || (this.hasBehavior('MONST_MAINTAINS_DISTANCE') && distance < 3)) {
-            step = game.planSquareStep(this, { kind: 'escape', target: threat ?? game.player });
+            step = game.planSquareStep(this, { kind: 'escape', target: threat ?? game.commandActor });
         } else if (normalAlly || this.state === MonsterState.HUNTING) {
             if (this.hasBehavior('MONST_MAINTAINS_DISTANCE') && distance === 3) return true;
-            step = game.planSquareStep(this, { kind: 'contact', target: threat ?? this.leader ?? game.player });
+            step = game.planSquareStep(this, { kind: 'contact', target: threat ?? this.leader ?? game.commandActor });
         } else {
             const wp = game.waypoints;
             if (wp.count) {
@@ -2500,7 +2501,7 @@ export class Monster extends Creature {
             if (!c) continue;
             const canEnter = this.canEnterMovementTerrain(game, nx, ny);
             if (canEnter && !game.getMonsterAt(nx, ny) &&
-                !(footprintContains(game.player, { x: nx, y: ny }))) {
+                !((game.party ? game.controlledOccupies({ x: nx, y: ny }) : footprintContains(game.commandActor, { x: nx, y: ny })))) {
                 valid.push([dx!, dy!]);
             }
         }
@@ -2517,7 +2518,7 @@ export class Monster extends Creature {
     private findPlayerPath(game: Game, canPass: (x: number, y: number) => boolean): Pos[] | null {
         const height = game.grid.height;
         const passability = new Uint8Array(game.grid.width * height);
-        return withMonsterLookup(game.monsters, () => Pathfind.findPath(game.grid, this.x, this.y, game.player.x, game.player.y, (x, y) => {
+        return withMonsterLookup(game.monsters, () => Pathfind.findPath(game.grid, this.x, this.y, game.commandActor.x, game.commandActor.y, (x, y) => {
             // findPath bounds-checks the goal and every neighbor before canPass.
             const index = x * height + y;
             let state = passability[index]!;
@@ -2581,7 +2582,7 @@ export class Monster extends Creature {
         }
         if (!this.canEnterWaterTerrain(game, nx, ny)) return;
         if (this.hasStatus('nauseous') && game.tryVomit(this)) return;
-        const occupied = game.getMonsterAt(nx, ny) || (footprintContains(game.player, { x: nx, y: ny }));
+        const occupied = game.getMonsterAt(nx, ny) || ((game.party ? game.controlledOccupies({ x: nx, y: ny }) : footprintContains(game.commandActor, { x: nx, y: ny })));
         if (this.hasStatus('stuck') && !occupied
             && (cellTerrainFlags(game.grid, this.x, this.y) & T_ENTANGLES)
             && !this.hasCEBehavior('MONST_IMMUNE_TO_WEBS')) {
@@ -2612,6 +2613,7 @@ export class Monster extends Creature {
             if (this.hasAbility('MA_ATTACKS_PENETRATE') && this.performSpearAttack(game, stepDx, stepDy)) return;
         }
 
+        if (game.party && game.controlledOccupies({x:nx,y:ny})) return;
         const destination = game.grid.getCell(nx, ny)!;
         if (!terrainPassableOrSecretDoor(destination)) return;
         if (destination.isVisible && !destination.isPassable) discoverTerrain(game.grid, nx, ny);

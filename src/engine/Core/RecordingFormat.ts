@@ -1,9 +1,8 @@
-import { FOUNDATION_PROTOCOL } from '../../ext/descriptor';
+import { effectivePartyCodec } from '../../ext/partyIdentity';
+import { digestDomains, eventDomains } from './RecordingV4';
 import { c5Canonical } from './WorldCanonical';
 import { digestRoot, recordingStart, recordingChain } from './RecordingDigest';
 import {
-  DIGEST_DOMAINS,
-  EVENT_DOMAINS,
   SNAPSHOT_BYTES,
   SNAPSHOT_COUNT,
   type RecordingV4,
@@ -20,7 +19,7 @@ import type { GameSnapshot } from './WholeRunSnapshot';
 const hex = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{64}$/.test(v);
 function digest(value: any, header: RecordingHeaderV4, event = false): void {
   exact(value, 'root,domains', 'digest');
-  const order = event ? EVENT_DOMAINS : DIGEST_DOMAINS;
+  const order = event ? eventDomains(header.extensions) : digestDomains(header.extensions);
   const domains = value.domains as Record<string, string>;
   exact(domains, order.join(','), 'digest.domains');
   if (
@@ -49,10 +48,10 @@ export function validateRecordingV4(
     c5Canonical(header, true);
     exact(r.codec, 'wholeRun,foundation,origin', 'codec');
     if (
-      r.version !== 4 ||
-      r.codec.wholeRun !== 7 ||
-      r.codec.foundation !== FOUNDATION_PROTOCOL ||
-      r.codec.origin !== 2 ||
+      r.version !== effectivePartyCodec(r.extensions).recording ||
+      r.codec.wholeRun !== effectivePartyCodec(r.extensions).wholeRun ||
+      r.codec.foundation !== effectivePartyCodec(r.extensions).foundation ||
+      r.codec.origin !== effectivePartyCodec(r.extensions).origin ||
       r.digestAlgorithm !== 'sha256-c5-merkle-v1' ||
       r.digestChunk !== 256 ||
       r.checkpointPeriod !== 2048 ||
@@ -117,7 +116,7 @@ export function validateRecordingV4(
         digest(e.fullCheckpoint, header);
         if (
           e.checkpoint &&
-          EVENT_DOMAINS.some((d) => e.checkpoint!.domains[d] !== e.fullCheckpoint!.domains[d])
+          eventDomains(r.extensions).some((d) => e.checkpoint!.domains[d] !== e.fullCheckpoint!.domains[d])
         )
           return false;
       }
@@ -186,7 +185,7 @@ export function validOriginShape(
     exact(origin, 'version,header,events,prefixDigest,inputState', 'origin');
     const o = origin as unknown as RecordingOriginV2;
     if (
-      o.version !== 2 ||
+      o.version !== effectivePartyCodec(o.header.extensions).origin ||
       o.header.seed !== world.seed ||
       o.header.mode !== world.mode ||
       !validateInputState(o.inputState, world) ||
@@ -252,7 +251,7 @@ export function validAccelerationSnapshot(
       s.afterCommand % 2048 !== 0 ||
       !e ||
       !e.fullCheckpoint ||
-      s.snapshotCodec !== 'brogue-web-whole-run-v7' ||
+      s.snapshotCodec !== effectivePartyCodec(recording.extensions).schema ||
       s.tick !== e.tick ||
       s.simulationTicks !== e.simulationTicks ||
       levelKey(s.levelRef) !== levelKey(e.levelRef) ||

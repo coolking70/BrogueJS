@@ -42,7 +42,8 @@
     "actorActions": "actorActions",
     "worldWorkFacts": "world5",
     "worldWorkDetails": "world5",
-    "pendingEnchantmentScrollId": "native"
+    "pendingEnchantmentScrollId": "native",
+    "party": "native"
   },
   "excluded": {
     "squareLandingRetry": "derived",
@@ -141,7 +142,10 @@
     "flavors": "knowledge",
     "wandFlavors": "knowledge",
     "staffFlavors": "knowledge",
-    "logger": "knowledge"
+    "logger": "knowledge",
+    "party.state": "party",
+    "party.actors": "native",
+    "party.native": "native"
   },
   "derivedEntityFields": [
     "mapToMe"
@@ -160,7 +164,8 @@
   "derivedSessionServices": {
     "StatPipeline": "Excluded: cache, diagnostics, actorStatRevision, frozen provider views and hypothetical proposal contexts. Persist only ExtensionSnapshot.foundation.stats in extensions dirty domain.",
     "EdibleFoundation": "5A4: knowledge/needs/timedStats/departures roots belong to extensions; Item.fireContactCooldownUntilTurn belongs to native. FireContact queue/draining/DF nesting are session, name/appearance/effect/nextDue are derived and excluded.",
-    "ItemFoundation": "C6-1: Item.moduleData is native and also hashed in knowledge for partial-known changes; foundation.itemDrops lifecycle/receipts are extensions. Sealed plans, presentation/knowledge weak bindings and stat projection caches are session-only."
+    "ItemFoundation": "C6-1: Item.moduleData is native and also hashed in knowledge for partial-known changes; foundation.itemDrops lifecycle/receipts are extensions. Sealed plans, presentation/knowledge weak bindings and stat projection caches are session-only.",
+    "PartySession": "WeakMap actor execution scope and UI focus are session-only. Per-observer FOV masks are derived. PartyRuntime state/actors/native are persisted by whole-run v8, and projected by recording v5; absence preserves phase6 roots."
   },
   "world5Leaves": {
     "foundation": 11,

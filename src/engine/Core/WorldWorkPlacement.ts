@@ -182,11 +182,11 @@ export function grantStartupItems(game: Game, owner: string): void {
       } catch {
         budget = false;
       }
-      const toBag = budget && game.player.inventory.hasSpace(fake),
+      const toBag = budget && game.commandActor.inventory.hasSpace(fake),
         at = toBag ? null : budget ? nearbyCells(game).find((p) => clearWorldCell(game, p)) : null;
       if (toBag) {
         const item = assembleWorldItem(d, count);
-        game.player.inventory.addItem(item);
+        game.commandActor.inventory.addItem(item);
         receipt.toInventory.push({ itemDefinitionId: d.id, count });
       } else if (at) {
         const item = assembleWorldItem(d, count);
@@ -218,7 +218,7 @@ export function grantStartupItems(game: Game, owner: string): void {
     completionOrdinal: 0,
     operation: 'startup',
     definitionId: startup.items[0]!.itemDefinitionId,
-    actorId: game.player.id,
+    actorId: game.commandActor.id,
     completedBatches: 0,
     result: receipt.result === 'skipped' ? 'skipped' : 'completed',
     reason: receipt.result === 'granted' ? null : 'overflow',

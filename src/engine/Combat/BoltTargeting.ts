@@ -1,3 +1,5 @@
+import {canActorSeeCell,hasPartyPerception} from '../UI/PartyPerception';
+import {footprintSome} from '../Movement/CreatureSpatial';
 import { footprintContains } from '../Movement/CreatureSpatial';
 import type { Pos } from '../../types';
 import { bodySightCornerClear } from './BodyPerception';
@@ -38,7 +40,7 @@ export function automaticBoltContact(player: Player, grid: Grid, monsters: reado
 export function canObserveBoltCreature(player: Player, grid: Grid, creature: Creature): boolean {
     if (creature === player) return true;
     if (!('isDormant' in creature) || creature.isDormant) return false;
-    return canSeeMonster(player, grid, creature as Monster);
+    return canSeeMonster(player, grid, creature as Monster) && (!hasPartyPerception(player,grid)||player.hasStatus('telepathy')||footprintSome(creature,p=>canActorSeeCell(player,grid,p.x,p.y)));
 }
 
 /** CE Items.c:5935-6032. Eligibility is ONLY for automatic candidates;

@@ -118,12 +118,12 @@ const payloadKeys: Record<StructureAction|'repair', string> = {
 };
 function available(game: Game) {
   if (!game.world5) fail('C5_DISABLED');
-  if (game.isGameOver || game.player.hp <= 0) fail('C5_DEAD');
+  if (game.isGameOver || game.commandActor.hp <= 0) fail('C5_DEAD');
   if (
-    (['paralyzed', 'slumber'] as const).some((k) => game.player.hasStatus(k)) ||
+    (['paralyzed', 'slumber'] as const).some((k) => game.commandActor.hasStatus(k)) ||
     game.interactionActive ||
-    game.actorActions?.bundles.some((b) => b.decisionOwnerId === game.player.id) ||
-    game.world5!.tickets.some((t) => t.actorId === game.player.id && t.status === 'working')
+    game.actorActions?.bundles.some((b) => b.decisionOwnerId === game.commandActor.id) ||
+    game.world5!.tickets.some((t) => t.actorId === game.commandActor.id && t.status === 'working')
   )
     fail('C5_BUSY');
 }
@@ -143,13 +143,13 @@ function region(game: Game, id: number, revision: number) {
 }
 function near(game: Game, at: { x: number; y: number }) {
   if (!game.grid.getCell(at.x, at.y)?.isVisible) fail('C5_BLOCKED');
-  if (distance(game.player.loc, at) > 1 || !hasInteractionLine(game.grid, game.player.loc, at))
+  if (distance(game.commandActor.loc, at) > 1 || !hasInteractionLine(game.grid, game.commandActor.loc, at))
     fail('C5_DISTANCE');
 }
 function source(game: Game, p: any): Item[] {
   if (p.sourceContainerId === null) {
     if (p.sourceRevision !== null) fail('C5_BAD_PAYLOAD');
-    return game.player.inventory.items;
+    return game.commandActor.inventory.items;
   }
   uint(p.sourceContainerId, 'sourceContainerId', 1);
   uint(p.sourceRevision, 'sourceRevision');
@@ -218,7 +218,7 @@ function foods(game: Game, p: any): void {
     exact(a, 'itemId,quantity', 'food');
     uint(a.itemId, 'itemId', 1);
     uint(a.quantity, 'quantity', 1);
-    const i = game.player.inventory.items.find((i) => i.id === a.itemId);
+    const i = game.commandActor.inventory.items.find((i) => i.id === a.itemId);
     if (
       !i ||
       i.category !== ItemCategory.FOOD ||
@@ -234,7 +234,7 @@ function foods(game: Game, p: any): void {
   checkItemBudget(
     game,
     p.food.filter(
-      (a: any) => game.player.inventory.items.find((i) => i.id === a.itemId)!.quantity > a.quantity
+      (a: any) => game.commandActor.inventory.items.find((i) => i.id === a.itemId)!.quantity > a.quantity
     ).length
   );
 }
@@ -248,7 +248,7 @@ function takeBill(game: Game, p: any, rows: readonly ItemAmount[]) {
         n -= k;
         i.quantity -= k;
         if (!i.quantity) {
-          if (p.sourceContainerId === null) game.player.inventory.removeItem(i);
+          if (p.sourceContainerId === null) game.commandActor.inventory.removeItem(i);
           else {
             const c = game.world5!.containers.find((c) => c.id === p.sourceContainerId)!;
             c.itemIds.splice(c.itemIds.indexOf(i.id), 1);
@@ -280,9 +280,9 @@ function validate(
   if (p.v !== 1) fail('C5_BAD_PAYLOAD');
   uint(p.stateRevision, 'stateRevision');
   if (p.stateRevision !== runtime.worldCampState(owner).revision) fail('C5_STALE');
-  if (input.action !== 'rest' && inventoryStamp(game.player.inventory.items) !== p.inventoryStamp)
+  if (input.action !== 'rest' && inventoryStamp(game.commandActor.inventory.items) !== p.inventoryStamp)
     fail('C5_STALE');
-  const planned = withWorldActorScope(game, owner, game.player.id, 'player-command', (scope) => {
+  const planned = withWorldActorScope(game, owner, game.commandActor.id, 'player-command', (scope) => {
     switch (input.action) {
       case 'establish': {
         uint(p.x, 'x');
@@ -338,7 +338,7 @@ function validate(
       case 'expand': {
         camp(game, owner, p.regionId);
         const r = region(game, p.regionId, p.regionRevision);
-        if (!regionContains(r, game.player.loc)) fail('C5_DISTANCE');
+        if (!regionContains(r, game.commandActor.loc)) fail('C5_DISTANCE');
         if (threat(game)) fail('C5_THREAT');
         const materials = bill(game, owner, p, policy!.expandCost);
         return {
@@ -367,10 +367,10 @@ function validate(
           fail('C5_RESERVED');
         const items = containerItems(game, c.supplyId);
         if (
-          game.player.inventory.packCount() +
+          game.commandActor.inventory.packCount() +
             reservedInventorySlots(game) +
-            additionalItemSlots(game, game.player.inventory.items, items) >
-          game.player.inventory.capacity
+            additionalItemSlots(game, game.commandActor.inventory.items, items) >
+          game.commandActor.inventory.capacity
         )
           fail('C5_CAPACITY');
         return {};
@@ -479,7 +479,7 @@ export function prepareStructureCommand(game: Game, data: unknown): WorldResult<
         input,
         game.extensionRuntime!.worldCampState(input.module),
         game.world5!.revision,
-        inventoryStamp(game.player.inventory.items)
+        inventoryStamp(game.commandActor.inventory.items)
       ]),
       used: false
     });
@@ -555,7 +555,7 @@ export function commitStructureCommand(game: Game, token: object): WorldResult<W
         input,
         runtime.worldCampState(owner),
         game.world5!.revision,
-        inventoryStamp(game.player.inventory.items)
+        inventoryStamp(game.commandActor.inventory.items)
       ])
     )
       fail('C5_STALE');
@@ -569,7 +569,7 @@ export function commitStructureCommand(game: Game, token: object): WorldResult<W
         const outcome = withWorldActorScope(
           game,
           owner,
-          game.player.id,
+          game.commandActor.id,
           'player-command',
           (scope) => commitStructureWorld(game, fresh.handle!, scope)
         );
@@ -619,13 +619,13 @@ export function commitStructureCommand(game: Game, token: object): WorldResult<W
         // Keep distinct FOOD stacks in the supply pile. This preserves references and
         // allows extra food to merge into a locked stack without changing its ID.
         for (const a of p.food) {
-          const item = game.player.inventory.items.find((i) => i.id === a.itemId)!;
+          const item = game.commandActor.inventory.items.find((i) => i.id === a.itemId)!;
           let moved = item;
           if (item.quantity > a.quantity) {
             const next = new Item(item.name, item.char, item.color, item.category);
             moved = Object.assign(next, serializeItem(item), { id: next.id, quantity: a.quantity });
             item.quantity -= a.quantity;
-          } else game.player.inventory.removeItem(item);
+          } else game.commandActor.inventory.removeItem(item);
           delete moved.fireContactCooldownUntilTurn;
           game.worldContainerItems!.set(moved.id, moved);
           game.world5!.containers.find((b) => b.id === supplyId)!.itemIds.push(moved.id);
@@ -652,7 +652,7 @@ export function commitStructureCommand(game: Game, token: object): WorldResult<W
         const planned = withWorldActorScope(
           game,
           owner,
-          game.player.id,
+          game.commandActor.id,
           'player-command',
           (scope) => {
             const plan = planRegionChange(
@@ -673,7 +673,7 @@ export function commitStructureCommand(game: Game, token: object): WorldResult<W
         if (!out.ok) fail(out.code);
         ticks = out.value.chargedTicks;
       } else {
-        const out = withWorldActorScope(game, owner, game.player.id, 'player-command', (scope) =>
+        const out = withWorldActorScope(game, owner, game.commandActor.id, 'player-command', (scope) =>
           commitStructureWorld(game, fresh.handle!, scope)
         );
         if (!out.ok) fail(out.code);
@@ -714,8 +714,8 @@ export function commitStructureCommand(game: Game, token: object): WorldResult<W
         logger.log(i18next.t('ext.foundation.structure.completed'), '#c4b78e');
       game.requestEdibleRender();
       if (ticks > 0) {
-        game.player.ticksUntilTurn = checkedAdd(game.player.ticksUntilTurn, ticks);
-        timeSystem.currentTick = checkedAdd(timeSystem.currentTick, ticks);
+        game.commandActor.ticksUntilTurn = checkedAdd(game.commandActor.ticksUntilTurn, ticks);
+        if(!game.party)timeSystem.currentTick = checkedAdd(timeSystem.currentTick, ticks);
       }
       return {
         operation: input.action,
@@ -816,14 +816,14 @@ export function structureReadSDK(game: Game, owner: string) {
           v: 1,
           revision: state.revision,
           depth: game.depth,
-          at: { ...game.player.loc },
-          inventoryStamp: inventoryStamp(game.player.inventory.items),
+          at: { ...game.commandActor.loc },
+          inventoryStamp: inventoryStamp(game.commandActor.inventory.items),
           available:
             !game.isGameOver &&
             !game.replayRecording &&
-            game.player.hp > 0 &&
-            !(['paralyzed', 'slumber'] as const).some((k) => game.player.hasStatus(k)),
-          inventory: game.player.inventory.items.map((i) => ({
+            game.commandActor.hp > 0 &&
+            !(['paralyzed', 'slumber'] as const).some((k) => game.commandActor.hasStatus(k)),
+          inventory: game.commandActor.inventory.items.map((i) => ({
             ...itemRead(game, i),
             displayName: i.displayName,
             food: i.category === ItemCategory.FOOD

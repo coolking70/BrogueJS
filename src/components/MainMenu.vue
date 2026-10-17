@@ -134,6 +134,7 @@ const configurationControls = computed(()=>installedModules.filter(m=>selectedMo
 const creationStep = ref(0);
 const creationRun = shallowRef<{ seed?: string; mode: GameMode } | null>(null);
 const creationSelections = new Map<string, readonly string[]>();
+const creationRoster = shallowRef<readonly number[] | undefined>();
 const creationSubmitting = ref(false), creationLoading = ref(false), creationError = ref<string | null>(null);
 const creationComponent = shallowRef<Component | null>(null);
 const creationHandlers = shallowRef<{ onCancel(): void; onComplete(commands: readonly string[]): void } | null>(null);
@@ -143,7 +144,7 @@ const activeCreationStep = computed(() => creationContext.value?.steps[creationS
 function cancelCreation() {
   if (creationSubmitting.value) return;
   creationSession++; creationLoadAttempt++;
-  creationContext.value = null; creationRun.value = null; creationSelections.clear(); creationError.value = null;
+  creationContext.value = null; creationRun.value = null; creationSelections.clear(); creationRoster.value=undefined; creationError.value = null;
   creationComponent.value = null; creationHandlers.value = null; creationLoading.value = false;
   void nextTick(() => menuCard.value?.focus({ preventScroll: true }));
 }
@@ -200,6 +201,7 @@ function completeCreationStep(session: number, index: number, moduleId: string, 
   if (session !== creationSession || index !== creationStep.value || moduleId !== activeCreationStep.value?.moduleId
       || !creationComponent.value || creationSubmitting.value || creationLoading.value) return;
   creationSelections.set(moduleId, Object.freeze([...commands]));
+  if(moduleId==='party'){const count=JSON.parse(commands[0]!).payload.members;creationRoster.value=Array.from({length:count},(_,slot)=>slot);}
   creationError.value = null;
   if (creationStep.value + 1 < creationContext.value!.steps.length) {
     // Absorb the second physical click before the next module's controls activate.
@@ -215,7 +217,7 @@ const startGame = () => {
     try {
       creationContext.value = prepareModuleCreation(selectedModules.value);
       creationRun.value = { seed: parsedSeed.value, mode: mode.value };
-      creationSelections.clear(); creationStep.value = 0; creationError.value = null;
+      creationSelections.clear(); creationRoster.value=undefined; creationStep.value = 0; creationError.value = null;
       if (!creationContext.value.steps.length) submitCreation();
       else void loadCreationStep();
     } catch { creationContext.value = null; creationError.value = 'ext.creation.unavailable'; }
@@ -607,7 +609,7 @@ const sidebarWidthModel = computed({
       </footer>
     </div>
     <component v-if="creationComponent" :is="creationComponent" :key="`${creationSession}:${creationStep}:${activeCreationStep?.moduleId}`"
-      :submitting="creationSubmitting" :error="creationError" :definitions="activeCreationStep?.definitions" v-bind="creationHandlers" />
+      :submitting="creationSubmitting" :error="creationError" :definitions="activeCreationStep?.definitions" v-bind="{...creationHandlers,...(activeCreationStep?.moduleId==='growth' ? {roster:creationRoster} : {})}" />
   </div>
 </template>
 

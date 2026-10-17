@@ -42,7 +42,8 @@ const flags = (g: Game, p: Pos) => cellTerrainFlags(g.grid, p.x, p.y);
 const enemyOccupancy = new WeakMap<Game, Map<number, Map<number, Creature>>>();
 const at = (g: Game, p: Pos): Creature | undefined => {
     const cache = enemyOccupancy.get(g);
-    if (!cache) return g.player.hp > 0 && footprintContains(g.player, p) ? g.player : g.getMonsterAt(p.x, p.y);
+    if (!cache && g.party) return g.creatureAtCell(p, 'death-contact');
+    if (!cache) return g.commandActor.hp > 0 && footprintContains(g.commandActor, p) ? g.commandActor : g.getMonsterAt(p.x, p.y);
     const x = p.x, y = p.y;
     return cache.get(x)?.get(y);
 };
@@ -94,7 +95,7 @@ export function monsterBlinkAvoids(g: Game, m: Monster, p: Pos): boolean {
     const occupant = at(g, p), defender = m.spatial && occupant === m ? undefined : occupant;
     if (cell.layers.includes(TerrainType.STAIRS_UP) || cell.layers.includes(TerrainType.STAIRS_DOWN) || cell.layers.includes(TerrainType.DUNGEON_PORTAL)) return true;
     if (m.hasBehavior('MONST_RESTRICTED_TO_LIQUID') && !(mech & T.TM_ALLOWS_SUBMERGING)) return true;
-    if (defender === g.player && !alliedState(m)) return false;
+    if (defender === g.commandActor && !alliedState(m)) return false;
     if (terrainBlocksMovement(cell)) {
         if ((mech & T.TM_IS_SECRET) && !(discoveredTerrainFlagsOfCell(cell) & permanentAvoided(m))) return false;
         return !(distance(m.loc, p) <= 1 && defender instanceof Monster && defender.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'));
@@ -181,7 +182,7 @@ export function monsterBlinkToPreferenceMap(g: Game, m: Monster, map: number[][]
     if (!hasBlink(m)) return false;
     const value = typeof map === 'function' ? map : (p: Pos) => map[p.x]?.[p.y] ?? (uphill ? -30000 : 30000);
     const avoids = (p: Pos) => m.spatial
-        ? !canFitAt(g, m, p) || footprintOf({ loc: p, spatial: m.spatial }).some(cell => monsterBlinkAvoids(g, m, cell))
+        ? !canFitAt(g.party ? g.spatialWorldPort() : g, m, p) || footprintOf({ loc: p, spatial: m.spatial }).some(cell => monsterBlinkAvoids(g, m, cell))
         : monsterBlinkAvoids(g, m, p);
     const choice = chooseMonsterBlink(m.loc, value, uphill, avoids,
         p => monsterBlinkImpact(g, m, p), p => !!(flags(g, p) & T.T_OBSTRUCTS_PASSABILITY));
@@ -231,9 +232,9 @@ export function buildBlinkAllySafetyMap(g: Game): number[][] {
         threatCosts[x]![y] = allyCosts[x]![y] = cost;
         if (cost < 0) continue;
         if (flags(g,{x,y}) & T.T_SACRED) allyCosts[x]![y] = -1;
-        else { const occupant = g.getMonsterAt(x,y); if (occupant && monstersAreEnemies(g.player,occupant)) { map[x]![y] = 0; allyCosts[x]![y] = -1; } }
+        else { const occupant = g.getMonsterAt(x,y); if (occupant && monstersAreEnemies(g.commandActor,occupant)) { map[x]![y] = 0; allyCosts[x]![y] = -1; } }
     }
-    threatCosts[g.player.x]![g.player.y] = allyCosts[g.player.x]![g.player.y] = -1;
+    threatCosts[g.commandActor.x]![g.commandActor.y] = allyCosts[g.commandActor.x]![g.commandActor.y] = -1;
     scanBlinkMap(g,map,threatCosts);
     for (let x=0;x<g.grid.width;x++) for (let y=0;y<g.grid.height;y++) {
         if (allyCosts[x]![y]! < 0) continue;
@@ -257,7 +258,7 @@ export function getBlinkTargetMap(g: Game, m: Monster, target: Creature): number
 }
 export function monsterBlinkToSafety(g: Game, m: Monster): boolean {
     if (m.spatial) {
-        const target = alliedState(m) ? closestBlinkEnemy(g, m) : g.player;
+        const target = alliedState(m) ? closestBlinkEnemy(g, m) : g.commandActor;
         return !!target && monsterBlinkToPreferenceMap(g, m, g.squareDistanceValues(m, { kind: 'escape', target }), false);
     }
     return monsterBlinkToPreferenceMap(g,m,alliedState(m) ? getBlinkAllySafetyMap(g) : getSafetyMapForMonster(g,m),false);
@@ -274,7 +275,7 @@ export function blinkFromHarmfulTerrain(g: Game, m: Monster): boolean {
         const anchors: Pos[] = [];
         for (let y = 0; y < g.grid.height; y++) for (let x = 0; x < g.grid.width; x++) {
             const p = { x, y };
-            if (canFitAt(g, m, p, { allowsTerrain: at => !(flags(g, at) & (T.T_HARMFUL_TERRAIN | T.T_OBSTRUCTS_PASSABILITY)) })) anchors.push(p);
+            if (canFitAt(g.party ? g.spatialWorldPort() : g, m, p, { allowsTerrain: at => !(flags(g, at) & (T.T_HARMFUL_TERRAIN | T.T_OBSTRUCTS_PASSABILITY)) })) anchors.push(p);
         }
         return monsterBlinkToPreferenceMap(g, m, g.squareDistanceValues(m, { kind: 'anchors', anchors }), false);
     }
@@ -338,7 +339,7 @@ export function closestBlinkEnemy(g: Game, m: Monster): Monster | null {
     // Same player/array priority and native death window as at/getMonsterAt.
     // Full footprints are compiled through the installed catalog, once for this
     // synchronous read-only selector; no occupancy survives into another action.
-    if (g.player.hp > 0) for (const p of footprintOf(g.player)) occupy(p, g.player);
+    for (const actor of g.party ? g.activeControlledActors : [g.commandActor]) if (actor.hp > 0) for (const p of footprintOf(actor)) occupy(p, actor);
     for (const actor of g.monsters) if (actor.hp > 0 || (dyingMonsters.has(actor) && !actor.deathProcessed))
         for (const p of footprintOf(actor)) occupy(p, actor);
     enemyOccupancy.set(g, occupied);
@@ -360,7 +361,7 @@ export function blinkAllyFlees(g: Game, m: Monster, target: Monster | null): boo
     if (!target || m.maxHp <= 1 || m.hasStatus('lifespan_remaining')) return false;
     const d = distanceBetweenFootprints(m, target), pct = Math.trunc(100*m.hp/m.maxHp);
     if (d < 10 && pct <= 33 && nativeRational(m).numerator > 0 && !m.carriedMonster
-        && (m.hasBehavior('MONST_FLEES_NEAR_DEATH') || pct*2 < Math.trunc(100*g.player.hp/g.player.maxHp))) return true;
+        && (m.hasBehavior('MONST_FLEES_NEAR_DEATH') || pct*2 < Math.trunc(100*g.commandActor.hp/g.commandActor.maxHp))) return true;
     return d < 4 && attacks(target,m) && (((target.isInvulnerable() || target.isImmuneToWeapons()) && !target.hasBehavior('MONST_IMMOBILE'))
         || m.hasBehavior('MONST_MAINTAINS_DISTANCE') || target.hasAbility('MA_KAMIKAZE')
         || (m.hasAbility('MA_POISONS') && target.getStatusDuration('poisoned') * target.poisonAmount > target.hp));
@@ -412,12 +413,12 @@ export function allyShouldPursue(g: Game, m: Monster, closest: Monster | null): 
         if (nativeStat(closest,'native.move-speed') < nativeStat(m,'native.move-speed') && !closest.hasBehavior('MONST_FLITS') && !closest.hasBehavior('MONST_IMMOBILE') && closest.state === MonsterState.HUNTING) leash = Math.max(g.grid.width,g.grid.height);
         else leash++;
     }
-    return !!closest && (distanceBetweenFootprints(m, g.player) < leash || m.doesNotTrackLeader)
+    return !!closest && (distanceBetweenFootprints(m, g.commandActor) < leash || m.doesNotTrackLeader)
         && !m.hasBehavior('MONST_MAINTAINS_DISTANCE') && !futile(g,m,closest);
 }
 export function blinkAllyAfterMagic(g: Game, m: Monster, closest: Monster | null): boolean {
     if (m.spatial) {
-        const target = closest && allyShouldPursue(g, m, closest) ? closest : m.leader ?? g.player;
+        const target = closest && allyShouldPursue(g, m, closest) ? closest : m.leader ?? g.commandActor;
         if (m.targetCorpseLoc || m.doesNotTrackLeader || distanceBetweenFootprints(m, target) < 3) return false;
         return blinkChance(m) && monsterBlinkToPreferenceMap(g, m, g.squareDistanceValues(m, { kind: 'contact', target }), false);
     }
@@ -427,11 +428,11 @@ export function blinkAllyAfterMagic(g: Game, m: Monster, closest: Monster | null
     // CE moveAlly: corpse approach precedes every leader-follow blink route.
     if (m.targetCorpseLoc && g.grid.isValidPos(m.targetCorpseLoc.x, m.targetCorpseLoc.y)
         && !m.hasStatus('poisoned') && (!((m.statusDurations as Record<string, number>).burning ?? 0) || m.hasStatus('immune_fire'))) return false;
-    if (m.doesNotTrackLeader || (distanceBetweenFootprints(m, g.player) < 3 && g.grid.getCell(m.x,m.y)?.isVisible)) return false;
-    if (!m.givenUpOnScent && distanceBetweenFootprints(m, g.player) > 10
+    if (m.doesNotTrackLeader || (distanceBetweenFootprints(m, g.commandActor) < 3 && g.grid.getCell(m.x,m.y)?.isVisible)) return false;
+    if (!m.givenUpOnScent && distanceBetweenFootprints(m, g.commandActor) > 10
         && monsterBlinkToPreferenceMap(g,m,p => g.scent.get(p.x,p.y),true)) return true;
     if (m.givenUpOnScent || !g.scent.stepDirection(g.grid,m.x,m.y,{canEnter: (x,y) => !monsterBlinkAvoids(g,m,{x,y})})) {
-        return blinkTowardCreature(g,m,m.leader ?? g.player);
+        return blinkTowardCreature(g,m,m.leader ?? g.commandActor);
     }
     return false;
 }

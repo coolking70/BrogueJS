@@ -16,6 +16,7 @@ interface Contact {
   cause: FireContactCause;
   at: { x: number; y: number };
   location: 'floor' | 'inventory';
+  carrierId?:number;
 }
 interface Queue {
   pending: Contact[];
@@ -54,7 +55,8 @@ export function queueFireContact(
   at?: { x: number; y: number }
 ): void {
   if (!edibleDefinition(game, item)) return;
-  const location = game.player.inventory.items.includes(item) ? 'inventory' : 'floor';
+  const carrier=game.controlledActors.find(a=>a.inventory.items.includes(item));
+  const location = carrier ? 'inventory' : 'floor';
   if (location === 'floor' && !game.items.includes(item)) return;
   if (
     location === 'floor' &&
@@ -70,8 +72,9 @@ export function queueFireContact(
   q.pending.push({
     item,
     cause,
-    at: { ...(at ?? (location === 'inventory' ? game.player.loc : item.loc)) },
-    location
+    at: { ...(at ?? (carrier ? carrier.loc : item.loc)) },
+    location,
+    ...(carrier?{carrierId:carrier.id}:{})
   });
 }
 export function drainFireContacts(game: Game, strict = false): void {
@@ -87,10 +90,11 @@ export function drainFireContacts(game: Game, strict = false): void {
         item = c.item,
         d = edibleDefinition(game, item);
       if (processed.has(item.id) || !d || q.depth !== game.depth) continue;
+      const carrier=game.controlledActors.find(a=>a.id===c.carrierId);
       const live =
         c.location === 'floor'
           ? game.items.includes(item)
-          : game.player.inventory.items.includes(item);
+          : carrier?.inventory.items.includes(item);
       if (!live) continue;
       if (
         c.location === 'floor' &&
@@ -123,7 +127,7 @@ export function drainFireContacts(game: Game, strict = false): void {
         toDefinitionId = to.id;
       } else {
         if (c.location === 'floor') game.removeEdibleFloorItem(item);
-        else game.player.inventory.removeItem(item);
+        else carrier!.inventory.removeItem(item);
         if (d.fire.onContact === 'explode') {
           result = 'exploded';
           explosion = quantity < d.fire.largeAtQuantity ? 'explosion-fire' : 'bloat-explosion';
@@ -179,7 +183,7 @@ export function drainFireContacts(game: Game, strict = false): void {
   }
 }
 export function igniteEdibleInventory(game: Game): void {
-  const items = game.player.inventory.items
+  const items = game.commandActor.inventory.items
     .filter((i) => edibleDefinition(game, i))
     .sort((a, b) => ((a.inventoryLetter ?? '') < (b.inventoryLetter ?? '') ? -1 : 1));
   for (const item of items)

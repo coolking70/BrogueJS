@@ -1,3 +1,4 @@
+import { controlledOccupies } from '../Movement/CreatureSpatial';
 import { squarePlacementCandidates } from '../Movement/SquarePlacement';
 import { footprintContains, footprintOf } from '../Movement/CreatureSpatial';
 /** W-20: CE cloneMonster's placement policy, separate from splitMonster's
@@ -37,7 +38,7 @@ export function canPlaceSquareCloneAt(world: PlacementWorld, source: Creature, a
  * HAS_PLAYER blocks paths, HAS_MONSTER/HAS_STAIRS only block destinations.
  * Terrain uses info flags, not temporary statuses. If paths fail, scan rings
  * through walls. CE returns INVALID_POS if both searches fail; return null. */
-export function cloneLocation(world: Pick<PlacementWorld, 'grid' | 'player' | 'monsters'>, source: Creature): Pos | null {
+export function cloneLocation(world: PlacementWorld, source: Creature): Pos | null {
     const { grid } = world, origin = source.loc;
     if (source.spatial) {
         const candidates = squarePlacementCandidates(world, source, origin, cloneAvoidedFlags(source), p => footprintContains(source, p) || !!grid.getCell(p.x, p.y)?.layers.some(t => t === TerrainType.STAIRS_UP || t === TerrainType.STAIRS_DOWN || t === TerrainType.DUNGEON_PORTAL));
@@ -46,7 +47,7 @@ export function cloneLocation(world: Pick<PlacementWorld, 'grid' | 'player' | 'm
     if (!grid.isValidPos(origin.x, origin.y)) return null;
     const forbidden = cloneAvoidedFlags(source), blocking = forbidden & T_DIVIDES_LEVEL;
     const flags = (p: Pos) => cellTerrainFlags(grid, p.x, p.y);
-    const playerAt = (p: Pos) => footprintContains(world.player, p);
+    const playerAt = (p: Pos) => controlledOccupies(world, p);
     const qualifies = (p: Pos) => grid.isValidPos(p.x, p.y) && !(flags(p) & forbidden)
         && !playerAt(p) && !world.monsters.some(m => !m.isDormant && m.hp > 0 && footprintContains(m, p))
         && !grid.getCell(p.x, p.y)!.layers.some(t => t === TerrainType.STAIRS_UP || t === TerrainType.STAIRS_DOWN || t === TerrainType.DUNGEON_PORTAL);

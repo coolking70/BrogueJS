@@ -45,10 +45,10 @@ export function planMaterialTransfer(
   try {
     c5Canonical(request);
     if (!game.world5) throw new World5Error('C5_DISABLED');
-    if (game.player.hp <= 0 || game.isGameOver) throw new World5Error('C5_DEAD');
+    if (game.commandActor.hp <= 0 || game.isGameOver) throw new World5Error('C5_DEAD');
     if (
       game.interactionActive ||
-      game.actorActions?.bundles.some((b) => b.decisionOwnerId === game.player.id)
+      game.actorActions?.bundles.some((b) => b.decisionOwnerId === game.commandActor.id)
     )
       throw new World5Error('C5_BUSY');
     if (
@@ -68,19 +68,19 @@ export function planMaterialTransfer(
     if (levelKey(c.levelRef) !== `dungeon.${game.depth}`) throw new World5Error('C5_WRONG_LEVEL');
     if (
       c.revision !== request.containerRevision ||
-      inventoryStamp(game.player.inventory.items) !== request.inventoryStamp
+      inventoryStamp(game.commandActor.inventory.items) !== request.inventoryStamp
     )
       throw new World5Error('C5_STALE');
     const read = containerRead(game, c.id);
     if (!read.at || !game.grid.getCell(read.at.x, read.at.y)?.hasMemory)
       throw new World5Error('C5_UNKNOWN_TARGET');
     if (
-      distance(game.player.loc, read.at) > 1 ||
-      !hasInteractionLine(game.grid, game.player.loc, read.at)
+      distance(game.commandActor.loc, read.at) > 1 ||
+      !hasInteractionLine(game.grid, game.commandActor.loc, read.at)
     )
       throw new World5Error('C5_DISTANCE');
     const source =
-        request.direction === 'deposit' ? game.player.inventory.items : containerItems(game, c.id),
+        request.direction === 'deposit' ? game.commandActor.inventory.items : containerItems(game, c.id),
       seen = new Set<number>();
     const incoming: Item[] = [];
     for (const row of request.items) {
@@ -100,10 +100,10 @@ export function planMaterialTransfer(
       if (item.category === ItemCategory.GOLD) throw new World5Error('C5_INPUT');
       if (
         [
-          game.player.equippedWeapon,
-          game.player.equippedArmor,
-          game.player.ringLeft,
-          game.player.ringRight
+          game.commandActor.equippedWeapon,
+          game.commandActor.equippedArmor,
+          game.commandActor.ringLeft,
+          game.commandActor.ringRight
         ].includes(item)
       )
         throw new World5Error('C5_BUSY');
@@ -119,10 +119,10 @@ export function planMaterialTransfer(
       throw new World5Error('C5_CAPACITY');
     if (
       request.direction === 'withdraw' &&
-      game.player.inventory.packCount() +
+      game.commandActor.inventory.packCount() +
         reservedInventorySlots(game) +
-        additionalItemSlots(game, game.player.inventory.items, incoming) >
-        game.player.inventory.capacity
+        additionalItemSlots(game, game.commandActor.inventory.items, incoming) >
+        game.commandActor.inventory.capacity
     )
       throw new World5Error('C5_CAPACITY');
     checkItemBudget(
@@ -156,7 +156,7 @@ export function commitMaterialTransfer(
       const r = plan.request,
         c = game.world5!.containers.find((c) => c.id === r.containerId)!,
         source =
-          r.direction === 'deposit' ? game.player.inventory.items : containerItems(game, c.id);
+          r.direction === 'deposit' ? game.commandActor.inventory.items : containerItems(game, c.id);
       for (const row of r.items) {
         const item = source.find((i) => i.id === row.itemId)!;
         let moved = item;
@@ -174,7 +174,7 @@ export function commitMaterialTransfer(
             });
           }
           item.quantity -= row.quantity;
-        } else if (r.direction === 'deposit') game.player.inventory.removeItem(item);
+        } else if (r.direction === 'deposit') game.commandActor.inventory.removeItem(item);
         else c.itemIds.splice(c.itemIds.indexOf(item.id), 1);
         if (r.direction === 'deposit') putContainer(game, c.id, moved);
         else {

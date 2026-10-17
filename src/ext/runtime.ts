@@ -1,3 +1,6 @@
+import {isPartyMember} from '../engine/Core/PartyActorIdentity';
+import { ControlledActor } from '../entities/ControlledActor';
+import { effectivePartyCodec } from './partyIdentity';
 import { validStatId } from './stats';
 import type { Monster } from '../entities/Monster';
 import type { Item } from '../engine/Items/Item';
@@ -33,7 +36,6 @@ import { c5Hash, c5Canonical } from './worldJson';
 import { RESIDENT_ACTIONS } from './residentSdk';
 import {STRUCTURE_ACTIONS} from './structureSdk';
 import { isWorld5Fixture, isWorld5StructureFixture, isWorld5WorkFixture, world5FixtureConfiguration } from './world5Fixture';
-import { FOUNDATION_PROTOCOL } from './descriptor';
 import { resolveActorQueryScope } from './actorQuery';
 import type { ActorActionProductionWorld } from '../engine/Core/ActorActionProduction';
 import type { OptionalActorQueryProvider, CommittedFact, CombatEventFact, CombatEventPayload, CombatEventActor, CommittedFactConsumer, CombatEventKind } from './types';
@@ -87,6 +89,8 @@ const restHandlers = new WeakMap<ExtensionRuntime, Pick<ExtensionPorts,'nativeDa
 const actorQueryScopes=new WeakMap<ExtensionRuntime,NonNullable<ExtensionPorts['actorQueryScope']>>();
 const nativeFactCheckpoints=new WeakMap<ExtensionRuntime,NonNullable<ExtensionPorts['checkpointCommittedFacts']>>();
 interface StatProposal {hp?:number;maxHp?:number;strength?:number;oldMaxBonus:number;oldStrengthBonus:number}
+const memberViewSessions=new WeakMap<object,Map<number,object>>();
+function memberViewSession(session:object,id:number):object {let rows=memberViewSessions.get(session);if(!rows){rows=new Map();memberViewSessions.set(session,rows);}let value=rows.get(id);if(!value){value=Object.freeze({});rows.set(id,value);}return value;}
 interface StatSession { componentReaders:Map<string,Set<number>>|null; sourceValidation:Map<string,{stamp:string;rows:readonly import('../engine/Stats/StatPipeline').OwnedStatRow[]}>; pipeline:StatPipeline; ledger:MaterializedStats; actors:Map<number,Creature>; depths:ReadonlyMap<number,number>|null; simulationTicks:number|null; inProgress:boolean; writes:boolean; overrides:Map<string,number>; proposals:Map<number,StatProposal>|null; moduleViews:Map<string,{state:ReadonlyJson;components:Record<string,ReadonlyJson>}>; previewComponents:Readonly<Record<string,Json>>|null; materialSignatures:Map<number,string>; materialValues:Map<number,Map<string,number>>; collecting:boolean; dirty:Set<number>; reconciling:boolean }
 const statSessions=new WeakMap<ExtensionRuntime,StatSession>();
 const edibleDiagnostics=new WeakMap<ExtensionRuntime,{owner:string;method:string}[]>();
@@ -125,6 +129,9 @@ export interface ExtensionPorts {
     structureRead?(owner:string): import('./structureSdk').StructureReadSDK | undefined;
     worldWorkRead?(owner:string): import('./worldSdk').WorldWorkReadSDK | undefined;
     playerId(): number;
+    partyActingActor?():number|null;
+    partyDropCredit?(creditActorId:number|null|undefined):number;
+    partyRead?(): {schema:1;members:{actorId:number;alive:boolean;active:boolean}[]}|null;
     canManageCharacter?(): boolean;
     validateAction?(request: ControlledActionRequest): boolean;
     executeAction?(request: ControlledActionRequest, callbacks: { beforeCommit(): void; afterResolve(outcome: ControlledActionOutcome): void }): boolean;
@@ -524,7 +531,7 @@ export class ExtensionRuntime {
         if(facts.baseValue!==undefined)return facts.baseValue;
         const binding=this.actorActionBinding();if(!binding)return this.stats.keys.get(key)?.base??(key.endsWith('-capacity')?1:0);
         const definitions=binding.definition,row=binding.state.actors.find(r=>r.actorId===actor.id);
-        const profileId=row?.profileId??(actor instanceof Player?definitions.playerProfileId:definitions.nativeProfiles.find(p=>p.monsterId===('typeId' in actor?actor.typeId:null))?.profileId??definitions.playerProfileId);
+        const profileId=row?.profileId??(actor instanceof ControlledActor?definitions.playerProfileId:definitions.nativeProfiles.find(p=>p.monsterId===('typeId' in actor?actor.typeId:null))?.profileId??definitions.playerProfileId);
         const profile=definitions.profiles.find(p=>p.id===profileId)!;const policy=definitions.resourcePolicies.find(p=>p.id===profile.resourcePolicyId)!;
         if(key==='combat.stamina-capacity')return policy.staminaCapacity;if(key==='combat.poise-capacity')return policy.poiseCapacity;
         if(key==='combat.stamina-regen')return policy.regenPerTickNumerator;if(key==='combat.poise-recovery')return policy.poiseRecoveryNumerator;
@@ -567,10 +574,10 @@ export class ExtensionRuntime {
             return;
         }
         const values=new Map<string,number>();
-        session.ledger.reconcile(actorId,session.pipeline,key=>key==='native.max-hp'?actor.maxHp:key==='native.strength'&&actor instanceof Player?actor.strength:undefined,(key,value,refill)=>{
+        session.ledger.reconcile(actorId,session.pipeline,key=>key==='native.max-hp'?actor.maxHp:key==='native.strength'&&actor instanceof ControlledActor?actor.strength:undefined,(key,value,refill)=>{
             values.set(key,value);
             if(key==='native.max-hp'){const previous=actor.maxHp;actor.maxHp=value;if(value<previous&&!(session.proposals?.get(actorId)?.hp!==undefined&&session.proposals.get(actorId)!.hp!>value&&session.proposals.get(actorId)!.maxHp===value))actor.hp=Math.min(actor.hp,value);else if(value>previous&&refill&&actor.hp>0&&session.proposals?.get(actorId)?.hp===undefined)actor.hp=Math.min(value,actor.hp+refill);}
-            else if(key==='native.strength'&&actor instanceof Player)actor.strength=value;
+            else if(key==='native.strength'&&actor instanceof ControlledActor)actor.strength=value;
             else if(key.startsWith('combat.')){const row=this.actorActionBinding()?.state.actors.find(r=>r.actorId===actorId);if(row){if(key==='combat.stamina-capacity')row.stamina=Math.min(row.stamina,value);if(key==='combat.poise-capacity')row.poise=Math.min(row.poise,value);}}
             else if(key==='growth.focus-capacity'){const focus=this.components[String(actorId)]?.['growth:focus'] as {current:number}|undefined;if(focus)focus.current=Math.min(focus.current+refill,value);}
         });
@@ -583,7 +590,7 @@ export class ExtensionRuntime {
                 if(focus.current>capacity||focus.remainder>=interval)throw new StatValidationError('source');}
         }
     }
-    assertStats():void{const session=statSessions.get(this)!;session.ledger.assert([...session.actors.keys()],session.pipeline,(id,key)=>{const a=session.actors.get(id)!;return key==='native.max-hp'?a.maxHp:key==='native.strength'&&a instanceof Player?a.strength:undefined;});}
+    assertStats():void{const session=statSessions.get(this)!;session.ledger.assert([...session.actors.keys()],session.pipeline,(id,key)=>{const a=session.actors.get(id)!;return key==='native.max-hp'?a.maxHp:key==='native.strength'&&a instanceof ControlledActor?a.strength:undefined;});}
     /** Engine preflight only: nested actor scopes inherit the candidate clock. */
     withStatWorld<T>(actors:readonly Creature[],work:()=>T,simulationTicks?:number,depths?:ReadonlyMap<number,number>):T{
         const s=statSessions.get(this)!,previousActors=s.actors,previousTicks=s.simulationTicks,previousDepths=s.depths;
@@ -758,7 +765,7 @@ export class ExtensionRuntime {
         const actor = [...this.creatures].find(creature => creature.id === id);
         if (!actor || Object.keys(value).sort().join(',') !== 'expectedHp,expectedMaxHp,hp,maxHp'
             || !Object.values(value).every(Number.isSafeInteger) || value.maxHp < 1 || value.hp < 0
-            || (value.hp > value.maxHp && (actor instanceof Player || actor.hp <= actor.maxHp || value.hp > actor.hp))
+            || (value.hp > value.maxHp && (actor instanceof ControlledActor || actor.hp <= actor.maxHp || value.hp > actor.hp))
             || value.expectedHp !== actor.hp || value.expectedMaxHp !== actor.maxHp
             || (actor.hp <= 0 && value.hp > 0)) throw new Error('Invalid extension resource commit');
         const session=statSessions.get(this)!;
@@ -769,16 +776,16 @@ export class ExtensionRuntime {
     private characterResources(id: number): CharacterResources {
         const actor = [...this.creatures].find(creature => creature.id === id);
         if (!actor) throw new Error('Unknown character resource owner');
-        return actor instanceof Player ? { strength: actor.strength, gold: this.ports.gold?.() ?? 0 } : { strength: null, gold: null };
+        return actor instanceof ControlledActor ? { strength: actor.strength, gold: this.ports.gold?.() ?? 0 } : { strength: null, gold: null };
     }
     private commitCharacterResources(id: number, value: CharacterResourceCommit): void {
         const actor = [...this.creatures].find(creature => creature.id === id), current = this.characterResources(id);
         if (Object.keys(value).sort().join(',') !== 'expectedGold,expectedStrength,gold,strength'
             || value.expectedStrength !== current.strength || value.expectedGold !== current.gold
-            || (actor instanceof Player ? (!Number.isSafeInteger(value.strength) || value.strength! < 1
+            || (actor instanceof ControlledActor ? (!Number.isSafeInteger(value.strength) || value.strength! < 1
                 || !Number.isSafeInteger(value.gold) || value.gold! < 0) : value.strength !== null || value.gold !== null))
             throw new Error('Invalid extension character resource commit');
-        if (actor instanceof Player) {
+        if (actor instanceof ControlledActor) {
             if (!this.ports.setGold && value.gold !== current.gold) throw new Error('Native currency port unavailable');
             const session=statSessions.get(this)!;
             if(session.proposals){const old=session.proposals.get(id)??{oldMaxBonus:session.ledger.bonus(id,'native.max-hp'),oldStrengthBonus:session.ledger.bonus(id,'native.strength')};session.proposals.set(id,{...old,strength:value.strength!});}
@@ -922,6 +929,12 @@ export class ExtensionRuntime {
     queryOptional(capability: string, input: Json): OptionalQueryResult {
         if (this.disposed) throw new Error('Extension runtime unloaded');
         if (!validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !isJson(input)) throw new Error('Invalid optional query');
+        if(capability==='foundation.party.actor.v1'){const actorId=this.ports.partyActingActor?.();return actorId?{status:'available',value:{actorId,primaryActorId:this.ports.playerId()}}:{status:'unavailable',reason:'absent'};}
+        if(capability==='foundation.party.v1'){
+            if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).length)return Object.freeze({status:'unavailable',reason:'unsupported-input'});
+            const view=this.ports.partyRead?.(),members=view?.members??[...this.creatures].filter(isPartyMember).sort((a,b)=>a.id-b.id).map(a=>({actorId:a.id,alive:a.hp>0,active:true}));
+            return members.length?freezeView({status:'available',value:{schema:1,members}}):Object.freeze({status:'unavailable',reason:'absent'});
+        }
         if(capability==='foundation.stats.v1'){
             if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).join(',')!=='keys'||!Array.isArray(input.keys)||input.keys.length>128||input.keys.some(k=>!validStatId(k)))return Object.freeze({status:'unavailable',reason:'unsupported-input'});
             const keys=[...new Set(input.keys as string[])].sort().map((id):Json=>{const declaration=this.stats.keys.get(id);return declaration?{id,available:true,owner:declaration.owner,unit:declaration.unit,kind:declaration.kind,rounding:declaration.rounding,categories:[...declaration.categories],moreSlots:declaration.moreSlots.map(slot=>({...slot})),minimum:declaration.minimum,maximum:declaration.maximum}:{id,available:false};});
@@ -1063,7 +1076,7 @@ export class ExtensionRuntime {
                         actorId:actor.id,sourceId:request.sourceId,bodyDefinitionId:member.bodyDefinitionId,groupId:member.groupId,partId:member.partId,
                         generation:member.generation,zoneId:'body' as const,birthEligible,causalEligible});
                     if(birthEligible&&causalEligible&&this.hasItemDrops('part')){
-                        const input:DropInput={source:'part',level:fact.level,at:fact.at,playerId:this.ports.playerId(),actorId:actor.id,sourceId:fact.sourceId,
+                        const input:DropInput={source:'part',level:fact.level,at:fact.at,playerId:this.ports.partyDropCredit?.(origin?.creditActorId)??this.ports.playerId(),actorId:actor.id,sourceId:fact.sourceId,
                             bodyDefinitionId:fact.bodyDefinitionId,groupId:fact.groupId,partId:fact.partId,generation:0,zoneId:'body',birthEligible:true,causalEligible:true,
                             monster:{typeId:monster.typeId,champion:!!monster.mutation}};
                         activePartDrops.set(this,input);
@@ -1146,13 +1159,13 @@ export class ExtensionRuntime {
     }
     private resourceCheckpoint(): ResourceCheckpoint[] {
         return [...this.creatures].map(actor => ({ actor, hp: actor.hp, maxHp: actor.maxHp,
-            strength: actor instanceof Player ? actor.strength : null,
-            gold: actor instanceof Player ? this.ports.gold?.() ?? 0 : null }));
+            strength: actor instanceof ControlledActor ? actor.strength : null,
+            gold: actor instanceof ControlledActor ? this.ports.gold?.() ?? 0 : null }));
     }
     private restoreResources(resources: readonly ResourceCheckpoint[]): void {
         for (const { actor, hp, maxHp, strength, gold } of resources) {
             actor.hp = hp; actor.maxHp = maxHp;
-            if (actor instanceof Player) { actor.strength = strength!; this.ports.setGold?.(gold!); }
+            if (actor instanceof ControlledActor) { actor.strength = strength!; this.ports.setGold?.(gold!); }
         }
     }
     private bufferMessages<T>(work: () => T, beforePublish?: () => void): T {
@@ -1284,7 +1297,7 @@ export class ExtensionRuntime {
         if (!this.creatures.has(actor) || !Number.isSafeInteger(nativeAmount) || nativeAmount < 0) throw new Error('Invalid item growth owner or amount');
         const states = checkpointJson(this.states), components = checkpointJson(this.components),stats=statSessions.get(this)!.ledger.snapshot();
         const resources = [...this.creatures].map(creature => ({ creature, hp: creature.hp, maxHp: creature.maxHp,
-            strength: creature instanceof Player ? creature.strength : null, gold: creature instanceof Player ? this.ports.gold?.() ?? 0 : null }));
+            strength: creature instanceof ControlledActor ? creature.strength : null, gold: creature instanceof ControlledActor ? this.ports.gold?.() ?? 0 : null }));
         const prior = this.resourcePhase; this.resourcePhase = true;
         let result: { nativeAmount: number } | undefined;
         try {
@@ -1299,7 +1312,7 @@ export class ExtensionRuntime {
                 this.states = states; this.components = components;statSessions.get(this)!.ledger.restore(stats);statSessions.get(this)!.materialSignatures.clear();statSessions.get(this)!.materialValues.clear();statSessions.get(this)!.moduleViews.clear();this.stats.clear();
                 for (const saved of resources) {
                     saved.creature.hp = saved.hp; saved.creature.maxHp = saved.maxHp;
-                    if (saved.creature instanceof Player) { saved.creature.strength = saved.strength!; this.ports.setGold?.(saved.gold!); }
+                    if (saved.creature instanceof ControlledActor) { saved.creature.strength = saved.strength!; this.ports.setGold?.(saved.gold!); }
                 }
             }
             throw error;
@@ -1472,7 +1485,7 @@ export class ExtensionRuntime {
         const depth = world?.depth ?? this.ports.depth(), turn = world?.turn ?? this.ports.turn?.() ?? 0;
         if (this.pendingStoryFacts.some(fact => fact.depth !== depth || fact.turn > turn))
             throw new Error('Invalid pending story fact world references');
-        this.withStatWorld(creatures,()=>{this.assertResourceBounds(creatures);const session=statSessions.get(this)!;session.ledger.assert(creatures.map(a=>a.id),session.pipeline,(id,key)=>{const a=creatures.find(a=>a.id===id)!;return key==='native.max-hp'?a.maxHp:key==='native.strength'&&a instanceof Player?a.strength:undefined;});});
+        this.withStatWorld(creatures,()=>{this.assertResourceBounds(creatures);const session=statSessions.get(this)!;session.ledger.assert(creatures.map(a=>a.id),session.pipeline,(id,key)=>{const a=creatures.find(a=>a.id===id)!;return key==='native.max-hp'?a.maxHp:key==='native.strength'&&a instanceof ControlledActor?a.strength:undefined;});});
         dropSessions.get(this)!.validateReferences(creatures.map(actor=>actor.id));
         const actors = creatures.map(actor => this.actorFacts(actor,creatures[0]!.id));
         for (const module of this.modules) if (module.validateWorld && !module.validateWorld(this.states[module.id]!, this.components, actors, freezeView({ ...world, depth: world?.depth ?? this.ports.depth(), turn: world?.turn ?? this.ports.turn?.() ?? 0, isGameOver: world?.isGameOver ?? false, nextEntityId: world?.nextEntityId ?? getNextEntityId(), entities: structuredClone(this.world.entities), gate: structuredClone(this.world.gate), ...(this.world.regions ? { regions: structuredClone(this.world.regions) } : {}) })))
@@ -1667,7 +1680,7 @@ export class ExtensionRuntime {
             nativeMaximumBase: actor => this.nativeMaximumBase(actor),
 
             beforeAttack: (attacker, defender) => {
-                if (attacker.id !== this.ports.playerId() && this.causality.current?.kind === 'melee')
+                if (attacker.id !== this.ports.playerId() && !isPartyMember(attacker) && this.causality.current?.kind === 'melee')
                     this.notifyCommittedAction({ actorId: attacker.id, action: 'attack' });
                 this.attacks.push(attacker.id);
                 try { this.emit('beforeAttack', { attacker: creatureView(attacker, this.ports.playerId()), defender: creatureView(defender, this.ports.playerId()) }); }
@@ -2101,7 +2114,7 @@ export class ExtensionRuntime {
     }
     /** Execution-only receipt, bound to this session's currently equipped item. */
     commitItemRunicKnowledge(actor:Player,item:Item,target:Creature|null,runicType:string,phase:'effect'|'native-reveal'|'projectile'='effect'):void {
-        if(this.disposed||this.pureProviderPhase||actor.id!==this.ports.playerId()||!this.creatures.has(actor)||!hasItemData(item)||!boundExtensionItems.get(this)!.has(item)
+        if(this.disposed||this.pureProviderPhase||(actor.id!==this.ports.playerId()&&!isPartyMember(actor))||!this.creatures.has(actor)||!hasItemData(item)||!boundExtensionItems.get(this)!.has(item)
             ||(phase==='projectile'?this.causality.current?.actorId!==actor.id:phase==='effect'?![actor.equippedWeapon,actor.equippedArmor].includes(item):!actor.inventory.items.includes(item))||item.runicType!==runicType||!item.flags?.includes('ITEM_RUNIC'))return;
         const fact={kind:'runic-effect' as const,phase,result:'committed' as const,settlementId:this.nextFactId,actorId:actor.id,itemId:item.id,targetId:target?.id??null,runicType,targetTags:target?nativeStatFacts(target,this.ports.playerId()).tags:[]};
         const commit=this.prepareTriggeredItemKnowledge(item,fact);
@@ -2118,7 +2131,7 @@ export class ExtensionRuntime {
         if(this.pureProviderPhase)throw new ItemDataError('C6_DATA');
         if(!this.modules.some(m=>m.itemKnowledge?.trigger))return;
         const actor=[...this.creatures].find(a=>a.id===actorId);
-        if(!(actor instanceof Player))return;
+        if(!(actor instanceof ControlledActor))return;
         const keys=[...new Set(stats)].filter(key=>{try{this.stats.value(actorId,key);return true;}catch{return false;}});
         if(!keys.length)return;
         const fact={kind:'stat-commit' as const,stats:keys,targetTags:target?nativeStatFacts(target,this.ports.playerId()).tags:[]};
@@ -2272,6 +2285,15 @@ export class ExtensionRuntime {
         return()=>{restoreSession();statSessions.set(this,session);restoreBindings();
             if(query)statQueries.set(this,query);else statQueries.delete(this);};
     }
+    /** P1a command spans may yield for a decision; native world rollback is owned by Game. */
+    checkpointPartyCommand():()=>void {
+        if(!this.modules.some(m=>m.id==='party'))throw new Error('Party disabled');
+        const restore=checkpointGenerationWorld(()=>({shallow:[this],deep:[this.states,this.components,this.world,this.deaths,this.pendingStoryFacts,this.causality,this.creatures],references:[this.ports,...this.modules,...this.creatures]}));
+        const stats=this.checkpointNativeStatSession(),drops=dropSessions.get(this)!.snapshot(),edible=edibleSnapshot(this);
+        const bindings=new Set(boundExtensionItems.get(this));
+        return()=>{for(const item of boundExtensionItems.get(this)!)if(!bindings.has(item))unbindItemExtension(item);boundExtensionItems.set(this,bindings);restore();stats();dropSessions.get(this)!.restore(drops);restoreEdibleState(this,edible);markRecordingRoot(this);};
+    }
+
     worldWorkTransaction<T>(work:()=>T):T { return this.itemCommandTransaction(work); }
     itemCommandTransaction<T>(work:()=>T):T {
         const restore=checkpointGenerationWorld(()=>({shallow:[this],deep:[this.states,this.components,this.world,this.deaths,this.pendingStoryFacts,this.causality],references:[this.ports,...this.modules,...this.creatures]}));
@@ -2352,6 +2374,21 @@ export class ExtensionRuntime {
     }
     get sourceId(): number | null { return this.attacks[this.attacks.length - 1] ?? null; }
     /** Pure player-only projection. Never snapshots causal ledgers, NPCs, rewards, or the world. */
+    /** Read-only member projection, with a subject distinct from the primary identity. */
+    readPartyModuleView(moduleId:string,actorId:number): (Omit<ExtensionModuleView,'playerId'>&{actorId:number;primaryActorId:number})|null {
+        const member=this.ports.partyRead?.()?.members.find(m=>m.actorId===actorId),descriptor=this.views.get(moduleId),module=this.modules.find(m=>m.id===moduleId);
+        if(this.disposed||!member||!descriptor||!module)return null;
+        const state=this.states[moduleId],fields:Record<string,Json>={},components:Record<string,Json>={};
+        if(state&&typeof state==='object'&&!Array.isArray(state))for(const name of descriptor.stateFields)if(Object.prototype.hasOwnProperty.call(state,name))fields[name]=cloneJson(state[name]!);
+        for(const name of descriptor.playerComponents){
+            let value=this.components[String(actorId)]?.[`${moduleId}:${name}`];
+            if(value!==undefined&&module.projectPlayerComponent){value=module.projectPlayerComponent(name,readonlyJson(value));requireSynchronous(value);if(!isJson(value))throw new Error('Invalid member display projection');}
+            if(value===undefined)continue;const keys=descriptor.componentFields?.[name];
+            components[name]=!keys?cloneJson(value):value&&typeof value==='object'&&!Array.isArray(value)?Object.fromEntries(keys.filter(key=>Object.prototype.hasOwnProperty.call(value,key)).map(key=>[key,cloneJson(value[key]!) ])):{};
+        }
+        return freezeView({session:memberViewSession(this.viewSession,actorId),definitions:descriptor.definitions,actorId,primaryActorId:this.ports.playerId(),state:fields,components,canManageCharacter:member.alive&&member.active});
+    }
+
     readModuleView(moduleId: string, displayQuery?: Json): ExtensionModuleView | null {
         const descriptor = this.views.get(moduleId), module = this.modules.find(entry => entry.id === moduleId);
         if (this.disposed || !module) return null;
@@ -2369,7 +2406,7 @@ export class ExtensionRuntime {
                 const visible = this.ports.visibleActorActionCells?.(value.sourceEntityId,cells) ?? [];
                 return visible.length ? [{...value,cells:visible}] : [];
             });
-            return freezeView({ session: this.viewSession, definitions: {}, playerId: this.ports.playerId(), state: publicProjection, components: {},
+            return freezeView({ session: this.ports.partyActingActor?.()?memberViewSession(this.viewSession,this.ports.partyActingActor()!):this.viewSession, definitions: {}, playerId: this.ports.playerId(), state: publicProjection, components: {},
                 canManageCharacter: this.ports.canManageCharacter?.() ?? true });
         }
         if (!descriptor) return null;
@@ -2394,7 +2431,7 @@ export class ExtensionRuntime {
                     .filter(field=>Object.prototype.hasOwnProperty.call(value,field)).map(field=>[field,cloneJson(value[field]!)]) );
             }
         }
-        return freezeView({ session: this.viewSession, definitions: descriptor.definitions, playerId,
+        return freezeView({ session: this.ports.partyActingActor?.()?memberViewSession(this.viewSession,this.ports.partyActingActor()!):this.viewSession, definitions: descriptor.definitions, playerId,
             state: fields, components, canManageCharacter: this.ports.canManageCharacter?.() ?? true });
     }
     recordingDigestToken(): readonly unknown[] {
@@ -2405,7 +2442,7 @@ export class ExtensionRuntime {
     snapshot(): ExtensionSnapshot {
         if (this.generations.length) throw new Error('Cannot snapshot an open generation transaction');
         return structuredClone({ manifest: this.manifest, modules: this.states, components: this.components,
-            foundation: { ...(dropSessions.get(this)!.active ? {itemDrops:dropSessions.get(this)!.snapshot()}:{}), ...edibleSnapshot(this), version: FOUNDATION_PROTOCOL, ...(statSessions.get(this)?.ledger.snapshot()?{stats:statSessions.get(this)!.ledger.snapshot()}:{}), nextFactId: this.nextFactId, pendingStoryFacts: this.pendingStoryFacts, causality: this.causality.snapshot(), deaths: this.deaths, world: this.world } });
+            foundation: { ...(dropSessions.get(this)!.active ? {itemDrops:dropSessions.get(this)!.snapshot()}:{}), ...edibleSnapshot(this), version: effectivePartyCodec(this.manifest).foundation, ...(statSessions.get(this)?.ledger.snapshot()?{stats:statSessions.get(this)!.ledger.snapshot()}:{}), nextFactId: this.nextFactId, pendingStoryFacts: this.pendingStoryFacts, causality: this.causality.snapshot(), deaths: this.deaths, world: this.world } });
     }
     validateSnapshot(value: ExtensionSnapshot): void {
         if (!value || !isJson(value) || canonical(value.manifest) !== canonical(this.manifest)
@@ -2414,7 +2451,7 @@ export class ExtensionRuntime {
             || Object.keys(value).some(key => !['manifest', 'modules', 'components', 'foundation'].includes(key))
             || canonical(Object.keys(value.modules).sort()) !== canonical(this.modules.map(module => module.id).sort())) throw new Error('Invalid extension snapshot');
         const foundation = value.foundation;
-        if (!foundation || foundation.version !== FOUNDATION_PROTOCOL || Object.keys(foundation).filter(k=>!['itemDrops','stats','kindKnowledge','actorNeeds','timedStats','departures'].includes(k)).sort().join(',') !== 'causality,deaths,nextFactId,pendingStoryFacts,version,world'
+        if (!foundation || foundation.version !== effectivePartyCodec(this.manifest).foundation || Object.keys(foundation).filter(k=>!['itemDrops','stats','kindKnowledge','actorNeeds','timedStats','departures'].includes(k)).sort().join(',') !== 'causality,deaths,nextFactId,pendingStoryFacts,version,world'
             || !Number.isSafeInteger(foundation.nextFactId) || foundation.nextFactId < 1
             || !Array.isArray(foundation.pendingStoryFacts) || foundation.pendingStoryFacts.length > STORY_FACT_LIMIT
             || !foundation.pendingStoryFacts.every(validPendingStoryFact)

@@ -25,7 +25,7 @@ export function placeSquareBodyFixtures(game: Game): readonly { entityId: number
     for (const size of [2, 3] as const) {
         const at = positions.find(at => {
             const candidate = { loc: at, hp: 1, spatial: { schema: 1, footprintId: `builtin:square-${size}`, pose: 'r0' } } as Creature;
-            return canFitAt(game, candidate, at, { allowsTerrain: p => {
+            return canFitAt(game.spatialWorldPort(), candidate, at, { allowsTerrain: p => {
                 const cell = game.grid.getCell(p.x, p.y);
                 return !!cell?.isVisible && cell.layers.every(t => t === TerrainType.FLOOR || t === TerrainType.NOTHING)
                     && !cell.machineNumber && !reserved.has(`${p.x},${p.y}`)

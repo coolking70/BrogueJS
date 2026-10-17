@@ -54,7 +54,7 @@ export function createGrowthStatSources(pack:GrowthPack):StatSourceProvider {
   const scopes=growthSkillScopes(pack,build??initialGrowthSkillBuild(),state.objectiveClock??0,'actor',identity);
   const bases=new Map<string,number>();
   for(const stat of [...Object.values(PORTS),'native.evasion']){
-   if(stat.startsWith('combat.')){const mapping=pack.config.combatStats;if(!mapping||!enabled||(actor.player&&!mapping.playerEnabled)||(!actor.player&&(!identity?.templateId||!mapping.allowedTemplateIds.includes(identity.templateId))))continue;}
+   if(stat.startsWith('combat.')){const mapping=pack.config.combatStats;if(!mapping||!enabled||((actor.player||actor.tags.includes('party.member'))&&!mapping.playerEnabled)||(!actor.player&&!actor.tags.includes('party.member')&&(!identity?.templateId||!mapping.allowedTemplateIds.includes(identity.templateId))))continue;}
    try{bases.set(stat,context.base(stat));}catch(error){if(stat.startsWith('combat.')&&error instanceof StatValidationError&&error.reason==='declaration')continue;throw error;}
   }
   const stamp=JSON.stringify([enabled,ruleActor,permanentActor,scopes,actor.player,actor.statuses.includes('invisible'),identity?.templateId,context.facts,[...bases]]);
@@ -67,7 +67,7 @@ export function createGrowthStatSources(pack:GrowthPack):StatSourceProvider {
    }
   }
   for(const [port,stat] of [...Object.entries(PORTS),['hitChance','native.evasion']] as [GrowthRulePort,string][]){
-   if(stat.startsWith('combat.')){const mapping=pack.config.combatStats;if(!mapping||!enabled||(actor.player&&!mapping.playerEnabled)||(!actor.player&&(!identity?.templateId||!mapping.allowedTemplateIds.includes(identity.templateId))))continue;}
+   if(stat.startsWith('combat.')){const mapping=pack.config.combatStats;if(!mapping||!enabled||((actor.player||actor.tags.includes('party.member'))&&!mapping.playerEnabled)||(!actor.player&&!actor.tags.includes('party.member')&&(!identity?.templateId||!mapping.allowedTemplateIds.includes(identity.templateId))))continue;}
    // Reading a capacity's L0 never queries another module's mutable state.
    const base=bases.get(stat);if(base===undefined)continue;
    const owner=port==='receivedPhysicalDamage'||stat==='native.evasion'?'target':'actor',rule=pack.config.rules.ports[port],budget=pack.config.rules.budgets.find(b=>b.id===rule.budgetId)!;

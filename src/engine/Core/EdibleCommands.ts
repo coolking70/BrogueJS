@@ -42,7 +42,7 @@ const result = <T>(f: () => T): WorldResult<T> => {
     };
   }
 };
-const stamp = (game: Game) => inventoryStamp(game.player.inventory.items);
+const stamp = (game: Game) => inventoryStamp(game.commandActor.inventory.items);
 const distance = (a: { x: number; y: number }, b: { x: number; y: number }) =>
   Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 export function heatSources(game: Game, accessible = true): HeatSourceRead[] {
@@ -72,8 +72,8 @@ export function heatSources(game: Game, accessible = true): HeatSourceRead[] {
       kind &&
       (!accessible ||
         (game.grid.getCell(e.x, e.y)?.isVisible &&
-          distance(game.player.loc, e) <= interactionDistance &&
-          hasInteractionLine(game.grid, game.player.loc, e)))
+          distance(game.commandActor.loc, e) <= interactionDistance &&
+          hasInteractionLine(game.grid, game.commandActor.loc, e)))
     )
       rows.push({ interactableId: e.id, kind, at: { x: e.x, y: e.y }, interactionDistance });
   }
@@ -86,10 +86,10 @@ export function readEdibleContext(game: Game, owner: string): WorldResult<Edible
     const rows = peekEdibleState(runtime!).actorNeeds?.rows ?? [],
       definitions = needDeclarations(game);
     return {
-      actorId: game.player.id,
-      at: { ...game.player.loc },
+      actorId: game.commandActor.id,
+      at: { ...game.commandActor.loc },
       inventoryStamp: stamp(game),
-      inventory: game.player.inventory.items.flatMap((item) => {
+      inventory: game.commandActor.inventory.items.flatMap((item) => {
         const d = edibleDefinition(game, item),
           nativeFood =
             item.category === 4 && ['ration_of_food', 'mango'].includes(item.consumableId ?? '')
@@ -119,7 +119,7 @@ export function readEdibleContext(game: Game, owner: string): WorldResult<Edible
       feedTargets: rows.flatMap((row) => {
         const d = definitions.find((d) => d.id === row.needId && d.owner === owner),
           actor = game.monsters.find((a) => a.id === row.actorId);
-        if (!d || !actor || !canDirectlySeeMonster(game.player, game.grid, actor)) return [];
+        if (!d || !actor || !canDirectlySeeMonster(game.commandActor, game.grid, actor)) return [];
         return [
           {
             actorId: actor.id,
@@ -191,10 +191,10 @@ function prepare(
       (request as RoastRequest).heatSourceId < 1)
   )
     fail('C5_BAD_PAYLOAD');
-  if (game.isGameOver || game.player.hp <= 0) fail('C5_DEAD');
+  if (game.isGameOver || game.commandActor.hp <= 0) fail('C5_DEAD');
   if (game.interactionActive) fail('C5_GATE');
-  if (isIncapacitated(game.player) || game.isInputLocked()) fail('C5_BUSY');
-  const item = game.player.inventory.items.find((i) => i.id === request.itemId),
+  if (isIncapacitated(game.commandActor) || game.isInputLocked()) fail('C5_BUSY');
+  const item = game.commandActor.inventory.items.find((i) => i.id === request.itemId),
     d = item ? edibleDefinition(game, item) : null;
   let confirm = false;
   if (operation === 'feed') {
@@ -214,11 +214,11 @@ function prepare(
       )
     )
       fail('C5_WRONG_LEVEL');
-    if (!target || !row || !canDirectlySeeMonster(game.player, game.grid, target))
+    if (!target || !row || !canDirectlySeeMonster(game.commandActor, game.grid, target))
       fail('C5_UNKNOWN_TARGET');
     if (
-      distance(game.player.loc, target!.loc) !== 1 ||
-      !hasInteractionLine(game.grid, game.player.loc, target!.loc)
+      distance(game.commandActor.loc, target!.loc) !== 1 ||
+      !hasInteractionLine(game.grid, game.commandActor.loc, target!.loc)
     )
       fail('C5_DISTANCE');
     if (isIncapacitated(target!) || isDeparting(game, target!.id)) fail('C5_GATE');
@@ -246,11 +246,11 @@ function prepare(
     operation,
     request,
     tick: game.world5!.simulationTicks,
-    player: { at: game.player.loc, hp: game.player.hp, movementSpeed: game.player.movementSpeed },
+    player: { at: game.commandActor.loc, hp: game.commandActor.hp, movementSpeed: game.commandActor.movementSpeed },
     confirm,
     definition: d?.id ?? null
   });
-  const handle = Object.freeze({ operation, owner, actorId: game.player.id }) as EdiblePlanHandle;
+  const handle = Object.freeze({ operation, owner, actorId: game.commandActor.id }) as EdiblePlanHandle;
   handles.set(handle, {
     game,
     runtime: game.extensionRuntime!,
@@ -309,7 +309,7 @@ export function prepareEdibleCommand(
         : { ok: false, code: 'C5_SCOPE', field: null };
     const sdk: EdiblePrepareSDK = Object.freeze({
       owner: e.module,
-      actorId: game.player.id,
+      actorId: game.commandActor.id,
       readEdibleContext: () =>
         open
           ? readEdibleContext(game, e.module)
@@ -381,7 +381,7 @@ export function commitEdibleCommand(game: Game, handle: EdiblePlanHandle): World
     const fresh = prepare(game, p.owner, p.operation, p.request);
     if (handles.get(fresh)!.canonical !== p.canonical) fail('C5_STALE');
     return transactEdible(game, () => {
-      const item = game.player.inventory.items.find((i) => i.id === p.request.itemId)!;
+      const item = game.commandActor.inventory.items.find((i) => i.id === p.request.itemId)!;
       if (p.operation === 'feed') {
         const r = p.request as FeedRequest,
           target = game.monsters.find((a) => a.id === r.targetId)!,
@@ -397,7 +397,7 @@ export function commitEdibleCommand(game: Game, handle: EdiblePlanHandle): World
       )!;
       queueFireContact(game, item, 'roast-command', source.at);
       drainFireContacts(game, true);
-      timeSystem.currentTick += game.player.movementSpeed;
+      if(!game.party)timeSystem.currentTick += game.commandActor.movementSpeed;
       return true;
     });
   });

@@ -25,10 +25,10 @@ export function useCraftingUi(host: ModuleUiHost,
   function read(): Presentation | null {
     if (!live() || busy()) return null;
     try {
-      const source = runtime?.readModuleView('crafting', { sourceContainerId: draft.value.sourceContainerId }), data = readCraftingUiView(source?.state);
+      const source = (game.party?game.readFocusedModuleView.bind(game):runtime?.readModuleView.bind(runtime))?.('crafting', { sourceContainerId: draft.value.sourceContainerId }), data = readCraftingUiView(source?.state);
       if (!source || !data || !source.session || typeof source.session !== 'object') return null;
       return { data, session: source.session, readOnly: !!game.replayRecording || game.isGameOver || !source.canManageCharacter,
-        replay: !!game.replayRecording, cursor: game.replayCursor, x: game.player.x, y: game.player.y };
+        replay: !!game.replayRecording, cursor: game.replayCursor, x: (game.party?game.focusedActor:game.player).x, y: (game.party?game.focusedActor:game.player).y };
     } catch { return null; }
   }
   function clearDraft() { draft.value = emptyCraftingDraft(); error.value = null; }
@@ -116,7 +116,7 @@ export function useCraftingUi(host: ModuleUiHost,
     error.value = null; refresh();
   }
   const canStop = () => view.value?.data.activeTicket?.status === 'working'
-    && !game.actorActions?.bundles.some(bundle => bundle.decisionOwnerId === game.player.id);
+    && !game.actorActions?.bundles.some(bundle => bundle.decisionOwnerId === (game.party?game.focusedActor:game.player).id);
   async function submit(expected: Presentation, command: string | null, event?: MouseEvent) {
     if (repeated(event) || !opened.value || !live() || submitting.value || expected.readOnly || busy()
       || host.canPresentInteraction?.() === false || !!game.pendingCommandConfirmation) return;

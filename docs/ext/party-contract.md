@@ -1,6 +1,6 @@
 # 小队合同：P1a phase6刷新版
 
-> 刷新：**2026-10-18**。原P0基线 `7ec0ca0`、原任务基线 `79bb26e` 仅历史；只读来源 `origin/ext/party-design` / `8bd271b4bc26dea697ca8af1257240d848f3665d`。现行参照为 `ext/phase6` / `0e684d100146af38b1e2056811fef821001f7555` 加本树试玩未提交差量。依据[已批准设计](https://github.com/coolking70/BrogueJS/blob/8bd271b4bc26dea697ca8af1257240d848f3665d/docs/ext/party-multiplayer-design.md)及[刷新任务书](party-p1a.task.md)。D-01～D-17保持；**M1–M5于2026-10-18已裁定，M5使用精简门禁**。§9中M6–M11仍是待决定建议，不冒称批准。本文仅文档，尚无party实现、不commit。
+> 刷新：**2026-10-18**。原P0基线 `7ec0ca0`、原任务基线 `79bb26e` 仅历史；只读来源 `origin/ext/party-design` / `8bd271b4bc26dea697ca8af1257240d848f3665d`。现行参照为 `ext/phase6` / `0e684d100146af38b1e2056811fef821001f7555` 加本树试玩未提交差量。依据[已批准设计](https://github.com/coolking70/BrogueJS/blob/8bd271b4bc26dea697ca8af1257240d848f3665d/docs/ext/party-multiplayer-design.md)及[刷新任务书](party-p1a.task.md)。D-01～D-17保持；**M1–M11于2026-10-18已裁定，M5使用精简门禁**。§9中M6–M11亦于2026-10-18按推荐批准；实施基线为 `ext/party-p1a` / `e3ec8f4`，不commit。
 
 > 适用层次：P1a落实§1、§2单步声明、§3.0、§4及§6的单步分支；窗口/计划/可保存待决DTO归P1b，AI/队长指令归P1c，招募正式入口归P1d，网络归P2。下列未来类型保留为设计草案，不得在P1a存档中创建无语义的window/AI占位。
 
@@ -427,22 +427,22 @@ P1a单步只在安全提交后发布带command index/actorId/tick的actor结果�
 ### 9.2 必须保留的phase6合同
 
 - **独立actor属性与能力**：现有StatPipeline已经按actor、target、facts、revision缓存；runtime追踪跨actor组件读者，缺组件读取后创建/删除、GC、回滚也要失效；growth派生缓存包含ruleActor/scopes/基值。扩多actor不能退化为只加focus键或把所有缓存当单玩家缓存。保留4096读集溢出全局失效、knownOnly/hypothetical隔离与source验证凭证/聚合预算。
-- **来源与物品**：loot属性从每个actor的装备取，套装计数不得跨成员凑件；孔/符文词/强化/本地伤害与growth.attribute派生保留来源顺序和舍入。装备容量升不补、降钳制与永久grantPolicy分开；交换/取消/退款需失效双方与真实跨actor读者。loot `!actor.player`怪物缩放和growth模板资格必须通过受控成员能力口审清，具体选择见M8。
+- **来源与物品**：loot属性从每个actor的装备取，套装计数不得跨成员凑件；孔/符文词/强化/本地伤害与growth.attribute派生保留来源顺序和舍入。装备容量升不补、降钳制与永久grantPolicy分开；交换/取消/退款需失效双方与真实跨actor读者。loot `!actor.player`怪物缩放和growth模板资格必须通过受控成员能力口审清，具体选择按已批M8。
 - **唯一根和来源账**：掉落共享地面、拾取进入实际actor背包，物品ID/moduleData/knowledge不复制；unique/set/part出生代数/encounter序号全局一次，WorldWork装备escrow、预留、取消退款、完成票据/ordinal及craft≤magic继续有效。site掉落协议存在不代表有site游戏入口，本步不借party扩5C2。
-- **时钟**：环境/居民需求每正elapsed只结算一次。ActorNeeds的native nutrition适配不增加伴随第二账；普通留守与resident经济身份互斥。growth全局clock的到期遍历须适配冻结成员，具体剩余量表示待M10，不能默默过期。
+- **时钟**：环境/居民需求每正elapsed只结算一次。ActorNeeds的native nutrition适配不增加伴随第二账；普通留守与resident经济身份互斥。growth全局clock的到期遍历须适配冻结成员，具体剩余量表示按已批M10，不能默默过期。
 - **事务写集**：成员entity/inventory/equipment别名、native资源/计时、growth组件/参与收据、loot模块物品数据/来源台账、材料化账/预留/escrow、inputState/revisions均逐项登记到现有world/generation/command/item事务及摘要归属。`WorldCheckpoint`共享只读捕获/`ext/json.ts`不可变分支凭证不是省掉新成员写根的理由。写后嵌套保存点重建；失败保对象身份/双流/allocator。缓存留世界图外，可失效重建，不持久化缓存值冒充权威。
-- **创建与显示**：MainMenu保留原创建session/step/attempt、取消/重试、重复提交锁，保留`structuredClone(toRaw(configurationDrafts.value))`到manifest前的快照。`ext/ui/creation.ts`现为每owner一个initialCommand；M9未定前不能靠多塞命令或直接写成员绕过验证。focus显示、loot比较/已知投影/工作候选按显式actor读取，不消费实质随机流。真实创建链单测与浏览器结果分列。
+- **创建与显示**：MainMenu保留原创建session/step/attempt、取消/重试、重复提交锁，保留`structuredClone(toRaw(configurationDrafts.value))`到manifest前的快照。`ext/ui/creation.ts`现为每owner一个initialCommand；按M9不能靠多塞命令或直接写成员绕过验证。focus显示、loot比较/已知投影/工作候选按显式actor读取，不消费实质随机流。真实创建链单测与浏览器结果分列。
 
 按文件的冲突证据、处理建议、A01–A13映射及未来写集见任务书§7/§9；这些是实施义务，本次未改任何代码或冻结新接口。
 
-### 9.3 新增待决定细则（均有推荐，尚未批准）
+### 9.3 M6–M11已批准细则（2026-10-18，全部按推荐）
 
-| 编号 | 新问题（截至本次仍待决定） | 推荐 | 影响 / 决定前边界 |
+| 编号 | 裁定主题 | 2026-10-18按推荐批准 | 实施边界 |
 |---|---|---|---|
-| M6 | growth 1.10 XP 增益、辅助白名单、盟友旧分账与死亡参与者如何衔接 M4？ | 先按现有资格/总池/一次收据取基础 XP，再按 M4 等权整数分池，最后各领取者各调用一次 `growth.xp-gain`；倍率后总和可变，不再次均分。辅助先限成功造成实际治疗/护盾吸收/有效增益或控制的权威结果，禁止仅按施放、日志或 UI 声明入集；逐事件映射审后入指纹；缺权威事实的辅助暂不列入，不借此新增技能。party 成员不再走原 player/ally 二次分账；未升格盟友仍走原规则，把原 player 份作为队伍池，不能直接变成员。死亡/离层保留参与席位，冻结存活者可领取 XP；死者份记入终结收据但不复活、不转赠 | M4 未决定倍率先后、辅助事件全集和死者发奖细则；B 段 XP 实现前定案。故事奖保持原显式收据语义，本步不扩叙事招募；不能以本建议冒称已批准 |
+| M6 | growth 1.10 XP 增益、辅助白名单、盟友旧分账与死亡参与者如何衔接 M4？ | 先按现有资格/总池/一次收据取基础 XP，再按 M4 等权整数分池，最后各领取者各调用一次 `growth.xp-gain`；倍率后总和可变，不再次均分。辅助先限成功造成实际治疗/护盾吸收/有效增益或控制的权威结果，禁止仅按施放、日志或 UI 声明入集；逐事件映射审后入指纹；缺权威事实的辅助暂不列入，不借此新增技能。party 成员不再走原 player/ally 二次分账；未升格盟友仍走原规则，把原 player 份作为队伍池，不能直接变成员。死亡/离层保留参与席位，冻结存活者可领取 XP；死者份记入终结收据但不复活、不转赠 | M4 未决定倍率先后、辅助事件全集和死者发奖细则；B 段 XP 实现前定案。故事奖保持原显式收据语义，本步不扩叙事招募；本推荐已于2026-10-18批准 |
 | M7 | 共享掉落下 rarity-find 从谁取值，拾取过滤和金币归谁？ | D-16 共享地面掉落保持；kill/part 用权威 `EffectOrigin.creditActorId`（不合资格则固定主成员基准），floor/vault/encounter 用固定 primaryActorId，均不取 focus/leader/最近查看者；成员死亡后允许读取其冻结终态属性。唯一/套装/part/encounter 收据仍全局一次。拾取归实际位移/手动命令 actor，沿当前局级 loot 过滤偏好，不在 P1a 新增每人过滤配置；金币沿现有局级权威账，独立背包不自动改为四份钱 | `DropEvent.playerId` 与宿主取值守卫需 actor 适配，字段名不能直接换成未经授权的 payload；B/C 段前定案。此推荐为首版稳定口径，非 D-16 自动推导 |
 | M8 | 非主成员如何获得 growth 身份/装备属性，又避免被 loot 当怪物缩放？ | 增加明确受控成员能力/身份读取，不篡改 `Game.player` 或全局 `ActorFacts.player` 语义；成员使用各自 creation identity、装备、L0 原生基值与 L2 装备→growth 属性→派生值；loot 怪物环境缩放排除全部 party 成员。原非成员 NPC 的模板白名单保留；容量增长政策沿来源 `grantPolicy`（装备容量升不补、降钳制；永久成长保原授予） | 已批准独立成长不等于已批准把所有 Monster 标成 player；A/B 段能力分类与版本/规则指纹前定案 |
-| M9 | MainMenu 如何同时收集多成员身份并维持每模块一个 initialCommand？ | 在现有创建会话中增加 party roster 草稿；growth 一步收齐各成员身份并输出一个版本化批量 initialCommand，party 步收成员数/稳定槽。最终配置与全部初始命令统一预检、只发一次 new-game；引擎内 roster→actor 映射→按 actor 初始化，实际命令按公开录制边界执行。不靠 UI 预分配实体 ID，不改成多个同 owner 字符串绕过计数检查 | 具体跨模块步骤依赖/批量 payload 与成长模块有效版本仍待定；需保留无 growth 的两人创建。不能仅复制现有单角色面板、按数组顺序猜执行 actor |
+| M9 | MainMenu 如何同时收集多成员身份并维持每模块一个 initialCommand？ | 在现有创建会话中增加 party roster 草稿；growth 一步收齐各成员身份并输出一个版本化批量 initialCommand，party 步收成员数/稳定槽。最终配置与全部初始命令统一预检、只发一次 new-game；引擎内 roster→actor 映射→按 actor 初始化，实际命令按公开录制边界执行。不靠 UI 预分配实体 ID，不改成多个同 owner 字符串绕过计数检查 | 具体跨模块步骤依赖/批量 payload 与成长模块有效版本由实施冻结；需保留无 growth 的两人创建。不能仅复制现有单角色面板、按数组顺序猜执行 actor |
 | M10 | 留守冻结与 growth 的全局 `objectiveClock` 到期清理冲突如何处理？ | 单世界时钟保持；成员冻结时保存效果/冷却/focus 的剩余时长或冻结起点，恢复时平移绝对截止值，使非活动期间不扣时；不整体回退 growth 时钟、不冻结居民经济或普通 NPC。XP 收据可在冻结期间发布，计时仍不前进 | 合同“普通成员冻结”已定；需决定具体表示与 `extensions` 写集/容量，A/C 段前定案，并测长跳、恢复、seek |
 | M11 | 如何给尚不存在的 party 接入云端 A/B，而不冒用 6C4 基准？ | 保留 classic/现有八模块无 party 的可比路线作为回归对照；新增显式 party-only / party+all 的 1/2/4 人固定命令场景、独立 identity/路线/预算来源，分别测单步、摘要、体积。为 runner/selector/workflow 增加已审 party 身份后沿用三分片与汇总校验；四人数据不能拿单人路线直接判退。P1a 不设新绝对性能硬阈值，P1b 据云端完整样本定案 | M5 的云端/D6 方法已定，此项决定新增场景与工具写集。现有工具仅有 p0/6b4/6c1–6c4 身份，尚不能直接选择 party；不得改旧输入 hash 或用 `--limit` 当正式结果 |
 
@@ -452,4 +452,4 @@ P1a单步只在安全提交后发布带command index/actorId/tick的actor结果�
 
 性能由云端classic/all-full/all-prefix三分片交错A/B三轮并汇总，D6修订为命令/客观回合P95+10%、命令max/客观回合P99+25%、墙钟+10%，至少1ms且严格大于，三轮两轮任意项越线判退；客观回合max只报告。all/full工作量不同仅报告时间，但完整正确性硬检查仍须通过；all/prefix必须保持同输入/双流/blocks/rounds/roundTicks可比，不能以短前缀证明D20。
 
-P1a实测1/2/4人单步、event/full摘要/Worker flush、存档录像与新增成员字节、内存和边界长尾；P1b才冻结新阈值。P0的64KiB/256KiB和窗口毫秒值只作历史预算提案，不是本步硬断言。现有phase6工作流/selector尚未开放party身份，M11定案后接入；旧冻结预算不可改头冒用。无数据、短跑或缺分片不称pass；本次文档刷新未跑性能或功能门禁。
+P1a实测1/2/4人单步、event/full摘要/Worker flush、存档录像与新增成员字节、内存和边界长尾；P1b才冻结新阈值。P0的64KiB/256KiB和窗口毫秒值只作历史预算提案，不是本步硬断言。现有phase6工作流/selector尚未开放party身份，按已批M11接入；旧冻结预算不可改头冒用。无数据、短跑或缺分片不称pass；本次文档刷新未跑性能或功能门禁。

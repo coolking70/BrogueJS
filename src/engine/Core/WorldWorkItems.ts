@@ -104,7 +104,7 @@ function craftInput(game: Game, b: WorkRollBinding, completion: boolean): WorkIt
     maxRarity: b.maxRarity,
     rarityFindBp:
       completion && runtime.stats.keys.has('loot.rarity-find')
-        ? runtime.stats.value(game.player.id, 'loot.rarity-find')
+        ? runtime.stats.value(game.commandActor.id, 'loot.rarity-find')
         : 0
   };
 }

@@ -1,3 +1,5 @@
+import {canActorSeeCell} from './PartyPerception';
+import { ControlledActor } from '../../entities/ControlledActor';
 import { bodyDecisionActor } from '../Status/BodyStatuses';
 import { footprintOf, footprintSome } from '../Movement/CreatureSpatial';
 import type { Pos } from '../../types';
@@ -16,7 +18,7 @@ export function monsterRevealed(player: Player, monster: Monster): boolean {
 export function monsterHidden(grid: Grid, monster: Monster, observer?: Creature): boolean {
     if (monster.isDormant) return true;
     if (bodyDecisionActor(monster).isAlly) return false;
-    const inGas = monster.spatial && observer instanceof Player
+    const inGas = monster.spatial && observer instanceof ControlledActor
         ? footprintSome(monster, p => !!grid.getCell(p.x, p.y)?.isVisible && hasGasAt(grid, p)) : monsterInGas(grid, monster);
     return (monster.hasStatus('invisible') && !inGas) || hiddenBySubmersion(grid, monster, observer);
 }
@@ -50,9 +52,9 @@ export function canSeeMonster(player: Player, grid: Grid, monster: Monster): boo
 }
 
 export function canDirectlySeeMonster(player: Player, grid: Grid, monster: Monster): boolean {
-    if (monster.spatial) return publicMonsterCells(player, grid, monster).some(p => !!grid.getCell(p.x, p.y)?.isVisible);
+    if (monster.spatial) return publicMonsterCells(player, grid, monster).some(p => canActorSeeCell(player,grid,p.x,p.y));
     return monster.hp > 0 && !monsterHidden(grid, monster, player)
-        && footprintSome(monster, p => !!grid.getCell(p.x, p.y)?.isVisible);
+        && footprintSome(monster, p => canActorSeeCell(player,grid,p.x,p.y));
 }
 
 /** A revealed but hidden creature has a location marker, never an identity. */

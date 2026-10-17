@@ -30,13 +30,13 @@ export interface ExtensionModuleView {
 export interface ExtensionRulesIdentity { schema: number; version: string; fingerprint: string }
 export interface ExtensionRunConfiguration { readonly controls?: readonly { readonly field: string; readonly labelKey: string; readonly descriptionKey: string }[]; readonly default: Json; validate(value: unknown): value is Json; identity(value: Json): ExtensionRulesIdentity }
 export interface ExtensionVersion { id: string; version: string; rules?: ExtensionRulesIdentity; configuration?: Json }
-export interface ExtensionManifest { schema: 1; foundation?: typeof import('./descriptor').FOUNDATION_PROTOCOL; modules: ExtensionVersion[] }
+export interface ExtensionManifest { schema: 1; foundation?: typeof import('./descriptor').FOUNDATION_PROTOCOL | 21; modules: ExtensionVersion[] }
 export interface ExtensionSnapshot {
     manifest: ExtensionManifest;
     modules: Record<string, Json>;
     /** Run-local creature ID -> module-qualified component ID -> JSON. */
     components: Record<string, Record<string, Json>>;
-    foundation: { itemDrops?: import('./itemDrops').ItemDropSnapshot; version: typeof import('./descriptor').FOUNDATION_PROTOCOL; kindKnowledge?: import('../engine/Core/EdibleState').KindKnowledgeSnapshot; actorNeeds?: import('../engine/Core/EdibleState').ActorNeedsSnapshot; timedStats?: import('../engine/Core/EdibleState').TimedStatsSnapshot; departures?: import('../engine/Core/EdibleState').DeparturesSnapshot; stats?: MaterializedStatSnapshot; nextFactId: number; pendingStoryFacts: PendingStoryFact[]; causality: CausalitySnapshot; deaths: Record<string, DeathFact>; world: WorldInteractionSnapshot };
+    foundation: { itemDrops?: import('./itemDrops').ItemDropSnapshot; version: typeof import('./descriptor').FOUNDATION_PROTOCOL | 21; kindKnowledge?: import('../engine/Core/EdibleState').KindKnowledgeSnapshot; actorNeeds?: import('../engine/Core/EdibleState').ActorNeedsSnapshot; timedStats?: import('../engine/Core/EdibleState').TimedStatsSnapshot; departures?: import('../engine/Core/EdibleState').DeparturesSnapshot; stats?: MaterializedStatSnapshot; nextFactId: number; pendingStoryFacts: PendingStoryFact[]; causality: CausalitySnapshot; deaths: Record<string, DeathFact>; world: WorldInteractionSnapshot };
 }
 /** Native facts wait for run initialization; sequence numbers are reserved on commit. */
 export interface PendingStoryFact { kind: 'entered-level'; depth: number; firstVisit: boolean; turn: number }

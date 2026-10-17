@@ -13,6 +13,7 @@ import {parseOptions,kindsFor,validateRun,withObjectiveP99,evaluateGates,overall
 
 const [output,...inputs]=process.argv.slice(2);
 assert.ok(output&&inputs.length===3,'Expected NEW_OUT CLASSIC_DIR ALL_FULL_DIR ALL_PREFIX_DIR');
+if(inputs.every(path=>JSON.parse(readFileSync(resolve(path,'result.json'),'utf8')).identity==='party-v1')){const {mergePartyAb}=await import('./merge-party-perf-ab.mjs');mergePartyAb(output,inputs);process.exit(0);}
 const out=resolve(output),root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 assert.ok(!existsSync(out),'Use a fresh output directory; never overwrite evidence');
 for(const input of inputs){const p=relative(resolve(input),out);assert.ok(p==='..'||p.startsWith('../'),'Output must be outside input artifacts');}
