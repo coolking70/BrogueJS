@@ -12,6 +12,7 @@ import { displayedFrame, presentationTimeline } from '../ui/presentationTimeline
 import { observeDisplayFrame } from '../ui/displayProjection';
 import { HUNGER_THRESHOLD } from '../entities/Player';
 import { ItemCategory } from '../engine/Items/Item';
+import { GasType } from '../engine/Environment/Gas';
 import { TerrainType as T } from '../engine/Map/Grid';
 import { stepCadence, AUTO_ACTION_INTERVAL_MS } from '../engine/UI/ActionCadence';
 import type { Game } from '../engine/Core/Game';
@@ -158,6 +159,31 @@ describe('D3 observation and ordered projection', () => {
 });
 
 describe('D3 real pressure plate → paralysis gas → attacks → death', () => {
+    it.each([false, true])('gas refresh asks MORE only at onset, then advances to recovery, animation=%s', animation => {
+        const game = createHeadlessGame(33421);
+        setupDialogD3Scene(game, animation); game.monsters = [];
+        game.environment.addGas(11, 10, GasType.PARALYSIS, 1000);
+        const { service, timeline } = mount(game);
+        game.executeCommand('move', { x: 1, y: 0 }); settleWorld(game);
+        expect(game.player.hasStatus('paralyzed')).toBe(false);
+        expect(game.absoluteTurnNumber).toBeGreaterThan(20);
+        const archive = logger.messages.find(m => m.text.includes('paralyzed'))!;
+        // Preserve the historical archive/digest evidence; only MORE is merged.
+        expect(archive.count).toBeGreaterThan(1);
+        expect(logger.pendingAcknowledgments.filter(m => m.text.includes('paralyzed'))).toHaveLength(1);
+        const random = rng.getState(), events = structuredClone(game.recordedInputEvents);
+        expect(service.current?.text).toContain('pressure plate');
+        service.answer(service.current!.token, 'more');
+        expect(service.current?.text).toContain('paralyzed');
+        service.answer(service.current!.token, 'more');
+        for (let i = 0; timeline.busy && i < 1000; i++) {
+            timeline.tick(25); service.sync();
+            expect(service.current).toBeUndefined();
+        }
+        expect(timeline.busy).toBe(false);
+        expect(logger.messages.some(m => m.text.includes('move again'))).toBe(true);
+        expect(rng.getState()).toEqual(random); expect(game.recordedInputEvents).toEqual(events);
+    });
     it.each([false, true])('animation=%s: first warning shows its own map/HUD/HP and waits indefinitely', animation => {
         const { game, service, timeline } = live(animation);
         expect(game.isGameOver).toBe(true); expect(game.player.hp).toBe(0);

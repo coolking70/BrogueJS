@@ -42,6 +42,7 @@ function rarityKeydown(event: KeyboardEvent) {
   <form ref="root" class="loot-filter" role="dialog" :aria-labelledby="titleId" :aria-busy="submitting" @submit.prevent="submit" @keydown="keydown">
     <h2 :id="titleId" class="loot-filter-title">{{ t('ext.loot.ui.filter.title') }}</h2>
     <p class="loot-filter-preset">{{ t('ext.loot.ui.filter.preset', { name: t(presetName.nameKey, presetName.params) }) }}</p>
+    <p class="loot-filter-notice">{{ t('ext.loot.ui.filter.help') }}</p>
     <p v-if="readOnly" class="loot-filter-notice">{{ t('ext.loot.ui.filter.read-only') }}</p>
     <fieldset class="loot-filter-fieldset" :disabled="disabled"><legend>{{ t('ext.loot.ui.filter.minimum') }}</legend>
       <div class="loot-filter-rarities" role="radiogroup" :aria-label="t('ext.loot.ui.filter.minimum')" @keydown="rarityKeydown"><button v-for="option in rarityOptions" :key="option.id" class="loot-filter-radio" type="button" role="radio" :aria-checked="draft.minRarity === option.id" :tabindex="draft.minRarity === option.id ? 0 : -1" :disabled="disabled" :data-rarity="option.id" :style="{ '--loot-rarity-dark': option.colorDark, '--loot-rarity-light': option.colorLight }" @click="chooseRarity(option.id)"><span aria-hidden="true">{{ option.marker }}</span> {{ t(option.nameKey) }}</button></div>

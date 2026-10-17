@@ -12,6 +12,9 @@ interface MessageEvidence { turn: number; color: string; acknowledge: boolean; f
 
 export interface MessageOptions {
     acknowledge?: boolean;
+    /** Presentation only: retain legacy emission evidence, but do not ask for
+     * another MORE when an ongoing condition merely refreshes its duration. */
+    suppressAcknowledgment?: boolean;
     /** Rejected inputs and file diagnostics are UI feedback, outside the archive. */
     presentationOnly?: boolean;
     /** CE FOLDABLE: combat text; only same-turn duplicates collapse. */
@@ -266,8 +269,8 @@ export class Logger {
         if (options.acknowledge) {
             entry.acknowledge = true;
             const display = presentations.get(this);
-            // Each occurrence still needs acknowledgment, even at count 100.
-            if (display?.enabled()) {
+            // Ordinary warnings retain every occurrence, even at count 100.
+            if (!options.suppressAcknowledgment && display?.enabled()) {
                 occurrence = Object.freeze({ ...entry, text, color });
                 (display.terminalShown ? display.unread : display.pending).push(occurrence as LogMessage);
             }

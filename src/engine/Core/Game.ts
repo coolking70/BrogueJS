@@ -5474,7 +5474,8 @@ export class Game {
                     // CE Movement.c:1465: walking pickup belongs to the movement
                     // turn, shared by keys, explore and travel (no extra pickup turn).
                     if (this.player.loc.x !== origin.x || this.player.loc.y !== origin.y) {
-                        const foundItem = this.items.some(item => item.loc.x === this.player.x && item.loc.y === this.player.y);
+                        const foundItem = this.items.some(item => item.loc.x === this.player.x && item.loc.y === this.player.y
+                            && (!this.extensionRuntime || this.extensionRuntime.itemAutoPickup(item)));
                         this.pickUpItemAfterDisplacement();
                         // CE Items.c:838 pickUpItemAt disturbs even when the pack
                         // is full. Do not loop between uncollectable loot goals.
@@ -13139,11 +13140,14 @@ export class Game {
                             if (entity.getStatusDuration('paralyzed') < 20 && !entity.hasStatusImmunity('paralyzed')) this.revealRespiration(this.player.equippedArmor!);
                         } else if (!exempt) {
                             if (entity === this.player) this.disturbed = true; // CE Time.c:492
+                            const wasParalyzed = entity.hasStatus('paralyzed');
                             const applied = entity === this.player
                                 ? entity.applyStatus('paralyzed', 20)
                                 : this.applyStatusToMonster(entity as Monster, 'paralyzed', 20, 'gas');
                             if (entity === this.player && applied) {
-                                logger.log(i18next.t('status.player.paralyzed', { defaultValue: 'You are paralyzed!' }), '#ff9999', { acknowledge: true });
+                                // CE Time.c:475: MORE only at onset, never on gas
+                                // refresh. Keep archive evidence for same-version replays.
+                                logger.log(i18next.t('status.player.paralyzed', { defaultValue: 'You are paralyzed!' }), '#ff9999', { acknowledge: true, suppressAcknowledgment: wasParalyzed });
                             }
                         }
                     }
@@ -14508,9 +14512,14 @@ export class Game {
             const curr = queue[index]!;
             const cell = this.grid.getCell(curr.x, curr.y)!;
             const loot = this.items.filter(i => i.loc.x === curr.x && i.loc.y === curr.y);
+            // CE getExploreMap excludes avoided loot goals. The extension's
+            // pickup filter must agree with walking pickup, without permanently
+            // marking items avoided (changing the filter must make them eligible).
+            const eligibleLoot = () => loot.some(i => !i.flags?.includes('ITEM_PLAYER_AVOIDS')
+                && (!this.extensionRuntime || this.extensionRuntime.itemAutoPickup(i)));
             const hasLoot = cell.isVisible
-                ? loot.some(i => !i.flags?.includes('ITEM_PLAYER_AVOIDS'))
-                : !!cell.rememberedItem && (loot.length === 0 || loot.some(i => !i.flags?.includes('ITEM_PLAYER_AVOIDS')));
+                ? eligibleLoot()
+                : !!cell.rememberedItem && (loot.length === 0 || eligibleLoot());
             if (index > 0 && (!cell.isExplored || hasLoot)) {
                 const path: Pos[] = [];
                 let step = curr;
@@ -15261,10 +15270,10 @@ export class Game {
         // An explicit manual walk/pickup can recover an avoided item. Only
         // automatic travel must leave it alone when crossing its cell.
         const index = this.items.findIndex(item => item.loc.x === this.player.loc.x && item.loc.y === this.player.loc.y
-            && (!this.inAutoTravelStep || !item.flags?.includes('ITEM_PLAYER_AVOIDS')));
+            && (!this.inAutoTravelStep || !item.flags?.includes('ITEM_PLAYER_AVOIDS'))
+            && (!this.extensionRuntime || this.extensionRuntime.itemAutoPickup(item)));
         if (index < 0) return;
         const item = this.items[index]!;
-        if(this.extensionRuntime&&!this.extensionRuntime.itemAutoPickup(item))return;
         // CE Items.c:865-888: gold bypasses pack capacity and is currency,
         // never an inventory entry. W-11's ordinary-item pickup test missed it.
         if (item.category === ItemCategory.GOLD) this.stats.gold += item.quantity;

@@ -53,7 +53,7 @@
 
 - 装备四槽：武器、护甲、左戒、右戒；用实际 `executeItemCommand` 替换/卸下。比较由真实属性管线 `hypothetical(knownOnly)` 投影，包含套装阈值变化，未知项不参与已知收益；容量增加不补满，下降钳制。
 - 背包/检视详情读取 `readLootGameView`，纯查询零事务/零RNG。未拾取、未知戒指、部分已知、幻觉分别投影；part 仅在允许的完整鉴定视图显示通用来源，不泄露 body/part 秘密。
-- 五档拾取过滤：normal/magic/rare/unique/set，类别及金币选择是0tick命令；手动拾取可以越过过滤。草稿不被轮询覆盖，同值不重复记命令。
+- 五档拾取过滤：normal/magic/rare/unique/set，类别及金币选择是0tick命令；手动拾取可以越过过滤。标准/丰饶默认最低 magic，会留下普通装备；希望全部自动拾取时选 normal 并勾选武器/护甲/戒指。未鉴定不妨碍按公开稀有度和类别过滤；自动探索不会再追逐被过滤物品，改变过滤后立即重新纳入目标。草稿不被轮询覆盖，同值不重复记命令。
 - 分解：单件或1–26件批量；已装备/粘装、地面等非法目标拒绝；唯一品须确认。基础碎片 normal1/magic3/rare8/unique20/set20/runeword8，再按物等、腐化和预设计算；未知物品展示合法区间，不能反推秘密。碎片堆叠99。批次失败原子回滚，不部分扣费。
 - 碎片鉴定：10碎片、100tick，一件仍有未知信息的合法目标；已全知/缺费/陈旧CAS拒绝。卷轴鉴定和熟悉度仍沿原生桥接；首次真实有效触发仅揭示匹配行。
 - 强化/精炼：实际附魔卷轴成功后才消费。normal/magic/rare/unique/set上限10/8/6/4/4；runeword上限0。武器每级本地伤害+1000bp、每3级原生附魔+1；护甲每级HP+5及内部防御+5；戒指每2级implicit+1。到上限随机正词缀精炼取较高值，全满拒绝，负面保留。非loot走原生+1；已嵌符文不能强化。
@@ -68,7 +68,7 @@ floor/kill/encounter/vault 沿宿主真实来源及原接纳事务；唯一/套�
 
 loot通过 `combat` 公开键、`growth.attributes.v1`、`foundation.item-bodies.v1`、WorldWork/item SDK 取能力；缺能力按词缀 replace/omit fallback、缺body目录去掉part表，不私引模块实现。静态pack含原生符文目标目录；有效目录指纹包含实际能力集合与目录，配置与规则指纹进入manifest，不能手改存档头绕过。
 
-当前：foundation20/itemSdk4/worldSdk2/world schema6/edibleSdk1；loot module与rules0.9.0、pack0.6.0/schema5、实例v6/state2；growth1.10.0、crafting1.1.0/definitions schema2；whole-run7/recording4/origin2。旧版本严格拒绝，不迁移。同版本save/load/replay/seek/续录和失败保活局由自动测试与七组合验证；人工效果见U01–U18。
+当前：foundation20/itemSdk4/worldSdk2/world schema6/edibleSdk1；loot module与rules0.9.1、pack0.6.0/schema5、实例v6/state2；growth1.10.0、crafting1.1.0/definitions schema2；whole-run7/recording4/origin2。旧版本严格拒绝，不迁移。0.9.1因过滤物品的探索路径语义修正升级，0.9.0存档/录像不接纳；本轮相关测试与回放证据见[1018试玩报告](playtest-1018.report.md)。原0.9.0七组合证据仍按原版本引用，未在0.9.1重跑；人工效果见U01–U18。
 
 ## 添加配置的步骤与硬预算
 

@@ -105,6 +105,7 @@
   "ext.loot.ui.salvage.cancel": "取消",
   "ext.loot.ui.filter.title": "拾取过滤",
   "ext.loot.ui.filter.preset": "当前预设：{{name}}",
+  "ext.loot.ui.filter.help": "自动探索和移动会跳过不符合过滤条件的装备，仍可手动拾取。若要自动拾取所有装备，请选“普通”并勾选全部类别；未鉴定装备也按稀有度和类别过滤。",
   "ext.loot.ui.filter.read-only": "当前仅可查看，不能修改拾取过滤",
   "ext.loot.ui.filter.minimum": "最低稀有度",
   "ext.loot.ui.filter.classes": "拾取类别",

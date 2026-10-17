@@ -3464,6 +3464,9 @@ exports[`loot UI complete state snapshots > filter.bountiful 1`] = `
   <p class="loot-filter-preset">
     "当前预设：丰饶"
   </p>
+  <p class="loot-filter-notice">
+    "自动探索和移动会跳过不符合过滤条件的装备，仍可手动拾取。若要自动拾取所有装备，请选“普通”并勾选全部类别；未鉴定装备也按稀有度和类别过滤。"
+  </p>
   <fieldset class="loot-filter-fieldset" disabled=false>
     <legend>
       "最低稀有度"
@@ -3551,6 +3554,9 @@ exports[`loot UI complete state snapshots > filter.dirty 1`] = `
   </h2>
   <p class="loot-filter-preset">
     "当前预设：标准"
+  </p>
+  <p class="loot-filter-notice">
+    "自动探索和移动会跳过不符合过滤条件的装备，仍可手动拾取。若要自动拾取所有装备，请选“普通”并勾选全部类别；未鉴定装备也按稀有度和类别过滤。"
   </p>
   <fieldset class="loot-filter-fieldset" disabled=false>
     <legend>
@@ -3640,6 +3646,9 @@ exports[`loot UI complete state snapshots > filter.no-classes 1`] = `
   <p class="loot-filter-preset">
     "当前预设：标准"
   </p>
+  <p class="loot-filter-notice">
+    "自动探索和移动会跳过不符合过滤条件的装备，仍可手动拾取。若要自动拾取所有装备，请选“普通”并勾选全部类别；未鉴定装备也按稀有度和类别过滤。"
+  </p>
   <fieldset class="loot-filter-fieldset" disabled=false>
     <legend>
       "最低稀有度"
@@ -3727,6 +3736,9 @@ exports[`loot UI complete state snapshots > filter.read-only 1`] = `
   </h2>
   <p class="loot-filter-preset">
     "当前预设：标准"
+  </p>
+  <p class="loot-filter-notice">
+    "自动探索和移动会跳过不符合过滤条件的装备，仍可手动拾取。若要自动拾取所有装备，请选“普通”并勾选全部类别；未鉴定装备也按稀有度和类别过滤。"
   </p>
   <p class="loot-filter-notice">
     "当前仅可查看，不能修改拾取过滤"
@@ -3818,6 +3830,9 @@ exports[`loot UI complete state snapshots > filter.standard 1`] = `
   </h2>
   <p class="loot-filter-preset">
     "当前预设：标准"
+  </p>
+  <p class="loot-filter-notice">
+    "自动探索和移动会跳过不符合过滤条件的装备，仍可手动拾取。若要自动拾取所有装备，请选“普通”并勾选全部类别；未鉴定装备也按稀有度和类别过滤。"
   </p>
   <fieldset class="loot-filter-fieldset" disabled=false>
     <legend>
