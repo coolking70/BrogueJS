@@ -40,7 +40,7 @@ it('real settlement chest remains read-only; 100-tick withdrawal precedes forge 
     },
     moduleData: {
       loot: {
-        v: 5,
+        v: 6,
         baseId: 'leather_armor',
         ilvl: 20,
         rarity: 'runeword',

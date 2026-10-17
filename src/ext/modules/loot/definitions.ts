@@ -24,7 +24,7 @@ import rareNames from './data/rareNames.json';
 import { extensionDataFingerprint } from '../../fingerprint';
 import { assertLootPack, deepFreeze } from './schema';
 import type { LootPack, LootRawFiles } from './types';
-export const LOOT_VERSION = '0.5.0';
+export const LOOT_VERSION = '0.6.0';
 const files = { stationOperations, ilvl, tiers, bases, rarities, affixes, uniques, sets, runes, runewords, sockets, runeDrops, monsterClasses, dropTables, gold, presets, enhancement, identify, corruption, salvage, caps, rareNames };
 let defaultPack: LootPack | undefined;
 export function loadLootPack(raw?: LootRawFiles): LootPack {
@@ -37,5 +37,5 @@ export function loadLootPack(raw?: LootRawFiles): LootPack {
 }
 let identity: { schema: number; version: string; fingerprint: string } | undefined;
 export function getLootPackIdentity() {
-  return identity ??= deepFreeze({schema:4,version:LOOT_VERSION,fingerprint:extensionDataFingerprint({pack:loadLootPack(),targets:ITEM_RUNIC_TARGETS})});
+  return identity ??= deepFreeze({schema:5,version:LOOT_VERSION,fingerprint:extensionDataFingerprint({pack:loadLootPack(),targets:ITEM_RUNIC_TARGETS})});
 }

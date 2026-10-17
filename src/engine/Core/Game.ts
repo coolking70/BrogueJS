@@ -564,6 +564,7 @@ export class Game {
             nativeDamageCommitted: (actor, hpLost) => {worldRestDamage(this,actor,hpLost);if(hpLost>0)interruptWorldWork(this,actor.id,'damage');},
             worldRestUnavailable: id => worldRestUnavailable(this, id),
             validateMemberBreak: request => this.validateMemberBreak(request),
+            partDrop: input => {this.spawnExtensionDrop(input);},
             memberBroken: (core, member) => {
                 reconcileActorNativeRecovery(this, core.id);
                 const group = this.bodyGroups!.find(g => g.groupId === member.groupId)!;
@@ -576,7 +577,9 @@ export class Game {
                     if (slot.entityId !== null) notifyProductionActorSourceChanged(this, slot.entityId, true);
                 this.hoveredCell = null; this.hoveredText = '';
             },
-            checkpointZoneBreak: () => {
+            checkpointZoneBreak: partDrops => {
+                const restorePart=partDrops?this.checkpointCombatFactWorld():undefined;
+                const restorePartRandom=restorePart?checkpointGenerationWorld(()=>({shallow:[],deep:[rng]})):undefined;
                 const world=this.actorActionWorld(),actors=[world.player,...world.levels.flatMap(level=>level.actors)];
                 const clocks=[...new Set(actors)].map(actor=>({actor,ticks:actor.ticksUntilTurn,move:actor.movementSpeed,attack:actor.attackSpeed}));
                 const restoreActions=checkpointProductionActorActions(this),invalid=isProductionActorActionRunInvalid(this);
@@ -589,6 +592,7 @@ export class Game {
                     recordingState(this).origin=origin;this.recordingFromNewGame=fromNew;this.lastAdvancementError=error;this.replayError=replayError;
                     recordingState(this).replayDiagnostic=diagnostic;recordingState(this).verifiedReplayBoundary=verifiedBoundary;
                     this.hoveredCell=hover;this.hoveredText=text;if(arcana&&cursor)arcana.cursor=cursor;
+                    restorePart?.();restorePartRandom?.();
                 };
             },
             zoneBroken: (actor, zoneId) => {

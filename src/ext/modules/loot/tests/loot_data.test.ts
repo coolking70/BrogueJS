@@ -91,9 +91,9 @@ describe('loot data double transcription',()=>{
   it('loads exactly twenty-two rule files and recursively freezes every object',()=>{
     expect(Object.keys(pack)).toEqual(['stationOperations','ilvl','tiers','bases','rarities','affixes','uniques','sets','runes','runewords','sockets','runeDrops','monsterClasses','dropTables','gold','presets','enhancement','identify','corruption','salvage','caps','rareNames']);
     const check=(v:unknown):void=>{if(v&&typeof v==='object'){expect(Object.isFrozen(v)).toBe(true);Object.values(v).forEach(check);}};check(pack);
-    expect(LOOT_VERSION).toBe('0.5.0');expect(getLootPackIdentity()).toEqual({schema:4,version:'0.5.0',fingerprint:extensionDataFingerprint({pack,targets:ITEM_RUNIC_TARGETS})});
-    // v1.1 four-field data patch; regenerated independently alongside the literal tapes.
-    expect(getLootPackIdentity().fingerprint).toBe('sha256:c24a7b78a83a2fd7d3d5589f2c8eda41fec3ca058951fe49e561cda7d85108e6');
+    expect(LOOT_VERSION).toBe('0.6.0');expect(getLootPackIdentity()).toEqual({schema:5,version:'0.6.0',fingerprint:extensionDataFingerprint({pack,targets:ITEM_RUNIC_TARGETS})});
+    // C4 adds only the two frozen part tables; original literal tapes retain their draws.
+    expect(getLootPackIdentity().fingerprint).toBe('sha256:db6af53a8010424f3c3aea431e7a83188d0feb83fa4c5efa2fbdf0e86659e4f0');
   });
   it('independently transcribes all 35 ordinary affix rows, exact intervals, metadata and dependencies',()=>{
     expect(pack.affixes.affixes).toHaveLength(56);expect(pack.affixes.runeFamilyEnabled).toBe(true);
@@ -194,6 +194,8 @@ describe('loot data double transcription',()=>{
       {id:'loot.drop.kill-standard',match:{source:'kill',monsterClass:'standard'},chanceBp:700,count:[1,1],classWeights:{weapon:40,armor:35,ring:25},rarityBonusBp:0},
       {id:'loot.drop.kill-elite',match:{source:'kill',monsterClass:'elite'},chanceBp:3000,count:[1,3],classWeights:{weapon:40,armor:35,ring:25},rarityBonusBp:5000},
       {id:'loot.drop.encounter',match:{source:'encounter'},chanceBp:10000,count:'preset-encounter',classWeights:{weapon:35,armor:35,ring:30},rarityBonusBp:0},
+      {id:'loot.drop.part-shale-weaver',match:{source:'part',bodyDefinitionId:'giants.shale-weaver-body',partIds:['leg00','leg01','leg02','leg03','leg04','leg05','leg06','leg07']},chanceBp:2500,count:[1,1],classWeights:{weapon:40,armor:35,ring:25},rarityBonusBp:0},
+      {id:'loot.drop.part-copper-tendril',match:{source:'part',bodyDefinitionId:'giants.copper-tendril-body',partIds:['limb00','limb01','limb02','limb03']},chanceBp:2500,count:[1,1],classWeights:{weapon:40,armor:35,ring:25},rarityBonusBp:0},
     ].map(t=>({...t,priority:100,minRarity:null,ilvlBonus:0})));
     expect(pack.gold).toEqual({schema:1,amount:{minBase:5,minPerDepth:3,maxBase:15,maxPerDepth:6},byClass:{fodder:{chanceBp:1500,multiplier:1},splitter:{chanceBp:500,multiplier:1},standard:{chanceBp:2000,multiplier:1},elite:{chanceBp:4000,multiplier:3}},encounter:{chanceBp:10000,multiplier:10}});
   });

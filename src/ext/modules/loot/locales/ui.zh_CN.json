@@ -249,5 +249,6 @@
   "ext.loot.ui.work.rules": "拆卸保留符文。重铸只替换已鉴定装备的一条正面非符文随机行，可能变差或不变。工作中装备与材料托管，中断不退已耗时间。",
   "ext.loot.ui.work.unavailable": "需要在锻造工位相邻的合法工作位操作。",
   "ext.loot.ui.work.container": "箱内装备仅供查看；先按原容器流程取回，再到工位改造。",
-  "ext.loot.ui.work.crafted": "来源：工位合成（初始最高魔法品质）。"
+  "ext.loot.ui.work.crafted": "来源：工位合成（初始最高魔法品质）。",
+  "ext.loot.ui.source.part": "来源：部位破坏。"
 }

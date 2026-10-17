@@ -57,7 +57,7 @@ function classForBase(catalog: EffectiveLootCatalog, baseId: string): ItemClass 
 function validateRequest(catalog: EffectiveLootCatalog, value: unknown): LootPreset {
     if (!plainJson(value)) invalid('request', 'Expected finite acyclic plain JSON');
     const request = record(value, 'request');
-    const extra = request.source === 'kill' ? ['monster'] : request.source === 'floor' ? ['itemClass']
+    const extra = request.source === 'part' ? ['bodyDefinitionId','partId','monster'] : request.source === 'kill' ? ['monster'] : request.source === 'floor' ? ['itemClass']
         : request.source === 'vault' ? ['itemClass', 'baseId', 'highValue']
         : request.source === 'encounter' ? ['formId'] : null;
     if (extra === null) invalid('request.source', 'Unknown loot source');
@@ -77,11 +77,12 @@ function validateRequest(catalog: EffectiveLootCatalog, value: unknown): LootPre
         }
         claimed.add(id);
     }
-    if (request.source === 'kill') {
+    if (request.source === 'kill'||request.source==='part') {
+        if(request.source==='part'){text(request.bodyDefinitionId,'request.bodyDefinitionId');text(request.partId,'request.partId');}
         const monster = record(request.monster, 'request.monster');
-        keys(monster, ['typeId', 'leader', 'champion', 'encounterSubject'], 'request.monster');
+        keys(monster, request.source==='part'?['typeId','champion']:['typeId', 'leader', 'champion', 'encounterSubject'], 'request.monster');
         text(monster.typeId, 'request.monster.typeId');
-        for (const key of ['leader', 'champion', 'encounterSubject']) bool(monster[key], `request.monster.${key}`);
+        for (const key of request.source==='part'?['champion']:['leader', 'champion', 'encounterSubject']) bool(monster[key], `request.monster.${key}`);
     } else if (request.source === 'floor' || request.source === 'vault') {
         if (!CLASSES.includes(request.itemClass as ItemClass)) invalid('request.itemClass', 'Unknown item class');
         if (request.source === 'vault') {
@@ -98,12 +99,13 @@ function validateRequest(catalog: EffectiveLootCatalog, value: unknown): LootPre
 }
 
 function selectTable(catalog: EffectiveLootCatalog, request: LootRollRequest, monsterClass: MonsterClassId): DropTable | undefined {
-    return catalog.pack.dropTables.tables.map((table, index) => ({ table, index }))
+    return (request.source==='part'?catalog.partTables:catalog.pack.dropTables.tables).map((table, index) => ({ table, index }))
         .sort((a, b) => b.table.priority - a.table.priority || a.index - b.index)
         .find(({ table: { match } }) => match.source === request.source
             && (match.monsterClass === undefined || (request.source === 'kill' && match.monsterClass === monsterClass))
             && (match.monsterId === undefined || (request.source === 'kill' && match.monsterId === request.monster.typeId))
             && (match.formId === undefined || (request.source === 'encounter' && match.formId === request.formId))
+            && (match.bodyDefinitionId===undefined||(request.source==='part'&&match.bodyDefinitionId===request.bodyDefinitionId&&match.partIds!.includes(request.partId)))
             && (match.depth === undefined || (request.depth >= match.depth[0] && request.depth <= match.depth[1])))?.table;
 }
 function minimumRarity(a: RarityId | null, b: RarityId | null): RarityId | null {
@@ -135,13 +137,15 @@ export function rollLootWithTrace(catalog: EffectiveLootCatalog, request: LootRo
     const trace: LootRollTrace = { uniqueOpportunities: 0, itemDraws: [] };
     const finish = (): LootTracedResult => { result.draws = random.draws; return freezeLootValue({ result, trace }); };
     const { pack } = catalog;
-    const monsterClass = request.source === 'kill'
+    const monsterClass = request.source === 'kill'||request.source==='part'
         ? pack.monsterClasses.members.find(member => member.typeId === request.monster.typeId)?.class ?? pack.monsterClasses.defaultClass
         : 'none';
     if (request.source === 'kill' && (request.monster.encounterSubject || monsterClass === 'none')) return finish();
-    const table = request.source === 'kill' || request.source === 'encounter' ? selectTable(catalog, request, monsterClass) : undefined;
+    const table = request.source === 'kill' || request.source === 'encounter'||request.source==='part' ? selectTable(catalog, request, monsterClass) : undefined;
     let count = 1;
-    if (request.source === 'kill') {
+    if(request.source==='part'){
+        count=table&&random.chance(table.chanceBp)?random.randomInt((table.count as [number,number])[0],(table.count as [number,number])[1]):0;
+    } else if (request.source === 'kill') {
         count = 0;
         if (table !== undefined) {
             const modifiers = pack.monsterClasses.modifiers;
@@ -161,7 +165,7 @@ export function rollLootWithTrace(catalog: EffectiveLootCatalog, request: LootRo
         random.beginItem(index);
         const ilvl = Math.max(pack.ilvl.min, Math.min(pack.ilvl.max,
             Math.floor(request.depth * pack.ilvl.ilvlPerDepthBp / 10000) + pack.ilvl.sourceBonus[request.source]
-            + (request.source === 'kill' ? pack.ilvl.classBonus[monsterClass] + (request.monster.champion ? pack.ilvl.championBonus : 0) : 0)
+            + (request.source === 'kill'||request.source==='part' ? pack.ilvl.classBonus[monsterClass] + (request.monster.champion ? pack.ilvl.championBonus : 0) : 0)
             + (table?.ilvlBonus ?? 0)));
         const itemClass = request.source === 'floor' || request.source === 'vault' ? request.itemClass
             : weightedPick(CLASSES, candidate => table!.classWeights[candidate], random)!;
@@ -195,9 +199,9 @@ export function rollLootWithTrace(catalog: EffectiveLootCatalog, request: LootRo
             if(!member)rarity='rare';
             else {occupied.add(member.piece.id);result.newUniqueIds.push(member.piece.id);}
         }
-        const data: LootItemDataV1 = { v: 5, baseId, ilvl, rarity, uniqueId: unique?.id ?? null, setId: member?.setId ?? null, pieceId: member?.piece.id ?? null, identityKnown: false,
+        const data: LootItemDataV1 = { v: 6, baseId, ilvl, rarity, uniqueId: unique?.id ?? null, setId: member?.setId ?? null, pieceId: member?.piece.id ?? null, identityKnown: false,
             affixes: [], corrupted: false, enhancement: 0, sockets: 0, socketed: [], nameParts: null,
-            origin: { source: request.source, depth: request.depth } };
+            origin: request.source==='part'?{source:'part',depth:request.depth,bodyDefinitionId:request.bodyDefinitionId,partId:request.partId}:{ source: request.source, depth: request.depth } };
         if (rarity === 'magic' || rarity === 'rare') {
             const counts = rarity === 'magic' ? preset.affixCount.magic : ilvl >= preset.affixCount.rareHighIlvl.minIlvl
                 ? preset.affixCount.rareHighIlvl.table : preset.affixCount.rare;

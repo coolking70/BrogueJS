@@ -39,7 +39,7 @@ describe('literal deterministic loot tapes', () => {
             [1, 10000, 9000], [0, 31, 5], [0, 31, 17], [1, 10000, 7000],
         ]);
         expect(result).toEqual({ v: 1, converted: true, materials: [], items: [{ data: {
-            v: 5, baseId: 'war_axe', ilvl: 16, rarity: 'rare', uniqueId: null, setId: null, pieceId: null, identityKnown: false,
+            v: 6, baseId: 'war_axe', ilvl: 16, rarity: 'rare', uniqueId: null, setId: null, pieceId: null, identityKnown: false,
             affixes: [affix('keen', 3, [5200]), affix('precise', 2, [1500]), affix('brutal', 2, [2, 4])],
             corrupted: false, enhancement: 0, sockets: 0, socketed: [], nameParts: [5, 17], origin: { source: 'kill', depth: 10 },
         }, native: { kind: 'war_axe', category: 'weapon', enchantment: 0, runicType: null, runicStrength: null, isCursed: false, identified: false } }],
@@ -49,7 +49,7 @@ describe('literal deterministic loot tapes', () => {
         const { result } = tapeRoll({ ...common, source: 'floor', itemClass: 'ring' }, [
             [1, 80, 25], [1, 1004, 800], [1, 100, 20], [0, 1, 1], [1, 7750, 2000], [5, 9, 7], [1, 10000, 10000],
         ]);
-        expect(result.items[0]!.data).toEqual({ v: 5, baseId: 'ring_of_regeneration', ilvl: 1, rarity: 'magic', uniqueId: null, setId: null, pieceId: null, identityKnown: false,
+        expect(result.items[0]!.data).toEqual({ v: 6, baseId: 'ring_of_regeneration', ilvl: 1, rarity: 'magic', uniqueId: null, setId: null, pieceId: null, identityKnown: false,
             affixes: [affix('vital', 1, [7])], corrupted: false, enhancement: 0, sockets: 0, socketed: [], nameParts: null, origin: { source: 'floor', depth: 1 } });
         expect(result.items[0]!.native.enchantment).toBe(1);
         expect(result.converted).toBe(true); expect(result.gold).toBe(0);
@@ -227,15 +227,15 @@ describe('literal deterministic loot tapes', () => {
         expect(trace.uniqueOpportunities).toBe(2); expect(result.newUniqueIds).toEqual(['loot.unique.whisper']);
         expect(result.items.map(item => item.data.rarity)).toEqual(['unique', 'rare']);
     });
-    it('V25: matching priority, stable ties and unknown-monster fallback preserve singleton skips', () => {
-        // Unknown monster defaults standard. Winning table is first equal priority, depth1 only, fixed one ring,
+    it('V25: matching priority and unknown-monster fallback preserve singleton skips', () => {
+        // Unknown monster defaults standard. Winning table has higher priority, depth1 only, fixed one ring,
         // chance10000 and +7 ilvl: ilvl8 rarity700+246+84+12=1042. Singleton class/count and certain chance do not draw.
         const effective = changed(pack => {
             const base = structuredClone(pack.dropTables.tables.find(table => table.id === 'loot.drop.kill-standard')!);
             const winner = { ...base, id: 'loot.drop.test-priority-first', priority: 500,
                 match: { source: 'kill' as const, monsterClass: 'standard' as const, monsterId: 'future-monster', depth: [1, 1] as [number, number] },
                 chanceBp: 10000, count: [1, 1] as [number, number], classWeights: { weapon: 0, armor: 0, ring: 100 }, ilvlBonus: 7 };
-            pack.dropTables.tables.push(winner, { ...structuredClone(winner), id: 'loot.drop.test-priority-second', ilvlBonus: 8 });
+            pack.dropTables.tables.push(winner, { ...structuredClone(winner), id: 'loot.drop.test-priority-second', priority: 499, ilvlBonus: 8 });
             pack.dropTables.tables.unshift({ ...structuredClone(winner), id: 'loot.drop.test-unmatched', priority: 1000,
                 match: { source: 'kill', monsterId: 'other-monster' }, ilvlBonus: 20 });
         });

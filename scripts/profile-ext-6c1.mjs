@@ -10,7 +10,7 @@ try {
  const descriptor=getInstalledModuleDescriptors().find(d=>d.id==='loot');assert.ok(descriptor);
  // The same C1 scene runs on C1 or C2 sources; only its native data version
  // changes. Unknown schemas fail closed instead of weakening item validation.
- const itemVersion={'0.6.0':3,'0.7.0':4,'0.8.0':5}[descriptor.version];assert.ok(itemVersion,'Unsupported loot fixture version');
+ const itemVersion={'0.6.0':3,'0.7.0':4,'0.8.0':5,'0.9.0':6}[descriptor.version];assert.ok(itemVersion,'Unsupported loot fixture version');
  const {createWorldHarness,worldHarnessGame}=await load('ext/testing/worldHarness.ts');
  const {loadLootPack}=await load('ext/modules/loot/definitions.ts');
  const {buildEffectiveLootCatalog}=await load('ext/modules/loot/catalog.ts');

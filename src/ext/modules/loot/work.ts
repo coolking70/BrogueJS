@@ -259,7 +259,7 @@ function craft(
       ? 'normal'
       : weightedPick(['normal', 'magic'] as const, (r) => weights[r], random)!;
   const data: LootItemDataV1 = {
-    v: 5,
+    v: 6,
     baseId: input.baseId,
     ilvl,
     rarity,

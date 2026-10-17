@@ -9,6 +9,8 @@ import { validateNativeAssembly } from '../engine/Items/FixedItemAssembly';
 import { validId } from './json';
 import { c5Hash } from './worldJson';
 export interface ItemDropSnapshot {
+  /** Original birth identity; consumed part slots survive temporary topology/IDs. */
+  parts?: Record<string,{bodyDefinitionId:string;remaining:string[]}>;
   nextEventId: number;
   nextEncounterOrdinal: number;
   unique: Record<string, string>;
@@ -23,6 +25,7 @@ const integer = (n: unknown, min = 0, max = Number.MAX_SAFE_INTEGER): n is numbe
 const exact = (o: object, keys: string) => Object.keys(o).sort().join(',') === keys;
 export class ItemDrops {
   private readonly providers = new Map<DropSource, { owner: string; provider: DropProvider }>();
+  private readonly bodies = new Map<string, readonly string[]>();
   private readonly materials = new Map<string, ReadonlySet<string>>();
   private readonly plans = new WeakMap<object, Prepared>();
   private readonly catalogs = new Map<string, readonly string[]>();
@@ -30,6 +33,7 @@ export class ItemDrops {
   private readonly encounterForms = new Map<string, ReadonlySet<string>>();
   private state: ItemDropSnapshot = { nextEventId: 1, nextEncounterOrdinal: 1, unique: {}, catalogs: {}, births: {}, encounters: [] };
   constructor(modules: readonly ExtensionModule[]) {
+    for (const m of modules) for(const b of m.nativeBodies?.definitions??[]) this.bodies.set(b.id,b.parts.filter(p=>p.role!=='core').map(p=>p.partId).sort());
     for (const m of modules) {
       if (m.itemEncounters !== undefined) {
         assertItemJson(m.itemEncounters);
@@ -48,25 +52,48 @@ export class ItemDrops {
       if (!Array.isArray(catalog) || catalog.length > 128 || new Set(catalog).size !== catalog.length || catalog.some(id => !validId(id) || !id.startsWith(`${m.id}.`))) fail();
       this.catalogs.set(m.id, [...catalog]); this.state.unique[m.id] = '0'.repeat(32);this.state.catalogs[m.id]=c5Hash({catalog,sources:p.sources});
       for (const source of p.sources) {
-        if (!['floor','kill','encounter','vault'].includes(source) || this.providers.has(source)) fail();
+        if (!['floor','kill','encounter','vault','part'].includes(source) || this.providers.has(source)) fail();
         this.providers.set(source, { owner: m.id, provider: p });
       }
     }
+    if(this.has('part'))this.state.parts={};
   }
   get active(): boolean { return !!(this.providers.size || this.declarations.size); }
   statKeys(source:DropSource):readonly string[]{ return this.providers.get(source)?.provider.statKeys??[]; }
   owner(source: DropSource): string | undefined { return this.providers.get(source)?.owner; }
   has(source: DropSource): boolean { return this.providers.has(source); }
+  /** Only a first natural core birth may grant generation zero. Reattachment cannot regrant. */
+  partBirth(id:number,bodyDefinitionId:string,fact:CreatureBirth|undefined):void {
+    if(!this.has('part')||fact?.creationReason!=='natural'||!fact.initiallyHostile||fact.nativeStatsCopied) return;
+    const parts=this.bodies.get(bodyDefinitionId);if(!parts?.length)return;
+    const ledger=this.state.parts??={};if(Object.prototype.hasOwnProperty.call(ledger,String(id)))return;
+    if(Object.keys(ledger).length>=32768)throw new ItemDataError('C6_BUDGET');
+    ledger[id]={bodyDefinitionId,remaining:[...parts]};
+  }
+  consumePart(id:number,body:string,part:string,generation:number):boolean {
+    const row=this.state.parts?.[id];if(!row||row.bodyDefinitionId!==body||generation!==0||!row.remaining.includes(part))return false;
+    row.remaining.splice(row.remaining.indexOf(part),1);return true;
+  }
+  partEligible(id:number):boolean {return !this.state.encounters.some(e=>e.subjects.includes(id)&&e.lost);}
   snapshot(): ItemDropSnapshot { return copyItemValue(this.state); }
   restore(value: ItemDropSnapshot): void { this.validate(value); this.state = copyItemValue(value); }
   validate(s: ItemDropSnapshot): void {
     assertItemJson(s);
-    if (!s || !exact(s, 'births,catalogs,encounters,nextEncounterOrdinal,nextEventId,unique') || !integer(s.nextEventId, 1) || !integer(s.nextEncounterOrdinal, 1)
+    if (!s || !exact(s, this.has('part')?'births,catalogs,encounters,nextEncounterOrdinal,nextEventId,parts,unique':'births,catalogs,encounters,nextEncounterOrdinal,nextEventId,unique') || !integer(s.nextEventId, 1) || !integer(s.nextEncounterOrdinal, 1)
       || !s.catalogs || JSON.stringify(s.catalogs)!==JSON.stringify(this.state.catalogs)
       || !s.unique || Array.isArray(s.unique) || Object.keys(s.unique).sort().join(',') !== [...this.catalogs.keys()].sort().join(',')
       || !s.births || Array.isArray(s.births) || Object.keys(s.births).length > 32768
       || Object.entries(s.births).some(([id, v]) => !/^[1-9]\d*$/.test(id) || !integer(Number(id), 1) || typeof v !== 'boolean')
       || !Array.isArray(s.encounters) || s.encounters.length > 128) fail();
+    if(this.has('part')){
+      if(!s.parts||Array.isArray(s.parts)||Object.keys(s.parts).length>32768)fail();
+      for(const [id,row] of Object.entries(s.parts)){
+        const allowed=this.bodies.get(row.bodyDefinitionId);
+        if(!/^[1-9]\d*$/.test(id)||!integer(Number(id),1)||s.births[id]!==true||!exact(row,'bodyDefinitionId,remaining')||!allowed
+          ||!Array.isArray(row.remaining)||row.remaining.length>allowed.length||new Set(row.remaining).size!==row.remaining.length
+          ||row.remaining.some(p=>!allowed.includes(p))||row.remaining.join(',')!==[...row.remaining].sort().join(','))fail();
+      }
+    }
     for (const [owner, bits] of Object.entries(s.unique)) if (typeof bits !== 'string' || !/^[0-9a-f]{32}$/.test(bits)
       || (BigInt(`0x${bits}`) >> BigInt(this.catalogs.get(owner)!.length)) !== 0n) fail();
     const keys = new Set<string>(), subjects = new Set<number>();
@@ -88,7 +115,7 @@ export class ItemDrops {
     }
   }
   birth(id: number, fact: CreatureBirth | undefined): void {
-    if (!this.has('kill') || Object.prototype.hasOwnProperty.call(this.state.births, id)) return;
+    if ((!this.has('kill')&&!this.has('part')) || Object.prototype.hasOwnProperty.call(this.state.births, id)) return;
     if (Object.keys(this.state.births).length >= 32768) throw new ItemDataError('C6_BUDGET');
     this.state.births[id] = !!fact?.initiallyHostile && ['natural','scripted','test'].includes(fact.creationReason) && !fact.nativeStatsCopied;
   }
@@ -97,7 +124,7 @@ export class ItemDrops {
   /** Split descendants share the original encounter, but own no ordinary kill
    * reward. This durable provenance is independent of the optional kill service. */
   splitSubject(id:number):boolean {return this.state.encounters.some(e=>e.splitSubjects?.includes(id));}
-  lose(id:number):void {const e=this.state.encounters.find(e=>e.subjects.includes(id));if(e)e.lost=true;}
+  lose(id:number):void {const e=this.state.encounters.find(e=>e.subjects.includes(id));if(e)e.lost=true;if(this.state.parts?.[id])this.state.parts[id]!.remaining=[];}
   placement(f: GenerationPlacementFact, exists: (id: number) => boolean): void {
     if (f.result !== 'placed' || !this.declarations.get(f.owner)?.includes(f.templateId)) return;
     if (f.actorId === null || !exists(f.actorId) || this.subject(f.actorId) || this.state.encounters.some(e => e.key === `${f.instanceKey}.encounter`)) fail();
@@ -107,6 +134,9 @@ export class ItemDrops {
   }
   transition(f: BodyTransitionFact, exists: (id: number) => boolean): void {
     if (f.outcome !== 'applied') return;
+    // Transition facts carry no certified original-slot correspondence. Retain
+    // the birth tombstone but revoke unused slots; fresh temporary IDs grant nothing.
+    if(['split','phase','polymorph'].includes(f.reason)&&this.state.parts?.[f.sourceGroupId])this.state.parts[f.sourceGroupId]!.remaining=[];
     const e = this.state.encounters.find(e => e.subjects.includes(f.sourceGroupId)); if (!e) return;
     if (!['split','phase'].includes(f.reason)) return;
     if (!f.resultGroupIds.length || f.resultGroupIds.some(id => !exists(id) || id !== f.sourceGroupId && this.subject(id))) fail();
@@ -117,17 +147,18 @@ export class ItemDrops {
   prune(reachable:readonly number[]):boolean {
     let changed=false;
     const ids=new Set(reachable);
+    for(const id of Object.keys(this.state.parts??{}))if(!ids.has(Number(id))){delete this.state.parts![id];changed=true;}
     for(const id of Object.keys(this.state.births))if(!ids.has(Number(id))){delete this.state.births[id];changed=true;}
     for(const e of [...this.state.encounters])for(const id of [...e.subjects])if(!ids.has(id)){this.terminal(id,true);changed=true;}
     return changed;
   }
   validateReferences(ids:readonly number[]):void {
     const present=new Set(ids);
-    if(Object.keys(this.state.births).some(id=>!present.has(Number(id)))||this.state.encounters.some(e=>e.subjects.some(id=>!present.has(id))))fail();
+    if(Object.keys(this.state.parts??{}).some(id=>!present.has(Number(id)))||Object.keys(this.state.births).some(id=>!present.has(Number(id)))||this.state.encounters.some(e=>e.subjects.some(id=>!present.has(id))))fail();
   }
   /** Allocate ordinal at terminal consumption, so reverse registration order cannot skip a receipt. */
   terminal(id: number, lost: boolean): { encounterKey: string; encounterOrdinal: number; formId: string } | null {
-    delete this.state.births[id];
+    delete this.state.births[id];if(this.state.parts)delete this.state.parts[id];
     const e = this.state.encounters.find(e => e.subjects.includes(id)); if (!e) return null;
     e.lost ||= lost; e.subjects = e.subjects.filter(subject => subject !== id); if(e.splitSubjects)e.splitSubjects=e.splitSubjects.filter(subject=>subject!==id);
     if (e.subjects.length) return null;
@@ -154,6 +185,7 @@ export class ItemDrops {
       || !Array.isArray(proposal.items) || proposal.items.length > 8 || !integer(proposal.gold, 0, 2147483647)
       || !Array.isArray(proposal.uniqueIds) || proposal.uniqueIds.length !== proposal.items.length
       || !proposal.converted && (proposal.items.length > 0 || proposal.gold !== 0)
+      || event.source==='part' && proposal.gold!==0
       || ['floor','vault'].includes(event.source) && (proposal.items.length > 1 || proposal.gold !== 0)) fail();
     const unique = new Set<string>();
     proposal.items.forEach((spec, i) => {

@@ -4,7 +4,8 @@ import { lootStatSources } from '../statSources';
 import { initialLootState } from '../session';
 import { itemStatPolicy } from '../../../../engine/Stats/ItemStatPolicy';
 import type { EquippedStatItem, StatSourceContext } from '../../../stats';
-import type { LootItemDataV1, LootPack } from '../types';
+import type { DropTable, LootItemDataV1, LootPack } from '../types';
+import { rollLoot } from '../generator';
 import { describe, expect, it } from 'vitest';
 import { loadLootPack } from '../definitions';
 import { assertLootPack, computeStaticDrawBudget, validateLootLocale } from '../schema';
@@ -126,6 +127,90 @@ describe('strict loot pack schema',()=>{
   });
 });
 
+describe('6C4 R1-F1 drop table ambiguity admission',()=>{
+  const body='giants.copper-tendril-body';
+  const part:DropTable['match']={source:'part',bodyDefinitionId:body,partIds:['limb00','limb01']};
+  function pair(a:DropTable['match'],b:DropTable['match'],secondPriority=100){
+    const raw=structuredClone(loadLootPack());
+    const base=raw.dropTables.tables.find(t=>t.match.source==='part')!;
+    raw.dropTables.tables=[
+      {...structuredClone(base),id:'loot.drop.test-a',match:structuredClone(a),chanceBp:0},
+      {...structuredClone(base),id:'loot.drop.test-b',match:structuredClone(b),priority:secondPriority},
+    ];
+    return raw;
+  }
+  const conflicts:[string,DropTable['match'],DropTable['match']][]=[
+    ['identical part with zero-chance shadow',part,part],
+    ['reordered part set',part,{...part,partIds:['limb01','limb00']}],
+    ['part set intersection',part,{...part,partIds:['limb01','limb02']}],
+    ['inclusive depth endpoint',{...part,depth:[1,10]},{...part,depth:[10,99]}],
+    ['implicit full depth',part,{...part,depth:[1,99]}],
+    ['depth singleton at 99',part,{...part,depth:[99,99]}],
+    ['kill identical',{source:'kill',monsterClass:'elite'},{source:'kill',monsterClass:'elite'}],
+    ['kill wildcard',{source:'kill'},{source:'kill',monsterClass:'elite'}],
+    ['kill class and member ID',{source:'kill',monsterClass:'elite'},{source:'kill',monsterId:'ogre'}],
+    ['kill default class and unknown ID',{source:'kill',monsterClass:'standard'},{source:'kill',monsterId:'unknown_test_monster'}],
+    ['kill identical ID',{source:'kill',monsterId:'ogre'},{source:'kill',monsterId:'ogre'}],
+    ['kill depth endpoint',{source:'kill',depth:[1,10]},{source:'kill',depth:[10,99]}],
+    ['encounter identical',{source:'encounter'},{source:'encounter'}],
+    ['encounter wildcard form',{source:'encounter'},{source:'encounter',formId:'giants.test-form'}],
+    ['encounter identical form',{source:'encounter',formId:'giants.test-form'},{source:'encounter',formId:'giants.test-form'}],
+    ['encounter depth endpoint',{source:'encounter',depth:[1,10]},{source:'encounter',depth:[10,99]}],
+    ['reserved floor declarations',{source:'floor'},{source:'floor'}],
+    ['reserved vault declarations',{source:'vault'},{source:'vault'}],
+  ];
+  it.each(conflicts)('rejects %s in either table order',(_name,a,b)=>{
+    const raw=pair(a,b),before=structuredClone(raw);
+    for(const tables of [raw.dropTables.tables,[...raw.dropTables.tables].reverse()]){
+      const input={...raw,dropTables:{...raw.dropTables,tables}};
+      expect(()=>loadLootPack(input)).toThrowError(expect.objectContaining({code:'INVALID_COMBINATION',path:'dropTables.tables[1].match'}));
+    }
+    expect(raw).toEqual(before);
+  });
+  const legal:[string,DropTable['match'],DropTable['match']][]=[
+    ['different bodies',part,{...part,bodyDefinitionId:'giants.other-body'}],
+    ['disjoint part sets',part,{...part,partIds:['limb02','limb03']}],
+    ['adjacent depth ranges',{...part,depth:[1,10]},{...part,depth:[11,99]}],
+    ['depth endpoints',{...part,depth:[1,1]},{...part,depth:[99,99]}],
+    ['different sources',part,{source:'kill'}],
+    ['disjoint kill classes',{source:'kill',monsterClass:'elite'},{source:'kill',monsterClass:'standard'}],
+    ['different kill IDs in same class',{source:'kill',monsterId:'ogre'},{source:'kill',monsterId:'troll'}],
+    ['disjoint kill class and ID',{source:'kill',monsterClass:'elite'},{source:'kill',monsterId:'rat'}],
+    ['disjoint kill class and default ID',{source:'kill',monsterClass:'elite'},{source:'kill',monsterId:'unknown_test_monster'}],
+    ['disjoint kill depths',{source:'kill',depth:[1,10]},{source:'kill',depth:[11,99]}],
+    ['different encounter forms',{source:'encounter',formId:'giants.form-a'},{source:'encounter',formId:'giants.form-b'}],
+    ['disjoint encounter depths',{source:'encounter',depth:[1,10]},{source:'encounter',depth:[11,99]}],
+    ['floor versus vault',{source:'floor'},{source:'vault'}],
+  ];
+  it.each(legal)('admits %s in either table order',(_name,a,b)=>{
+    const raw=pair(a,b);
+    expect(()=>loadLootPack(raw)).not.toThrow();raw.dropTables.tables.reverse();
+    expect(()=>loadLootPack(raw)).not.toThrow();
+  });
+  it.each(['priority','parts','depth'] as const)('legal %s selection preserves result and literal draw tape under reordering',mode=>{
+    const a=mode==='parts'?{...part,partIds:['limb02']}:mode==='depth'?{...part,depth:[11,99] as [number,number]}:part;
+    const b=mode==='depth'?{...part,depth:[1,10] as [number,number]}:part;
+    const raw=pair(a,b,mode==='priority'?101:100);
+    const run=()=>{
+      const catalog=buildEffectiveLootCatalog(loadLootPack(raw),{combat:null,growth:null,giants:null,bodies:[{id:body,partIds:['limb00','limb01','limb02']}]});
+      const tape:number[][]=[];
+      const result=rollLoot(catalog,{v:1,source:'part',depth:10,presetId:'standard',rarityFindBp:0,claimedUniqueIds:[],bodyDefinitionId:body,partId:'limb00',monster:{typeId:'ogre',champion:true}},
+        {randomInt:(lo,hi)=>{tape.push([lo,hi]);return lo;}});
+      expect(result.items).toHaveLength(1);expect(result.draws).toBe(5);
+      expect(tape).toEqual([[1,10000],[1,100],[1,100],[1,1121],[1,100]]);
+      return {result,tape};
+    };
+    const before=run();raw.dropTables.tables.reverse();raw.dropTables.tables.forEach(t=>t.match.partIds!.reverse());
+    expect(run()).toEqual(before);
+  });
+  it('admits all 256 disjoint depth/form tables at the declared table limit',()=>{
+    const raw=pair({source:'encounter'},{source:'encounter'}),base=raw.dropTables.tables[1]!;
+    raw.dropTables.tables=Array.from({length:256},(_,i)=>({...structuredClone(base),id:`loot.drop.test-${i}`,
+      match:{source:'encounter',formId:`giants.form-${Math.floor(i/99)}`,depth:[i%99+1,i%99+1]}}));
+    expect(()=>loadLootPack(raw)).not.toThrow();raw.dropTables.tables.reverse();expect(()=>loadLootPack(raw)).not.toThrow();
+  });
+});
+
 // R1-F1: literal budgets are checked against the real draft expansion and host policy.
 describe('set admission includes class-specific expanded enhancement rows',()=>{
   const availability={combat:null,growth:null,giants:null};
@@ -148,7 +233,7 @@ describe('set admission includes class-specific expanded enhancement rows',()=>{
     const catalog=buildEffectiveLootCatalog(loadLootPack(raw),availability),set=catalog.pack.sets.sets[0]!;
     const slots=['weapon','armor','left-ring','right-ring'] as const;
     const equipment=set.pieces.map((piece,i):EquippedStatItem=>{
-      const data:LootItemDataV1={v: 5,baseId:piece.baseId,ilvl:20,rarity:'set',uniqueId:null,setId:set.id,pieceId:piece.id,identityKnown:true,
+      const data:LootItemDataV1={v: 6,baseId:piece.baseId,ilvl:20,rarity:'set',uniqueId:null,setId:set.id,pieceId:piece.id,identityKnown:true,
         affixes:piece.rows.map(r=>({id:r.rowId,tier:0,values:r.ranges.map(v=>v[0]),known:true})),
         corrupted:false,enhancement:0,sockets:0,socketed:[],nameParts:null,origin:{source:'floor',depth:14}};
       expect(validateLootItemData(data,catalog)).toBe(true);

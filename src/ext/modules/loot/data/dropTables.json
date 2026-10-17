@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "tables": [
     {
       "id": "loot.drop.kill-fodder",
@@ -97,6 +97,64 @@
         "weapon": 35,
         "armor": 35,
         "ring": 30
+      },
+      "rarityBonusBp": 0,
+      "minRarity": null,
+      "ilvlBonus": 0
+    },
+    {
+      "id": "loot.drop.part-shale-weaver",
+      "priority": 100,
+      "match": {
+        "source": "part",
+        "bodyDefinitionId": "giants.shale-weaver-body",
+        "partIds": [
+          "leg00",
+          "leg01",
+          "leg02",
+          "leg03",
+          "leg04",
+          "leg05",
+          "leg06",
+          "leg07"
+        ]
+      },
+      "chanceBp": 2500,
+      "count": [
+        1,
+        1
+      ],
+      "classWeights": {
+        "weapon": 40,
+        "armor": 35,
+        "ring": 25
+      },
+      "rarityBonusBp": 0,
+      "minRarity": null,
+      "ilvlBonus": 0
+    },
+    {
+      "id": "loot.drop.part-copper-tendril",
+      "priority": 100,
+      "match": {
+        "source": "part",
+        "bodyDefinitionId": "giants.copper-tendril-body",
+        "partIds": [
+          "limb00",
+          "limb01",
+          "limb02",
+          "limb03"
+        ]
+      },
+      "chanceBp": 2500,
+      "count": [
+        1,
+        1
+      ],
+      "classWeights": {
+        "weapon": 40,
+        "armor": 35,
+        "ring": 25
       },
       "rarityBonusBp": 0,
       "minRarity": null,

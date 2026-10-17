@@ -6,13 +6,13 @@ import zhCN from './locales/zh_CN.json';
 import { LootDataError } from './errors';
 import { computeRarityWeights } from './rarity';
 import type { LootDataErrorCode } from './errors';
-import type { ItemClass, LootPack, ModifierSpec, RarityId } from './types';
+import type { DropTable, ItemClass, LootPack, ModifierSpec, MonsterClassId, RarityId } from './types';
 
 export const LOOT_FILE_NAMES = ['stationOperations','ilvl','tiers','bases','rarities','affixes','uniques','sets','runes','runewords','sockets','runeDrops','monsterClasses','dropTables','gold','presets','enhancement','identify','corruption','salvage','caps','rareNames'] as const;
 const CLASSES = ['weapon', 'armor', 'ring'] as const;
 const RARITIES = ['normal', 'magic', 'rare', 'unique', 'set', 'runeword'] as const;
 const MONSTER_CLASSES = ['none', 'fodder', 'splitter', 'standard', 'elite'] as const;
-const SOURCES = ['floor', 'kill', 'encounter', 'vault'] as const;
+const SOURCES = ['floor', 'kill', 'encounter', 'vault', 'part'] as const;
 const UNIT = ['bp', 'int', 'display-armor', 'ring-point', 'runic-strength'] as const;
 const WEAPON_RUNES = ['speed','quietus','paralyzing','multiplicity','slowing','confusion','force','slaying','mercy','plenty'];
 const ARMOR_RUNES = ['multiplicity','mutuality','absorption','reprisal','immunity','reflection','respiration','dampening','burden','vulnerability','immolation'];
@@ -124,8 +124,8 @@ const schemas: Record<keyof LootPack,Check> = {
   monsterClasses:file({defaultClass:enumeration(MONSTER_CLASSES),classes:array(enumeration(MONSTER_CLASSES),5,5),
     members:array(object({typeId:nativeId,class:enumeration(MONSTER_CLASSES)}),0,4096),
     modifiers:object({leader:object({chanceBonusBp:bp}),champion:object({chanceBonusBp:bp,rarityBonusBp:nonnegative})})}),
-  dropTables:file({tables:array(object({id,priority:num,
-    match:object({source:enumeration(SOURCES)},{monsterClass:enumeration(MONSTER_CLASSES),monsterId:nativeId,formId:id,depth:countDepth}),
+  dropTables:file2({tables:array(object({id,priority:num,
+    match:object({source:enumeration(SOURCES)},{monsterClass:enumeration(MONSTER_CLASSES),monsterId:nativeId,formId:id,bodyDefinitionId:id,partIds:array(id,1,64),depth:countDepth}),
     chanceBp:bp,count:(v,p)=>{if(v!=='preset-encounter')countRange(v,p);},classWeights:record(CLASSES,weight),
     rarityBonusBp:nonnegative,minRarity:nullable(enumeration(RARITIES)),ilvlBonus:num}),0,256)}),
   gold:file({amount:object({minBase:nonnegative,minPerDepth:nonnegative,maxBase:nonnegative,maxPerDepth:nonnegative}),
@@ -151,6 +151,25 @@ const schemas: Record<keyof LootPack,Check> = {
   rareNames:file({first:array(object({nameKey:key}),32,32),second:array(object({nameKey:key}),32,32)}),
 };
 function countDepth(v: unknown,p: string) { range(v,p); (v as number[]).forEach((n,i)=>integer(1,99)(n,`${p}[${i}]`)); }
+/** Admission checks intersecting predicates, not array order or the table's reward values. */
+function dropTablesOverlap(a: DropTable, b: DropTable, monsterClasses: ReadonlyMap<string,MonsterClassId>, defaultClass: MonsterClassId): boolean {
+  const x=a.match,y=b.match;
+  if(a.priority!==b.priority||x.source!==y.source)return false;
+  if((x.depth?.[0]??1)>(y.depth?.[1]??99)||(y.depth?.[0]??1)>(x.depth?.[1]??99))return false;
+  for(const key of ['monsterClass','monsterId','formId','bodyDefinitionId'] as const){
+    if(x[key]!==undefined&&y[key]!==undefined&&x[key]!==y[key])return false;
+  }
+  if(x.source==='part')return x.partIds!.some(id=>y.partIds!.includes(id));
+  if(x.source==='kill'){
+    // An explicit type ID determines its class; an unlisted ID uses the pack's default.
+    const typeId=x.monsterId??y.monsterId;
+    if(typeId!==undefined){
+      const actualClass=monsterClasses.get(typeId)??defaultClass;
+      if((x.monsterClass!==undefined&&x.monsterClass!==actualClass)||(y.monsterClass!==undefined&&y.monsterClass!==actualClass))return false;
+    }
+  }
+  return true;
+}
 function unique(values: readonly string[], path: string, suffix = '') {
   const seen = new Set<string>(); values.forEach((v,i)=> { if(seen.has(v))fail('DUPLICATE_ID',`${path}[${i}]${suffix}`); seen.add(v); });
 }
@@ -421,10 +440,21 @@ export function assertLootPack(value: unknown, locale: unknown = zhCN): asserts 
   unique(p.dropTables.tables.map(t=>t.id),'dropTables.tables','.id');
   p.dropTables.tables.forEach((t,i)=>{
     const path=`dropTables.tables[${i}]`;
+    if(t.match.source==='part'){
+      if(!t.match.bodyDefinitionId||!t.match.partIds||new Set(t.match.partIds).size!==t.match.partIds.length||t.match.monsterClass!==undefined||t.match.monsterId!==undefined||t.match.formId!==undefined)fail('INVALID_COMBINATION',path+'.match');
+    }else if(t.match.bodyDefinitionId!==undefined||t.match.partIds!==undefined)fail('INVALID_COMBINATION',path+'.match');
     if(!Object.values(t.classWeights).some(w=>w>0))fail('MISSING_CANDIDATE',`${path}.classWeights`);
     if(t.match.source==='kill'&&Array.isArray(t.count)&&p.presets.presets.some(pr=>(t.count as [number,number])[0] > pr.maxPerKill))fail('INVALID_COMBINATION',`${path}.count`);
     if(t.count==='preset-encounter'&&t.match.source!=='encounter')fail('INVALID_COMBINATION',`${path}.count`);
     if(t.minRarity!==null&&!rarityMap.get(t.minRarity)!.droppable)fail('INVALID_REFERENCE',`${path}.minRarity`);
+  });
+  const monsterClasses=new Map(p.monsterClasses.members.map(m=>[m.typeId,m.class]));
+  // At most 256 tables / 32,640 pairs, once at admission; no runtime sorting or RNG changes.
+  p.dropTables.tables.forEach((table,i)=>{
+    for(let j=0;j<i;j++){
+      if(dropTablesOverlap(table,p.dropTables.tables[j]!,monsterClasses,p.monsterClasses.defaultClass))
+        fail('INVALID_COMBINATION',`dropTables.tables[${i}].match`,`Ambiguous same-priority match with dropTables.tables[${j}]`);
+    }
   });
   for(const depth of [1,99])if(p.gold.amount.minBase+p.gold.amount.minPerDepth*depth>p.gold.amount.maxBase+p.gold.amount.maxPerDepth*depth)fail('INVALID_RANGE','gold.amount');
   unique(p.presets.presets.map(x=>x.id),'presets.presets','.id');

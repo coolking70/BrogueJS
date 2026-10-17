@@ -47,7 +47,7 @@ export function projectLootKnowledge(data: LootItemDataV1, catalog: EffectiveLoo
       ...(data.targetClass&&def?.rune&&['slaying','immunity'].includes(def.rune.runicType)?{targetClass:data.targetClass}:{}), tier: row.tier, values: [...row.values] } : { known: false, position };
   });
   if(!floor)for(const {row} of socketRows(data,itemClass,catalog))affixes.push({known:true,id:row.rowId,position:'row',polarity:1,tier:0,values:row.ranges.map(r=>r[0])});
-  return freezeLootUi({ ...(!floor&&identified&&data.origin.source==='craft'?{crafted:true as const}:{}), ...(['normal','runeword'].includes(data.rarity)&&itemClass!=='ring'&&!facts.hallucinating?{sockets:{count:data.sockets,sequence:[...data.socketed]}}:{}), v: 1, location: facts.location, itemClass,
+  return freezeLootUi({ ...(!floor&&identified&&!facts.hallucinating&&data.origin.source==='part'?{partSource:true as const}:{}), ...(!floor&&identified&&data.origin.source==='craft'?{crafted:true as const}:{}), ...(['normal','runeword'].includes(data.rarity)&&itemClass!=='ring'&&!facts.hallucinating?{sockets:{count:data.sockets,sequence:[...data.socketed]}}:{}), v: 1, location: facts.location, itemClass,
     baseId: itemClass === 'ring' && !facts.ringKindKnown ? null : data.baseId,
     rarity: floor && facts.hallucinating ? null : data.rarity, ilvl: floor ? null : data.ilvl,
     enhancement: data.enhancement, affixCount: floor ? null : affixes.length, affixes,
@@ -69,13 +69,14 @@ export function knownAffixModifiers(row: Extract<LootKnownAffix, { known: true }
 
 /** Lightweight validation of the public, already redacted DTO; raw item data is not accepted. */
 export function assertLootKnownItem(value: unknown, catalog: EffectiveLootCatalog): asserts value is LootKnownItem {
-  const keys = ['v', 'location', 'itemClass', 'baseId', 'rarity', 'ilvl', 'enhancement', 'affixCount', 'affixes', 'setId', 'pieceId', 'uniqueId', 'rareName', 'corrupted', 'identified', 'polarity', 'familiarity', ...(isPlainLootObject(value)&&value.sockets!==undefined?['sockets']:[]),...(isPlainLootObject(value)&&value.crafted!==undefined?['crafted']:[])];
+  const keys = ['v', 'location', 'itemClass', 'baseId', 'rarity', 'ilvl', 'enhancement', 'affixCount', 'affixes', 'setId', 'pieceId', 'uniqueId', 'rareName', 'corrupted', 'identified', 'polarity', 'familiarity', ...(isPlainLootObject(value)&&value.sockets!==undefined?['sockets']:[]),...(isPlainLootObject(value)&&value.partSource!==undefined?['partSource']:[]),...(isPlainLootObject(value)&&value.crafted!==undefined?['crafted']:[])];
   if (!isPlainLootObject(value) || !exactLootKeys(value, keys) || value.v !== 1
     || !['floor', 'pack', 'equipped', 'container'].includes(value.location as string)
     || !['weapon', 'armor', 'ring'].includes(value.itemClass as string)
     || !isLootInteger(value.enhancement) || typeof value.identified !== 'boolean'
     || !['unknown', 'benign', 'malevolent'].includes(value.polarity as string)
     || (value.corrupted !== null && typeof value.corrupted !== 'boolean')
+    || value.partSource!==undefined&&(value.partSource!==true||!value.identified||value.location==='floor')
     || value.crafted!==undefined&&(value.crafted!==true||!value.identified||value.location==='floor')
     || !Array.isArray(value.affixes)) throw new LootUiError('INVALID_INPUT', 'item');
   if (value.baseId === null ? value.itemClass !== 'ring' : typeof value.baseId !== 'string' || lootItemClass(value.baseId, catalog) !== value.itemClass) {

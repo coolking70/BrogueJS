@@ -189,6 +189,7 @@ export function buildLootItemView(item: LootKnownItem, catalog: EffectiveLootCat
   const order = { prefix: 0, suffix: 1, row: 2 };
   const rows = item.affixes.map((row, i) => affixRow(row, i, catalog, options)).sort((a, b) => order[a.position] - order[b.position]);
   const notices: LootTextRef[] = [];
+  if(item.partSource)notices.push({nameKey:'ext.loot.ui.source.part',params:{}});
   if(item.crafted)notices.push({nameKey:'ext.loot.ui.work.crafted',params:{}});
   if (item.location === 'floor') notices.push({ nameKey: 'ext.loot.ui.notice.floor-count-hidden', params: {} });
   if (item.location !== 'floor' && unknownCount(item)) notices.push({ nameKey: 'ext.loot.ui.notice.unknown-active', params: {} });

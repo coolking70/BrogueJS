@@ -283,3 +283,9 @@ C  腐化（仅 magic/rare，在全部词缀之后、第 8 步之前）：
 ## 6B4 差量（2026-10-16）
 
 维护者 D1–D7 全部采用 A。强化/精炼、21 随机符文、4 固定符文及真实效果知识协议以 [6B4 合同](phase6b4-contract.md) 为当前增量规格；版本为 foundation17/itemSdk2/loot0.5.0、pack0.2.0/实例v2/growth1.10.0。数值曲线不变。真实卷轴延迟到目标成功提交才消费；纯查询不触发知识或事务，原生非loot规则保持。浏览器三档交维护者，验收实绩见 [报告](phase6b4.report.md)。
+
+## 6C 当前增量（2026-10-17，C4 候选）
+
+C1 套装、C2 插槽/符文之语、C3 工位与 craft 已提交；本次 C4 候选补真实部位掉落，覆盖上文历史“未集成”及 part/craft 遗留。规格沿冻结 [C0](phase6c0-contract.md) §6/§6.1，实施与证据见 [C4 报告](phase6c4.report.md)。site 无真实产出入口，只有无 depth 协议、siteIlvl=1 配置与拒绝边界，玩法接线延期至前置世界任务。
+
+C4 身份为 foundation20/itemSdk4、loot0.9.0、pack0.6.0/包schema5、实例v6/state2；world schema6/worldSdk2/crafting1.1.0保持。宿主 `foundation.itemDrops.parts` 固定自然核心出生时的原 body/部位集合，不以临时成员 ID 或模型重建补发。`foundation.item-bodies.v1` 是公开只读目录，`partBroken` 是只读多消费者事实；掉落仍走宿主限定的事务接纳。C4 不扩职业、唯一品、T7、世界地图或数值平衡，不代表性能/浏览器/6Z 全量验收已通过。

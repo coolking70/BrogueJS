@@ -128,7 +128,7 @@
       ]
     ],
     "data": {
-      "v": 5,
+      "v": 6,
       "baseId": "mace",
       "ilvl": 60,
       "rarity": "rare",
@@ -243,7 +243,7 @@
       ]
     ],
     "data": {
-      "v": 5,
+      "v": 6,
       "baseId": "war_axe",
       "ilvl": 60,
       "rarity": "magic",
@@ -335,7 +335,7 @@
       ]
     ],
     "data": {
-      "v": 5,
+      "v": 6,
       "baseId": "plate_mail",
       "ilvl": 60,
       "rarity": "magic",
@@ -522,7 +522,7 @@
       ]
     ],
     "data": {
-      "v": 5,
+      "v": 6,
       "baseId": "rapier",
       "ilvl": 60,
       "rarity": "rare",
@@ -665,7 +665,7 @@
       ]
     ],
     "data": {
-      "v": 5,
+      "v": 6,
       "baseId": "spear",
       "ilvl": 60,
       "rarity": "magic",
@@ -785,7 +785,7 @@
       ]
     ],
     "data": {
-      "v": 5,
+      "v": 6,
       "baseId": "scale_mail",
       "ilvl": 60,
       "rarity": "magic",
@@ -901,7 +901,7 @@
       ]
     ],
     "data": {
-      "v": 5,
+      "v": 6,
       "baseId": "splint_mail",
       "ilvl": 60,
       "rarity": "magic",
@@ -1106,7 +1106,7 @@
       ]
     ],
     "data": {
-      "v": 5,
+      "v": 6,
       "baseId": "scale_mail",
       "ilvl": 60,
       "rarity": "rare",
@@ -1306,7 +1306,7 @@
       ]
     ],
     "data": {
-      "v": 5,
+      "v": 6,
       "baseId": "mace",
       "ilvl": 60,
       "rarity": "rare",
@@ -1490,7 +1490,7 @@
       ]
     ],
     "data": {
-      "v": 5,
+      "v": 6,
       "baseId": "chain_mail",
       "ilvl": 60,
       "rarity": "rare",
@@ -1674,7 +1674,7 @@
       ]
     ],
     "data": {
-      "v": 5,
+      "v": 6,
       "baseId": "axe",
       "ilvl": 60,
       "rarity": "rare",
@@ -1858,7 +1858,7 @@
       ]
     ],
     "data": {
-      "v": 5,
+      "v": 6,
       "baseId": "banded_mail",
       "ilvl": 60,
       "rarity": "rare",
@@ -2057,7 +2057,7 @@
       ]
     ],
     "data": {
-      "v": 5,
+      "v": 6,
       "baseId": "war_pike",
       "ilvl": 60,
       "rarity": "rare",
@@ -2182,7 +2182,7 @@
       ]
     ],
     "data": {
-      "v": 5,
+      "v": 6,
       "baseId": "whip",
       "ilvl": 60,
       "rarity": "magic",
@@ -2279,7 +2279,7 @@
       ]
     ],
     "data": {
-      "v": 5,
+      "v": 6,
       "baseId": "axe",
       "ilvl": 60,
       "rarity": "magic",
@@ -2372,7 +2372,7 @@
       ]
     ],
     "data": {
-      "v": 5,
+      "v": 6,
       "baseId": "banded_mail",
       "ilvl": 60,
       "rarity": "magic",
@@ -2479,7 +2479,7 @@
       ]
     ],
     "data": {
-      "v": 5,
+      "v": 6,
       "baseId": "chain_mail",
       "ilvl": 60,
       "rarity": "magic",
@@ -2659,7 +2659,7 @@
       ]
     ],
     "data": {
-      "v": 5,
+      "v": 6,
       "baseId": "splint_mail",
       "ilvl": 60,
       "rarity": "rare",
@@ -2869,7 +2869,7 @@
       ]
     ],
     "data": {
-      "v": 5,
+      "v": 6,
       "baseId": "chain_mail",
       "ilvl": 60,
       "rarity": "rare",
@@ -3089,7 +3089,7 @@
       ]
     ],
     "data": {
-      "v": 5,
+      "v": 6,
       "baseId": "chain_mail",
       "ilvl": 60,
       "rarity": "rare",
@@ -3227,7 +3227,7 @@
       ]
     ],
     "data": {
-      "v": 5,
+      "v": 6,
       "baseId": "rapier",
       "ilvl": 60,
       "rarity": "magic",

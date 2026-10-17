@@ -30,7 +30,7 @@ const noDraw={randomInt:()=>{throw Error('Unexpected random draw');}};
 const facts={v:1 as const,location:'pack' as const,ringKindKnown:true,magicPolarity:'unknown' as const,curseRevealed:false,hallucinating:false,familiarity:null};
 function piece(id:string,known=false):LootItemDataV1 {
  const {setId,piece:p}=c.piecesById[`loot.piece.${id}`]!;
- return {v: 5,baseId:p.baseId,ilvl:20,rarity:'set',uniqueId:null,setId,pieceId:p.id,identityKnown:known,
+ return {v: 6,baseId:p.baseId,ilvl:20,rarity:'set',uniqueId:null,setId,pieceId:p.id,identityKnown:known,
   affixes:p.rows.map(r=>({id:r.rowId,tier:0,values:r.ranges.map(v=>v[0]),known})),corrupted:false,enhancement:0,sockets:0,socketed:[],nameParts:null,origin:{source:'floor',depth:14}};
 }
 const wanderer=['blade','coat','lamp','watch'].map(n=>`wanderer.${n}`);

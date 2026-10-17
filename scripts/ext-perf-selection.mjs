@@ -6,6 +6,7 @@ const identities=Object.freeze({
  p0:{manifest:'scripts/ext-perf-budget.json',stem:'ext-late',accepted:true},
  '6b4':{manifest:'scripts/ext-perf-6b4-budget.json',stem:'ext-6b4-late',accepted:true},
  '6c1':{manifest:'scripts/ext-perf-6c1-budget.json',stem:'ext-6c1-late',accepted:true,generate:true},
+ '6c4':{manifest:'scripts/ext-perf-6c4-budget.json',stem:'ext-6c4-late',accepted:false,generate:true},
  '6c3':{manifest:'scripts/ext-perf-6c3-budget.json',stem:'ext-6c3-late',accepted:false,generate:true},
  '6c2':{manifest:'scripts/ext-perf-6c2-budget.json',stem:'ext-6c2-late',accepted:true,generate:true},
 });
@@ -46,3 +47,6 @@ export function comparablePrefix(a,b){
  assert.ok(n>0,'No proven comparable prefix; cannot judge D6');
  return n;
 }
+
+/** Explicit comparison while C3 cloud review is pending; never an accepted budget. */
+export function pendingPerfBaseline(base,head){return base==='6c3'&&head==='6c4'&&!perfIdentity(base).accepted;}

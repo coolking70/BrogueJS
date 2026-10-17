@@ -7,7 +7,7 @@ import { buildEffectiveLootCatalog } from './catalog';
 import { defaultLootPickupFilter, normalizeLootPickupFilter } from './ui/viewModel';
 import type { LootAvailability } from './types';
 
-export const LOOT_MODULE_VERSION = '0.8.0';
+export const LOOT_MODULE_VERSION = '0.9.0';
 export const DEFAULT_CONFIGURATION = { presetId: 'standard' };
 export function validConfiguration(value: unknown): value is Json {
   return isJson(value) && !!value && typeof value === 'object' && !Array.isArray(value)
@@ -38,7 +38,9 @@ export function resolveLootCatalog(query: (capability: string, input: Json) => O
     if(catalog.attributes.some(a=>!rows.some(k=>k.id===a.stat&&k.available)))throw new Error('Undeclared growth attribute');
     growth={stats:[...rows.filter(k=>k.available).map(k=>k.id),'growth.attribute'],attributes:catalog.attributes.filter(a=>a.equipment).map(a=>a.id),fingerprint:catalog.fingerprint};
   } else if(growthResult.reason!=='absent')throw new Error('Unsupported growth catalog');
-  const availability: LootAvailability = { combat: stats.length ? {stats} : null, growth, giants: forms.length ? {formIds: forms} : null };
+  const bodies=query('foundation.item-bodies.v1',{});
+  const bodyRows=bodies.status==='available'?(bodies.value as unknown as import('../../itemSdk').ItemBodyCapability).bodies:[];
+  const availability: LootAvailability = { bodies:bodyRows, combat: stats.length ? {stats} : null, growth, giants: forms.length ? {formIds: forms} : null };
   return buildEffectiveLootCatalog(loadLootPack(), availability);
 }
 export type LootState = { v: 2; presetId: string; created: boolean; revision: number; catalogFingerprint: string;

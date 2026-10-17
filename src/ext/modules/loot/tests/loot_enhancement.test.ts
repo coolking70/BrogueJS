@@ -5,7 +5,7 @@ import { enhanceLoot, lootEnhancementLimit, refinementRows } from '../enhancemen
 import { deriveNativeFacts, validateLootItemData } from '../item';
 import type { LootItemDataV1 } from '../types';
 const catalog=buildEffectiveLootCatalog(loadLootPack(),{combat:null,growth:null,giants:null});
-const empty=(baseId='dagger',rarity:LootItemDataV1['rarity']='normal'):LootItemDataV1=>({v: 5,baseId,rarity,ilvl:40,uniqueId:null,setId: null, pieceId: null, identityKnown: true,affixes:[],corrupted:false,enhancement:0,sockets:0,socketed:[],nameParts:rarity==='rare'?[0,0]:null,origin:{source:'floor',depth:26}});
+const empty=(baseId='dagger',rarity:LootItemDataV1['rarity']='normal'):LootItemDataV1=>({v: 6,baseId,rarity,ilvl:40,uniqueId:null,setId: null, pieceId: null, identityKnown: true,affixes:[],corrupted:false,enhancement:0,sockets:0,socketed:[],nameParts:rarity==='rare'?[0,0]:null,origin:{source:'floor',depth:26}});
 const noDraw={randomInt(){throw Error('Unexpected draw');}};
 describe('6B4 independent enhancement and refinement arithmetic',()=>{
  it.each([['normal',10],['magic',8],['rare',6]] as const)('%s accepts only remaining levels to %i', (rarity,cap)=>{

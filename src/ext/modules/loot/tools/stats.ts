@@ -58,7 +58,7 @@ export function mulberry32(seed: number): LootRandom {
   } };
 }
 const emptyRarities = (): GeneratedRarityCounts => ({ normal: 0, magic: 0, rare: 0, unique: 0, set: 0, runeword: 0 });
-const emptySources = (): SourceCounts => ({ kill: 0, floor: 0, vault: 0, encounter: 0 });
+const emptySources = (): SourceCounts => ({ kill: 0, floor: 0, vault: 0, encounter: 0, part:0 });
 const emptyTiers = (): Record<string, number> => Object.fromEntries([1, 2, 3, 4, 5, 6].map(t => [t, 0]));
 const chance = (random: LootRandom, bp: number): boolean => bp >= 10000 || (bp > 0 && random.randomInt(1, 10000) <= bp);
 const sum = (values: number[]) => values.reduce((a, b) => a + b, 0);
@@ -73,7 +73,7 @@ function category(random: LootRandom, other: boolean): ItemClass | null {
   return roll <= 10 ? 'weapon' : roll <= 18 ? 'armor' : roll <= 21 ? 'ring' : null;
 }
 function startingItem(baseId: string): LootItemDataV1 {
-  return { v: 5, pieceId: null, identityKnown: true, baseId, ilvl: 1, rarity: 'normal', uniqueId: null, setId: null, affixes: [], corrupted: false, enhancement: 0, sockets: 0, socketed: [], nameParts: null, origin: { source: 'floor', depth: 1 } };
+  return { v: 6, pieceId: null, identityKnown: true, baseId, ilvl: 1, rarity: 'normal', uniqueId: null, setId: null, affixes: [], corrupted: false, enhancement: 0, sockets: 0, socketed: [], nameParts: null, origin: { source: 'floor', depth: 1 } };
 }
 interface HeldItem { data: LootItemDataV1; category: ItemClass; modifiers: LootModifierDraft[] }
 function held(data: LootItemDataV1, catalog: EffectiveLootCatalog): HeldItem {

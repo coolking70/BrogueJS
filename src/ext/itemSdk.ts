@@ -1,7 +1,7 @@
 export { ITEM_RUNIC_TARGETS } from './itemTargets';
 /** C6-1 item capabilities. Candidate until the integration report freezes v1. */
 import type { ReadonlyJson } from './types';
-export const ITEM_SDK_VERSION = 3 as const;
+export const ITEM_SDK_VERSION = 4 as const;
 export type ItemModuleData = Readonly<Record<string, ReadonlyJson>>;
 export type ItemDataPhase = 'create' | 'update' | 'save' | 'load';
 export interface ItemFacts {
@@ -45,7 +45,16 @@ export interface ItemContribution {
 }
 
 export type ItemClass = 'weapon' | 'armor' | 'ring';
-export type DropSource = 'floor' | 'kill' | 'encounter' | 'vault';
+export type DropSource = 'floor' | 'kill' | 'encounter' | 'vault' | 'part';
+/** Reserved protocol only: no site catalog/provider is installed in phase 6. */
+export interface SiteLootOrigin { readonly source:'site'; readonly siteId:string; readonly siteKind:string }
+export interface ItemBodyCapability { readonly v:1; readonly bodies:readonly {readonly id:string;readonly partIds:readonly string[]}[]; readonly fingerprint:string }
+export interface PartBrokenFact {
+  readonly v:1; readonly eventId:number; readonly level:Readonly<{kind:'dungeon';depth:number}>;
+  readonly at:At; readonly actorId:number; readonly sourceId:number|null;
+  readonly bodyDefinitionId:string; readonly groupId:number; readonly partId:string; readonly generation:number; readonly zoneId:'body';
+  readonly birthEligible:boolean; readonly causalEligible:boolean;
+}
 export type At = Readonly<{ x: number; y: number }>;
 interface DropBase {
   readonly v: 1;
@@ -62,6 +71,9 @@ export type DropEvent = DropBase & (
   | { readonly source: 'kill'; readonly actorId: number;
       readonly monster: Readonly<{ typeId: string; leader: boolean;
         champion: boolean; encounterSubject: boolean }> }
+  | { readonly source:'part'; readonly actorId:number; readonly sourceId:number|null; readonly bodyDefinitionId:string;
+      readonly groupId:number; readonly partId:string; readonly generation:0; readonly zoneId:'body';
+      readonly birthEligible:true; readonly causalEligible:true; readonly monster:Readonly<{typeId:string;champion:boolean}> }
   | { readonly source: 'encounter'; readonly encounterKey: string;
       readonly encounterOrdinal: number; readonly formId: string | null }
 );

@@ -177,6 +177,8 @@ export interface ControlledActionCallbacks {
     afterResolve(result: Readonly<ControlledActionResult>, context: ExtensionContext): void;
 }
 export interface HookEvents {
+    /** Host-published read-only multicast; no RNG, rewards or mutation authority. */
+    partBroken: import('./itemSdk').PartBrokenFact;
     actorDeparted: { actor: ActorFacts; owner: string; reason: string; deferred: boolean };
     storyFact: StoryFact;
     interactionClosed: { owner: string; targetEntityId: number; sessionId: number; reason: 'game-over' | 'target-removed' };

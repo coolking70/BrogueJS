@@ -10,13 +10,14 @@ export function lootDrops(catalog: () => EffectiveLootCatalog): DropProvider {
     for(const id of ids){const u=uniques.indexOf(id),p=pieces.indexOf(id);if(u>=0)uniqueMask|=1<<u;else if(p>=0)setMask|=1n<<BigInt(p);else throw new Error('Unknown loot receipt');}
     return {uniqueMask,setMask:setMask.toString(16).padStart(32,'0')};
   };
-  return { validateReceipts:(state,ids,watermark)=>{const s=stateOf(state);const expected=masks(ids);return s.uniqueMask===expected.uniqueMask&&s.setMask===expected.setMask&&s.watermark===watermark;}, sources: ['floor','vault','kill','encounter'], statKeys: ['loot.rarity-find'], uniqueCatalog: [...uniques,...pieces],
+  return { validateReceipts:(state,ids,watermark)=>{const s=stateOf(state);const expected=masks(ids);return s.uniqueMask===expected.uniqueMask&&s.setMask===expected.setMask&&s.watermark===watermark;}, sources: ['floor','vault','kill','encounter','part'], statKeys: ['loot.rarity-find'], uniqueCatalog: [...uniques,...pieces],
     roll(event, context) {
       // Even an explicitly empty qualifier list denotes native machine semantics.
       if (event.source === 'vault' && event.qualifiers !== undefined) return {v:1,converted:false,items:[],gold:0,uniqueIds:[]};
       const s = stateOf(context.state), common = {v:1 as const, depth:event.level.depth, presetId:s.presetId,
         rarityFindBp:context.stat(event.playerId,'loot.rarity-find'), claimedUniqueIds:[...uniques.filter((_,i) => (s.uniqueMask & (1 << i)) !== 0),...pieces.filter((_,i)=>(BigInt('0x'+s.setMask)&(1n<<BigInt(i)))!==0n)]};
-      const request: LootRollRequest = event.source === 'kill' ? {...common,source:'kill',monster:event.monster}
+      const request: LootRollRequest = event.source === 'part' ? {...common,source:'part',bodyDefinitionId:event.bodyDefinitionId,partId:event.partId,monster:event.monster}
+        : event.source === 'kill' ? {...common,source:'kill',monster:event.monster}
         : event.source === 'encounter' ? {...common,source:'encounter',formId:event.formId}
         : event.source === 'floor' ? {...common,source:'floor',itemClass:event.itemClass}
         : {...common,source:'vault',itemClass:event.itemClass,baseId:event.baseId,highValue:event.highValue};

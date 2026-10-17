@@ -28,7 +28,7 @@ afterEach(() => vi.restoreAllMocks());
 describe('loot default-off neutrality contract', () => {
   it('registers the integrated module, rejects inert state and defaults off without RNG', () => {
     const before=rng.getState(),module=createLootModule();
-    expect(module.id).toBe('loot');expect(module.version).toBe('0.8.0');
+    expect(module.id).toBe('loot');expect(module.version).toBe('0.9.0');
     expect(module.initialState()).toMatchObject({v:2,presetId:'standard',created:false,revision:0});
     expect(module.validateState(module.initialState())).toBe(true);
     for(const invalid of [{},null,[],{extra:1},0,'',new Date()])expect(module.validateState(invalid)).toBe(false);

@@ -10,7 +10,7 @@ import {fileURLToPath} from 'node:url';
 import {execFileSync,spawnSync} from 'node:child_process';
 import {cpus,totalmem,platform,arch} from 'node:os';
 import {hash,write} from './ext-perf-common.mjs';
-import {perfIdentity,loadPerfIdentity,comparablePrefix} from './ext-perf-selection.mjs';
+import {perfIdentity,loadPerfIdentity,comparablePrefix,pendingPerfBaseline} from './ext-perf-selection.mjs';
 import {parseOptions,validateRun,withObjectiveP99,evaluateGates,overallStatus,policyVersion,timingPolicy} from './ext-perf-ab-policy.mjs';
 
 const options=parseOptions(process.argv.slice(2));
@@ -71,7 +71,23 @@ try {
  // Frozen inputs live with the dispatched tools: historical engine checkouts
  // predate adoption of their cloud artifacts. Production recapture below must
  // still reproduce every event/hash on A; no header or checkpoint substitution.
- const baseline=loadPerfIdentity(control,options.baseIdentity),original=baseline.manifest,metrics=original.metrics;
+ const pendingBase=pendingPerfBaseline(options.baseIdentity,options.headIdentity);
+ let baseline;
+ if(pendingBase){
+  // Reconstruct both complete inputs from the requested immutable C3 checkout.
+  // P0 supplies only the unchanged observer metric names, never a timing budget.
+  const registry=perfIdentity(options.baseIdentity),paths={},sources={};
+  for(const id of options.cases){
+   const dir=resolve(out,'pending-base-artifacts',id),stem=resolve(dir,`${id}-438491256`);
+   run(`generate-pending-base-${id}`,roots.A,'generate-ext-perf.mjs',[dir,id,'438491256','500']);
+   paths[id]=stem+'.route.json';sources[id]=read(stem+'.source.json');
+   const route=read(paths[id]),source=sources[id];assert.equal(source.source,git(roots.A,'rev-parse','HEAD'));if(id==='all'){assert.equal(source.codec.foundation,19);assert.equal(source.extensions.modules.find(m=>m.id==='loot')?.version,'0.8.0');}
+   assert.equal(route.recordingHash,source.recordingHash);assert.equal(route.commands.length,source.events);assert.ok(source.events>2049&&source.coverage[20]?.settled>=500,'Missing complete pending baseline');
+  }
+  baseline={entry:{...registry,route:id=>paths[id]},sources,manifest:read(resolve(control,'scripts/ext-perf-budget.json'))};
+  result.pendingBaseline={identity:options.baseIdentity,accepted:false,scope:'Comparison only; C3 review must complete before C4 budget acceptance.'};
+ }else baseline=loadPerfIdentity(control,options.baseIdentity);
+ const original=baseline.manifest,metrics=original.metrics;
  const headEntry=perfIdentity(options.headIdentity),generated=headEntry.generate===true;
  if(!generated)loadPerfIdentity(roots.B,options.headIdentity);
  result.cumulativeReference=read(resolve(roots.A,'scripts/ext-perf-budget.json'));
@@ -89,7 +105,7 @@ try {
  }
  result.identities.control={commit:git(control,'rev-parse','HEAD'),srcTree:git(control,'rev-parse','HEAD:src'),sourceHash:hash(execFileSync('git',['diff','HEAD','--','scripts','.github'],{cwd:control,encoding:'utf8'}))};
  result.instrumentationHash=instrumentationHash;
- result.toolHashes=Object.fromEntries(['ext-perf-source-snapshot.mjs','run-ext-perf-ab.mjs','generate-ext-perf.mjs','ext-perf-route-recovery.mjs','profile-ext-6c1.mjs','profile-ext-6c3.mjs','ext-perf-selection.mjs','ext-perf-ab-policy.mjs','capture-ext-perf-prefix.mjs','regenerate-ext-perf.mjs','profile-ext-perf.mjs','ext-perf-common.mjs','compare-ext-perf.mjs','ext-perf-budget.mjs'].map(n=>[n,hash(readFileSync(resolve(control,'scripts',n),'utf8'))]));
+ result.toolHashes=Object.fromEntries(['ext-perf-source-snapshot.mjs','run-ext-perf-ab.mjs','generate-ext-perf.mjs','ext-perf-route-recovery.mjs','profile-ext-6c1.mjs','profile-ext-6c3.mjs','profile-ext-6c4.mjs','ext-perf-selection.mjs','ext-perf-ab-policy.mjs','capture-ext-perf-prefix.mjs','regenerate-ext-perf.mjs','profile-ext-perf.mjs','ext-perf-common.mjs','compare-ext-perf.mjs','ext-perf-budget.mjs'].map(n=>[n,hash(readFileSync(resolve(control,'scripts',n),'utf8'))]));
  const inputs={},routePaths={},sourcePaths={};
  for(const id of options.cases){
   routePaths[`A-${id}`]=resolve(control,baseline.entry.route(id));
@@ -143,12 +159,13 @@ try {
   result.gates=evaluateGates(result.runs,options);
   publish();
  }
- if(!options.limit&&options.cases.length===2)for(let round=1;round<=options.rounds;round++){
+ if(!pendingBase&&!options.limit&&options.cases.length===2)for(let round=1;round<=options.rounds;round++){
   const args=options.cases.map(id=>`${id}=${resolve(out,`round-${round}`,`A-${id}-full`)}`);
   run(`original-budget-${round}`,roots.A,'ext-perf-budget.mjs',['check',resolve(control,baseline.entry.manifest),...args]);
  }
  if(generated){run('C1-bounded-supplement',roots.B,'profile-ext-6c1.mjs',[resolve(out,'c1-scenes.json')]);result.c1Scenes=read(resolve(out,'c1-scenes.json'));}
  if(options.headIdentity==='6c3'){run('C3-bounded-supplement',roots.B,'profile-ext-6c3.mjs',[resolve(out,'c3-scenes.json')]);result.c3Scenes=read(resolve(out,'c3-scenes.json'));}
+ if(options.headIdentity==='6c4'){run('C4-bounded-supplement',roots.B,'profile-ext-6c4.mjs',[resolve(out,'c4-scenes.json')]);result.c4Scenes=read(resolve(out,'c4-scenes.json'));}
  result.hard='pass';
  if(options.headSourceHash)assertCandidateSnapshot(options,sourceSnapshot(roots.B));
  result.status=overallStatus(result);

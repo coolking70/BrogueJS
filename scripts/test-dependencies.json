@@ -581,6 +581,18 @@
         "settlement"
       ],
       "optional": []
+    },
+    "src/ext/modules/loot/tests/loot_sources.test.ts": {
+      "required": [
+        "giants"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/loot/tests/loot_sources_recording.test.ts": {
+      "required": [
+        "giants"
+      ],
+      "optional": []
     }
   }
 }

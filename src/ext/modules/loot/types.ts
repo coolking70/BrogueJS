@@ -1,7 +1,7 @@
 /** 6B1-alpha contracts. Native item integration and stat collection are intentionally deferred. */
 export type ItemClass = 'weapon' | 'armor' | 'ring';
 export type RarityId = 'normal' | 'magic' | 'rare' | 'unique' | 'set' | 'runeword';
-export type LootSource = 'floor' | 'kill' | 'encounter' | 'vault';
+export type LootSource = 'floor' | 'kill' | 'encounter' | 'vault' | 'part';
 export type MonsterClassId = 'none' | 'fodder' | 'splitter' | 'standard' | 'elite';
 export type Range = [number, number];
 export interface ModifierSpec {
@@ -39,11 +39,11 @@ export interface UniquesFile {
 }
 export interface DropTable {
   id: string; priority: number;
-  match: { source: LootSource; monsterClass?: MonsterClassId; monsterId?: string; formId?: string; depth?: Range };
+  match: { source: LootSource; monsterClass?: MonsterClassId; monsterId?: string; formId?: string; bodyDefinitionId?:string; partIds?:string[]; depth?: Range };
   chanceBp: number; count: Range | 'preset-encounter';
   classWeights: Record<ItemClass, number>; rarityBonusBp: number; minRarity: RarityId | null; ilvlBonus: number;
 }
-export interface DropTablesFile { schema: 1; tables: DropTable[] }
+export interface DropTablesFile { schema: 2; tables: DropTable[] }
 export interface RarityDefinition {
   id: RarityId; order: number; nameKey: string; colorDark: string; colorLight: string; marker: string;
   affixes: { prefixMax: number; suffixMax: number } | null; enhancementCap: number; droppable: boolean;
@@ -117,9 +117,9 @@ export interface LootPack {
 export type LootRawFiles = { [K in keyof LootPack]: unknown };
 export interface LootAffixRoll { id: string; tier: number; values: number[]; known: boolean }
 export interface LootItemDataV1 {
-  v: 5; targetClass?: string; baseId: string; ilvl: number; rarity: RarityId; uniqueId: string | null; setId: string | null; pieceId: string | null; identityKnown: boolean;
+  v: 6; targetClass?: string; baseId: string; ilvl: number; rarity: RarityId; uniqueId: string | null; setId: string | null; pieceId: string | null; identityKnown: boolean;
   affixes: LootAffixRoll[]; corrupted: boolean; enhancement: number; sockets: number; socketed: string[];
-  nameParts: [number, number] | null; origin: { source: LootSource; depth: number } | {source: 'craft'; depth:number; recipeId:string};
+  nameParts: [number, number] | null; origin: { source: Exclude<LootSource,'part'>; depth: number } | {source: 'craft'; depth:number; recipeId:string} | {source:'part';depth:number;bodyDefinitionId:string;partId:string};
 }
 export interface LootNativeFacts {
   kind: string; category: ItemClass; enchantment: number;
@@ -129,6 +129,7 @@ export interface LootGeneratedItem { data: LootItemDataV1; native: LootNativeFac
 export interface LootRandom { randomInt(lo: number, hi: number): number; beginItem?(index: number): void }
 export interface LootRequestBase { v: 1; depth: number; presetId: string; rarityFindBp: number; claimedUniqueIds: readonly string[] }
 export type LootRollRequest =
+  | (LootRequestBase & {source:'part';bodyDefinitionId:string;partId:string;monster:{typeId:string;champion:boolean}})
   | (LootRequestBase & { source: 'kill'; monster: { typeId: string; leader: boolean; champion: boolean; encounterSubject: boolean } })
   | (LootRequestBase & { source: 'floor'; itemClass: ItemClass })
   | (LootRequestBase & { source: 'vault'; itemClass: ItemClass; baseId: string | null; highValue: boolean })
@@ -139,11 +140,13 @@ export interface LootModifierDraft {
   unit: ModifierSpec['unit']; value: number; conditions: ModifierSpec['conditions']; runicType: string | null; known: boolean;
 }
 export interface LootAvailability {
+  bodies?: readonly {id:string;partIds:readonly string[]}[];
   combat: { stats: readonly string[] } | null;
   growth: { stats: readonly string[]; attributes: readonly string[]; fingerprint?: string } | null;
   giants: { formIds: readonly string[] } | null;
 }
 export interface EffectiveLootCatalog {
+  partTables: readonly DropTable[];
   pack: LootPack; availability: LootAvailability; affixes: AffixDefinition[];
   setsById: Readonly<Record<string, SetDefinition>>;
   piecesById: Readonly<Record<string, { setId: string; piece: UniqueDefinition }>>;

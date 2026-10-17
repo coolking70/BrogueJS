@@ -26,7 +26,7 @@ const provider = lootWorkProvider(() => c, 'standard');
 const random = { beginItem: () => {}, randomInt: (lo: number) => lo };
 function data(n = 2): LootItemDataV1 {
   return {
-    v: 5,
+    v: 6,
     baseId: 'leather_armor',
     ilvl: 20,
     rarity: n === 2 ? 'runeword' : 'normal',

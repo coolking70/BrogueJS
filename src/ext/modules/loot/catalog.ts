@@ -17,6 +17,7 @@ const CLASSES: ItemClass[] = ['weapon', 'armor', 'ring'];
 
 export function buildEffectiveLootCatalog(pack: LootPack, availability: LootAvailability): EffectiveLootCatalog {
     const normalized: LootAvailability = {
+        bodies:[...(availability.bodies??[])].map(b=>({id:b.id,partIds:sorted(b.partIds)})).sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0),
         combat: availability.combat === null ? null : { stats: sorted(availability.combat.stats) },
         growth: availability.growth === null ? null : {
             stats: sorted(availability.growth.stats), attributes: sorted(availability.growth.attributes),
@@ -75,6 +76,7 @@ export function buildEffectiveLootCatalog(pack: LootPack, availability: LootAvai
     const socketRowsById = Object.fromEntries([...pack.runes.runes,...pack.runewords.words].flatMap(d=>d.rows.map(r=>[r.rowId,r])));
     const wordsByKey = Object.fromEntries(pack.runewords.words.flatMap(w => w.baseClasses.map(c => [JSON.stringify([c,w.sockets,w.sequence]),w])));
     const socketBands = Object.fromEntries(pack.sockets.bases.map(b => [b.baseId,b.bands]));
-    return freezeLootValue({ socketRowsById, runesById, wordsByKey, socketBands, setsById, piecesById, piecesByBase, pieceIds: members.map(m => m.piece.id), pack, availability: normalized, affixes, effectiveWeight, bossUniqueBias,
+    const partTables=pack.dropTables.tables.filter(t=>t.match.source==='part'&&normalized.bodies!.some(b=>b.id===t.match.bodyDefinitionId&&t.match.partIds!.every(p=>b.partIds.includes(p))));
+    return freezeLootValue({ partTables, socketRowsById, runesById, wordsByKey, socketBands, setsById, piecesById, piecesByBase, pieceIds: members.map(m => m.piece.id), pack, availability: normalized, affixes, effectiveWeight, bossUniqueBias,
         fingerprint: extensionDataFingerprint({ pack, targets:ITEM_RUNIC_TARGETS, availability: normalized }) });
 }

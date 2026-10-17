@@ -74,9 +74,10 @@ const itemValidators = new WeakMap<ExtensionRuntime, Map<string, ItemDataValidat
 const spatialCatalogs = new WeakMap<ExtensionRuntime, SpatialCatalog>();
 // No new own runtime field in existing worlds (4a0 full-object differential).
 const partBreakProviders = new WeakMap<ExtensionRuntime, { module: ExtensionModule; provider: PartBreakProvider }>();
-const zoneBreakCheckpoints = new WeakMap<ExtensionRuntime, () => () => void>();
+const zoneBreakCheckpoints = new WeakMap<ExtensionRuntime, (partDrops?:boolean) => () => void>();
 const zoneBreakHandlers = new WeakMap<ExtensionRuntime, NonNullable<ExtensionPorts['zoneBroken']>>();
-const bodyHandlers = new WeakMap<ExtensionRuntime, Pick<ExtensionPorts, 'memberDamage' | 'memberDamageCommitted' | 'validateMemberBreak' | 'memberBroken'>>();
+const activePartDrops = new WeakMap<ExtensionRuntime,DropInput>();
+const bodyHandlers = new WeakMap<ExtensionRuntime, Pick<ExtensionPorts, 'memberDamage' | 'memberDamageCommitted' | 'validateMemberBreak' | 'memberBroken' | 'partDrop'>>();
 const actorQueryProviders = new WeakMap<ExtensionRuntime, Map<string, {module: ExtensionModule; provider: OptionalActorQueryProvider}>>();
 const committedTransactions = new WeakMap<ExtensionRuntime, { events: Omit<CombatEventFact,'factId'>[]; publishing: boolean; allocated:number; actors:Map<Creature,{depth:number;actor:CombatEventActor}> }>();
 const allocatingFacts = new WeakSet<ExtensionRuntime>();
@@ -111,8 +112,9 @@ export interface ExtensionPorts {
     memberDamage?(actor: Creature, amount: number, kind: import('./causality').DamageKind): number | undefined;
     memberDamageCommitted?(actor: Creature): void;
     validateMemberBreak?(request: PartBreakRequest): PartBreakMemberIdentity | false;
+    partDrop?(input:DropInput):void;
     memberBroken?(core: Creature, member: Readonly<PartBreakMemberIdentity>): void;
-    checkpointZoneBreak?(): () => void;
+    checkpointZoneBreak?(partDrops?:boolean): () => void;
     depth(): number;
     turn?(): number;
     interactableCandidates?(request: WorldInteractablePlacement): readonly { x: number; y: number }[];
@@ -270,9 +272,9 @@ export class ExtensionRuntime {
             const { zoneBroken: _handler, checkpointZoneBreak: _checkpoint, ...existingPorts } = this.ports;
             this.ports = existingPorts;
         }
-        if (ports.memberDamage || ports.memberDamageCommitted || ports.validateMemberBreak || ports.memberBroken) {
-            const { memberDamage, memberDamageCommitted, validateMemberBreak, memberBroken, ...existingPorts } = this.ports;
-            bodyHandlers.set(this, { memberDamage, memberDamageCommitted, validateMemberBreak, memberBroken });
+        if (ports.memberDamage || ports.memberDamageCommitted || ports.validateMemberBreak || ports.memberBroken || ports.partDrop) {
+            const { memberDamage, memberDamageCommitted, validateMemberBreak, memberBroken, partDrop, ...existingPorts } = this.ports;
+            bodyHandlers.set(this, { memberDamage, memberDamageCommitted, validateMemberBreak, memberBroken, partDrop });
             this.ports = existingPorts;
         }
         this.manifest = structuredClone(manifest);
@@ -354,7 +356,7 @@ export class ExtensionRuntime {
         }
         for(const module of this.modules)if(module.residentPolicy){assertResidentPolicy(module.residentPolicy,module.id);Object.defineProperty(module,"residentPolicy",{value:freezeView(structuredClone(module.residentPolicy)),writable:false});}
         for (const module of this.modules) for (const [capability, provider] of Object.entries(module.optionalActorQueries ?? {})) {
-            if (['foundation.stats.v1','foundation.item-encounters.v1'].includes(capability) || !validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !provider
+            if (['foundation.stats.v1','foundation.item-encounters.v1','foundation.item-bodies.v1'].includes(capability) || !validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !provider
                 || typeof provider.accepts !== 'function' || typeof provider.query !== 'function' || typeof provider.validate !== 'function') throw new Error('Invalid actor query provider');
             let providers = actorQueryProviders.get(this);
             if (!providers) actorQueryProviders.set(this, providers = new Map());
@@ -367,7 +369,7 @@ export class ExtensionRuntime {
             Object.defineProperty(module, 'bodyTransitions', { value: freezeView(structuredClone(module.bodyTransitions)), writable: false });
         }
         for (const module of this.modules) for (const [capability, provider] of Object.entries(module.optionalQueries ?? {})) {
-            if (['foundation.stats.v1','foundation.item-encounters.v1'].includes(capability) || !validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !provider
+            if (['foundation.stats.v1','foundation.item-encounters.v1','foundation.item-bodies.v1'].includes(capability) || !validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !provider
                 || typeof provider.accepts !== 'function' || typeof provider.query !== 'function' || typeof provider.validate !== 'function') throw new Error('Invalid optional query provider');
             if (this.optionalQueries.has(capability)) throw new Error(`Conflicting optional query providers: ${capability}`);
             this.optionalQueries.set(capability, { module, provider });
@@ -925,6 +927,11 @@ export class ExtensionRuntime {
             const keys=[...new Set(input.keys as string[])].sort().map((id):Json=>{const declaration=this.stats.keys.get(id);return declaration?{id,available:true,owner:declaration.owner,unit:declaration.unit,kind:declaration.kind,rounding:declaration.rounding,categories:[...declaration.categories],moreSlots:declaration.moreSlots.map(slot=>({...slot})),minimum:declaration.minimum,maximum:declaration.maximum}:{id,available:false};});
             return freezeView({status:'available',value:{v:1,keys,fingerprint:c5Hash(keys)}});
         }
+        if(capability==='foundation.item-bodies.v1'){
+            if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).length)return Object.freeze({status:'unavailable',reason:'unsupported-input'});
+            const bodies=this.modules.flatMap(m=>(m.nativeBodies?.definitions??[]).map(b=>({id:b.id,partIds:b.parts.filter(p=>p.role!=='core').map(p=>p.partId).sort()}))).sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0);
+            return bodies.length?freezeView({status:'available',value:{v:1,bodies,fingerprint:c5Hash(bodies)}}):Object.freeze({status:'unavailable',reason:'absent'});
+        }
         if(capability==='foundation.item-encounters.v1'){
             if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).length)return Object.freeze({status:'unavailable',reason:'unsupported-input'});
             const owners=this.modules.filter(m=>m.itemEncounters?.length).map(m=>({owner:m.id,templateIds:[...m.itemEncounters!].sort(),formIds:(m.nativeForms??[]).map(f=>f.id).sort()})).sort((a,b)=>a.owner<b.owner?-1:a.owner>b.owner?1:0);
@@ -973,6 +980,13 @@ export class ExtensionRuntime {
             || ![...this.creatures].some(c => c.id === member.entityId && c.hp > 0
                 && c.spatial?.bodyMember?.groupId === actor.id && c.spatial.bodyMember.partId === member.partId)))
             throw new Error('Unavailable member break identity');
+        const target=member?[...this.creatures].find(c=>c.id===member.entityId):undefined;
+        const direct=!!member&&request.zoneId==='body';
+        const origin=this.causality.current, monster=actor as Monster;
+        const causalEligible=!!origin&&origin.kind!=='administrative'&&origin.effectId===request.resolutionId&&origin.actorId===request.sourceId;
+        const partAt=target?{...physicalContactOf(target)}:null;
+        const restorePartIdentity=direct&&this.hasItemDrops('part')?checkpointGenerationWorld(()=>({shallow:[this],deep:[this.states,this.components,this.world,this.deaths,this.pendingStoryFacts,this.causality],references:[this.ports,...this.modules,...this.creatures]})):undefined;
+        const restorePartStats=restorePartIdentity?this.checkpointNativeStatSession():undefined,partAllocator=getNextEntityId();
         const value = freezeView(structuredClone(request)), entry = partBreakProviders.get(this);
         const actionBinding=this.actorActionBinding();
         const oldBundle=this.ports.actorActions?.()?.bundles.find(bundle=>bundle.owner==='combat'&&bundle.decisionOwnerId===actor.id);
@@ -981,7 +995,7 @@ export class ExtensionRuntime {
         const actionState=actionBinding?.state as unknown as Json|undefined;
         const liveState = entry?.module.actorActions ? this.states[entry.module.id] : undefined;
         const identityCheckpoint = actionState ? actorActionIdentityCheckpoint(actionState) : undefined;
-        const restoreNative = zoneBreakCheckpoints.get(this)?.();
+        const restoreNative = zoneBreakCheckpoints.get(this)?.(!!restorePartIdentity);
         let providerCommitActive=false;
         let applied = false;
         try {
@@ -1041,6 +1055,23 @@ export class ExtensionRuntime {
                 }
                 if (this.actorActionBinding()?.state.actors.find(row => row.actorId === actor.id)?.poise === 0 && oldBundle)
                     this.ports.interruptActorAction?.(actor.id);
+                if(direct&&member&&partAt){
+                    const drops=dropSessions.get(this)!;
+                    if(monster.isAlly||monster.isClone||monster.bodyTransitionRewardless||(target as Monster)?.isAlly||(target as Monster)?.isClone||(target as Monster)?.bodyTransitionRewardless)drops.lose(actor.id);
+                    const birthEligible=drops.consumePart(actor.id,member.bodyDefinitionId,member.partId,member.generation)&&drops.partEligible(actor.id);
+                    const fact=freezeView({v:1 as const,eventId:request.resolutionId,level:{kind:'dungeon' as const,depth:this.ports.depth!()},at:partAt,
+                        actorId:actor.id,sourceId:request.sourceId,bodyDefinitionId:member.bodyDefinitionId,groupId:member.groupId,partId:member.partId,
+                        generation:member.generation,zoneId:'body' as const,birthEligible,causalEligible});
+                    if(birthEligible&&causalEligible&&this.hasItemDrops('part')){
+                        const input:DropInput={source:'part',level:fact.level,at:fact.at,playerId:this.ports.playerId(),actorId:actor.id,sourceId:fact.sourceId,
+                            bodyDefinitionId:fact.bodyDefinitionId,groupId:fact.groupId,partId:fact.partId,generation:0,zoneId:'body',birthEligible:true,causalEligible:true,
+                            monster:{typeId:monster.typeId,champion:!!monster.mutation}};
+                        activePartDrops.set(this,input);
+                        try{const commit=bodyHandlers.get(this)?.partDrop;if(!commit)throw new ItemDataError('C6_DATA');commit(input);}finally{activePartDrops.delete(this);}
+                    }
+                    if(this.hasHook('partBroken'))this.dispatch('partBroken',fact,true);
+                    if(drops.has('part'))markRecordingRoot(this);
+                }
                 if (member && request.zoneId === 'body') bodyHandlers.get(this)?.memberBroken?.(actor, member);
                 else if (member) zoneBreakHandlers.get(this)?.([...this.creatures].find(c => c.id === member.entityId)!, request.zoneId);
                 else zoneBreakHandlers.get(this)?.(actor, request.zoneId);
@@ -1055,6 +1086,7 @@ export class ExtensionRuntime {
             if (applied) native.rollback();
             if (actionState && actionBinding) { identityCheckpoint!.restore(); this.states[actionBinding.moduleId] = actionState; }
             restoreNative?.();
+            if(restorePartIdentity){restorePartIdentity();restorePartStats?.();restoreNextEntityId(partAllocator);}
             throw error;
         }
     }
@@ -1513,6 +1545,7 @@ export class ExtensionRuntime {
             if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value); }
         };
         const drops=dropSessions.get(this)!;
+        if(name==='partBroken')readOnly=true;
         if (!readOnly && name==='simulationSettled' && drops.prune((event as HookEvents['simulationSettled']).reachableIds)) markRecordingRoot(this);
         if (!readOnly && name==='generationPlacement') {drops.placement(event as HookEvents['generationPlacement'], id=>[...this.creatures].some(c=>c.id===id));if(drops.active)markRecordingRoot(this);}
         if (!readOnly && name==='bodyTransition') {
@@ -1672,6 +1705,8 @@ export class ExtensionRuntime {
             },
         };
         if (notifySpawn && !this.spawned.has(creature)) {
+            const body=creature.spatial?.bodyMember?.groupId===creature.id?this.spatialCatalog.bodyForCoreForm((creature as Monster).typeId):undefined;
+            if(body)dropSessions.get(this)!.partBirth(creature.id,body.id,readCreatureBirth(creature));
             dropSessions.get(this)!.birth(creature.id,readCreatureBirth(creature));if(dropSessions.get(this)!.active)markRecordingRoot(this);
             this.spawned.add(creature);
             if (this.generations.length) this.generations[this.generations.length - 1]!.births.add(creature);
@@ -2175,7 +2210,7 @@ export class ExtensionRuntime {
     itemEncounterTerminal(id:number,lost:boolean) { if(!this.hasItemDrops())return null;const result=dropSessions.get(this)!.terminal(id,lost);markRecordingRoot(this);return result; }
     /** Called only by native generation/death safe points inside their full-world checkpoint. */
     resolveItemDrop(input:DropInput,accept:(proposal:DropProposal,event:DropEvent)=>DropAcceptance):DropAcceptance|null {
-        if(this.pureProviderPhase)throw new ItemDataError('C6_DATA');
+        if(this.pureProviderPhase||input.source==='part'&&activePartDrops.get(this)!==input)throw new ItemDataError('C6_DATA');
         const d=dropSessions.get(this)!,owner=d.owner(input.source);if(!owner)return null;
         const token={},revision=recordingRootRevision(this);
         const values=new Map<string,number>();

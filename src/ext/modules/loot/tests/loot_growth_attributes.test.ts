@@ -46,7 +46,7 @@ it.each(['scarce','standard','bountiful'])('binds recommended growth+loot %s cre
 });
 function ring(g:ReturnType<typeof worldHarnessGame>,affix:string,value=1,known=false,tier=1){
  const c=resolveLootCatalog(g.extensionRuntime!.queryOptional.bind(g.extensionRuntime));
- const data:LootItemDataV1={v: 5,baseId:'ring_of_regeneration',ilvl:tier===6?40:1,rarity:'magic',uniqueId:null,setId: null, pieceId: null, identityKnown: known,affixes:[{id:affix,tier,values:[value],known}],corrupted:false,enhancement:0,sockets:0,socketed:[],nameParts:null,origin:{source:'floor',depth:1}};
+ const data:LootItemDataV1={v: 6,baseId:'ring_of_regeneration',ilvl:tier===6?40:1,rarity:'magic',uniqueId:null,setId: null, pieceId: null, identityKnown: known,affixes:[{id:affix,tier,values:[value],known}],corrupted:false,enhancement:0,sockets:0,socketed:[],nameParts:null,origin:{source:'floor',depth:1}};
  validateLootItemData(data,c);const n=deriveNativeFacts(data,c),item=assembleDropItem({native:{kind:n.kind,category:n.category,enchantment:n.enchantment,runicType:n.runicType,isCursed:n.isCursed,identified:n.identified,familiarityRemaining:1500},moduleData:{loot:JSON.parse(JSON.stringify(data))}});
  g.player.inventory.addItem(item);g.extensionRuntime!.bindItemData(item);return item;
 }
