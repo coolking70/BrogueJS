@@ -34,6 +34,7 @@ import { getSafetyMapForMonster, safetyNextStep } from '../engine/Map/SafetyMap'
 import type { WaypointSystem } from '../engine/Map/WaypointMap';
 import { CombatSystem, type AttackResult } from '../engine/Combat/Combat';
 import { assertActorActionScope, type ActorActionScope } from '../engine/Core/ActorActionScope';
+import { withPartyActor } from '../engine/Core/PartyRuntime';
 import { logger } from '../engine/Systems/Logger';
 import i18next from 'i18next';
 import { ItemLoader } from '../engine/Items/ItemLoader';
@@ -1552,6 +1553,11 @@ export class Monster extends Creature {
     }
 
     private resolveGeometryAttackAt(game: Game, target: Creature, voice: 'ally' | 'discordant' | 'hostile'): AttackResult {
+        // Phased contacts and geometry fanout can hit a different member than
+        // the surrounding decision's actor. Armor and native aftermath belong
+        // to this defender; restore the caller's scope after each contact.
+        if (game.party && target instanceof ControlledActor && target !== game.commandActor)
+            return withPartyActor(game, target, () => this.resolveGeometryAttackAt(game, target, voice));
         const result = CombatSystem.attack(this, target, { grid: game.grid, itemGenerationDepth: game.depth,
             beforeDamage: target === game.commandActor ? damage => game.tryTriggerArmorRunic(this, damage, true) : undefined,
         });

@@ -12,6 +12,7 @@ import {rng} from '../../../../engine/Random';
 import {nativeStat,markStatsDirty} from '../../../../engine/Stats/NativeStatSources';
 import {withPartyActor,assertPartyRuntime} from '../../../../engine/Core/PartyRuntime';
 import {mechanicalDigest} from '../../../../engine/Core/RecordingDigest';
+import {withActorActionScope} from '../../../../engine/Core/ActorActionScope';
 const games:Game[]=[];
 const clear=()=>{while(logger.pendingAcknowledgment)logger.acknowledgeNext();};
 beforeEach(()=>{vi.spyOn(Date,'now').mockReturnValue(1792252800000);});
@@ -29,6 +30,41 @@ function control(g:Game,actorId:number,change:object){clear();g.executeCommand('
 function digest(g:Game){return mechanicalDigest(g.toSnapshot(),(g as any).recordingInputState());}
 function roundtrip(g:Game){clear();const expected=digest(g),random=rng.getState(),save=JSON.parse(JSON.stringify(g.toSaveSnapshot())),record=JSON.parse(JSON.stringify(g.exportRecording()));expect(g.loadSnapshot(save)).toBe(true);expect(digest(g)).toEqual(expected);expect(rng.getState()).toEqual(random);expect(g.loadReplay(record)).toBe(true);for(let i=0;i<record.events.length+5&&g.replayCursor<record.events.length&&!g.replayError;i++){clear();g.replayStep(true);}expect(g.replayCursor).toBe(record.events.length);clear();expect(g.replayError).toBeNull();expect(digest(g)).toEqual(expected);expect(rng.getState()).toEqual(random);g.replaySeek(0);expect(g.replayError).toBeNull();g.replaySeek(record.events.length);expect(g.replayError).toBeNull();expect(digest(g)).toEqual(expected);expect(rng.getState()).toEqual(random);}
 function unchanged(g:Game,work:()=>void){clear();const player=g.player,actors=[...g.controlledActors],before=JSON.stringify(g.toSnapshot()),random=rng.getState(),allocator=getNextEntityId(),events=structuredClone(g.exportRecording().events);work();expect(g.player).toBe(player);g.controlledActors.forEach((a,i)=>expect(a).toBe(actors[i]));expect(JSON.stringify(g.toSnapshot())).toBe(before);expect(rng.getState()).toEqual(random);expect(getNextEntityId()).toBe(allocator);expect(g.exportRecording().events).toEqual(events);}
+
+it.each([0,1])('calibration: phased melee binds defender %i, including armor and member-local aftermath',index=>{
+ const g=fixture(),target=g.controlledActors[index]!,other=g.controlledActors[1-index]!;
+ const m=new Monster(20,10,{...(monsters as MonsterData[]).find(m=>m.id==='rat')!,damage:'5',accuracy:10000,hp:999,abilityFlags:['MA_HIT_DEGRADE_ARMOR','MA_HIT_HALLUCINATE']});
+ g.monsters.push(m);g.extensionRuntime!.attachCreature(m);
+ target.equippedArmor!.runicType='reprisal';target.equippedArmor!.enchantment=3;
+ const targetEnchant=target.equippedArmor!.enchantment,otherEnchant=other.equippedArmor!.enchantment,otherHp=other.hp;
+ const armor=vi.spyOn(g,'tryTriggerArmorRunic'),split=vi.spyOn(g as any,'trySplitMonster');
+ withPartyActor(g,other,()=>{
+  const result=withActorActionScope(g,'npc-scheduler',m.id,scope=>g.resolveActorNativeMelee(scope,m,target));
+  expect(result.hit).toBe(true);expect(result.damage).toBeGreaterThan(0);
+  expect(g.commandActor).toBe(other);
+ });
+ expect(armor).toHaveBeenCalledOnce();expect(split).not.toHaveBeenCalled();
+ expect(target.hp).toBeLessThan(target.maxHp);expect(m.hp).toBeLessThan(m.maxHp);
+ expect(target.equippedArmor!.enchantment).toBe(targetEnchant-1);expect(target.hasStatus('hallucinating')).toBe(true);
+ expect(g.party!.native[target.id]!.lastDamageSource).toBe(m.name);
+ expect(other.hp).toBe(otherHp);expect(other.equippedArmor!.enchantment).toBe(otherEnchant);
+ expect(other.hasStatus('hallucinating')).toBe(false);expect(g.party!.native[other.id]!.lastDamageSource).toBe('');
+ expect(g.commandActor).toBe(g.player);
+});
+
+it('calibration: one geometry sweep applies native armor and aftermath to both members',()=>{
+ const g=fixture(),[a,b]=g.controlledActors;
+ const m=new Monster(20,10,{...(monsters as MonsterData[]).find(m=>m.id==='rat')!,damage:'5',accuracy:10000,hp:999,abilityFlags:['MA_ATTACKS_ALL_ADJACENT','MA_HIT_DEGRADE_ARMOR']});
+ g.monsters.push(m);g.extensionRuntime!.attachCreature(m);
+ const enchantments=g.controlledActors.map(a=>a.equippedArmor!.enchantment);
+ const armor=vi.spyOn(g,'tryTriggerArmorRunic'),split=vi.spyOn(g as any,'trySplitMonster');
+ withPartyActor(g,a!,()=>{(m as any).performSweepAttack(g,a!);expect(g.commandActor).toBe(a);});
+ expect(armor).toHaveBeenCalledTimes(2);expect(split).not.toHaveBeenCalled();
+ for(const [i,actor] of [a!,b!].entries()){
+  expect(actor.hp).toBeLessThan(actor.maxHp);expect(actor.equippedArmor!.enchantment).toBe(enchantments[i]!-1);
+  expect(g.party!.native[actor.id]!.lastDamageSource).toBe(m.name);
+ }
+});
 
 it('R1-F1: secondary enters fire using a real confirmed move',()=>{const g=fixture(g=>g.grid.setTerrain(20,10,TerrainType.PLAIN_FIRE)),[a,b]=g.controlledActors;g.onConfirmRequest=()=>true;wait(g,a!.id);clear();g.submitPartyIntent({kind:'move',dx:-1,dy:0},b!.id);expect(b!.hp).toBeLessThan(b!.maxHp);expect((b!.statusDurations as any).burning).toBeGreaterThan(0);roundtrip(g);},120000);
 it('R1-F1: preexisting secondary burning ticks as a controlled member',()=>{const g=fixture(g=>(g.controlledActors[1]!.statusDurations as any).burning=4),[a,b]=g.controlledActors;wait(g,a!.id);wait(g,b!.id);expect(b!.hp).toBeLessThan(b!.maxHp);expect((b!.statusDurations as any).burning).toBe(3);roundtrip(g);},120000);

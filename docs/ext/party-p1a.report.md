@@ -1,6 +1,6 @@
 # Party P1a 实施报告
 
-本文保留首轮实现证据；生产实现以“R2 最后一轮审查处理与作者同类自查（2026-10-18）”为准，已提交为 `18070b2`。最新性能工具补丁、两条云端派发命令及本地冒烟见文末“云端性能派发修复（2026-10-18）”；该补丁未提交。首轮性能和物理全删结果仍对应修复前身份。
+本文保留首轮实现证据；R2 生产实现已提交为 `18070b2`，性能工具补丁已提交为 `285261e`。两次云端结果见 M11，最新未提交生产修复及重新派发命令见文末“party 校准失败修复（2026-10-18）”。首轮性能和物理全删结果仍对应修复前身份。
 
 ## 范围与裁定
 
@@ -88,6 +88,10 @@
 物理删除采用 `check-module-removal --prepare-only --retain=none --engine-only` 创建隔离副本，确认 combat/crafting/foraging/giants/growth/loot/narrative/party/settlement 九目录实际不存在，再在副本执行本轮批准的限定门禁。没有调用该脚本默认的完整 test:ext。引擎组合结果中 `requestedScopePassed=true`；总字段 `passed=false` 是浏览器未跑，报告不将其改写成整体验收通过。
 
 ## M11 工具、性能与交付参数
+
+2026-10-18 云端结果补录：非 party 回归 [run 39077778682](https://github.com/coolking70/BrogueJS/actions/runs/39077778682) 的 D6 总判定 **pass**、硬门禁 **pass**；classic/full 0/3、all/full 1/3、all/prefix 1/3 越线，均未达到至少两轮越线的回归条件。A=`e3ec8f49f8a7c6f827ecb04dac7304a441c960e6`，B=`18070b2562a3272154d3b28b97e1b79171035e59`，control=`285261e7063cf69e24893b9fc43c391513ab8559`。原始证据在 `/private/tmp/perfci-39077778682/`，汇总含独立第四轮验证；建议预算未自动采用。该结论属于上述已提交身份。
+
+同日 party calibration-only [run 39077785584](https://github.com/coolking70/BrogueJS/actions/runs/39077785584) 失败，证据在 `/private/tmp/perfci-39077785584/`。已定位为**真实游戏缺陷**：2/4 人 party+all 的分阶段怪物近战接触进入 `Monster.resolveGeometryAttackAt` 时，实际被击队员可能不是外围 `game.commandActor`，被错误归入怪物受击分支，继而 `Game.trySplitMonster` 调用队员不存在的 `hasAbility` 崩溃。同一错误也会跳过该队员的护甲符文、受伤来源及腐蚀护甲等玩家后处理。不是 workflow、Worker、场景生成或预算问题；1 人分片三轮完成，2/4 人分片各完成首轮 party-only 后失败，汇总正确拒绝不完整证据，未产生 party 建议预算。修复应在共享单目标攻击入口绑定实际队员作用域，保持原场景与 2049 命令，不能通过跳过分裂异常掩盖其它受击语义。
 
 新增 `party-v1` 身份和 `profile-party-perf` / `run-party-perf-ab` / `merge-party-perf-ab`，由现有 runner 的 `--party` 路由和 workflow 的 `suite=party` 接入。原 phase6 路线、预算、默认工作流不改为 party。party 输入固定 seed42、`ready-actor-wait-v1`，1/2/4人 × party-only/party-all；正式采样2049命令，短跑只允许 rounds=1。
 
@@ -370,3 +374,41 @@ party 沿用三分片名 `classic / all-full / all-prefix`，分别对应 1/2/4 
 | workflow YAML解析、`git diff --check` | 通过 |
 
 正式云端三轮、完整D20路线及2049命令party校准均未运行；完整场景中的性能结论与建议数值待维护者执行上述命令取得。未运行完整 npm test、drift/full/gen、types/build、组合矩阵或额外游戏测试。此前首轮/R1/R2证据及遗留仍按原节解释。
+
+## party 校准失败修复（2026-10-18）
+
+开工 `ext/party-p1a` / `285261e7063cf69e24893b9fc43c391513ab8559`，工作区干净。两次云端结果及缺陷归因已补入 M11。这里的验证对应未提交修复，不将云端旧身份的性能 pass 改写成修复后云端证据。
+
+唯一生产变更是 `Monster.resolveGeometryAttackAt`：仅在 party 存在、目标是受控队员且不同于当前 `commandActor` 时，以 `withPartyActor` 包住该次完整攻击，返回时恢复外围作用域。覆盖分阶段接触、空间体攻击和几何多目标扇出共用的单目标出口；沿用真实护甲符文、受伤来源、状态、腐蚀、击退及消息路径。未给 `trySplitMonster` 加吞错分支，未改游戏字段、存档/录像格式、场景、seed、命令数、工具/工作流、守卫或任何基线。无 party 时条件短路，攻击代码和随机数调用路径保持原样。
+
+回归加在既有 `party_r1_environment.test.ts`，共3项：主角在次要队员作用域中受击、次要队员在主角作用域中受击，以及一次横扫命中两人。验证实际伤害、报复符文反伤、腐蚀/幻觉和伤害来源归属、另一队员不受串写、玩家不进入分裂分支、调用者作用域恢复。新增前两项在原生产文件上均以云端同样的 `defender.hasAbility is not a function` 失败（`before.log`），只改 `Monster.ts` 后两项通过（`after.log`）；未修改任何旧测试前提或断言。初次窄复现使用 Node v25.2.1，最终相关套件与完整冒烟改用 **Node v24.19.0**。
+
+证据目录 `/private/tmp/party-p1a/calibration-fix/`，原始产物不入仓库。完整冒烟使用该目录下的冻结 `candidate/`，基于开工 HEAD 加本次补丁；全候选3234文件 hash=`16f0764386ee21b14733b3e02eab400810d7a2056c25c79d659f115c0158e869`。生产 `Monster.ts` 与交付工作区逐字相同，SHA256=`e2571c3bd5d2bee2918347301db549ea431f05507a02dacd265c8db7eb420e60`，见 `source.json`。全候选 hash 含冻结时报告版本，随后仅补充报告，不改变所测生产代码。
+
+| 限定验证 | 结果与证据 |
+| --- | --- |
+| 相关 Vitest | `related.log`：7文件/132项通过，exit0；含完整 party R1 环境47项（新增3项）、party actions、五配置无 party 字节夹具、原生怪物几何攻击、阶段攻击、护甲符文、party性能工具11项 |
+| 性能脚本 | `script-{ab,split,selection}.log`：三个脚本全部 exit0；保留原D6、分片完整性、身份和历史预算约束 |
+| boundary | `boundary.log`：exit0，模块边界及测试归属通过 |
+| 测试依赖 | `dependencies.log`：exit0，688文件/9模块，errors=[] |
+| vue-tsc / build | `types.log` / `build.log`：各 exit0；build仅既有大chunk提示 |
+| 已完成云端场景的规则对照 | `cloud-completed-comparison.json`：旧云端成功的1人两配置、2/4人 party-only，共4场；本次完整观测的 input、rowsHash、rngHash、fullDigest、zeroTicks 均与旧云端首轮精确相等；不比较跨机器耗时 |
+| party 完整路线冒烟 | `party-{classic,all-full,all-prefix}`：全部 exit0；`--party --calibration-only --rounds 1 --steps 2049`，1/2/4人 × party-only/party-all 共6场景，各2049命令、OOS=0；每场8次周期 Worker 边界，存读档、完整回放、RNG和最终机械摘要检查通过 |
+| 原脚本汇总 | `party-merged/`：exit0；六场各1轮，来源仅B，`mode=calibration-only / status=smoke-only / budget=null / comparisons=[]`，没有建议预算 |
+
+本地完整命令保存在 `run-smokes.py` 和 `smoke-exits.json`，三片按序执行，随后用未改动的 `merge-ext-perf-ab.mjs` 汇总；四个退出码均为0。这里的 steps=2049 与云端相同，未重复使用此前 steps=8 的短样本。云端首败的2/4人 party+all均完整通过，确认修复后的同场景不会再在该受击分支失败；正式云端三轮及机器差异仍待重新派发。证据中的 git SHA 为冻结副本的基底 `285261e`，未提交补丁由 `sourceHash` 绑定，不冒称修复已提交。
+
+### 重新派发
+
+本轮不 commit、push 或派发。维护者提交并推送本次修复到 `ext/party-p1a` 后，执行：
+
+```bash
+gh workflow run ext-perf.yml --repo coolking70/BrogueJS --ref ext/party-p1a \
+  -f suite=party -f mode=calibration-only \
+  -f head_ref=ext/party-p1a \
+  -f rounds=3
+```
+
+workflow 会将 `head_ref` 解析为实际提交 SHA 并登记。必须让该分支包含本次生产修复；不要继续使用此前固定的 `head_ref=18070b2…`，否则仍会测到已确认缺陷。无需 `base_ref`，仍只测 B。三轮齐全后才可能生成 suggested-only 预算，仍须 P1b 审定；本地 rounds=1 不承担正式云端性能结论。
+
+本轮仅运行上述相关测试/脚本测试、测试依赖、boundary、vue-tsc、build及要求的 party 三分片/汇总冒烟。没有完整 npm test、drift/full/gen、组合/删除矩阵或浏览器操作。
