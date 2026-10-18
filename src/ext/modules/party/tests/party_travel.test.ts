@@ -1,3 +1,5 @@
+import {timeSystem} from '../../../../engine/Systems/Time';
+import type {ActorIntent} from '../../../party';
 import {it,expect} from 'vitest';
 import '../../../../i18n';
 import {TerrainType} from '../../../../engine/Map/Grid';
@@ -16,23 +18,24 @@ it('freezes a distant member, preserves its resources, and reactivates it on ret
  commitCreatureAnchor(a,(g as any).levelSeeds[1].upStairsLoc);travel(g,1);expect(g.party!.state.members.every(m=>m.life==='active')).toBe(true);expect(b.loc).toEqual(before.loc);
  }finally{g.disposeRecording();}
 },120000);
-it('walks both members through a natural first floor and replays the complete prefix',()=>{
+it.each(['single','window'])('walks both members through a natural first floor using %s and replays the complete prefix',mode=>{
  const g=start();let h:Game|undefined;try{
+ const step=(intent:ActorIntent,id:number)=>{if(mode==='single')g.submitPartyIntent(intent,id);else g.submitPartyWindow({kind:'party:window',schema:1,seq:g.party!.state.window.seq+1,expectedRevision:g.party!.state.revision,issuerSlot:'local:0',startTick:timeSystem.currentTick,length:{kind:'fine'},fineActorId:id,automatic:false,trigger:'manual',plans:[{actorId:id,controllerSlot:'local:0',update:'replace',plan:{kind:'queue',actions:[intent]}}]});};
  const key=(x:number,y:number)=>`${x},${y}`,lead=g.controlledActors[1]!;
  for(let steps=0;steps<1400&&g.depth===1;steps++){
-  clear();const id=g.readyPartyActorId;expect(id).not.toBeNull();const actor=g.controlledActors.find(a=>a.id===id)!,stairs=(g as any).levelSeeds[0].downStairsLoc;
+  clear();const stairsAt=(g as any).levelSeeds[0].downStairsLoc;const id=mode==='window'?(lead.x===stairsAt.x&&lead.y===stairsAt.y?g.player.id:lead.id):g.readyPartyActorId;expect(id).not.toBeNull();const actor=g.controlledActors.find(a=>a.id===id)!,stairs=(g as any).levelSeeds[0].downStairsLoc;
   const close=g.activeControlledActors.every(a=>Math.abs(a.x-stairs.x)+Math.abs(a.y-stairs.y)<=1);
   if(close&&lead.x===stairs.x&&lead.y===stairs.y&&g.activeControlledActors.every(a=>a.ticksUntilTurn===0)){travel(g,2,[],lead.id);break;}
-  if(actor!==lead&&(lead.x!==stairs.x||lead.y!==stairs.y)){g.submitPartyIntent({kind:'wait'},id!);continue;}
-  if(actor!==lead&&Math.abs(actor.x-stairs.x)+Math.abs(actor.y-stairs.y)<=1){g.submitPartyIntent({kind:'wait'},id!);continue;}
-  if(actor===lead&&actor.x===stairs.x&&actor.y===stairs.y){g.submitPartyIntent({kind:'wait'},id!);continue;}
+  if(actor!==lead&&(lead.x!==stairs.x||lead.y!==stairs.y)){step({kind:'wait'},id!);continue;}
+  if(actor!==lead&&Math.abs(actor.x-stairs.x)+Math.abs(actor.y-stairs.y)<=1){step({kind:'wait'},id!);continue;}
+  if(actor===lead&&actor.x===stairs.x&&actor.y===stairs.y){step({kind:'wait'},id!);continue;}
   const queue=[{x:actor.x,y:actor.y}],prior=new Map<string,{x:number;y:number}|null>([[key(actor.x,actor.y),null]]);let goal:{x:number;y:number}|undefined;
   for(let index=0;index<queue.length;index++){const p=queue[index]!;if((actor===lead?p.x===stairs.x&&p.y===stairs.y:Math.abs(p.x-stairs.x)+Math.abs(p.y-stairs.y)<=1)){goal=p;break;}
    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const n={x:p.x+dx!,y:p.y+dy!},cell=g.grid.getCell(n.x,n.y);if(!cell||!(cell.isPassable||cell.layers.includes(TerrainType.DOOR))||prior.has(key(n.x,n.y))||g.activeControlledActors.some(a=>a!==actor&&a.x===n.x&&a.y===n.y))continue;prior.set(key(n.x,n.y),p);queue.push(n);}
   }
-  if(!goal){g.submitPartyIntent({kind:'wait'},id!);continue;}
+  if(!goal){step({kind:'wait'},id!);continue;}
   let next=goal;for(let p=prior.get(key(next.x,next.y));p&&!(p.x===actor.x&&p.y===actor.y);p=prior.get(key(next.x,next.y)))next=p;
-  g.submitPartyIntent({kind:'move',dx:next.x-actor.x,dy:next.y-actor.y},id!);
+  step({kind:'move',dx:next.x-actor.x,dy:next.y-actor.y},id!);
  }
  expect(g.depth,JSON.stringify({positions:g.controlledActors.map(a=>({id:a.id,loc:a.loc,hp:a.hp,ticks:a.ticksUntilTurn})),stairs:(g as any).levelSeeds[0].downStairsLoc})).toBe(2);expect(g.activeControlledActors).toHaveLength(2);const record=g.exportRecording();h=new Game({seed:1});expect(h.loadReplay(record)).toBe(true);while(h.replayCursor<record.events.length&&!h.replayError){clear();h.replayStep(true);}expect(h.replayError).toBeNull();expect(h.depth).toBe(2);expect(h.controlledActors.map(a=>a.loc)).toEqual(g.controlledActors.map(a=>a.loc));
  }finally{g.disposeRecording();h?.disposeRecording();}

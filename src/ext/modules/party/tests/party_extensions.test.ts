@@ -1,3 +1,4 @@
+import {timeSystem} from '../../../../engine/Systems/Time';
 import {it,expect,vi} from 'vitest';
 import '../../../../i18n';
 import {Game} from '../../../../engine/Core/Game';
@@ -6,6 +7,7 @@ import {logger} from '../../../../engine/Systems/Logger';
 import {readGrowthCharacterView,createGrowthAllocationDraft,buildGrowthAllocateCommand} from '../../growth/view';
 import {buildCraftCommand,buildCancelCommand} from '../../crafting/ui/commands';
 import {TerrainType} from '../../../../engine/Map/Grid';
+import {mechanicalDigest} from '../../../../engine/Core/RecordingDigest';
 import {inventoryStamp} from '../../../../engine/Core/RecordingDigest';
 import {worldWorkLastError} from '../../../../engine/Core/WorldWork';
 import {rng} from '../../../../engine/Random';
@@ -82,4 +84,44 @@ it('R1 audit: poison death cancels a busy phased member before the final termina
  expect(g.isGameOver).toBe(true);expect(g.party!.state.members.every(m=>m.life==='dead')).toBe(true);expect(g.actorActions!.bundles).toEqual([]);expect(g.extensionRuntime!.actorActionBinding()!.state.actors.filter(r=>[a!.id,b!.id].includes(r.actorId))).toEqual([]);
  const save=JSON.parse(JSON.stringify(g.toSnapshot()));expect(g.loadSnapshot(save)).toBe(true);
  }finally{g.disposeRecording();}
+},120000);
+
+it.each([0,1])('P1b window retains phased member %i across budgets and completes it once',memberIndex=>{
+ const g=start(true);try{g.monsters=g.monsters.filter(m=>m.isAlly);const a=g.player,b=g.controlledActors[1]!;
+ for(let y=8;y<=14;y++)for(let x=17;x<=26;x++)g.grid.setTerrain(x,y,TerrainType.FLOOR);commitCreatureAnchor(a,{x:20,y:10});commitCreatureAnchor(b,{x:24,y:10});(g as any).updateVision();
+ const advance=(first:boolean)=>{while(logger.pendingAcknowledgment)logger.acknowledgeNext();g.submitPartyWindow({kind:'party:window',schema:1,seq:g.party!.state.window.seq+1,expectedRevision:g.party!.state.revision,issuerSlot:'local:0',startTick:timeSystem.currentTick,length:{kind:'ticks',ticks:100},fineActorId:null,automatic:false,trigger:'manual',plans:first?[{actorId:g.controlledActors[memberIndex]!.id,controllerSlot:'local:0',update:'replace',plan:{kind:'queue',actions:[{kind:'module',owner:'combat',commandId:'attack',payload:{attackId:'fixture.double-thrust',facing:'s'}}]}}]:[]});};
+ advance(true);expect(g.party!.state.window.elapsed).toBe(100);const bundle=g.actorActions!.bundles.find(x=>x.decisionOwnerId===g.controlledActors[memberIndex]!.id)!;expect(bundle).toBeTruthy();const id=bundle.actionId;expect(g.party!.state.window.members[memberIndex]!.cursor).toBe(1);const before=timeSystem.currentTick;
+ advance(false);expect(timeSystem.currentTick-before).toBe(100);expect(g.actorActions!.bundles.some(x=>x.actionId===id)).toBe(false);expect(g.party!.state.window.members[memberIndex]!.cursor).toBe(1);const save=g.toSaveSnapshot(),h=new Game({seed:1});try{expect(h.loadSnapshot(save)).toBe(true);}finally{h.disposeRecording();}
+ }finally{g.disposeRecording();}
+},120000);
+
+it('P1b accepts a secondary growth plan before its own ready point and revalidates on execution',()=>{
+ const g=start();try{const a=g.player,b=g.controlledActors[1]!;for(let depth=2;depth<=20;depth++)g.extensionRuntime!.emit('enteredLevel',{depth,firstVisit:true,actorIds:[a.id,b.id]});(g as any).collectExtensionComponents();g.focusPartyMember(b.id);
+ const state=g.extensionRuntime!.snapshot().modules.growth as any;
+ const before=JSON.parse(JSON.stringify(g.toSaveSnapshot().extensions!.components[b.id]!['growth:attributes']));const attribute=Object.keys(before.values)[0]!;
+ // Production UI projection chooses the allocatable attribute; it is read-only even before readiness.
+ const model=readGrowthCharacterView(g)!,id=model.attributes.find(x=>x.value<x.cap&&x.enabled)?.id??attribute;
+ const payload={actorId:b.id,revision:state.revision,attributes:{[id]:1}};
+ while(logger.pendingAcknowledgment)logger.acknowledgeNext();g.submitPartyWindow({kind:'party:window',schema:1,seq:1,expectedRevision:g.party!.state.revision,issuerSlot:'local:0',startTick:timeSystem.currentTick,length:{kind:'ticks',ticks:100},fineActorId:null,automatic:false,trigger:'manual',plans:[{actorId:b.id,controllerSlot:'local:0',update:'replace',plan:{kind:'queue',actions:[{kind:'module',owner:'growth',commandId:'allocate',payload}]}}]});
+ expect(g.party!.state.window.members[1]!.cursor).toBe(1);expect(g.toSaveSnapshot().extensions!.components[b.id]!['growth:attributes']).not.toEqual(before);expect(model.attributePoints).toBeGreaterThan(0);
+ }finally{g.disposeRecording();}
+},120000);
+
+it.each([1,2,4])('P1b primary phased windows record, save, resume, replay and seek with %i members',members=>{
+ const registry=createExtensionRegistry(),phaseExtensions=['party','combat'],configuration={party:{schema:1,members}},manifest=registry.manifest(phaseExtensions,configuration),initialCommands=registry.create(manifest).flatMap(m=>m.initialCommand?[JSON.stringify({module:m.id,...m.initialCommand})]:[]);
+ const g=new Game({seed:1}),h=new Game({seed:1});
+ try{
+  g.startNewGame({seed:42,mode:'wizard',ruleSet:'extended',extensions:phaseExtensions,extensionConfigurations:configuration,initialCommands});g.animationEnabled=false;
+  const advance=(game:Game,first=false)=>{while(logger.pendingAcknowledgment)logger.acknowledgeNext();const before=game.recordedInputEvents.length;game.submitPartyWindow({kind:'party:window',schema:1,seq:game.party!.state.window.seq+1,expectedRevision:game.party!.state.revision,issuerSlot:'local:0',startTick:timeSystem.currentTick,length:{kind:'ticks',ticks:100},fineActorId:null,automatic:false,trigger:'manual',plans:first?[{actorId:game.player.id,controllerSlot:'local:0',update:'replace',plan:{kind:'queue',actions:[{kind:'module',owner:'combat',commandId:'attack',payload:{attackId:'fixture.double-thrust',facing:'s'}}]}}]:[]});expect(game.recordedInputEvents.length).toBe(before+1);};
+  advance(g,true);expect(g.actorActions!.bundles.some(b=>b.decisionOwnerId===g.player.id)).toBe(true);
+  const pending=JSON.parse(JSON.stringify(g.toSaveSnapshot()));expect(pending.run.recordingOrigin).toBeTruthy();expect(h.loadSnapshot(pending)).toBe(true);h.animationEnabled=false;
+  const tick=timeSystem.currentTick;advance(h);expect(timeSystem.currentTick-tick).toBe(100);expect(h.actorActions!.bundles.some(b=>b.decisionOwnerId===h.player.id)).toBe(false);
+  const saved=JSON.parse(JSON.stringify(h.toSaveSnapshot())),rec=h.exportRecording(),digest=mechanicalDigest((h as any).projectWholeRun(),(h as any).recordingInputState());
+  expect(g.loadSnapshot(saved)).toBe(true);expect(mechanicalDigest((g as any).projectWholeRun(),(g as any).recordingInputState())).toEqual(digest);
+  expect(g.loadReplay(rec)).toBe(true);g.replayPlay();
+  for(let i=0;i<=rec.events.length&&g.replayCursor<rec.events.length&&!g.replayError;i++)g.tickReplay(100);
+  expect(g.replayError).toBeNull();expect(g.replayCursor).toBe(rec.events.length);expect(mechanicalDigest((g as any).projectWholeRun(),(g as any).recordingInputState())).toEqual(digest);
+  g.replaySeek(rec.events.length);expect(g.replayError).toBeNull();expect(mechanicalDigest((g as any).projectWholeRun(),(g as any).recordingInputState())).toEqual(digest);
+  expect(g.loadSnapshot(saved)).toBe(true);advance(g);expect(g.exportRecording().events.length).toBe(rec.events.length+1);
+ }finally{g.disposeRecording();h.disposeRecording();}
 },120000);

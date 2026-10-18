@@ -453,3 +453,21 @@ P1a单步只在安全提交后发布带command index/actorId/tick的actor结果�
 性能由云端classic/all-full/all-prefix三分片交错A/B三轮并汇总，D6修订为命令/客观回合P95+10%、命令max/客观回合P99+25%、墙钟+10%，至少1ms且严格大于，三轮两轮任意项越线判退；客观回合max只报告。all/full工作量不同仅报告时间，但完整正确性硬检查仍须通过；all/prefix必须保持同输入/双流/blocks/rounds/roundTicks可比，不能以短前缀证明D20。
 
 P1a实测1/2/4人单步、event/full摘要/Worker flush、存档录像与新增成员字节、内存和边界长尾；P1b才冻结新阈值。P0的64KiB/256KiB和窗口毫秒值只作历史预算提案，不是本步硬断言。现有phase6工作流/selector尚未开放party身份，按已批M11接入；旧冻结预算不可改头冒用。无数据、短跑或缺分片不称pass；本次文档刷新未跑性能或功能门禁。
+
+## 10 P1b 已裁定的实施合同（2026-10-18）
+
+维护者 B1–B7 全部按推荐批准；本节覆盖上文标注“P1b草案”的同名字段与参数，不改变 P1a 历史记录。可编译权威声明为 `src/ext/partyWindow.ts`、`src/ext/party.ts`；P1c/P2 类型仍未开放。
+
+- 有效身份：party F22/S9/R6/O4、模块0.2.0、机械state2；创建配置仍schema1。无party F20/S7/R4/O2、world5.schema6保持。P1a旧party档/录像拒绝，不迁移。
+- 保持 `party:actor-step` 与旧 `party:control` schema1 的严格payload。新增 `party:window`、`party:decision`、`party:policy` 各schema1。policy只接受本地成员的反应/空计划策略，或显式清除已接受尾队列以返回单步。带未消费尾队列时单步拒绝，待决/失败时不允许绕过。没有无意义pendingController、AI或远程槽。
+- state.window保存当前seq/segment、预算/elapsed、精细成员与是否已领取、每成员plan/cursor、反应和已见/低血/预警锁存、决策allocator及最近段收据。实体HP/位置/库存/动作相位仍只在原所有者；窗口不复制倒计时。
+- 一次外层输入在可信作用域中逐个复用原生成员动作。原生循环额外取窗口剩余量的最小值，只在完整原子边界观察事实。新成员决策稳定actorId；同tickNPC/阶段/环境/居民原顺序不变。正常停止保留合法前缀、失败步不消费；显式fineActorId至多领取一次，既有动作只等结束。
+- 32步/人、128步/批、1024决策/段、fine安全1000tick、低血≤25%、3个安全完整窗回升1000；默认stop/empty-wait。参数、默认值与窗口协议进入party规则指纹；自动档不自动连续提交。
+- generator确认：每个尝试由现有完整对象图事务包围；遇未回答问题关闭迭代器并原位恢复该尝试，保留已完成成员前缀，保存明确intent/answers/decisionId/actorId/ordinal/revision。选择重新走同一原生路径，已批准答案只作验证输入，不重复提交公开命令。原生库存目标modal和narrative自由冻结对话保存既有已提交前缀，用稳定choiceId续段。未持有生成器/闭包。
+- PendingDecision另保存 `prompt`，用于确认显示原生i18n产生的完整风险文案；modal/dialogue空prompt使用requestKey，机械选择仍仅稳定choiceId。当前语言固定zh_CN；prompt随party域验证，不从普通日志推断打断。
+- `partyReceipt`仅出现在window/decision录像事件，包含seq/segment/tick/trace/facts；回放执行输入一次，再比较完整收据。每个语义段末强制full，沿用生产Worker与256/2048边界；续录仅撤销非语义、非固定的临时末行full。完整性错误仍fail-closed。
+- 产品session绑定Game的party state对象和revision；focus、draft、ready、deadline、preview不持久化。编辑/取消/世界改变使ready和旧预演失效；deadline仅可注入时钟接缝，无产品倒计时入口。manual/all-ready/deadline规范化后规则相同。
+- `known-world-v1`是独立、只收已知DTO的确定性小型模拟容器。成员移动/等待/搜索按已知格和速度预测；未知格阻断，已知敌人静态占位并提示不确定性，物品/技能标注无法预测，不运行隐藏AI，不借主局snapshot→执行→load。没有随机动作，因此不访问任何RNG或实体allocator。
+- 安全提交后才发布窗口事件；订阅者得到分离收据，发布期间拒绝公开机械命令重入。UI状态修改和报告观察不会重新执行窗口。
+
+性能阈值未冻结。新增 `party-window-v1` 与旧 `party-v1` 分立；本地冒烟和分层计时不代替云端三轮、逐指标数字裁定及独立冻结验证。维护者派发命令与边界见P1b报告。

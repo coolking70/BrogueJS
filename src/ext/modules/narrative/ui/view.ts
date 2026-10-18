@@ -1,3 +1,4 @@
+import {withPartyActor} from '../../../../engine/Core/PartyRuntime';
 import type { Game } from '../../../../engine/Core/Game';
 import type { NarrativeInput } from '../input';
 
@@ -23,7 +24,9 @@ export interface NarrativeUiView {
 /** The module's projection already filters visibility and choice conditions.
  * Rendering never loads mechanical definitions or evaluates story effects. */
 export function readNarrativeUiView(game: Game): NarrativeUiView | null {
-    const source = game.extensionRuntime?.readModuleView('narrative');
+    const pending=game.party?.state.window.decision;
+    const actor=pending?.kind==='dialogue'?game.controlledActors.find(a=>a.id===pending.actorId):undefined;
+    const source = actor?withPartyActor(game,actor,()=>game.extensionRuntime?.readModuleView('narrative')):game.readFocusedModuleView('narrative');
     if (!source) return null;
     return Object.freeze({ session: source.session, revision: source.state.revision as number,
         nearby: source.state.nearby as unknown as readonly NarrativeNearbyTarget[],

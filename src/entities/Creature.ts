@@ -1,3 +1,4 @@
+import { statusIncreased } from '../engine/Status/StatusObservation';
 import { wakeSlumber } from '../engine/Status/Incapacitation';
 import { nativeStat, markStatsDirty } from '../engine/Stats/NativeStatSources';
 import { physicalContactOf } from '../engine/Combat/BodyCombat';
@@ -180,6 +181,7 @@ export class Creature implements Entity {
         if (this.extensionHooks && (id === 'poisoned' || (id as string) === 'burning')) {
             this.extensionHooks.causality.statusChanged(this.id, id as 'poisoned' | 'burning', this.getStatusDuration(id), duration);
         }
+        if (duration > this.getStatusDuration(id)) statusIncreased(this, id);
         if (id === 'weakened' && duration <= 0) this.weaknessAmount = 0;
         if (id === 'shielded') this.maxShield = Math.max(0, duration);
         if (id === 'poisoned') this.poisonAmount = duration > 0 && this.hasStatus(id) ? Math.max(1, this.poisonAmount) : duration > 0 ? 1 : 0;
@@ -215,6 +217,7 @@ export class Creature implements Entity {
         if (id === 'nauseous' || id === 'magical_fear') this.maxStatus[id] = next;
         if (next === current) return false;
         this.statusDurations[id] = next;
+        if (next > current) statusIncreased(this, id);
         if (this.extensionHooks && id === 'immune_fire') this.extensionHooks.causality.clearStatus(this.id, 'burning');
         this.refreshSpeeds();
         return true;
@@ -230,6 +233,7 @@ export class Creature implements Entity {
         const current = this.getStatusDuration('weakened');
         this.statusDurations.weakened = Math.max(current, duration);
         this.maxStatus.weakened = Math.max(this.maxStatus.weakened ?? 0, duration);
+        if (this.weaknessAmount > before || this.statusDurations.weakened > current) statusIncreased(this, 'weakened');
         markStatsDirty(this);
         return before !== this.weaknessAmount || current !== this.statusDurations.weakened;
     }
@@ -282,6 +286,7 @@ export class Creature implements Entity {
         const oldDuration = this.getStatusDuration('poisoned');
         this.poisonAmount = Math.max(1, (oldDuration > 0 ? Math.max(1, this.poisonAmount) : 0) + concentration);
         this.statusDurations.poisoned = oldDuration + duration; markStatsDirty(this);
+        statusIncreased(this, 'poisoned');
         if (this.extensionHooks) this.extensionHooks.causality.statusChanged(this.id, 'poisoned', oldDuration, oldDuration + duration);
         return true;
     }

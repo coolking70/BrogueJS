@@ -7,7 +7,7 @@ on:
         description: 'phase6 keeps D6; party measures separate 1/2/4 actor scenes'
         type: choice
         default: phase6
-        options: [phase6, party]
+        options: [phase6, party, party-window]
       mode:
         description: 'ab compares revisions; calibration-only measures party B without A'
         type: choice
@@ -72,7 +72,7 @@ jobs:
           import {execFileSync} from 'node:child_process';
           import {appendFileSync} from 'node:fs';
           const calibration = process.env.PERF_MODE === 'calibration-only';
-          if (calibration && process.env.PERF_SUITE !== 'party') throw Error('calibration-only requires party suite');
+          if (calibration && !['party','party-window'].includes(process.env.PERF_SUITE)) throw Error('calibration-only requires party suite');
           if (calibration && process.env.PERF_BASE) throw Error('Omit base_ref for calibration-only');
           if (!calibration && !process.env.PERF_BASE) throw Error('ab requires base_ref');
           const refs = calibration ? [['head', process.env.PERF_HEAD]] : [['base', process.env.PERF_BASE], ['head', process.env.PERF_HEAD]];
@@ -117,7 +117,7 @@ jobs:
         if: inputs.mode != 'calibration-only'
         run: npm ci --prefix base
       - name: Stage frozen classic planner and all-only recovery on both historical checkouts
-        if: inputs.suite != 'party'
+        if: inputs.suite == 'phase6'
         run: |
           node --input-type=module <<'JS'
           import {copyFileSync} from 'node:fs';
@@ -139,8 +139,19 @@ jobs:
           node control/scripts/run-ext-perf-ab.mjs --party "${args[@]}" \
             --head "$GITHUB_WORKSPACE/head" --out "$RUNNER_TEMP/ext-perf" \
             --shard "$PERF_SHARD" --rounds "$PERF_ROUNDS"
+      - name: Party window calibration (B only, independent identity)
+        if: inputs.suite == 'party-window'
+        env:
+          PERF_ROUNDS: ${{ inputs.rounds }}
+          PERF_SHARD: ${{ matrix.shard }}
+          PERF_MODE: ${{ inputs.mode }}
+        run: |
+          test "$PERF_MODE" = calibration-only
+          node control/scripts/run-party-window-perf.mjs \
+            --head "$GITHUB_WORKSPACE/head" --out "$RUNNER_TEMP/ext-perf" \
+            --shard "$PERF_SHARD" --rounds "$PERF_ROUNDS"
       - name: Interleaved A/B and B calibration
-        if: inputs.suite != 'party'
+        if: inputs.suite == 'phase6'
         timeout-minutes: 345
         env:
           PERF_BASE_IDENTITY: ${{ inputs.base_identity }}
@@ -200,7 +211,7 @@ jobs:
           pattern: ext-perf-${{ github.run_id }}-${{ github.run_attempt }}-*
           path: ${{ runner.temp }}/shards
       - name: Recheck evidence, adjudicate D6 and suggest budget
-        if: always()
+        if: always() && inputs.suite != 'party-window'
         env:
           ARTIFACT: ext-perf-${{ github.run_id }}-${{ github.run_attempt }}
         run: >-
@@ -209,6 +220,16 @@ jobs:
           "$RUNNER_TEMP/shards/$ARTIFACT-classic"
           "$RUNNER_TEMP/shards/$ARTIFACT-all-full"
           "$RUNNER_TEMP/shards/$ARTIFACT-all-prefix"
+      - name: Recheck party window calibration completeness
+        if: always() && inputs.suite == 'party-window'
+        env:
+          ARTIFACT: ext-perf-${{ github.run_id }}-${{ github.run_attempt }}
+        run: >-
+          node scripts/merge-party-window-perf.mjs
+          "$RUNNER_TEMP/ext-perf-aggregate"
+          "$RUNNER_TEMP/shards/$ARTIFACT-classic/result.json"
+          "$RUNNER_TEMP/shards/$ARTIFACT-all-full/result.json"
+          "$RUNNER_TEMP/shards/$ARTIFACT-all-prefix/result.json"
       - name: Publish aggregate summary
         if: always()
         run: |

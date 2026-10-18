@@ -1,3 +1,4 @@
+import { validateWindowState, type PartyWindowState } from './partyWindow';
 /** P1a finite input contract. No engine objects, UI focus, plans or AI state. */
 import { c5Canonical } from './worldJson';
 import type { Json } from './types';
@@ -20,7 +21,8 @@ export interface MemberState {
   controller: { kind: 'human'; slot: string };
 }
 export interface PartyState {
-  schema: 1;
+  schema: 2;
+  window: PartyWindowState;
   revision: number;
   primaryActorId: number;
   leaderActorId: number;
@@ -62,7 +64,7 @@ function level(value: unknown): asserts value is LevelRef {
   integer(value.depth, 1);
   if (value.depth > 40) fail();
 }
-function intent(value: unknown): asserts value is ActorIntent {
+export function validateActorIntent(value: unknown): asserts value is ActorIntent {
   if (!value || typeof value !== 'object') fail();
   const row = value as Record<string, unknown>;
   switch (row.kind) {
@@ -95,7 +97,7 @@ export function parsePartyInput(value: unknown): PartyInput {
   keys(row, `kind,schema,expectedRevision,issuerSlot,actorId,${row.kind === 'party:actor-step' ? 'intent' : 'change'}`);
   if (row.schema !== PARTY_SCHEMA) throw new PartyFailure('VERSION_MISMATCH');
   integer(row.expectedRevision); integer(row.actorId, 1); slot(row.issuerSlot);
-  if (row.kind === 'party:actor-step') intent(row.intent);
+  if (row.kind === 'party:actor-step') validateActorIntent(row.intent);
   else {
     const change = row.change as Record<string, unknown>;
     if (!change || typeof change !== 'object') fail();
@@ -115,8 +117,8 @@ export function parsePartyInput(value: unknown): PartyInput {
 }
 export function validatePartyState(value: unknown): asserts value is PartyState {
   try { c5Canonical(value); } catch { return fail(); }
-  keys(value, 'schema,revision,primaryActorId,leaderActorId,members');
-  if (value.schema !== 1) throw new PartyFailure('VERSION_MISMATCH');
+  keys(value, 'schema,revision,primaryActorId,leaderActorId,members,window');
+  if (value.schema !== 2) throw new PartyFailure('VERSION_MISMATCH');
   integer(value.revision); integer(value.primaryActorId, 1); integer(value.leaderActorId, 1);
   if (!Array.isArray(value.members) || !value.members.length || value.members.length > PARTY_LIMIT) fail();
   let previous = 0;
@@ -129,6 +131,7 @@ export function validatePartyState(value: unknown): asserts value is PartyState 
     slot(member.controller.slot);
   }
   if (![value.primaryActorId,value.leaderActorId].every(id => (members as MemberState[]).some(m => m.actorId === id))) fail();
+  validateWindowState(value.window,value as unknown as PartyState);
   const active = (members as MemberState[]).filter(m => m.life === 'active');
   if (active.some((m: MemberState) => c5Canonical(m.level) !== c5Canonical(active[0]!.level))) fail();
 }

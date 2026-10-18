@@ -1320,9 +1320,9 @@ export class ExtensionRuntime {
     }
     private nativeMaximumBase(actor: Creature): number { return actor.maxHp-statSessions.get(this)!.ledger.bonus(actor.id,'native.max-hp'); }
 
-    /** Static envelope/registration check; safe for historical inputs without
-     * consulting the current run's state-dependent allowInput gates. */
-    private hasRegisteredCommand(data: unknown): boolean {
+    /** Static envelope/registration check for history and plans. Execution still
+     * checks the current run's state-dependent allowsInput gates. */
+    public hasRegisteredCommand(data: unknown): boolean {
         try {
             const input = typeof data==='string'?JSON.parse(data):data;
             if (!isJson(input) || !input || typeof input !== 'object' || Array.isArray(input)

@@ -116,7 +116,7 @@ export interface EffectsPort {
 
 export interface TimePorts {
     world: WorldPort; clock: ClockPort; effects: EffectsPort;
-    party?: { actors():readonly Creature[]; onStairs():boolean; runAs<T>(actor:Creature,work:()=>T):T; hasReady():boolean; hasActive():boolean; nextBoundary():number; advance(elapsed:number):void; accepted():void; settleDeaths():void; settleDue():void; forEachActive(work:()=>void):void };
+    party?: { windowRemaining?():number; windowStop?():boolean; actors():readonly Creature[]; onStairs():boolean; runAs<T>(actor:Creature,work:()=>T):T; hasReady():boolean; hasActive():boolean; nextBoundary():number; advance(elapsed:number):void; accepted():void; settleDeaths():void; settleDue():void; forEachActive(work:()=>void):void };
     bodies?: { isDecisionOwner(id: number): boolean; advanceElapsed(ticks: number): void };
     /** Opt-in foundation scheduling; absence retains the native iteration/order. */
     actions?: ActorActionSchedulerPort;
@@ -128,6 +128,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
         // 置位后本回合不再进入暂停分支（E1-修订：锁存，至多暂停一次）
         let fastForward = false,zeroBoundaries=0;
         while (ports.party ? ports.party.hasActive() && !ports.party.hasReady() : ports.world.player.ticksUntilTurn > 0) {
+            if(ports.party?.windowRemaining?.()===0||ports.party?.windowStop?.())return;
             const observeWork = ports.effects.observeObjectiveWork;
             let segmentStart = observeWork ? performance.now() : 0, workBeforeYield = 0;
             let objectiveBoundary = false;
@@ -146,6 +147,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                 soonestTurn = ports.clock.ticksTillUpdateEnvironment;
             }
 
+            if(ports.party?.windowRemaining)soonestTurn=Math.min(soonestTurn,ports.party.windowRemaining());
             const actionBoundary = actions?.nextActionBoundary();
             if (actionBoundary != null && actionBoundary < soonestTurn) soonestTurn = actionBoundary;
             if(ports.effects.residentBoundaryTicks)soonestTurn=Math.min(soonestTurn,ports.effects.residentBoundaryTicks());

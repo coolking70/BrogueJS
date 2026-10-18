@@ -36,9 +36,10 @@ export function digestRoot(
   manifest: ExtensionManifest | null,
   order: readonly string[]
 ): string {
+  const codec = effectivePartyCodec(manifest);
   return hashJson([
     'c5-root-v1',
-    hasPartyIdentity(manifest) ? [effectivePartyCodec(manifest).schema,8,21,3] : codecIdentity,
+    hasPartyIdentity(manifest) ? [codec.schema, codec.wholeRun, codec.foundation, codec.origin] : codecIdentity,
     manifestFingerprint(manifest),
     order.map((d) => domains[d])
   ]);

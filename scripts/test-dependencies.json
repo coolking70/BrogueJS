@@ -625,6 +625,24 @@
         "combat"
       ],
       "optional": []
+    },
+    "src/ext/modules/party/tests/party_window.test.ts": {
+      "required": [],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_window_decisions.test.ts": {
+      "required": [
+        "narrative"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_window_ui.test.ts": {
+      "required": [],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_window_review_r1.test.ts": {
+      "required": [],
+      "optional": []
     }
   }
 }

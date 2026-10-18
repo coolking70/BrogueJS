@@ -75,7 +75,7 @@ export interface GameSnapshot extends LevelSnapshot {
     extensions?: ExtensionSnapshot;
     /** Shared whole-run envelope; entity row/graph codec has no independent version slot. */
     version: number;
-    schema: typeof WHOLE_RUN_SCHEMA | 'brogue-web-whole-run-v8';
+    schema: typeof WHOLE_RUN_SCHEMA | 'brogue-web-whole-run-v9';
     party?: { state: PartyState; actors: GameSnapshotPlayer[]; native: import('./PartyRuntime').PartyRuntime['native'] };
     savedAt: number;
     seed: string;

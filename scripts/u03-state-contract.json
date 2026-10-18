@@ -513,6 +513,6 @@
   },
   "party": {
     "kind": "run",
-    "contract": "P1a：仅party局创建；state只存成员/控制权/就绪revision，actors拥有非主成员原生实体，Game.player保持主成员；whole-run8.party持久化，state归party摘要，actors归native/knowledge，作用域和focus不持久化。"
+    "contract": "P1b：仅party局创建；state2.window拥有已接受计划/游标/窗口预算/打断锁存/待决DTO/段收据，归party摘要；actors/native沿原唯一根，whole-run9.party持久化。PartyWindow运行能力与答案游标为调用栈WeakMap，安全段不持有；PartyPlanning的focus/drafts/ready/deadline/preview为session，绑定state对象和revision，load/new-game失效，不入摘要。"
   }
 }

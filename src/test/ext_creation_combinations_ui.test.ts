@@ -1,3 +1,4 @@
+import {timeSystem} from '../engine/Systems/Time';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import * as Vue from 'vue';
 import I18NextVue from 'i18next-vue';
@@ -163,6 +164,7 @@ function assertStarted(payload: CreationPayload, ids: readonly string[]) {
         expect(g.recordedInputEvents.filter(e => e.action === 'ext:command').map(e => e.data)).toEqual(payload.initialCommands);
         g.animationEnabled=false;
         for(const actor of g.controlledActors){while(logger.pendingAcknowledgment)logger.acknowledgeNext();if(g.party)g.submitPartyIntent({kind:'wait'},actor.id);else g.executeCommand('wait');}
+        if(g.party){while(logger.pendingAcknowledgment)logger.acknowledgeNext();const planner=g.partyPlanner()!;planner.append(g.player.id,{kind:'wait'});planner.submit(planner.batch(timeSystem.currentTick,{kind:'ticks',ticks:100},null),b=>g.submitPartyWindow(b));expect(g.party.state.window.seq).toBe(1);}
         const save=g.toSaveSnapshot(),recording = g.exportRecording();
         const h=new Game({seed:1});try{const errors:string[]=[];const loaded=h.loadSnapshot(JSON.parse(JSON.stringify(save)),e=>errors.push(e));expect(loaded,errors.join(';')).toBe(true);expect(h.loadReplay(recording)).toBe(true);while(h.replayCursor<recording.events.length&&!h.replayError)h.replayStep(true);expect(h.replayError).toBeNull();h.replaySeek(recording.events.length);expect(h.replayError).toBeNull();const branch=JSON.parse(JSON.stringify(h.toSaveSnapshot()));expect(h.loadSnapshot(branch)).toBe(true);while(logger.pendingAcknowledgment)logger.acknowledgeNext();if(h.party)h.submitPartyIntent({kind:'wait'},h.readyPartyActorId!);else h.executeCommand('wait');expect(h.exportRecording().events.length).toBe(recording.events.length+1);}finally{h.disposeRecording();}
         expect(recording.extensions).toEqual(expectedManifest);

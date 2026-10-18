@@ -40,6 +40,7 @@ export function useNarrativeUi(host: ModuleUiHost): ModuleUiSession {
         submitting.value = true; error.value = null;
         try {
             game.executeCommand('ext:command', command);
+            if(game.party&&!game.party.state.window.decision&&game.partyPlanner()?.drafts.has(game.focusedActor.id))return true;
             const current = readNarrativeUiView(game);
             if (current?.revision === expected.revision) { error.value = 'ext.narrative.ui.command_rejected'; return false; }
             if (expected.active && !current?.active) host.afterClosePanel();

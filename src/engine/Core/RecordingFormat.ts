@@ -70,7 +70,7 @@ export function validateRecordingV4(
       const e = r.events[index]!;
       exact(
         e,
-        'index,action,data,decisions,tick,turn,simulationTicks,levelRef,player,hp,inventoryStamp,rng,terminal,checkpoint,fullCheckpoint,chainDigest',
+        'index,action,data,decisions,tick,turn,simulationTicks,levelRef,player,hp,inventoryStamp,rng,terminal,checkpoint,fullCheckpoint,chainDigest' + (e.action==='party:window'||e.action==='party:decision'?',partyReceipt':''),
         'event'
       );
       c5Canonical(e, true);
@@ -120,7 +120,7 @@ export function validateRecordingV4(
         )
           return false;
       }
-      if (((index + 1) % 256 === 0 || index === r.events.length - 1) && e.fullCheckpoint === null)
+      if (((index + 1) % 256 === 0 || index === r.events.length - 1 || e.action==='party:window'||e.action==='party:decision') && e.fullCheckpoint === null)
         return false;
       if (!hex(e.chainDigest) || recordingChain(chain, e) !== e.chainDigest) return false;
       chain = e.chainDigest;
@@ -142,9 +142,14 @@ export function validateInputState(
       'inputState'
     );
     const i = value as unknown as RecordingInputStateV2;
+    // The mechanical modal owner, never UI focus, owns every pending item.
+    const modalIds = world.party ? Object.entries(world.party.native).filter(([, n]) => n.modal).map(([id]) => Number(id)) : [];
+    if (modalIds.length > 1) return false;
+    const owner = modalIds.length ? [world.player, ...world.party!.actors].find(a => a.id === modalIds[0]) : world.player;
+    if (!owner) return false;
     const item = (id: number | null) =>
       id === null ||
-      (Number.isSafeInteger(id) && world.player.inventory.some((item) => item.id === id));
+      (Number.isSafeInteger(id) && owner.inventory.some((item) => item.id === id));
     if (
       typeof i.inventoryOpen !== 'boolean' ||
       ![null, 'equip', 'unequip', 'drop', 'call', 'relabel'].includes(i.inventoryAction) ||

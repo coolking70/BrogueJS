@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "identity": "party-window-v1",
+  "status": "pending-cloud-calibration",
+  "decisionDate": "2026-10-18",
+  "methodApproved": "B6",
+  "sourceRuns": [],
+  "metrics": [],
+  "hardLimits": null,
+  "independentValidation": null,
+  "note": "Method approved only. Await complete three-round cloud data, maintainer metric grades/numbers and a separate full validation. Not a frozen budget or D6 pass."
+}

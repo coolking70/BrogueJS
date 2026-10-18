@@ -1575,5 +1575,9 @@
     "ext.foundation.structure.confirm": "确认执行？施工、存取和拆卸会推进时间；休息可被危险打断。",
     "ext.foundation.world.confirm.item-operation": "消耗 {{cost}} 枚碎片，工作 {{ticks}} tick。重铸可能变差或不变；拆卸保留取出的符文。中断只退未完成投入，已耗时间不退。继续？",
     "ext.foundation.world.message.equipment-completed": "装备加工已完成。",
-    "ext.foundation.world.message.equipment-interrupted": "装备加工已中断，未完成的投入已返还。"
+    "ext.foundation.world.message.equipment-interrupted": "装备加工已中断，未完成的投入已返还。",
+  "ext.party.actor": "行动成员：{{actor}}",
+  "ext.party.member": "成员 {{number}}",
+  "ext.party.exit_confirm": "此成员将从地牢入口带领整支队伍结束探险，包括留守成员。确认离开？",
+  "ext.party.unavailable": "当前成员无法执行此行动。"
 }

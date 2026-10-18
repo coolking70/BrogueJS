@@ -6,7 +6,11 @@
     "tests/party_extensions.test.ts",
     "tests/party_worker.test.ts",
     "tests/party_r1_environment.test.ts",
-    "tests/party_r2_occupancy.test.ts"
+    "tests/party_r2_occupancy.test.ts",
+    "tests/party_window.test.ts",
+    "tests/party_window_decisions.test.ts",
+    "tests/party_window_ui.test.ts",
+    "tests/party_window_review_r1.test.ts"
   ],
   "drift": []
 }

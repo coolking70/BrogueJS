@@ -1,3 +1,7 @@
+import { observeStatusIncreases } from '../Status/StatusObservation';
+import { partyPlanning, enablePartyPlanning, disablePartyPlanning, type KnownPartyWorld } from './PartyPlanning';
+import { newPartyWindow, parseWindowInput, parseWindowPolicy, type WindowPolicy, type WindowBatch, type WindowDecision, type PartyPlan, type PendingPartyDecision } from '../../ext/partyWindow';
+import { executePartyWindow, validateWindowAcceptance, windowClock, publishPartyWindow, isPublishingPartyWindow, answerWindowQuestion, withWindowAnswers, WindowQuestion, type PartyWindowPort, type WindowAttempt } from './PartyWindow';
 import {setPartyPerception,canActorSeeCell} from '../UI/PartyPerception';
 import { TM_IS_WIRED, T_OBSTRUCTS_GAS, T_OBSTRUCTS_SURFACE_EFFECTS } from '../Map/TerrainCatalog';
 import { bindPartyMember } from './PartyActorIdentity';
@@ -41,7 +45,7 @@ import { isDeparting, settleDepartures, departureStep } from './ActorDeparture';
 import { peekEdibleState } from './EdibleState';
 import { bindSlumberWake } from '../Status/Incapacitation';
 import { isIncapacitated } from '../Status/Incapacitation';
-import { structureBlocking, cellProjectileBlocked, composedCellFlags } from '../Map/CellProperties';
+import { structureBlocking, cellProjectileBlocked, composedCellFlags, knownCellFlags } from '../Map/CellProperties';
 import { bindWorldStructures, advanceStructureFire, settleStructureFoundations, excavateStructures, isStructureFixtureCommand, executeStructureFixtureCommand } from '../Map/StructureWorld';
 import { restPointDefinition } from '../Map/StructureWorld';
 import { recordWorldReceipt, threat as worldThreat } from './WorldWorkWorld';
@@ -481,6 +485,9 @@ const TURNS_FOR_FULL_REGEN = 300;
 // During publication it supplies authority before session hooks are attached.
 const loadingSpatialCatalogs = new WeakMap<Game, SpatialCatalog>();
 const runicTransactions=new WeakSet<Game>();
+// Native item results/turn acceptance are call-stack signals, never saved state.
+const partyItemCommits = new WeakMap<Game, (accepted?: boolean) => void>();
+function partyItemResult(game: Game, accepted: boolean): void { partyItemCommits.get(game)?.(accepted); }
 
 export class Game {
     /** Explicit mechanical truth, across owned layers. Ordinary runs omit it. */
@@ -526,7 +533,147 @@ export class Game {
     }
     public focusPartyMember(id:number):void {if(this.party)setPartyFocus(this,this.party.state,id);this.needsRender=true;}
     public get readyPartyActorId():number|null {return this.party?readyPartyMember(this.party.state,partyWorldRead(this,this.party,id=>actorActionSchedulerFor(this)?.isBusy(id)??false))?.actorId??null:this.player.id;}
-    public submitPartyIntent(intent:import('../../ext/party').ActorIntent,actorId=this.focusedActor.id):void {if(!this.party)throw new PartyFailure('PARTY_DISABLED');this.executeCommand('party:actor-step',{kind:'party:actor-step',schema:1,expectedRevision:this.party.state.revision,issuerSlot:'local:0',actorId,intent});}
+    public submitPartyIntent(intent:import('../../ext/party').ActorIntent,actorId=this.focusedActor.id):void {if(!this.party)throw new PartyFailure('PARTY_DISABLED');const planning=partyPlanning(this,this.party.state);if(planning&&!this.party.state.window.decision){planning.append(actorId,intent);this.needsRender=true;return;}this.executeCommand('party:actor-step',{kind:'party:actor-step',schema:1,expectedRevision:this.party.state.revision,issuerSlot:'local:0',actorId,intent});}
+    public partyPlanner(enabled=true){if(!this.party)throw new PartyFailure('PARTY_DISABLED');if(!enabled){disablePartyPlanning(this);return undefined;}return enablePartyPlanning(this,this.party.state);}
+    public knownPartyWorld():KnownPartyWorld {
+        if(!this.party)throw new PartyFailure('PARTY_DISABLED');
+        const cells:KnownPartyWorld['cells']=[];
+        for(let y=0;y<this.grid.height;y++)for(let x=0;x<this.grid.width;x++){
+            const c=this.grid.getCell(x,y)!;if(!c.isVisible&&!c.hasMemory&&!c.isMagicMapped)continue;
+            cells.push({x,y,passable:c.isVisible?c.isPassable:c.rememberedFlags?.passable===true,hazard:(knownCellFlags(c)&(T_IS_DF_TRAP|T_LAVA_INSTA_DEATH|T_AUTO_DESCENT|T_CAUSES_DAMAGE))!==0});
+        }
+        return {baseRevision:this.party.state.revision,level:this.depth,cells,members:this.activeControlledActors.map(a=>{const m=this.party!.state.window.members.find(m=>m.actorId===a.id)!;return {id:a.id,x:a.x,y:a.y,moveTicks:nativeStat(a,'native.move-speed'),remaining:a.ticksUntilTurn,plan:structuredClone(m.plan),cursor:m.cursor};}),enemies:this.monsters.filter(m=>m.hp>0&&!m.isAlly&&this.activeControlledActors.some(a=>canSeeMonster(a,this.grid,m))).map(m=>({id:m.id,x:m.x,y:m.y}))};
+    }
+    public submitPartyWindow(input:WindowBatch):void {this.executeCommand('party:window',input);}
+    public choosePartyDecision(choiceId:string):void {
+        const d=this.party?.state.window.decision;if(!d)throw new PartyFailure('STALE_DECISION');
+        this.executeCommand('party:decision',{kind:'party:decision',schema:1,issuerSlot:'local:0',expectedRevision:this.party!.state.revision,actorId:d.actorId,decisionId:d.id,choiceId});
+    }
+    private partyTelegraphs(actor:Player):string[] {
+        const view=withPartyActor(this,actor,()=>this.extensionRuntime?.readModuleView('combat'));
+        if(!view||!Array.isArray(view.state.telegraphs))return [];
+        return view.state.telegraphs.flatMap(value=>{
+            if(!value||typeof value!=='object'||Array.isArray(value)||!Array.isArray(value.cells))return [];
+            const source=this.monsters.find(m=>m.id===value.sourceEntityId);
+            if(!source||!canDirectlySeeMonster(actor,this.grid,source))return [];
+            const cells=value.cells.filter((c:unknown)=>!!c&&typeof c==='object'&&!Array.isArray(c)&&Number.isInteger((c as Pos).x)&&Number.isInteger((c as Pos).y));
+            if(!cells.some((c:unknown)=>(c as {x:number;y:number}).x===actor.x&&(c as {x:number;y:number}).y===actor.y))return [];
+            return [canonical([value.actionId,value.sourceSubactionId,value.sourceEntityId,value.phase,cells])];
+        }).sort();
+    }
+    private partyWindowPort():PartyWindowPort {
+        if(!this.party)throw new PartyFailure('PARTY_DISABLED');
+        return {state:this.party.state,tick:()=>timeSystem.currentTick,ended:()=>this.isGameOver,ready:()=>this.readyPartyActorId,
+            actors:()=>this.controlledActors.map(a=>{const m=this.party!.state.members.find(m=>m.actorId===a.id)!,cell=this.grid.getCell(a.x,a.y);return {
+                id:a.id,hp:a.hp,maxHp:a.maxHp,depth:m.level.kind==='dungeon'?m.level.depth:0,active:m.life==='active',at:{...a.loc},remaining:a.ticksUntilTurn,busy:actorActionSchedulerFor(this)?.isBusy(a.id)??false,
+                statuses:{...a.statusDurations},hostiles:this.monsters.filter(m=>m.hp>0&&!m.isAlly&&canSeeMonster(a,this.grid,m)).map(m=>m.id).sort((a,b)=>a-b),
+                telegraphs:this.partyTelegraphs(a),
+                site:this.isPartyStair(a)?`stairs:${this.depth}:${a.x},${a.y}`:cell?.isDiscovered&&(cellTerrainFlags(this.grid,a.x,a.y)&T_IS_DF_TRAP)?`trap:${this.depth}:${a.x},${a.y}`:null,
+                hazard:!!cell&&(cellTerrainFlags(this.grid,a.x,a.y)&(T_IS_DF_TRAP|T_LAVA_INSTA_DEATH|T_AUTO_DESCENT|T_CAUSES_DAMAGE))!==0};}),
+            validate:(id,intent,staticOnly)=>this.validateWindowIntent(id,intent,staticOnly),
+            travel:(id,plan,staticOnly)=>this.partyTravelIntent(id,plan,staticOnly),
+            attempt:(id,intent,answers)=>this.attemptWindowIntent(id,intent,answers),
+            modalIntent:(d,choice)=>this.partyModalChoice(d,choice),
+            advance:()=>{this.timePorts().party!.settleDue();const iter=this.advancementLoop(this.calculateStealthRange());while(!iter.next().done){};}
+        };
+    }
+    private validateWindowIntent(id:number,intent:import('../../ext/party').ActorIntent,staticOnly:boolean):void {
+        const actor=this.controlledActors.find(a=>a.id===id);if(!actor)throw new PartyFailure('BAD_ACTOR');
+        if(intent.kind==='item'&&!actor.inventory.items.some(i=>i.id===intent.itemId))throw new PartyFailure('ITEM_NOT_OWNED');
+        if(intent.kind==='exchange'&&(!this.party!.state.members.some(m=>m.actorId===intent.toActorId)||!actor.inventory.items.some(i=>i.id===intent.itemId)))throw new PartyFailure('ITEM_NOT_OWNED');
+        if(intent.kind==='attack'&&!this.monsters.some(m=>m.id===intent.targetId&&m.hp>0))throw new PartyFailure('INVALID_TARGET');
+        if(intent.kind==='module')withPartyActor(this,actor,()=>this.preparePartyNativeCommand(actor,intent,staticOnly));
+        if(!staticOnly){
+            if(intent.kind==='move'){const x=actor.x+intent.dx,y=actor.y+intent.dy,cell=this.grid.getCell(x,y);if(!cell)throw new PartyFailure('INVALID_TARGET');}
+            this.preparePartyInput({kind:'party:actor-step',schema:1,expectedRevision:this.party!.state.revision,issuerSlot:'local:0',actorId:id,intent});
+        }
+    }
+    private partyTravelIntent(id:number,plan:Extract<PartyPlan,{kind:'travel'}>,staticOnly:boolean):import('../../ext/party').ActorIntent|null {
+        const actor=this.controlledActors.find(a=>a.id===id)!,target=this.grid.getCell(plan.target.x,plan.target.y);
+        if(plan.level.kind!=='dungeon'||plan.level.depth!==this.depth||!target||!(target.isVisible||target.hasMemory||target.isMagicMapped))throw new PartyFailure('INVALID_TARGET');
+        if(staticOnly||actor.x===plan.target.x&&actor.y===plan.target.y)return null;
+        const known=(x:number,y:number)=>{const c=this.grid.getCell(x,y);return !!c&&(c.isVisible?c.isPassable:c.hasMemory&&c.rememberedFlags?.passable===true);};
+        const queue=[{x:actor.x,y:actor.y,dx:0,dy:0}],seen=new Set([`${actor.x},${actor.y}`]);
+        for(let i=0;i<queue.length;i++){const at=queue[i]!;for(const [dx,dy] of [[0,-1],[1,0],[0,1],[-1,0],[1,-1],[1,1],[-1,1],[-1,-1]]){
+            const x=at.x+dx!,y=at.y+dy!,key=`${x},${y}`;if(seen.has(key)||!known(x,y)||dx&&dy&&(!known(at.x+dx,at.y)||!known(at.x,at.y+dy)))continue;
+            if(this.activeControlledActors.some(a=>a.id!==id&&a.x===x&&a.y===y))continue;seen.add(key);
+            const next={x,y,dx:at.dx||at.dy?at.dx:dx!,dy:at.dx||at.dy?at.dy:dy!};if(x===plan.target.x&&y===plan.target.y)return {kind:'move',dx:next.dx,dy:next.dy};queue.push(next);
+        }}throw new PartyFailure('INVALID_TARGET');
+    }
+    private partyModalChoices(actor:Player):string[] {
+        if(this.pendingUseConfirm)return ['yes','no'];
+        if(this.pendingIdentify||this.pendingEnchantment)return ['cancel',...actor.inventory.items.map(i=>'item:'+i.id)];
+        if(this.pendingArcana||this.isThrowing){const choices=['cancel'];for(let y=0;y<this.grid.height;y++)for(let x=0;x<this.grid.width;x++){const c=this.grid.getCell(x,y)!;if(c.isVisible||c.hasMemory||c.isMagicMapped)choices.push(`cell:${x}:${y}`);}return choices;}
+        return [];
+    }
+    private partyDialogueView():{revision:number;sessionId:number;nodeId:string;choices:{id:string;enabled:boolean}[]}|null {
+        const view=this.extensionRuntime?.readModuleView('narrative'),active=view?.state.active as Record<string,unknown>|null|undefined;
+        if(!active||typeof active!=='object'||Array.isArray(active)||!Array.isArray(active.choices))return null;
+        return {revision:view!.state.revision as number,sessionId:active.sessionId as number,nodeId:active.nodeId as string,choices:active.choices as {id:string;enabled:boolean}[]};
+    }
+    private partyModalChoice(d:PendingPartyDecision,choice:string):import('../../ext/party').ActorIntent {
+        const actor=this.controlledActors.find(a=>a.id===d.actorId)!;
+        return withPartyActor(this,actor,():import('../../ext/party').ActorIntent=>{
+        if(d.kind==='dialogue'){const view=this.partyDialogueView();if(!view)throw new PartyFailure('STALE_DECISION');return {kind:'module',owner:'narrative',commandId:choice==='close'?'close':'choose',payload:choice==='close'?{v:2,revision:view.revision,sessionId:view.sessionId}:{v:2,revision:view.revision,sessionId:view.sessionId,nodeId:view.nodeId,choiceId:choice.slice(7)}};}
+
+        if(choice==='cancel')return {kind:'module',owner:'foundation',commandId:'native-ui',payload:{action:'escape',data:null}};
+        if(choice==='yes'||choice==='no')return {kind:'module',owner:'foundation',commandId:'native-item',payload:{operation:choice==='yes'?'confirm':'cancel',itemId:0,title:''}};
+        if(choice.startsWith('item:'))return {kind:'module',owner:'foundation',commandId:'native-item',payload:{operation:this.pendingIdentify?'identify':'enchant',itemId:Number(choice.slice(5)),title:''}};
+        const [,x,y]=choice.split(':');if(choice.startsWith('cell:'))return {kind:'module',owner:'foundation',commandId:'native-ui',payload:{action:'mouse_travel',data:{x:Number(x),y:Number(y)}}};
+        throw new PartyFailure('STALE_DECISION');
+        });
+    }
+    private attemptWindowIntent(id:number,intent:import('../../ext/party').ActorIntent,answers:boolean[]):WindowAttempt {
+        const actor=this.controlledActors.find(a=>a.id===id)!,before=timeSystem.currentTick,oldTimer=actor.ticksUntilTurn;
+        const restore=this.checkpointCombatFactWorld(),restoreExtensions=this.extensionRuntime!.checkpointPartyCommand(),random=rng.getState(),allocator=getNextEntityId();
+        let committed = false, rejected = false;
+        const previousCommit = partyItemCommits.get(this);
+        partyItemCommits.set(this, accepted => { if(accepted === false)rejected = true;else committed = true; });
+        const stages=this.partyCommandStages({kind:'party:actor-step',schema:1,expectedRevision:this.party!.state.revision,issuerSlot:'local:0',actorId:id,intent},true);
+        try {
+            withWindowAnswers(this,answers,()=>{let step=stages.next();while(!step.done)step=stages.next(answerWindowQuestion(this,step.value.message)!);});
+            const dialogue=withPartyActor(this,actor,()=>this.partyDialogueView());
+            const choices=dialogue?['close',...dialogue.choices.filter(c=>c.enabled).map(c=>'choice:'+c.id)]:withPartyActor(this,actor,()=>this.partyModalChoices(actor));
+            const chargedTicks=Math.max(0,timeSystem.currentTick-before+actor.ticksUntilTurn-oldTimer);
+            const nativeItem = intent.kind === 'module' && intent.owner === 'foundation' && intent.commandId === 'native-item'
+                && intent.payload && typeof intent.payload === 'object' && !Array.isArray(intent.payload)
+                && ['equip','unequip','drop','quaff','read','throw','eat','use','confirm'].includes(String(intent.payload.operation));
+            const nativePickup = intent.kind === 'module' && intent.owner === 'foundation' && intent.commandId === 'native-action';
+            if(!choices.length && (rejected || (intent.kind === 'item' || nativeItem || nativePickup) && !committed && answers[answers.length-1] !== false))
+                return { chargedTicks: 0, actionId: null, rejected: true };
+            if(!choices.length&&intent.kind==='move'&&chargedTicks===0)return {chargedTicks:0,actionId:null,rejected:true};
+            if(choices.length)return {chargedTicks,actionId:null,pending:{kind:dialogue?'dialogue':'modal',choices,prompt:''}};
+            return {chargedTicks,actionId:this.actorActions?.bundles.find(b=>b.decisionOwnerId===id)?.actionId??null,cancelled:answers[answers.length-1]===false};
+        }catch(error){
+            stages.return();restore();restoreExtensions();rng.setState(random);restoreNextEntityId(allocator);timeSystem.currentTick=before;
+            if(error instanceof WindowQuestion)return {chargedTicks:0,actionId:null,pending:{kind:'confirm',choices:['yes','no'],prompt:error.prompt}};
+            throw error;
+        }finally{stages.return();if(previousCommit)partyItemCommits.set(this,previousCommit);else partyItemCommits.delete(this);}
+    }
+    private validatePartyPolicy(input:WindowPolicy):void {
+        const state=this.party?.state;if(!state)throw new PartyFailure('PARTY_DISABLED');
+        if(state.revision!==input.expectedRevision)throw new PartyFailure('STALE_REVISION');
+        if(state.window.decision)throw new PartyFailure('DECISION_REQUIRED');
+        if(state.window.phase==='failed')throw new PartyFailure('INTERNAL_FAILURE');
+        const member=state.members.find(m=>m.actorId===input.actorId);if(!member||member.life==='dead')throw new PartyFailure('BAD_ACTOR');if(member.controller.slot!==input.issuerSlot)throw new PartyFailure('NOT_CONTROLLER');
+    }
+    private *partyPolicyStages(input:WindowPolicy):CommandStages<void> {
+        this.validatePartyPolicy(input);const state=this.party!.state;
+        if(input.change.kind==='single-step'){for(const m of state.window.members){m.plan=null;m.cursor=0;}disablePartyPlanning(this);}
+        else{const m=state.window.members.find(m=>m.actorId===input.actorId)!;m.emptyPlan=input.change.emptyPlan;m.reactions=structuredClone(input.change.values);}
+        state.revision++;
+    }
+    private *partyWindowStages(input:WindowBatch|WindowDecision):CommandStages<void> {
+        this.isInventoryOpen=false;
+        const subscriptions = this.controlledActors.map(actor => observeStatusIncreases(actor,
+            status => windowClock(this)?.fact('negative-status', actor.id, status)));
+        try { executePartyWindow(this,this.partyWindowPort(),input); }
+        finally { subscriptions.forEach(dispose => dispose()); }
+        // An interrupt may stop between native combat-turn boundaries. Archive
+        // buffered messages before the semantic checkpoint, not on a later save.
+        logger.flushCombat();
+    }
+
     private initializeParty(): void {
         const entry=this.extensionRuntime?.manifest.modules.find(m=>m.id==='party');
         if(!entry)return;
@@ -550,7 +697,7 @@ export class Game {
                 if(item){item.enchantment=0;item.isCursed=false;item.runicType=undefined;item.runicKnown=true;item.identified=true;item.quantity=quantity;markItemStatsDirty(item);actor.inventory.addItem(item);if(equip)actor.equip(item);}
             }
         }
-        this.party={state:{schema:1,revision:0,primaryActorId:this.player.id,leaderActorId:this.player.id,
+        this.party={state:{schema:2,window:newPartyWindow([this.player.id,...actors.keys()]),revision:0,primaryActorId:this.player.id,leaderActorId:this.player.id,
             members:[this.player,...actors.values()].map(a=>({actorId:a.id,life:'active',level:{kind:'dungeon',depth:this.depth},controller:{kind:'human',slot:'local:0'}}))},actors,native:Object.fromEntries([this.player,...actors.values()].map(a=>[a.id,{modal:false,falling:false,pendingTurn:false,poisonedDuringTurn:false,searchingCharge:0,justSearched:false,justRested:false,lastDamageSource:'',receivedLevitationWarning:false}]))};
         for(const actor of this.controlledActors)bindPartyMember(actor);
         for(const actor of actors.values())this.extensionRuntime!.attachCreature(actor);
@@ -586,6 +733,7 @@ export class Game {
     /** Combat fact transactions explicitly own native contact/rest writes, not
      * an arbitrary save/load round trip. Retained actor and scheduler identities survive. */
     private checkpointCombatFactWorld(extraActors: Monster[] = [], captures?: GenerationCheckpointCapture): () => void {
+        const restoreWindow = windowClock(this)?.checkpoint();
         const runtime=this.extensionRuntime!, cached=[...this.levels.values()];
         const creatures=collectEntityGraph([...extraActors,...this.monsters,...this.dormantMonsters,...this.purgatory,
             ...cached.flatMap(level=>[...level.monsters,...(level.dormantMonsters??[])]),
@@ -613,7 +761,7 @@ export class Game {
             restoreRevisions=checkpointSpatialActorRevisions(actors), restoreLog=logger.checkpoint();
         const invalid=isProductionActorActionRunInvalid(this), origin=recordingState(this).origin,machine=getNextMachineNumber();
         const dying=creatures.map(actor=>[actor,dyingMonsters.has(actor),convertedDropDeaths.has(actor)] as const);
-        return()=>{restore();for(const {actor,descriptors:saved} of descriptors){
+        return()=>{restore();restoreWindow?.();for(const {actor,descriptors:saved} of descriptors){
             for(const key of Reflect.ownKeys(actor))if(Object.getOwnPropertyDescriptor(actor,key)?.configurable)Reflect.deleteProperty(actor,key);
             Object.defineProperties(actor,saved);
         }
@@ -634,7 +782,7 @@ export class Game {
             checkpointCommittedFacts: () => this.checkpointCombatFactWorld(),
             memberDamage: (actor, damage, kind) => this.applyBodyMemberDamage(actor, damage, kind),
             memberDamageCommitted: actor => this.finishBodyMemberDamage(actor),
-            nativeDamageCommitted: (actor, hpLost) => {worldRestDamage(this,actor,hpLost);if(hpLost>0)interruptWorldWork(this,actor.id,'damage');},
+            nativeDamageCommitted: (actor, hpLost) => {if(hpLost>0){windowClock(this)?.fact('damage',actor.id);if(actor.hp*100<=actor.maxHp*25)windowClock(this)?.fact('low-hp',actor.id);}worldRestDamage(this,actor,hpLost);if(hpLost>0)interruptWorldWork(this,actor.id,'damage');},
             worldRestUnavailable: id => worldRestUnavailable(this, id),
             validateMemberBreak: request => this.validateMemberBreak(request),
             partDrop: input => {this.spawnExtensionDrop(input);},
@@ -3766,7 +3914,7 @@ export class Game {
         // that temporary boundary must not make the command chain depend on
         // how often the caller saved. Fixed chunk boundaries remain intact.
         const previous = this.recordedInputEvents[this.recordedInputEvents.length - 1];
-        if (previous?.fullCheckpoint && (previous.index + 1) % 256 !== 0) {
+        if (previous?.fullCheckpoint && (previous.index + 1) % 256 !== 0 && !['party:window','party:decision'].includes(previous.action)) {
             previous.fullCheckpoint = null;
             previous.chainDigest = recordingChain(this.recordedInputEvents[previous.index - 1]?.chainDigest
                 ?? recordingStart(recordingState(this).header!), previous);
@@ -3825,11 +3973,13 @@ export class Game {
         const state = recordingState(this);
         const header = state.header ?? (state.header = this.makeRecordingHeader());
         event.checkpoint = this.recordingEventDigest(header.extensions);
-        if ((event.index + 1) % 256 === 0 && state.backend) {
+        const semanticFull=event.action==='party:window'||event.action==='party:decision';
+        if(semanticFull)event.partyReceipt=structuredClone(this.party!.state.window.receipt!);
+        if (((event.index + 1) % 256 === 0 || semanticFull) && state.backend) {
             this.enqueueRecordingCheckpoint(event, (event.index + 1) % 2048 === 0);
         } else {
             let projected: GameSnapshot | undefined, projectedInput: RecordingInputStateV2 | undefined;
-            if ((event.index + 1) % 256 === 0) {
+            if ((event.index + 1) % 256 === 0 || semanticFull) {
                 try { projected = this.projectWholeRun(); projectedInput = this.recordingInputState(); }
                 catch (error) { this.failRecordingCheckpoint(event, error, 'projection'); throw error; }
                 try { event.fullCheckpoint = mechanicalDigest(projected, projectedInput); }
@@ -4027,10 +4177,14 @@ export class Game {
 
     /** Every user command, including inventory and modal choices, crosses this boundary. */
     public executeCommand(action: string, data?: unknown, perform?: () => void): void {
+        if(isPublishingPartyWindow(this))throw new PartyFailure('ACTOR_BUSY');
+        if(action.startsWith('party:')&&!['party:window','party:decision','party:actor-step','party:control','party:policy'].includes(action))throw new PartyFailure('BAD_PAYLOAD');
         if (this.recordingInputBlocked) return;
         if(this.party&&action==='ext:command'&&!this.extensionRuntime?.isInitialCommand(action,data)){
             let input:any;try{input=typeof data==='string'?JSON.parse(data):data;}catch{throw new PartyFailure('BAD_PAYLOAD');}
             if(input&&typeof input.module==='string'&&typeof input.action==='string'&&input.payload&&typeof input.payload==='object'&&!Array.isArray(input.payload)){
+                const pending=this.party.state.window.decision;if(pending?.kind==='dialogue'&&input.module==='narrative'){this.choosePartyDecision(input.action==='close'?'close':'choice:'+input.payload.choiceId);return;}
+                if(partyPlanning(this,this.party.state)&&!pending){this.submitPartyIntent({kind:'module',owner:input.module,commandId:input.action,payload:input.module==='growth'?{...input.payload,actorId:this.focusedActor.id}:input.payload});return;}
                 const actorId=this.focusedActor.id;
                 data={kind:'party:actor-step',schema:1,expectedRevision:this.party.state.revision,issuerSlot:'local:0',actorId,intent:{kind:'module',owner:input.module,commandId:input.action,payload:input.module==='growth'?{...input.payload,actorId}:input.payload}};action='party:actor-step';
             }
@@ -4042,10 +4196,19 @@ export class Game {
         if(this.partyModalActor&&['move','confirm_target','escape','mouse_travel','arcana:risk-confirm'].includes(action)){
             data={kind:'party:actor-step',schema:1,expectedRevision:this.party!.state.revision,issuerSlot:'local:0',actorId:this.partyModalActor.id,intent:{kind:'module',owner:'foundation',commandId:'native-ui',payload:{action,data:data??null}}};action='party:actor-step';
         }
+        if(action==='party:policy'){let parsed:unknown;try{parsed=typeof data==='string'?JSON.parse(data):data;}catch{throw new PartyFailure('BAD_PAYLOAD');}const input=parseWindowPolicy(parsed);this.validatePartyPolicy(input);data=JSON.stringify(input);}
+        if(action==='party:window'||action==='party:decision'){
+            let parsed:unknown;try{parsed=typeof data==='string'?JSON.parse(data):data;}catch{throw new PartyFailure('BAD_PAYLOAD');}
+            const input=parseWindowInput(parsed);if(input.kind!==action)throw new PartyFailure('BAD_PAYLOAD');
+            validateWindowAcceptance(this.partyWindowPort(),input);data=JSON.stringify(input);
+        }
         if(action==='party:actor-step'||action==='party:control'){
+            if(this.party?.state.window.decision)throw new PartyFailure('DECISION_REQUIRED');
+            if(this.party?.state.window.phase==='failed')throw new PartyFailure('INTERNAL_FAILURE');
             let parsed:unknown;try{parsed=typeof data==='string'?JSON.parse(data):data;}catch{throw new PartyFailure('BAD_PAYLOAD');}
             const input=parsePartyInput(parsed);
             if(input.kind!==action)throw new PartyFailure('BAD_PAYLOAD');
+            if(input.kind==='party:actor-step'&&this.party?.state.window.members.some(m=>m.plan?.kind==='travel'||m.plan?.kind==='queue'&&m.cursor<m.plan.actions.length))throw new PartyFailure('ACTOR_BUSY');
             this.preparePartyInput(input);data=JSON.stringify(input);
         }
         assertSingleCellPlayer(this.player);
@@ -4067,13 +4230,21 @@ export class Game {
             }
         }
         if (recordingState(this).execution || this.replayRecording || this.isAdvancing
-            || (this.isInputLocked() && !(action === 'ext:command' && (isWorldWorkCommand(this, data)||isStructureCommand(this,data)||isResidentCommand(this,data))
+            || (this.commandInputLocked(action) && !(action === 'ext:command' && (isWorldWorkCommand(this, data)||isStructureCommand(this,data)||isResidentCommand(this,data))
                 && productionActorActionInputLocked(this))) || logger.pendingAcknowledgment || presentationBlocked(this)) return;
         // Display and unaccepted extension quotes must not materialize needs.
         // Native mechanical inputs retry before allocating their command prefix.
         this.settleResidentNativeInput(action, data, perform);
         let allowed: boolean;
-        try { allowed = !this.extensionRuntime || this.extensionRuntime.allowsInput(action, data); }
+        try {
+            if(action==='party:decision'&&this.party?.state.window.decision?.kind==='dialogue'){
+                const pending=this.party.state.window.decision,choice=parseWindowInput(JSON.parse(data as string)) as WindowDecision;
+                const actor=this.controlledActors.find(a=>a.id===pending.actorId)!;
+                const intent=this.partyModalChoice(pending,choice.choiceId) as Extract<import('../../ext/party').ActorIntent,{kind:'module'}>;
+                const command=withPartyActor(this,actor,()=>this.preparePartyNativeCommand(actor,intent));
+                allowed=withPartyActor(this,actor,()=>this.extensionRuntime!.allowsInput(command.action,command.data));
+            }else allowed = !this.extensionRuntime || this.extensionRuntime.allowsInput(action, data);
+        }
         catch (error) { this.recordingFromNewGame = false; throw error; }
         if (!allowed) {
             const disturbed = this.disturbed;
@@ -4182,6 +4353,7 @@ export class Game {
                 const event = this.recordInputEvent(execution.action, execution.data, [...execution.decisions]);
                 if (this.isAdvancing) state.pendingCommand = { kind: 'record', event };
             }
+            if((execution.action==='party:window'||execution.action==='party:decision')&&this.party?.state.window.receipt)publishPartyWindow(this,this.party.state.window.receipt,execution.action==='party:window');
             if (!this.isAdvancing) observePresentation(this, 'command-complete');
         } catch (error) {
             state.execution = null;
@@ -4241,7 +4413,7 @@ export class Game {
             let result = stages.next();
             while (!result.done) {
                 if (result.value.recordDecision === false) throw new Error('Prepared confirmation requires executeCommand');
-                result = stages.next(this.confirmationDecision(result.value.message));
+                result = stages.next(answerWindowQuestion(this,result.value.message) ?? this.confirmationDecision(result.value.message));
             }
             return result.value;
         } catch (error) {
@@ -4372,7 +4544,7 @@ export class Game {
         if(input.kind==='party:control')this.preparePartyControl(actor,input.change);
         if(input.kind==='party:actor-step'){
             const next=readyPartyMember(this.party!.state,partyWorldRead(this,this.party!,id=>actorActionSchedulerFor(this)?.isBusy(id)??false));
-            if(next?.actorId!==actor.id)throw new PartyFailure('ACTOR_BUSY');
+            if(next?.actorId!==actor.id&&!(windowClock(this)&&(this.partyModalActor===actor||input.intent.kind==='module'&&input.intent.owner==='narrative'&&this.interactionActive)))throw new PartyFailure('ACTOR_BUSY');
             const intent=input.intent;
             if(intent.kind==='item'&&!actor.inventory.items.some(i=>i.id===intent.itemId))throw new PartyFailure('ITEM_NOT_OWNED');
             if(intent.kind==='move'&&this.activeControlledActors.some(a=>a!==actor&&a.x===actor.x+intent.dx&&a.y===actor.y+intent.dy))throw new PartyFailure('INVALID_TARGET');
@@ -4383,16 +4555,18 @@ export class Game {
         }
         return actor;
     }
-    private preparePartyNativeCommand(actor:Player,intent:Extract<import('../../ext/party').ActorIntent,{kind:'module'}>):{action:string;data:unknown}{
+    private preparePartyNativeCommand(actor:Player,intent:Extract<import('../../ext/party').ActorIntent,{kind:'module'}>,staticOnly=false):{action:string;data:unknown}{
+        if(intent.owner==='narrative'&&['open','choose','close'].includes(intent.commandId)){const data=JSON.stringify({module:intent.owner,action:intent.commandId,payload:intent.payload});if(!this.extensionRuntime||(staticOnly?!this.extensionRuntime.hasRegisteredCommand(data):!this.extensionRuntime.allowsInput('ext:command',data)))throw new PartyFailure('BAD_PAYLOAD');return {action:'ext:command',data};}
         if(intent.owner==='growth'&&['allocate','respec','learn-skill','equip-skills','use-skill'].includes(intent.commandId)){
             if(!intent.payload||typeof intent.payload!=='object'||Array.isArray(intent.payload)||intent.payload.actorId!==actor.id)throw new PartyFailure('BAD_ACTOR');
             const data=JSON.stringify({module:intent.owner,action:intent.commandId,payload:intent.payload});
-            if(!withPartyActor(this,actor,()=>this.extensionRuntime!.allowsInput('ext:command',data)))throw new PartyFailure('BAD_PAYLOAD');
+            if(!this.extensionRuntime||(staticOnly?!this.extensionRuntime.hasRegisteredCommand(data):!withPartyActor(this,actor,()=>this.extensionRuntime!.allowsInput('ext:command',data))))throw new PartyFailure('BAD_PAYLOAD');
             return {action:'ext:command',data};
         }
         const extensionData=JSON.stringify({module:intent.owner,action:intent.commandId,payload:intent.payload});
         if(this.extensionRuntime&&(isWorldWorkCommand(this,extensionData)||isStructureCommand(this,extensionData)||isResidentCommand(this,extensionData)||isEdibleCommand(this,extensionData)||isWorldRestCommand(this,extensionData)||isActorParryCommand(this,extensionData)||isActorDodgeCommand(this,extensionData)||isPhasedAttackCommand(this,extensionData)||this.extensionRuntime.itemCommandDeclaration(extensionData))){
-            if(!this.extensionRuntime.allowsInput('ext:command',extensionData))throw new PartyFailure('BAD_PAYLOAD');
+            if(staticOnly?!this.extensionRuntime.hasRegisteredCommand(extensionData):!this.extensionRuntime.allowsInput('ext:command',extensionData))throw new PartyFailure('BAD_PAYLOAD');
+            if(staticOnly)return {action:'ext:command',data:extensionData};
             const preparing=this.executingRecordedCommand;this.executingRecordedCommand=true;
             let valid:boolean;
             try{valid=isWorldWorkCommand(this,extensionData)?prepareWorldWorkCommand(this,extensionData).outcome.ok
@@ -4479,7 +4653,13 @@ export class Game {
             this.updateVision();this.needsRender=true;
         }catch(error){restore();restoreExtensions();rng.setState(random);restoreNextEntityId(next);throw error;}
     }
-    private *partyCommandStages(input:PartyInput):CommandStages<void> {
+    private *partyCommandStages(input:PartyInput,windowTransaction=false):CommandStages<void> {
+        if(!windowTransaction){
+            const window=this.party?.state.window;
+            if(window?.decision)throw new PartyFailure('DECISION_REQUIRED');
+            if(window?.phase==='failed')throw new PartyFailure('INTERNAL_FAILURE');
+            if(input.kind==='party:actor-step'&&window?.members.some(m=>m.plan?.kind==='travel'||m.plan?.kind==='queue'&&m.cursor<m.plan.actions.length))throw new PartyFailure('ACTOR_BUSY');
+        }
         const actor=this.preparePartyInput(input);
         if(input.kind==='party:control'){
             if(input.change.kind==='exit-party'){
@@ -4502,7 +4682,7 @@ export class Game {
         else if(intent.kind==='exchange')stages=this.partyExchangeStages(actor,intent);
         else if(intent.kind==='module'){const command=withPartyActor(this,actor,()=>this.preparePartyNativeCommand(actor,intent));stages=this.applyCommandBodyStages(command.action,command.data);}
         else throw new PartyFailure('BAD_PAYLOAD');
-        const restore=this.checkpointCombatFactWorld(),restoreExtensions=this.extensionRuntime!.checkpointPartyCommand(),random=rng.getState(),allocator=getNextEntityId(),tick=timeSystem.currentTick;
+        const restore=windowTransaction?()=>{}:this.checkpointCombatFactWorld(),restoreExtensions=windowTransaction?()=>{}:this.extensionRuntime!.checkpointPartyCommand(),random=rng.getState(),allocator=getNextEntityId(),tick=timeSystem.currentTick;
         let answer:boolean|undefined;
         try{for(;;){const step=withPartyActor(this,actor,()=>stages.next(answer!));
             if(step.done)break;answer=yield step.value;}
@@ -4522,8 +4702,8 @@ export class Game {
     private *partyItemStages(actor:Player,intent:Extract<import('../../ext/party').ActorIntent,{kind:'item'}>):CommandStages<void>{
         const item=actor.inventory.items.find(i=>i.id===intent.itemId)!;
         switch(intent.operation){
-            case 'equip':this.equipItem(item);break;
-            case 'unequip':this.unequipItem(item);break;
+            case 'equip':this.equipItem(item, undefined, !!windowClock(this));break;
+            case 'unequip':partyItemResult(this, this.unequipItem(item));break;
             case 'drop':this.dropItem(item);break;
             case 'throw':yield* this.throwItemAtStages(item,intent.target!.x,intent.target!.y);break;
             case 'use':
@@ -4557,7 +4737,7 @@ export class Game {
         // Replay and internal synchronous stages share the public input barrier.
         this.settleResidentNativeInput(action, data, perform);
         this.worldWorkCommandEpoch++;
-        const body=action==='party:actor-step'||action==='party:control'?this.partyCommandStages(parsePartyInput(typeof data==='string'?JSON.parse(data):data)):this.applyCommandBodyStages(action,data,perform);
+        const body=action==='party:policy'?this.partyPolicyStages(parseWindowPolicy(typeof data==='string'?JSON.parse(data):data)):action==='party:window'||action==='party:decision'?this.partyWindowStages(parseWindowInput(typeof data==='string'?JSON.parse(data):data)):action==='party:actor-step'||action==='party:control'?this.partyCommandStages(parsePartyInput(typeof data==='string'?JSON.parse(data):data)):this.applyCommandBodyStages(action,data,perform);
         let answer:boolean|undefined;
         try { for(;;) {
             const before=this.executingRecordedCommand;this.executingRecordedCommand=true;
@@ -4607,7 +4787,7 @@ export class Game {
             }
             else if (isActorDodgeCommand(this, data)) yield* this.executeActorDodgeCommandStages(data);
             else if (isPhasedAttackCommand(this, data)) yield* this.executePhasedAttackCommandStages(data);
-            else if (this.onCommandConfirmRequest && !this.replayRecording) yield* this.executePreparedExtensionCommandStages(data);
+            else if (windowClock(this) || this.onCommandConfirmRequest && !this.replayRecording) yield* this.executePreparedExtensionCommandStages(data);
             else this.runExtensionCommand(data, () => this.collectExtensionComponents());
         } else if (action.startsWith('item:')) {
             const [operation, letter, ...rest] = String(data ?? '').split('|');
@@ -4616,19 +4796,19 @@ export class Game {
             switch (operation) {
                 case 'equip': this.equipItem(item!, rest[0]
                     ? this.commandActor.inventory.items.find(i => i.inventoryLetter === rest[0]) ?? null : undefined, true); break;
-                case 'unequip': this.unequipItem(item!); break;
+                case 'unequip': partyItemResult(this, this.unequipItem(item!)); break;
                 case 'drop': this.dropItem(item!); break;
                 case 'quaff': this.quaffItem(item!); break;
                 case 'read': this.readItem(item!); break;
                 case 'throw': this.enterThrowMode(item!); break;
                 case 'eat': (yield* this.eatItemStages(item!)); break;
                 case 'use': this.useArcanaItem(item!); break;
-                case 'identify': this.chooseIdentifyTarget(item!); break;
-                case 'enchant': this.chooseEnchantTarget(item!); break;
-                case 'call': this.callItem(item!, rest.join('|')); break;
-                case 'inscribe': this.inscribeItem(item!, rest.join('|')); break;
-                case 'relabel': this.relabelItem(item!, rest.join('|')); break;
-                case 'confirm': this.confirmPendingUse(); break;
+                case 'identify': partyItemResult(this, this.chooseIdentifyTarget(item!)); break;
+                case 'enchant': partyItemResult(this, this.chooseEnchantTarget(item!)); break;
+                case 'call': partyItemResult(this, this.callItem(item!, rest.join('|'))); break;
+                case 'inscribe': partyItemResult(this, this.inscribeItem(item!, rest.join('|'))); break;
+                case 'relabel': partyItemResult(this, this.relabelItem(item!, rest.join('|'))); break;
+                case 'confirm': partyItemResult(this, this.confirmPendingUse()); break;
                 case 'cancel': this.cancelPendingUse(); break;
                 default: throw new Error(`Unknown item command ${operation}`);
             }
@@ -4865,6 +5045,9 @@ export class Game {
     }
 
     public executeItemCommand(operation: string, item?: Item, title?: string, perform?: () => void): void {
+        const pending=this.party?.state.window.decision;
+        if(pending){if(pending.kind!=='modal')throw new PartyFailure('DECISION_REQUIRED');this.choosePartyDecision(operation==='cancel'?(pending.allowedChoiceIds.includes('no')?'no':'cancel'):operation==='confirm'?'yes':'item:'+item?.id);return;}
+
         if(this.party){this.submitPartyIntent({kind:'module',owner:'foundation',commandId:'native-item',payload:{operation,itemId:item?.id??null,title:title??''}},(this.partyModalActor??this.focusedActor).id);return;}
         this.executeCommand('item:command', `${operation}|${item?.inventoryLetter ?? ''}|${title ?? ''}`, perform);
     }
@@ -4999,7 +5182,7 @@ export class Game {
         if (!this.replayRecording || this.replayError) return;
         // P2-2 输入锁：动画推进期间回放步同样不得插入（否则会在怪物行动的
         // 半途落地玩家动作，破坏逐次演出的因果顺序）
-        if (this.isAdvancing || this.isInputLocked()) return;
+        if (this.isAdvancing || this.commandInputLocked(this.replayEvents[this.replayCursor]?.action)) return;
         if (this.replayCursor >= this.replayEvents.length) {
             this.replayStatus = 'finished';
             return;
@@ -5023,6 +5206,11 @@ export class Game {
     }
 
     private completeReplayEvent(event: RecordedInputEvent, silent: boolean): void {
+        if(event.partyReceipt&&canonical(event.partyReceipt)!==canonical(this.party?.state.window.receipt)){
+            const actual=this.party?.state.window.receipt;
+            const index=event.partyReceipt.trace.findIndex((step,i)=>canonical(step)!==canonical(actual?.trace[i]??null));
+            throw new Error('Party receipt divergence at window '+event.partyReceipt.seq+' segment '+event.partyReceipt.segment+(index>=0?' ordinal '+event.partyReceipt.trace[index]!.ordinal:''));
+        }
         if (this.extensionRuntime) this.collectExtensionComponents();
         if (timeSystem.currentTick !== event.tick || this.depth !== requireDungeon(event.levelRef)
             || this.player.x !== event.player.x || this.player.y !== event.player.y || this.player.hp !== event.hp
@@ -5063,7 +5251,7 @@ export class Game {
         // advancement locks control this clock, not the live-input pause state.
         this.replayFrameAccumulator = stepCadence(
             this.replayFrameAccumulator, elapsedMs, this.replayFramesPerStep * DISPLAY_FRAME_MS,
-            () => this.replayStatus === 'playing' && !this.recordingInputBlocked && !this.isAdvancing && !this.isInputLocked(),
+            () => this.replayStatus === 'playing' && !this.recordingInputBlocked && !this.isAdvancing && !this.commandInputLocked(this.replayEvents[this.replayCursor]?.action),
             () => this.replayStep(),
         );
     }
@@ -5140,6 +5328,15 @@ export class Game {
     }
 
     public handlePlayerAction(action: string, data?: unknown, source: 'player' | 'system' = 'player') {
+        if(source==='player'&&this.party?.state.window.decision){
+            const d=this.party.state.window.decision;
+            if(d.kind==='modal'&&action==='mouse_travel'){const at=data as Pos;this.choosePartyDecision(`cell:${at.x}:${at.y}`);}
+            else if(action==='escape')this.choosePartyDecision(d.kind==='confirm'?'no':'cancel');
+            return;
+        }
+        if(source==='player'&&this.party&&action==='mouse_travel'&&partyPlanning(this,this.party.state)){
+            const target=data as Pos;partyPlanning(this,this.party.state)!.edit(this.focusedActor.id,{kind:'travel',level:{kind:'dungeon',depth:this.depth},target:{x:target.x,y:target.y}});this.needsRender=true;return;
+        }
         if(source==='player'&&this.partyModalActor){this.executeCommand(action,data);}
         else if(source==='player'&&this.party&&['stairs_up','stairs_down'].includes(action)){
             try{this.executeCommand('party:control',{kind:'party:control',schema:1,expectedRevision:this.party.state.revision,issuerSlot:'local:0',actorId:this.focusedActor.id,change:(action==='stairs_up'&&this.depth===1||action==='stairs_down'&&this.depth===CE_DEEPEST_LEVEL)?{kind:'exit-party'}:{kind:'travel-party',destination:{kind:'dungeon',depth:this.depth+(action==='stairs_up'?-1:1)},leavingBehind:[]}});}catch(error){if(!(error instanceof PartyFailure))throw error;logger.log(i18next.t('ext.party.unavailable'),'#aaaaaa',{presentationOnly:true});}
@@ -11390,10 +11587,10 @@ export class Game {
             if (!answer || !risk || answer.risk.message !== message || canonical(answer.risk) !== canonical(risk))
                 throw new Error('Unplanned or missing supplied confirmation decision');
             supplied.cursor++;
-            this.commandDecisions?.push(answer.decision);
+            if(!windowClock(this))this.commandDecisions?.push(answer.decision);
             return answer.decision;
         }
-        if (this.onCommandConfirmRequest && !this.replayRecording && recordingState(this).drivingStages > 1)
+        if (!windowClock(this) && this.onCommandConfirmRequest && !this.replayRecording && recordingState(this).drivingStages > 1)
             throw new Error('Controlled confirmation requires pure command preparation');
         if(this.party)message=i18next.t('ext.party.actor',{actor:i18next.t('ext.party.member',{number:this.party.state.members.findIndex(m=>m.actorId===this.commandActor.id)+1})})+'\n'+message;
         return yield { message };
@@ -12476,6 +12673,7 @@ export class Game {
             ...(this.world5 ? { worldClock: { validate: (elapsed: number) => validateWorldClockAdvance(this.world5!, elapsed), advance: (elapsed: number) => {if(this.party){const frozen=new Set(this.party.state.members.filter(m=>m.life==='frozen').map(m=>m.actorId));const state=peekEdibleState(this.extensionRuntime!);for(const row of state.timedStats?.rows??[])if(frozen.has(row.actorId))row.untilTick+=elapsed;}advanceWorldClock(this.world5!, elapsed);} } } : {}),
             actions: actorActionSchedulerFor(game),
             ...(this.party?{party:{
+                ...(windowClock(this)?{windowRemaining:()=>windowClock(this)!.remaining(),windowStop:()=>windowClock(this)!.stop()}:{}),
                 actors:()=>this.activeControlledActors,
                 onStairs:()=>this.isPartyStair(this.commandActor),
                 runAs:<T,>(actor:Creature,work:()=>T):T=>withPartyActor(this,actor as Player,work),
@@ -12637,6 +12835,7 @@ export class Game {
     }
 
     private playerTurnEnded() {
+        partyItemCommits.get(this)?.();
         if (this.isGameOver || this.interactionActive) return;
         return playerTurnEnded(this.timePorts());
     }
@@ -12844,6 +13043,15 @@ export class Game {
      *    路径都汇入同一处解锁逻辑。
      * 常规动作（≤100 tick）生成器零 yield，下一个渲染帧即解锁，玩家无感。
      */
+    /** A window advances existing actor work; it does not inject a new native
+     * action into a busy actor. Keep invalid runs and animation locked, and
+     * retain the original lock for every other input and non-party game. */
+    private commandInputLocked(action: string | undefined): boolean {
+        if (this.party && (action === 'party:window' || action === 'party:decision')
+            && !isProductionActorActionRunInvalid(this)) return this.isAdvancing;
+        return this.isInputLocked();
+    }
+
     public isInputLocked(): boolean {
         return productionActorActionInputLocked(this) || (this.isAdvancing && Date.now() < this.animationLockDeadline);
     }
@@ -13155,7 +13363,7 @@ export class Game {
         });
         if (this.extensionRuntime) snapshot.extensions = this.extensionRuntime.snapshot();
         if(this.party){snapshot.party={state:structuredClone(this.party.state),actors:[...this.party.actors.values()].map(serializeControlledActor),native:structuredClone(this.party.native)};
-            snapshot.version=8;snapshot.schema='brogue-web-whole-run-v8';}
+            snapshot.version=9;snapshot.schema='brogue-web-whole-run-v9';}
         return snapshot;
     }
 
@@ -13164,7 +13372,7 @@ export class Game {
      * Missing provenance is never synthesized when an older save is loaded. */
     public toSaveSnapshot(): GameSnapshot {
         this.assertRecordingSettled();
-        if(this.partyModalActor)throw new PartyFailure('DECISION_REQUIRED');
+        if(this.partyModalActor&&!this.party?.state.window.decision)throw new PartyFailure('DECISION_REQUIRED');
         if (this.extensionRuntime && !this.extensionRuntime.readyToSave) throw new Error(i18next.t('ext.command.creation_required', { defaultValue: 'Complete module initialization before saving.' }));
         if (this.isAdvancing || recordingState(this).pendingCommand) throw new Error('Cannot save during turn advancement');
         if (recordingState(this).execution) throw new Error('Cannot save during a command');
@@ -13298,10 +13506,12 @@ export class Game {
                 }
                 if (world.gate) {
                     const target = world.entities.find(entity => entity.id === world.gate!.targetEntityId), activeGrid = restored.get(snapshot.depth)!.grid;
-                    if (snapshot.run.isGameOver || decodedPlayer.hp <= 0 || isIncapacitated(decodedPlayer)
+                    const pending=snapshot.party?.state.window.decision;
+                    const gateActor=pending?.kind==='dialogue'?[decodedPlayer,...decodedPartyActors].find(a=>a.id===pending.actorId):decodedPlayer;
+                    if (!gateActor || snapshot.run.isGameOver || gateActor.hp <= 0 || isIncapacitated(gateActor)
                         || !target || target.depth !== snapshot.depth || !activeGrid.getCell(target.x,target.y)?.isVisible
-                        || distanceToFootprint(decodedPlayer, target) > target.interactionDistance
-                        || !hasInteractionLine(activeGrid,decodedPlayer.loc,target)) throw new Error('Invalid saved interaction gate');
+                        || distanceToFootprint(gateActor, target) > target.interactionDistance
+                        || !hasInteractionLine(activeGrid,gateActor.loc,target)) throw new Error('Invalid saved interaction gate');
                 }
                 // All detached candidate stat/resource reads use its validated clock.
                 // The scope restores actors/time and clears caches before publication.
@@ -16026,6 +16236,7 @@ export class Game {
             this.discoverSecretAt(destination.x, destination.y);
         }
         commitCreatureAnchor(target, { x: destination.x, y: destination.y }, 'mutate');
+        windowClock(this)?.fact('displacement', target.id);
         notifyProductionActorSourceChanged(this, target.id);
         this.needsRender = true;
         const contactEffects = () => target.spatial ? this.applyEnvironmentalEffects(target, false, undefined, previousBody) : this.applyEnvironmentalEffects(target);
