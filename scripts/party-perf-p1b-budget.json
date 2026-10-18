@@ -1,12 +1,18 @@
 {
   "schema": 1,
   "identity": "party-window-v1",
-  "status": "pending-cloud-calibration",
+  "status": "pending-maintainer-review",
   "decisionDate": "2026-10-18",
   "methodApproved": "B6",
-  "sourceRuns": [],
+  "sourceRuns": [
+    {
+      "runId": "39132723627",
+      "head": "a4117b225a73f68b697fabe552aa168a17fee4a7"
+    }
+  ],
   "metrics": [],
   "hardLimits": null,
   "independentValidation": null,
-  "note": "Method approved only. Await complete three-round cloud data, maintainer metric grades/numbers and a separate full validation. Not a frozen budget or D6 pass."
+  "note": "Complete cloud calibration received (18 measurements). Proposed numbers and grades in docs/ext/party-p1b.report.md await maintainer review and a separate complete validation; hardLimits remain null. Not a frozen budget or D6 pass.",
+  "proposalDate": "2026-10-19"
 }
