@@ -1,3 +1,4 @@
+import type { PartyAiView, PartyAiDecision } from '../../ext/partyAi';
 import { PartyFailure, type ActorIntent, type PartyState } from '../../ext/party';
 import {
   parseWindowInput,
@@ -34,7 +35,7 @@ export class PartyPlanningSession {
     this.sync();
     if (
       !this.root.members.some(
-        (m) => m.actorId === id && m.life === 'active' && m.controller.slot === 'local:0'
+        (m) => m.actorId === id && m.life === 'active' && m.controller.kind === 'human' && m.controller.slot === 'local:0'
       )
     )
       throw new PartyFailure('NOT_CONTROLLER');
@@ -94,7 +95,7 @@ export class PartyPlanningSession {
     this.sync();
     return parseWindowInput({
       kind: 'party:window',
-      schema: 1,
+      schema: 2,
       seq: this.root.window.seq + 1,
       expectedRevision: this.baseRevision,
       issuerSlot: 'local:0',
@@ -104,10 +105,10 @@ export class PartyPlanningSession {
       automatic,
       trigger,
       plans: this.root.members
-        .filter((m) => m.life === 'active')
+        .filter((m) => m.life === 'active' && m.controller.kind==='human')
         .map((m) => ({
           actorId: m.actorId,
-          controllerSlot: m.controller.slot,
+          controllerSlot: 'local:0',
           update: this.drafts.has(m.actorId) ? 'replace' : 'keep',
           plan: this.drafts.get(m.actorId) ?? null
         }))
@@ -140,12 +141,12 @@ export class PartyPlanningSession {
     this.submit(batch(), send);
     return true;
   }
-  async rehearse(view: KnownPartyWorld, batch: WindowBatch): Promise<PartyPreviewResult | null> {
+  async rehearse(view: KnownPartyWorld, batch: WindowBatch, decide?: (view:PartyAiView)=>PartyAiDecision): Promise<PartyPreviewResult | null> {
     this.sync();
     const generation = this.generation,
       revision = this.baseRevision;
     const result = await Promise.resolve().then(() =>
-      previewPartyWindow(structuredClone(view), structuredClone(batch))
+      previewPartyWindow(structuredClone(view), structuredClone(batch),decide)
     );
     this.sync();
     if (this.generation !== generation || this.baseRevision !== revision) return null;
@@ -186,6 +187,7 @@ export interface KnownPartyWorld {
     remaining: number;
     plan: PartyPlan | null;
     cursor: number;
+    ai?: {active:boolean;view:PartyAiView};
   }[];
   enemies: { id: number; x: number; y: number }[];
 }
@@ -198,7 +200,7 @@ export interface PartyPreviewResult {
 }
 /** Isolated known-world simulator: no Game, global services, storage, callbacks,
  * RNG, entity allocator or hidden AI are reachable from this engine container. */
-export function previewPartyWindow(view: KnownPartyWorld, batch: WindowBatch): PartyPreviewResult {
+export function previewPartyWindow(view: KnownPartyWorld, batch: WindowBatch, decide?: (view:PartyAiView)=>PartyAiDecision): PartyPreviewResult {
   if (view.baseRevision !== batch.expectedRevision) throw new PartyFailure('STALE_REVISION');
   const cells = new Map(view.cells.map((c) => [`${c.x},${c.y}`, c]));
   const warnings = new Set<PartyPreviewResult['warnings'][number]>();
@@ -227,8 +229,12 @@ export function previewPartyWindow(view: KnownPartyWorld, batch: WindowBatch): P
     )
       break;
     let intent: ActorIntent = { kind: 'wait' };
-    if (m.plan?.kind === 'queue') intent = m.plan.actions[m.cursor++] ?? intent;
-    if (m.plan?.kind === 'travel') {
+    if(m.ai&&(m.ai.active||m.plan?.kind==='ai-this-window')){
+      if(!decide){warnings.add('unsupported');m.blocked=true;continue;}
+      const input=structuredClone(m.ai.view);input.at={x:m.x,y:m.y};input.ordinal+=m.actions;input.occupied=members.filter(a=>a.id!==m.id).map(a=>({x:a.x,y:a.y}));
+      intent=decide(input).intent;
+    } else if (m.plan?.kind === 'queue') intent = m.plan.actions[m.cursor++] ?? intent;
+    else if (m.plan?.kind === 'travel') {
       if (m.x === m.plan.target.x && m.y === m.plan.target.y) m.plan = null;
       else {
         const path = [{ x: m.x, y: m.y, dx: 0, dy: 0 }],

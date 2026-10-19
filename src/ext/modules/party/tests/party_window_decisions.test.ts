@@ -17,7 +17,7 @@ const window = (g: Game, actorId: number, intent: ActorIntent) => {
   clear();
   g.submitPartyWindow({
     kind: 'party:window',
-    schema: 1,
+    schema: 2,
     seq: g.party!.state.window.seq + 1,
     expectedRevision: g.party!.state.revision,
     issuerSlot: 'local:0',

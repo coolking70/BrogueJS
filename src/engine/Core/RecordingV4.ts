@@ -65,13 +65,13 @@ export interface RecordingEventV4 {
   chainDigest: Digest;
 }
 export interface RecordingV4 {
-  version: 4 | 6;
+  version: 4 | 7;
   recordedAt: number;
   seed: string;
   mode: GameMode;
   initialLevel: LevelRef;
   extensions: ExtensionManifest | null;
-  codec: { wholeRun: 7 | 9; foundation: typeof import('../../ext/descriptor').FOUNDATION_PROTOCOL | 22; origin: 2 | 4 };
+  codec: { wholeRun: 7 | 10; foundation: typeof import('../../ext/descriptor').FOUNDATION_PROTOCOL | 23; origin: 2 | 5 };
   digestAlgorithm: 'sha256-c5-merkle-v1';
   digestChunk: 256;
   checkpointPeriod: 2048;
@@ -87,13 +87,13 @@ export interface ReplaySnapshotV4 {
   levelRef: LevelRef;
   prefixDigest: Digest;
   checkpoint: MechanicalDigest;
-  snapshotCodec: 'brogue-web-whole-run-v7' | 'brogue-web-whole-run-v9';
+  snapshotCodec: 'brogue-web-whole-run-v7' | 'brogue-web-whole-run-v10';
   snapshotDigest: Digest;
   world: GameSnapshot;
   inputState: RecordingInputStateV2;
 }
 export interface RecordingOriginV2 {
-  version: 2 | 4;
+  version: 2 | 5;
   header: RecordingHeaderV4;
   events: RecordingEventV4[];
   prefixDigest: Digest;

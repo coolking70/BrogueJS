@@ -38,6 +38,8 @@ function bodyPhasedScene(coreSource = false) {
   installProductionBody(); const installed = catalog.createExtensionRegistry();
   const descriptors = catalog.getInstalledModuleDescriptors();
   const registry = registryFromDescriptors(descriptors.map(d => {
+    // Preserve the unrelated configurable descriptor; a manifest already includes the party variant.
+    if (d.id === 'party') return d;
     const base = installed.create(installed.manifest([d.id]))[0]!;
     if (d.id !== 'combat') return { ...d, rules: base.rules, create: () => base };
     const definitions = structuredClone(base.actorActions!.definitions) as unknown as ActorAttackDefinitions;

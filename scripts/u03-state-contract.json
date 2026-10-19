@@ -513,6 +513,6 @@
   },
   "party": {
     "kind": "run",
-    "contract": "P1b：仅party局创建；state2.window拥有已接受计划/游标/窗口预算/打断锁存/待决DTO/段收据，归party摘要；actors/native沿原唯一根，whole-run9.party持久化。PartyWindow运行能力与答案游标为调用栈WeakMap，安全段不持有；PartyPlanning的focus/drafts/ready/deadline/preview为session，绑定state对象和revision，load/new-game失效，不入摘要。"
+    "contract": "P1c: lazy party only. state3 owns member controller/pendingController/controlEpoch/temporaryAiSeq/ai(settings,order,ordinal,diagnostic), companionOrders and window. Full checkpoint captures entire state graph; party digest owns all control roots. Native entities/inventory/timers remain unique. Whole-run10/recording7/origin5, no-party F20/S7/R4/O2 unchanged. PartyPlanning drafts and previews are root/revision-bound session state; AI consumes detached known DTOs only."
   }
 }

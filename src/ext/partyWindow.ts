@@ -3,7 +3,7 @@ import { PartyFailure, validateActorIntent, type ActorIntent, type PartyState } 
 import { c5Canonical } from './worldJson';
 import type { LevelRef } from './world5';
 export const PARTY_WINDOW_RULES = Object.freeze({
-  schema: 1,
+  schema: 2,
   inputMaxBytes: 262144,
   stateMaxBytes: 4194304,
   queueLimit: 32,
@@ -38,12 +38,13 @@ export type InterruptKind =
   | 'zero-time-loop';
 export type PartyPlan =
   | { kind: 'queue'; actions: ActorIntent[] }
-  | { kind: 'travel'; level: LevelRef; target: { x: number; y: number } };
+  | { kind: 'travel'; level: LevelRef; target: { x: number; y: number } }
+  | { kind: 'ai-this-window' };
 export type WindowLength = { kind: 'fine' } | { kind: 'ticks'; ticks: 100 | 300 | 1000 };
-export type WindowTrigger = 'manual' | 'all-ready' | 'deadline';
+export type WindowTrigger = 'manual' | 'all-ready' | 'deadline' | 'single-step';
 export interface WindowBatch {
   kind: 'party:window';
-  schema: 1;
+  schema: 2;
   seq: number;
   expectedRevision: number;
   issuerSlot: string;
@@ -111,13 +112,14 @@ export interface WindowMember {
   plan: PartyPlan | null;
   cursor: number;
   emptyPlan: 'wait' | 'interrupt';
-  reactions: Record<SoftInterrupt, 'stop' | 'continue'>;
+  reactions: Record<SoftInterrupt, 'stop' | 'continue' | 'ai-this-window'>;
   seenHostileIds: number[];
   lowHpLatched: boolean;
   seenTelegraphKeys: string[];
   lastDecisionSite: string | null;
 }
 export interface PartyWindowState {
+  singleStep:boolean;
   seq: number;
   segment: number;
   phase: 'planning' | 'running' | 'interrupted' | 'awaiting-decision' | 'failed';
@@ -137,6 +139,7 @@ export interface PartyWindowState {
 }
 export function newPartyWindow(ids: number[]): PartyWindowState {
   return {
+    singleStep:false,
     seq: 0,
     segment: 0,
     phase: 'planning',
@@ -196,6 +199,7 @@ function length(v: unknown): asserts v is WindowLength {
 }
 export function validatePartyPlan(v: unknown): asserts v is PartyPlan | null {
   if (v === null) return;
+  if((v as PartyPlan)?.kind==='ai-this-window'){windowExact(v,'kind');return;}
   if ((v as PartyPlan)?.kind === 'queue') {
     windowExact(v, 'kind,actions');
     if (!Array.isArray(v.actions) || v.actions.length > 32) throw new PartyFailure('PLAN_LIMIT');
@@ -232,7 +236,7 @@ export function parseWindowInput(value: unknown): WindowBatch | WindowDecision {
     length(row.length);
     if (
       typeof row.automatic !== 'boolean' ||
-      !['manual', 'all-ready', 'deadline'].includes(row.trigger)
+      !['manual', 'all-ready', 'deadline', 'single-step'].includes(row.trigger)
     )
       throw new PartyFailure('BAD_PAYLOAD');
     if (row.length.kind === 'fine') {
@@ -258,7 +262,7 @@ export function parseWindowInput(value: unknown): WindowBatch | WindowDecision {
     }
     if (total > 128) throw new PartyFailure('PLAN_LIMIT');
   }
-  if (row.schema !== 1) throw new PartyFailure('VERSION_MISMATCH');
+  if (row.schema !== (row.kind==='party:window'?2:1)) throw new PartyFailure('VERSION_MISMATCH');
   windowInt(row.expectedRevision);
   if (row.issuerSlot !== 'local:0') throw new PartyFailure('NOT_CONTROLLER');
   return structuredClone(row);
@@ -270,7 +274,7 @@ export function validateWindowState(
   json(v, PARTY_WINDOW_RULES.stateMaxBytes);
   windowExact(
     v,
-    'seq,segment,phase,startedAt,elapsed,budget,length,fineActorId,fineStarted,automatic,quietWindows,nextOrdinal,nextDecisionId,members,decision,receipt'
+    'singleStep,seq,segment,phase,startedAt,elapsed,budget,length,fineActorId,fineStarted,automatic,quietWindows,nextOrdinal,nextDecisionId,members,decision,receipt'
   );
   const w = v as unknown as PartyWindowState;
   for (const n of [w.seq, w.segment, w.startedAt, w.elapsed, w.nextOrdinal, w.quietWindows])
@@ -281,11 +285,12 @@ export function validateWindowState(
     !['planning', 'interrupted', 'awaiting-decision', 'failed'].includes(w.phase) ||
     ![100, 300, 1000].includes(w.budget) ||
     w.elapsed > w.budget ||
-    typeof w.automatic !== 'boolean' ||
+    typeof w.automatic !== 'boolean' || typeof w.singleStep !== 'boolean' ||
     typeof w.fineStarted !== 'boolean' ||
     w.quietWindows > 3
   )
     throw new PartyFailure('BAD_PAYLOAD');
+  if(w.singleStep&&(w.length.kind!=='ticks'||w.length.ticks!==1000||w.budget!==1000||w.automatic||w.fineActorId!==null))throw new PartyFailure('BAD_PAYLOAD');
   if (w.fineActorId !== null && !state.members.some((m) => m.actorId === w.fineActorId))
     throw new PartyFailure('BAD_ACTOR');
   if (!Array.isArray(w.members) || w.members.length !== state.members.length)
@@ -305,7 +310,7 @@ export function validateWindowState(
     )
       throw new PartyFailure('BAD_PAYLOAD');
     windowExact(m.reactions, SOFT_INTERRUPTS.join(','));
-    if (Object.values(m.reactions).some((v) => v !== 'stop' && v !== 'continue'))
+    if (Object.values(m.reactions).some((v) => v !== 'stop' && v !== 'continue' && v !== 'ai-this-window'))
       throw new PartyFailure('BAD_PAYLOAD');
     if (
       !Array.isArray(m.seenHostileIds) ||
@@ -415,7 +420,7 @@ export function validateWindowState(
 /** Separate new control protocol; P1a party:control schema1 is unchanged. */
 export interface WindowPolicy {
   kind: 'party:policy';
-  schema: 1;
+  schema: 2;
   expectedRevision: number;
   issuerSlot: string;
   actorId: number;
@@ -423,14 +428,14 @@ export interface WindowPolicy {
     | {
         kind: 'reactions';
         emptyPlan: 'wait' | 'interrupt';
-        values: Record<SoftInterrupt, 'stop' | 'continue'>;
+        values: Record<SoftInterrupt, 'stop' | 'continue' | 'ai-this-window'>;
       }
     | { kind: 'single-step' };
 }
 export function parseWindowPolicy(value: unknown): WindowPolicy {
   json(value);
   windowExact(value, 'kind,schema,expectedRevision,issuerSlot,actorId,change');
-  if (value.kind !== 'party:policy' || value.schema !== 1)
+  if (value.kind !== 'party:policy' || value.schema !== 2)
     throw new PartyFailure('VERSION_MISMATCH');
   windowInt(value.expectedRevision);
   windowInt(value.actorId, 1);
@@ -444,7 +449,7 @@ export function parseWindowPolicy(value: unknown): WindowPolicy {
     )
       throw new PartyFailure('BAD_PAYLOAD');
     windowExact(value.change.values, SOFT_INTERRUPTS.join(','));
-    if (Object.values(value.change.values).some((v) => v !== 'stop' && v !== 'continue'))
+    if (Object.values(value.change.values).some((v) => v !== 'stop' && v !== 'continue' && v !== 'ai-this-window'))
       throw new PartyFailure('BAD_PAYLOAD');
   }
   return structuredClone(value) as unknown as WindowPolicy;

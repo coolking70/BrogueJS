@@ -1,3 +1,5 @@
+import { isPartyAi } from './PartyAi';
+import type { PartyAiDecision } from '../../ext/partyAi';
 import { PartyFailure, type ActorIntent, type PartyState } from '../../ext/party';
 import {
   SOFT_INTERRUPTS,
@@ -47,6 +49,7 @@ export interface PartyWindowPort {
   attempt(actorId: number, intent: ActorIntent, answers: boolean[]): WindowAttempt;
   modalIntent(d: PendingPartyDecision, choice: string): ActorIntent;
   advance(): void;
+  decide?(id:number): PartyAiDecision;
 }
 /** A call-stack capability only; never reconstruct mechanical state from this map. */
 const running = new WeakMap<
@@ -86,11 +89,14 @@ export function validateWindowAcceptance(
       !d.allowedChoiceIds.includes(input.choiceId)
     )
       throw new PartyFailure('STALE_DECISION');
-    if (state.members.find((m) => m.actorId === d.actorId)?.controller.slot !== input.issuerSlot)
-      throw new PartyFailure('NOT_CONTROLLER');
     return;
   }
   if (w.decision) throw new PartyFailure('DECISION_REQUIRED');
+  if(input.trigger==='single-step'){
+    if(input.automatic||input.length.kind!=='ticks'||input.length.ticks!==1000||input.plans.length||input.fineActorId!==null)throw new PartyFailure('BAD_PAYLOAD');
+    if(!state.members.some(m=>m.life==='active'&&(m.pendingController??m.controller).kind==='human'))throw new PartyFailure('NOT_CONTROLLER');
+    if(w.members.some(m=>m.plan?.kind==='travel'||m.plan?.kind==='queue'&&m.cursor<m.plan.actions.length))throw new PartyFailure('ACTOR_BUSY');
+  }
   if (p.ended()) throw new PartyFailure('BAD_SEQUENCE');
   if (
     input.seq !== w.seq + 1 ||
@@ -107,7 +113,7 @@ export function validateWindowAcceptance(
   for (const row of input.plans) {
     const member = state.members.find((m) => m.actorId === row.actorId);
     if (!member || member.life !== 'active') throw new PartyFailure('BAD_ACTOR');
-    if (member.controller.slot !== row.controllerSlot || row.controllerSlot !== input.issuerSlot)
+    if (row.controllerSlot !== input.issuerSlot || row.update==='replace' && member.controller.kind!=='human')
       throw new PartyFailure('NOT_CONTROLLER');
     if (row.plan?.kind === 'queue')
       row.plan.actions.forEach((intent) => p.validate(row.actorId, intent, true));
@@ -144,6 +150,7 @@ export function executePartyWindow(
     const threatened = p
       .actors()
       .some((a) => a.active && (a.hostiles.length || a.telegraphs.length || a.hazard));
+    w.singleStep=input.trigger==='single-step';
     w.seq = input.seq;
     w.segment = 0;
     w.startedAt = start;
@@ -166,8 +173,7 @@ export function executePartyWindow(
     for (const row of input.plans)
       if (row.update === 'replace') {
         const m = w.members.find((m) => m.actorId === row.actorId)!;
-        m.plan = structuredClone(row.plan);
-        m.cursor = 0;
+        if(row.plan?.kind==='ai-this-window'){state.members.find(m=>m.actorId===row.actorId)!.temporaryAiSeq=w.seq;}else{m.plan = structuredClone(row.plan);m.cursor = 0;}
       }
   } else {
     w.segment++;
@@ -216,6 +222,7 @@ export function executePartyWindow(
     )
       receipt.interrupts.push(f);
   };
+  let processedSoft=new Set<string>();
   const observe = () => {
     const after = p.actors();
     for (const a of after) {
@@ -254,13 +261,15 @@ export function executePartyWindow(
     if (p.ended()) fact('game-ended', null);
     else if (!after.some((a) => a.active && a.hp > 0)) fact('no-active-member', null);
     w.elapsed = p.tick() - w.startedAt;
-    return receipt.interrupts.some(
+    const stopped=receipt.interrupts.some(
       (f) =>
         !SOFT_INTERRUPTS.includes(f.kind as (typeof SOFT_INTERRUPTS)[number]) ||
         w.members.find((m) => m.actorId === f.actorId)?.reactions[
           f.kind as (typeof SOFT_INTERRUPTS)[number]
         ] === 'stop'
     );
+    if(!stopped)for(const f of receipt.interrupts){const key=JSON.stringify(f);if(processedSoft.has(key))continue;processedSoft.add(key);const m=state.members.find(m=>m.actorId===f.actorId),wm=w.members.find(m=>m.actorId===f.actorId);if(m?.life==='active'&&SOFT_INTERRUPTS.includes(f.kind as typeof SOFT_INTERRUPTS[number])&&wm?.reactions[f.kind as typeof SOFT_INTERRUPTS[number]]==='ai-this-window')m.temporaryAiSeq=w.seq;}
+    return stopped;
   };
   running.set(owner, {
     remaining: () => Math.max(0, w.budget - (p.tick() - w.startedAt)),
@@ -278,9 +287,9 @@ export function executePartyWindow(
     // Native transactions can observe a boundary before rolling back. Restore
     // the comparison baseline as well as their owned receipt/state graph.
     checkpoint: () => {
-      const savedBefore = before;
+      const savedBefore = before,savedSoft=new Set(processedSoft);
       return () => {
-        before = savedBefore;
+        before = savedBefore;processedSoft=savedSoft;
       };
     }
   });
@@ -314,12 +323,15 @@ export function executePartyWindow(
         }
         continue;
       }
+      if(w.singleStep&&!isPartyAi(state.members.find(m=>m.actorId===id)!,w.seq)){receipt.reason='fine-action';break;}
       if (decisions++ >= 1024) {
         fact('budget-exceeded', id);
         receipt.reason = 'interrupt';
         break;
       }
       const member = w.members.find((m) => m.actorId === id)!;
+      const control=state.members.find(m=>m.actorId===id)!, ai=isPartyAi(control,w.seq);
+      let aiDecision:PartyAiDecision|undefined;
       let intent: ActorIntent | null = null,
         answers: boolean[] = [];
       try {
@@ -327,7 +339,7 @@ export function executePartyWindow(
           intent = pendingIntent.intent;
           answers = pendingIntent.answers;
           pendingIntent = null;
-        } else if (member.plan?.kind === 'queue')
+        } else if(ai){if(!p.decide)throw new PartyFailure('INTERNAL_FAILURE');aiDecision=p.decide(id);intent=aiDecision.intent;} else if (member.plan?.kind === 'queue')
           intent = member.plan.actions[member.cursor] ?? null;
         else if (member.plan?.kind === 'travel') {
           intent = p.travel(id, member.plan, false);
@@ -344,9 +356,14 @@ export function executePartyWindow(
           }
           intent = { kind: 'wait' };
         }
-        p.validate(id, intent, false);
-        const tick = p.tick(),
-          result = p.attempt(id, intent, answers);
+        try{p.validate(id, intent, false);}catch(error){if(!ai||!(error instanceof PartyFailure)||error.code==='INTERNAL_FAILURE')throw error;intent={kind:'wait'};aiDecision={intent,diagnostic:'no-route',nodes:aiDecision?.nodes??0};p.validate(id,intent,false);}
+        const tick = p.tick();
+        let result = p.attempt(id, intent, answers);
+        if(ai&&result.rejected){
+          intent={kind:'wait'};aiDecision={intent,diagnostic:'no-route',nodes:aiDecision?.nodes??0};
+          p.validate(id,intent,false);result=p.attempt(id,intent,[]);
+          if(result.rejected||result.pending||result.cancelled)throw new PartyFailure('INTERNAL_FAILURE');
+        }
         if (result.pending) {
           w.decision = {
             id: w.nextDecisionId++,
@@ -380,7 +397,8 @@ export function executePartyWindow(
           receipt.reason = 'interrupt';
           break;
         }
-        if (member.plan?.kind === 'queue' && member.cursor < member.plan.actions.length)
+        if(ai&&!result.cancelled){control.ai.ordinal++;control.ai.diagnostic=aiDecision?.diagnostic??'wait';}
+        if (!ai && member.plan?.kind === 'queue' && member.cursor < member.plan.actions.length)
           member.cursor++;
         if (id === w.fineActorId) w.fineStarted = true;
         if (result.cancelled) {
@@ -428,6 +446,7 @@ export function executePartyWindow(
           ? 'interrupted'
           : 'planning';
     if (w.phase !== 'awaiting-decision') {
+      for(const m of state.members)m.temporaryAiSeq=null;
       const threat = p
         .actors()
         .some((a) => a.active && (a.hostiles.length || a.telegraphs.length || a.hazard));

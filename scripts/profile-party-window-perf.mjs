@@ -15,7 +15,7 @@ assert.ok(
   output &&
     ['party-only', 'party-all'].includes(mode) &&
     [1, 2, 4].includes(actors) &&
-    ['single', 'windows', 'fixed-ticks'].includes(scene)
+    ['single', 'windows', 'fixed-ticks', 'ai'].includes(scene)
 );
 assert.ok(Number.isSafeInteger(steps) && steps > 0 && steps <= 2049);
 const sourceHash = hashCandidate(process.cwd()).sha256;
@@ -81,7 +81,16 @@ try {
     initialCommands
   });
   g.animationEnabled = false;
+  if(scene==='ai'){
+    for(const m of g.party.state.members){
+      g.executeCommand('party:ai',{kind:'party:ai',schema:1,issuerSlot:'local:0',expectedRevision:g.party.state.revision,change:{kind:'controller',actorId:m.actorId,expectedEpoch:m.controlEpoch,controller:{kind:'ai',policyId:'party-ai-v1'}}});
+      g.executeCommand('party:policy',{kind:'party:policy',schema:2,issuerSlot:'local:0',expectedRevision:g.party.state.revision,actorId:m.actorId,change:{kind:'reactions',emptyPlan:'wait',values:Object.fromEntries(['new-hostile','damage','negative-status','low-hp','telegraph'].map(k=>[k,'continue']))}});
+    }
+    g.executeCommand('party:ai',{kind:'party:ai',schema:1,issuerSlot:'local:0',expectedRevision:g.party.state.revision,change:{kind:'order',actorIds:[g.party.state.members[0].actorId],order:{kind:'explore',level:g.depth}}});
+    await g.flushRecording();
+  }
   const layers = {
+    aiViewAndDecision:[], aiPolicyQuery:[],
     stats: [],
     capture: [],
     restore: [],
@@ -92,6 +101,11 @@ try {
     recordMain: [],
     validation: []
   };
+  const aiCounters={calls:0,acceptedDecisions:0,nodes:0,budgetFallbacks:0,cacheHits:0};let measuringAi=false;
+  if(scene==='ai'){
+    const port=g.partyWindowPort;g.partyWindowPort=function(){const p=port.call(this),decide=p.decide;p.decide=id=>{const begin=performance.now();try{return decide(id);}finally{layers.aiViewAndDecision.push(performance.now()-begin);}};return p;};
+    const query=g.extensionRuntime.queryOptional;g.extensionRuntime.queryOptional=function(capability,input){const begin=performance.now();const result=query.call(this,capability,input);if(measuringAi&&capability==='party.ai.v1'){layers.aiPolicyQuery.push(performance.now()-begin);aiCounters.calls++;aiCounters.nodes+=result.value.nodes;aiCounters.budgetFallbacks+=Number(result.value.diagnostic==='budget');}return result;};
+  }
   const { StatPipeline } = await load('engine/Stats/StatPipeline.ts');
   const statInstances = new Map();
   let statClears = 0,
@@ -238,7 +252,7 @@ try {
       scene !== 'single' &&
       (g.party.state.window.decision ||
         g.readyPartyActorId === null ||
-        scene === 'fixed-ticks' ||
+        scene === 'fixed-ticks' || scene==='ai' ||
         (index === 129 && mode === 'party-all') ||
         boundary ||
         index % 64 === 0 ||
@@ -264,10 +278,10 @@ try {
       } else {
         action = 'party:window';
         const modes = ['fine', 100, 300, 1000, 'auto'],
-          length = scene === 'fixed-ticks' ? 100 : modes[Math.floor(index / 64) % 5];
+          length = scene === 'fixed-ticks'||scene==='ai' ? 100 : modes[Math.floor(index / 64) % 5];
         data = {
           kind: action,
-          schema: 1,
+          schema: g.party.state.schema>=3?2:1,
           seq: g.party.state.window.seq + 1,
           expectedRevision: revision,
           issuerSlot: 'local:0',
@@ -364,7 +378,7 @@ try {
       action = 'party:policy';
       data = {
         kind: action,
-        schema: 1,
+        schema: g.party.state.schema>=3?2:1,
         expectedRevision: revision,
         issuerSlot: 'local:0',
         actorId: g.activeControlledActors[0].id,
@@ -382,8 +396,23 @@ try {
       entranced: a.hasStatus('entranced'),
       busy: g.actorActions?.bundles.some((b) => b.decisionOwnerId === a.id) ?? false
     }));
-    g.executeCommand(action, data);
-    drain(g);
+    if(scene==='ai'&&!g.party.state.window.decision){
+      const member=g.party.state.members[index%actors],phase=index%32;
+      if([8,16,24].includes(phase)){
+        action='party:ai';label='ai-settings';data={kind:action,schema:1,issuerSlot:'local:0',expectedRevision:revision,change:{kind:'settings',actorId:member.actorId,expectedEpoch:member.controlEpoch,settings:{...member.ai.settings,tactic:['follow','attack','distance','defend','still'][Math.floor(index/8)%5]}}};
+        if(data.change.settings.tactic===member.ai.settings.tactic)data.change.settings.avoidDanger=!member.ai.settings.avoidDanger;
+      }else if(phase===12){
+        action='party:ai';label='ai-order';const m=g.party.state.members[0];data={kind:action,schema:1,issuerSlot:'local:0',expectedRevision:revision,change:{kind:'order',actorIds:[m.actorId],order:Math.floor(index/32)%2===0?null:{kind:'explore',level:g.depth}}};
+      }else if(phase===20||phase===22){
+        const m=g.party.state.members[0];action='party:ai';label=phase===20?'ai-human-switch':'ai-return';data={kind:action,schema:1,issuerSlot:'local:0',expectedRevision:revision,change:{kind:'controller',actorId:m.actorId,expectedEpoch:m.controlEpoch,controller:phase===20?{kind:'human',slot:'local:0'}:{kind:'ai',policyId:'party-ai-v1'}}};
+      }else if(phase===21&&g.party.state.members[0].controller.kind==='human'){
+        data.plans=[{actorId:g.party.state.members[0].actorId,controllerSlot:'local:0',update:'replace',plan:{kind:'ai-this-window'}}];label='ai-temporary';
+      }
+    }
+    const ordinals=g.party.state.members.reduce((n,m)=>n+(m.ai?.ordinal??0),0);
+    measuringAi=scene==='ai';
+    try{g.executeCommand(action, data);drain(g);}finally{measuringAi=false;}
+    if(scene==='ai')aiCounters.acceptedDecisions+=g.party.state.members.reduce((n,m)=>n+m.ai.ordinal,0)-ordinals;
     const simulated = performance.now(),
       processCpu = process.cpuUsage(cpuStart);
     inputs.push({ action, data });
@@ -448,7 +477,7 @@ try {
           pr = performance.now(),
           planner = g.partyPlanner(),
           request = planner.batch(timeSystem.currentTick, { kind: 'ticks', ticks: 100 }, null);
-        await planner.rehearse(g.knownPartyWorld(), request);
+        await planner.rehearse(g.knownPartyWorld(), request,scene==='ai'?view=>g.decideKnownPartyAi(view):undefined);
         preview.push(performance.now() - pr);
         g.partyPlanner(false);
         if (
@@ -522,7 +551,8 @@ try {
       0
     );
   write(resolve(output), {
-    identity: 'party-window-v1',
+    identity: scene==='ai'?'party-ai-v1':'party-window-v1',
+    ...(scene==='ai'?{aiCounters}:{} ),
     status: 'measurement-only',
     mode,
     actors,
@@ -535,7 +565,7 @@ try {
       seed: 42,
       manifest,
       hash: hash(inputs),
-      route: scene === 'single' ? 'ready-actor-wait-v1' : 'window-mixed-v1'
+      route: scene === 'ai' ? 'party-ai-managed-v1' : scene === 'single' ? 'ready-actor-wait-v1' : 'window-mixed-v1'
     },
     rowsHash: hash(rows),
     rngHash: hash(random),

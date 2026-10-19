@@ -1,3 +1,5 @@
+import { defaultPartyAi, parsePartyAiInput, type PartyAiInput } from '../../ext/partyAi';
+import { applyIdleControllers, validatePartyAiInput, commitPartyAiInput, decidePartyAi, takePartyCompanionOrder, partyAiView, isPartyAi } from './PartyAi';
 import { observeStatusIncreases } from '../Status/StatusObservation';
 import { partyPlanning, enablePartyPlanning, disablePartyPlanning, type KnownPartyWorld } from './PartyPlanning';
 import { newPartyWindow, parseWindowInput, parseWindowPolicy, type WindowPolicy, type WindowBatch, type WindowDecision, type PartyPlan, type PendingPartyDecision } from '../../ext/partyWindow';
@@ -542,8 +544,10 @@ export class Game {
             const c=this.grid.getCell(x,y)!;if(!c.isVisible&&!c.hasMemory&&!c.isMagicMapped)continue;
             cells.push({x,y,passable:c.isVisible?c.isPassable:c.rememberedFlags?.passable===true,hazard:(knownCellFlags(c)&(T_IS_DF_TRAP|T_LAVA_INSTA_DEATH|T_AUTO_DESCENT|T_CAUSES_DAMAGE))!==0});
         }
-        return {baseRevision:this.party.state.revision,level:this.depth,cells,members:this.activeControlledActors.map(a=>{const m=this.party!.state.window.members.find(m=>m.actorId===a.id)!;return {id:a.id,x:a.x,y:a.y,moveTicks:nativeStat(a,'native.move-speed'),remaining:a.ticksUntilTurn,plan:structuredClone(m.plan),cursor:m.cursor};}),enemies:this.monsters.filter(m=>m.hp>0&&!m.isAlly&&this.activeControlledActors.some(a=>canSeeMonster(a,this.grid,m))).map(m=>({id:m.id,x:m.x,y:m.y}))};
+        return {baseRevision:this.party.state.revision,level:this.depth,cells,members:this.activeControlledActors.map(a=>{const m=this.party!.state.window.members.find(m=>m.actorId===a.id)!;return {id:a.id,x:a.x,y:a.y,moveTicks:nativeStat(a,'native.move-speed'),remaining:a.ticksUntilTurn,plan:structuredClone(m.plan),cursor:m.cursor,ai:{active:isPartyAi(this.party!.state.members.find(m=>m.actorId===a.id)!,this.party!.state.window.seq),view:partyAiView(this,a,this.party!.state.members.find(m=>m.actorId===a.id)!.ai)}};}),enemies:this.monsters.filter(m=>m.hp>0&&!m.isAlly).flatMap(m=>[...new Map(this.activeControlledActors.flatMap(a=>publicMonsterCells(a,this.grid,m)).map(p=>[`${p.x},${p.y}`,p])).values()].sort((a,b)=>a.y-b.y||a.x-b.x).map(p=>({id:m.id,x:p.x,y:p.y})))};
     }
+    public decideKnownPartyAi(view:import('../../ext/partyAi').PartyAiView):import('../../ext/partyAi').PartyAiDecision {const result=this.extensionRuntime?.queryOptional('party.ai.v1',view as unknown as import('../../ext/types').Json);if(result?.status!=='available')throw new PartyFailure('PARTY_DISABLED');return structuredClone(result.value) as unknown as import('../../ext/partyAi').PartyAiDecision;}
+    public advancePartyToHuman():void {if(!this.party)throw new PartyFailure('PARTY_DISABLED');this.submitPartyWindow({kind:'party:window',schema:2,expectedRevision:this.party.state.revision,issuerSlot:'local:0',seq:this.party.state.window.seq+1,startTick:timeSystem.currentTick,length:{kind:'ticks',ticks:1000},fineActorId:null,automatic:false,trigger:'single-step',plans:[]});}
     public submitPartyWindow(input:WindowBatch):void {this.executeCommand('party:window',input);}
     public choosePartyDecision(choiceId:string):void {
         const d=this.party?.state.window.decision;if(!d)throw new PartyFailure('STALE_DECISION');
@@ -563,7 +567,8 @@ export class Game {
     }
     private partyWindowPort():PartyWindowPort {
         if(!this.party)throw new PartyFailure('PARTY_DISABLED');
-        return {state:this.party.state,tick:()=>timeSystem.currentTick,ended:()=>this.isGameOver,ready:()=>this.readyPartyActorId,
+        return {state:this.party.state,tick:()=>timeSystem.currentTick,ended:()=>this.isGameOver,ready:()=>{applyIdleControllers(this);return this.readyPartyActorId;},
+            decide:id=>decidePartyAi(this,id),
             actors:()=>this.controlledActors.map(a=>{const m=this.party!.state.members.find(m=>m.actorId===a.id)!,cell=this.grid.getCell(a.x,a.y);return {
                 id:a.id,hp:a.hp,maxHp:a.maxHp,depth:m.level.kind==='dungeon'?m.level.depth:0,active:m.life==='active',at:{...a.loc},remaining:a.ticksUntilTurn,busy:actorActionSchedulerFor(this)?.isBusy(a.id)??false,
                 statuses:{...a.statusDurations},hostiles:this.monsters.filter(m=>m.hp>0&&!m.isAlly&&canSeeMonster(a,this.grid,m)).map(m=>m.id).sort((a,b)=>a-b),
@@ -626,6 +631,10 @@ export class Game {
     private attemptWindowIntent(id:number,intent:import('../../ext/party').ActorIntent,answers:boolean[]):WindowAttempt {
         const actor=this.controlledActors.find(a=>a.id===id)!,before=timeSystem.currentTick,oldTimer=actor.ticksUntilTurn;
         const restore=this.checkpointCombatFactWorld(),restoreExtensions=this.extensionRuntime!.checkpointPartyCommand(),random=rng.getState(),allocator=getNextEntityId();
+        const reject=():WindowAttempt=>{
+            if(isPartyAi(this.party!.state.members.find(m=>m.actorId===id)!,this.party!.state.window.seq)){restore();restoreExtensions();rng.setState(random);restoreNextEntityId(allocator);timeSystem.currentTick=before;}
+            return {chargedTicks:0,actionId:null,rejected:true};
+        };
         let committed = false, rejected = false;
         const previousCommit = partyItemCommits.get(this);
         partyItemCommits.set(this, accepted => { if(accepted === false)rejected = true;else committed = true; });
@@ -640,8 +649,8 @@ export class Game {
                 && ['equip','unequip','drop','quaff','read','throw','eat','use','confirm'].includes(String(intent.payload.operation));
             const nativePickup = intent.kind === 'module' && intent.owner === 'foundation' && intent.commandId === 'native-action';
             if(!choices.length && (rejected || (intent.kind === 'item' || nativeItem || nativePickup) && !committed && answers[answers.length-1] !== false))
-                return { chargedTicks: 0, actionId: null, rejected: true };
-            if(!choices.length&&intent.kind==='move'&&chargedTicks===0)return {chargedTicks:0,actionId:null,rejected:true};
+                return reject();
+            if(!choices.length&&intent.kind==='move'&&chargedTicks===0)return reject();
             if(choices.length)return {chargedTicks,actionId:null,pending:{kind:dialogue?'dialogue':'modal',choices,prompt:''}};
             return {chargedTicks,actionId:this.actorActions?.bundles.find(b=>b.decisionOwnerId===id)?.actionId??null,cancelled:answers[answers.length-1]===false};
         }catch(error){
@@ -655,8 +664,9 @@ export class Game {
         if(state.revision!==input.expectedRevision)throw new PartyFailure('STALE_REVISION');
         if(state.window.decision)throw new PartyFailure('DECISION_REQUIRED');
         if(state.window.phase==='failed')throw new PartyFailure('INTERNAL_FAILURE');
-        const member=state.members.find(m=>m.actorId===input.actorId);if(!member||member.life==='dead')throw new PartyFailure('BAD_ACTOR');if(member.controller.slot!==input.issuerSlot)throw new PartyFailure('NOT_CONTROLLER');
+        const member=state.members.find(m=>m.actorId===input.actorId);if(!member||member.life==='dead')throw new PartyFailure('BAD_ACTOR');if(input.issuerSlot!=='local:0')throw new PartyFailure('NOT_CONTROLLER');
     }
+    private *partyAiStages(input:PartyAiInput):CommandStages<void> {commitPartyAiInput(this,input);}
     private *partyPolicyStages(input:WindowPolicy):CommandStages<void> {
         this.validatePartyPolicy(input);const state=this.party!.state;
         if(input.change.kind==='single-step'){for(const m of state.window.members){m.plan=null;m.cursor=0;}disablePartyPlanning(this);}
@@ -667,7 +677,7 @@ export class Game {
         this.isInventoryOpen=false;
         const subscriptions = this.controlledActors.map(actor => observeStatusIncreases(actor,
             status => windowClock(this)?.fact('negative-status', actor.id, status)));
-        try { executePartyWindow(this,this.partyWindowPort(),input); }
+        try { executePartyWindow(this,this.partyWindowPort(),input);applyIdleControllers(this); }
         finally { subscriptions.forEach(dispose => dispose()); }
         // An interrupt may stop between native combat-turn boundaries. Archive
         // buffered messages before the semantic checkpoint, not on a later save.
@@ -697,8 +707,8 @@ export class Game {
                 if(item){item.enchantment=0;item.isCursed=false;item.runicType=undefined;item.runicKnown=true;item.identified=true;item.quantity=quantity;markItemStatsDirty(item);actor.inventory.addItem(item);if(equip)actor.equip(item);}
             }
         }
-        this.party={state:{schema:2,window:newPartyWindow([this.player.id,...actors.keys()]),revision:0,primaryActorId:this.player.id,leaderActorId:this.player.id,
-            members:[this.player,...actors.values()].map(a=>({actorId:a.id,life:'active',level:{kind:'dungeon',depth:this.depth},controller:{kind:'human',slot:'local:0'}}))},actors,native:Object.fromEntries([this.player,...actors.values()].map(a=>[a.id,{modal:false,falling:false,pendingTurn:false,poisonedDuringTurn:false,searchingCharge:0,justSearched:false,justRested:false,lastDamageSource:'',receivedLevitationWarning:false}]))};
+        this.party={state:{schema:3,companionOrders:[],window:newPartyWindow([this.player.id,...actors.keys()]),revision:0,primaryActorId:this.player.id,leaderActorId:this.player.id,
+            members:[this.player,...actors.values()].map(a=>({actorId:a.id,life:'active',level:{kind:'dungeon',depth:this.depth},controller:{kind:'human',slot:'local:0'},pendingController:null,controlEpoch:0,temporaryAiSeq:null,ai:defaultPartyAi()}))},actors,native:Object.fromEntries([this.player,...actors.values()].map(a=>[a.id,{modal:false,falling:false,pendingTurn:false,poisonedDuringTurn:false,searchingCharge:0,justSearched:false,justRested:false,lastDamageSource:'',receivedLevitationWarning:false}]))};
         for(const actor of this.controlledActors)bindPartyMember(actor);
         for(const actor of actors.values())this.extensionRuntime!.attachCreature(actor);
         this.configureControlledNativeStats();
@@ -4191,7 +4201,7 @@ export class Game {
     /** Every user command, including inventory and modal choices, crosses this boundary. */
     public executeCommand(action: string, data?: unknown, perform?: () => void): void {
         if(isPublishingPartyWindow(this))throw new PartyFailure('ACTOR_BUSY');
-        if(action.startsWith('party:')&&!['party:window','party:decision','party:actor-step','party:control','party:policy'].includes(action))throw new PartyFailure('BAD_PAYLOAD');
+        if(action.startsWith('party:')&&!['party:window','party:decision','party:actor-step','party:control','party:policy','party:ai'].includes(action))throw new PartyFailure('BAD_PAYLOAD');
         if (this.recordingInputBlocked) return;
         if(this.party&&action==='ext:command'&&!this.extensionRuntime?.isInitialCommand(action,data)){
             let input:any;try{input=typeof data==='string'?JSON.parse(data):data;}catch{throw new PartyFailure('BAD_PAYLOAD');}
@@ -4209,6 +4219,7 @@ export class Game {
         if(this.partyModalActor&&['move','confirm_target','escape','mouse_travel','arcana:risk-confirm'].includes(action)){
             data={kind:'party:actor-step',schema:1,expectedRevision:this.party!.state.revision,issuerSlot:'local:0',actorId:this.partyModalActor.id,intent:{kind:'module',owner:'foundation',commandId:'native-ui',payload:{action,data:data??null}}};action='party:actor-step';
         }
+        if(action==='party:ai'){let parsed:unknown;try{parsed=typeof data==='string'?JSON.parse(data):data;}catch{throw new PartyFailure('BAD_PAYLOAD');}const input=parsePartyAiInput(parsed);if(!validatePartyAiInput(this,input))return;data=JSON.stringify(input);}
         if(action==='party:policy'){let parsed:unknown;try{parsed=typeof data==='string'?JSON.parse(data):data;}catch{throw new PartyFailure('BAD_PAYLOAD');}const input=parseWindowPolicy(parsed);this.validatePartyPolicy(input);data=JSON.stringify(input);}
         if(action==='party:window'||action==='party:decision'){
             let parsed:unknown;try{parsed=typeof data==='string'?JSON.parse(data):data;}catch{throw new PartyFailure('BAD_PAYLOAD');}
@@ -4550,7 +4561,7 @@ export class Game {
     }
 
     private preparePartyInput(input:PartyInput): Player {
-        authorizePartyInput(this.party?.state,input,'local:0');
+        authorizePartyInput(this.party?.state,input,'local:0',!!windowClock(this));
         const actor=this.controlledActors.find(a=>a.id===input.actorId);
         if(!actor)throw new PartyFailure('BAD_ACTOR');
         if(this.partyModalActor&&(input.kind==='party:control'||this.partyModalActor!==actor||input.intent.kind!=='module'||input.intent.owner!=='foundation'||!['native-ui','native-item'].includes(input.intent.commandId)))throw new PartyFailure('DECISION_REQUIRED');
@@ -4561,7 +4572,7 @@ export class Game {
             const intent=input.intent;
             if(intent.kind==='item'&&!actor.inventory.items.some(i=>i.id===intent.itemId))throw new PartyFailure('ITEM_NOT_OWNED');
             if(intent.kind==='move'&&this.activeControlledActors.some(a=>a!==actor&&a.x===actor.x+intent.dx&&a.y===actor.y+intent.dy))throw new PartyFailure('INVALID_TARGET');
-            if(intent.kind==='attack'){const target=this.monsters.find(a=>a.id===intent.targetId);if(!target||target.hp<=0||Math.max(Math.abs(target.x-actor.x),Math.abs(target.y-actor.y))!==1)throw new PartyFailure('INVALID_TARGET');}
+            if(intent.kind==='attack'){const target=this.monsters.find(a=>a.id===intent.targetId);if(!target||target.hp<=0||!nearestLegalMeleeContact(this.grid,actor,target))throw new PartyFailure('INVALID_TARGET');}
             if(this.partyModalActor&&this.partyModalActor!==actor)throw new PartyFailure('DECISION_REQUIRED');
             if(intent.kind==='module')withPartyActor(this,actor,()=>this.preparePartyNativeCommand(actor,intent));
             if(intent.kind==='exchange')this.preparePartyExchange(actor,intent);
@@ -4597,7 +4608,14 @@ export class Game {
         }
         if(intent.owner!=='foundation'||!intent.payload||typeof intent.payload!=='object'||Array.isArray(intent.payload))throw new PartyFailure('BAD_PAYLOAD');
         const p=intent.payload;
-        if(intent.commandId==='native-action'&&Object.keys(p).join(',')==='action'&&p.action==='pickup')return {action:'pickup',data:undefined};
+        if(intent.commandId==='native-action'&&Object.keys(p).join(',')==='action'&&p.action==='pickup'){
+            const member=this.party?.state.members.find(m=>m.actorId===actor.id);
+            if(member&&isPartyAi(member,this.party!.state.window.seq)){
+                const item=this.items.find(i=>i.x===actor.x&&i.y===actor.y);
+                if(!item||item.flags?.includes('ITEM_PLAYER_AVOIDS')||this.extensionRuntime&&!this.extensionRuntime.itemAutoPickup(item))throw new PartyFailure('INVALID_TARGET');
+            }
+            return {action:'pickup',data:undefined};
+        }
         if(intent.commandId==='native-item'){
             if(Object.keys(p).sort().join(',')!=='itemId,operation,title'||typeof p.operation!=='string'||!['equip','unequip','drop','quaff','read','throw','eat','use','identify','enchant','call','inscribe','relabel','confirm','cancel'].includes(p.operation)||typeof p.title!=='string'||p.title.length>128)throw new PartyFailure('BAD_PAYLOAD');
             const item=actor.inventory.items.find(i=>i.id===p.itemId);
@@ -4661,10 +4679,10 @@ export class Game {
                     }
                     if(!place)throw new PartyFailure('NO_SPACE');placements.set(member.actorId,place);
                 }
-                for(const member of moving){member.life='active';member.level={kind:'dungeon',depth};const body=this.controlledActors.find(a=>a.id===member.actorId)!;commitCreatureAnchor(body,placements.get(member.actorId)!);}
+                for(const member of moving){member.life='active';member.temporaryAiSeq=null;member.level={kind:'dungeon',depth};const body=this.controlledActors.find(a=>a.id===member.actorId)!;commitCreatureAnchor(body,placements.get(member.actorId)!);}
                 this.extensionRuntime?.emit('enteredLevel',{depth,firstVisit,actorIds:moving.map(m=>m.actorId).sort((a,b)=>a-b)});
             });
-            this.updateVision();this.needsRender=true;
+            this.updateVision();applyIdleControllers(this);this.needsRender=true;
         }catch(error){restore();restoreExtensions();rng.setState(random);restoreNextEntityId(next);throw error;}
     }
     private *partyCommandStages(input:PartyInput,windowTransaction=false):CommandStages<void> {
@@ -4690,8 +4708,8 @@ export class Game {
         else if(intent.kind==='search')stages=this.performPlayerActionStages(intent.kind);
         else if(intent.kind==='attack'){
             const target=this.monsters.find(m=>m.id===intent.targetId);
-            if(!target||Math.max(Math.abs(target.x-actor.x),Math.abs(target.y-actor.y))!==1)throw new PartyFailure('INVALID_TARGET');
-            stages=this.performPlayerActionStages('move',{x:target.x-actor.x,y:target.y-actor.y});
+            const contact=target&&nearestLegalMeleeContact(this.grid,actor,target);if(!contact)throw new PartyFailure('INVALID_TARGET');
+            stages=this.performPlayerActionStages('move',{x:contact.to.x-actor.x,y:contact.to.y-actor.y});
         }else if(intent.kind==='item')stages=this.partyItemStages(actor,intent);
         else if(intent.kind==='exchange')stages=this.partyExchangeStages(actor,intent);
         else if(intent.kind==='module'){const command=withPartyActor(this,actor,()=>this.preparePartyNativeCommand(actor,intent));stages=this.applyCommandBodyStages(command.action,command.data);}
@@ -4707,6 +4725,9 @@ export class Game {
         finally{withPartyActor(this,actor,()=>stages.return());}
         this.party!.native[actor.id]!.modal=actor.hp>0&&!!(this.pendingArcana||this.pendingUseConfirm||this.pendingIdentify||this.pendingEnchantment||this.isThrowing);
         this.party!.state.revision++;
+        // Modal answers can complete without advancing the clock (escape,
+        // identify/enchant/cancel); settle pending control at that same boundary.
+        applyIdleControllers(this);
     }
     private *partyWaitStages(actor:Player):CommandStages<void>{
         const ticket=this.world5?.tickets.find(t=>t.actorId===actor.id&&t.status==='working'&&t.bundleActionId===null&&t.remainingTicks>0);
@@ -4751,7 +4772,7 @@ export class Game {
         // Replay and internal synchronous stages share the public input barrier.
         this.settleResidentNativeInput(action, data, perform);
         this.worldWorkCommandEpoch++;
-        const body=action==='party:policy'?this.partyPolicyStages(parseWindowPolicy(typeof data==='string'?JSON.parse(data):data)):action==='party:window'||action==='party:decision'?this.partyWindowStages(parseWindowInput(typeof data==='string'?JSON.parse(data):data)):action==='party:actor-step'||action==='party:control'?this.partyCommandStages(parsePartyInput(typeof data==='string'?JSON.parse(data):data)):this.applyCommandBodyStages(action,data,perform);
+        const body=action==='party:ai'?this.partyAiStages(parsePartyAiInput(typeof data==='string'?JSON.parse(data):data)):action==='party:policy'?this.partyPolicyStages(parseWindowPolicy(typeof data==='string'?JSON.parse(data):data)):action==='party:window'||action==='party:decision'?this.partyWindowStages(parseWindowInput(typeof data==='string'?JSON.parse(data):data)):action==='party:actor-step'||action==='party:control'?this.partyCommandStages(parsePartyInput(typeof data==='string'?JSON.parse(data):data)):this.applyCommandBodyStages(action,data,perform);
         let answer:boolean|undefined;
         try { for(;;) {
             const before=this.executingRecordedCommand;this.executingRecordedCommand=true;
@@ -11846,7 +11867,7 @@ export class Game {
         this.monstersFall();this.stopAutoTravel();
         for(const member of falling){root.native[member.id]!.falling=false;member.seized=false;}
         if(this.depth===CE_DEEPEST_LEVEL){for(const member of falling)withPartyActor(this,member,()=>this.teleportPlayerRandom());return;}
-        for(const member of root.state.members)if(member.life==='active')member.life='frozen';
+        for(const member of root.state.members)if(member.life==='active'){member.life='frozen';member.temporaryAiSeq=null;}
         const destination=this.depth+1,firstVisit=!this.levelSeeds[destination-1]?.visited;
         const returning=root.state.members.filter(m=>m.life==='frozen'&&m.level.kind==='dungeon'&&m.level.depth===destination);
         this.depth=destination;this.generateDepth(false,false,true,()=>{
@@ -11877,7 +11898,7 @@ export class Game {
             }
             this.extensionRuntime?.emit('enteredLevel',{depth:destination,firstVisit,actorIds:[...returning.map(m=>m.actorId),...falling.map(a=>a.id)].sort((a,b)=>a-b)});
         });
-        this.updateVision();this.needsRender=true;
+        this.updateVision();applyIdleControllers(this);this.needsRender=true;
     }
 
     private playerFalls(): void {
@@ -12708,6 +12729,7 @@ export class Game {
                         if(actor.ticksUntilTurn<=0&&native.pendingTurn){native.pendingTurn=false;withPartyActor(this,actor,()=>this.finishTurnEpilogue());}
                         if(actor.hp>0&&actor.ticksUntilTurn<=0&&(isIncapacitated(actor)||actor.hasStatus('entranced'))){actor.ticksUntilTurn=nativeStat(actor,'native.move-speed');native.pendingTurn=true;}
                     }
+                    applyIdleControllers(this);
                 }
             }}:{}),
             ...(game.bodyGroups?.length ? { bodies: {
@@ -12778,7 +12800,7 @@ export class Game {
                     const decision=()=>{
                     const carried = monster.carriedItem;
                     if (monster.spatial?.bodyMember) {
-                        if (!monster.prepareNativeDecision(game, stealthRange) && !game.tryActiveBodyTransition(monster) && !monster.tryBodyNativePriority(game)) {
+                        if (!monster.prepareNativeDecision(game, stealthRange) && !game.tryActiveBodyTransition(monster) && !(game.party&&takePartyCompanionOrder(game,monster)) && !monster.tryBodyNativePriority(game)) {
                             const result = selectNativeActorAction(game, monster.id);
                             if (result === 'native-fallback') game.takeBodyDecision(monster);
                             else if (!['handled', 'blocked'].includes(result) || monster.ticksUntilTurn <= 0)
@@ -12787,7 +12809,7 @@ export class Game {
                     } else if (game.activeBodyTransitionFor(monster) || actorActionSchedulerFor(game)) {
                         // One shared prelude per FREE decision; busy phase boundaries
                         // never enter this path. Native fallback runs only its remainder.
-                        if (!monster.prepareNativeDecision(game, stealthRange) && !game.tryActiveBodyTransition(monster)) {
+                        if (!monster.prepareNativeDecision(game, stealthRange) && !game.tryActiveBodyTransition(monster) && !(game.party&&takePartyCompanionOrder(game,monster))) {
                             const result = selectNativeActorAction(game, monster.id);
                             if (!['handled', 'blocked', 'native-fallback'].includes(result)) throw new Error('Invalid actor selection result');
                             if (result === 'native-fallback') {
@@ -12795,7 +12817,7 @@ export class Game {
                                 monster.takeNativeDecision(game);
                             } else if (monster.ticksUntilTurn <= 0) throw new Error('Actor selection must establish a positive timer');
                         }
-                    } else monster.takeTurn(game, stealthRange);
+                    } else if(game.party?.state.companionOrders.some(r=>r.actorId===monster.id)){if(!monster.prepareNativeDecision(game,stealthRange)&&!takePartyCompanionOrder(game,monster))monster.takeNativeDecision(game);}else monster.takeTurn(game, stealthRange);
                     if (!carried && monster.carriedItem && monster.hasAbility('MA_HIT_STEAL_FLEE')) {
                         game.autoPath = []; game.isAutoExploring = false; game.isMouseTraveling = false;
                     }
@@ -13062,7 +13084,7 @@ export class Game {
      * action into a busy actor. Keep invalid runs and animation locked, and
      * retain the original lock for every other input and non-party game. */
     private commandInputLocked(action: string | undefined): boolean {
-        if (this.party && (action === 'party:window' || action === 'party:decision')
+        if (this.party && (action === 'party:window' || action === 'party:decision' || action === 'party:ai')
             && !isProductionActorActionRunInvalid(this)) return this.isAdvancing;
         return this.isInputLocked();
     }
@@ -13378,7 +13400,7 @@ export class Game {
         });
         if (this.extensionRuntime) snapshot.extensions = this.extensionRuntime.snapshot();
         if(this.party){snapshot.party={state:structuredClone(this.party.state),actors:[...this.party.actors.values()].map(serializeControlledActor),native:structuredClone(this.party.native)};
-            snapshot.version=9;snapshot.schema='brogue-web-whole-run-v9';}
+            snapshot.version=10;snapshot.schema='brogue-web-whole-run-v10';}
         return snapshot;
     }
 
@@ -14594,7 +14616,20 @@ export class Game {
     }
     /** Core-only post-prelude choice. Immediate sources retain independent
      * native attack scopes/cooldowns; the group pays max of at most four hits. */
-    private takeBodyDecision(core: Monster): void {
+    public commitPartyCompanionIntent(actor:Monster,intent:import('../../ext/party').ActorIntent):void {
+        if(!this.party||!this.isBodyDecisionOwner(actor.id)||!actor.isAlly||actor.isCaged)throw new PartyFailure('BAD_ACTOR');
+        if(actor.hasCEBehavior('MONST_IMMOBILE'))return;
+        if(intent.kind==='move'){
+            const at={x:actor.x+intent.dx,y:actor.y+intent.dy};
+            if(actor.spatial?.bodyMember){const group=this.bodyGroups!.find(g=>g.coreId===actor.id)!,definition=this.spatialCatalog.body(group.bodyDefinitionId);actor.ticksUntilTurn=bodyMoveTicks(definition,group,this.spatialCatalog,nativeStat(actor,'native.move-speed'));this.tryMoveBodyCore(actor,at);}
+            else {const blocker=this.getMonsterAt(at.x,at.y);if(blocker&&blocker.id!==actor.id||this.controlledOccupies(at))return;actor.moveResidentStep(at,this);}
+        }else if(intent.kind==='attack'){
+            const target=this.monsters.find(m=>m.id===intent.targetId&&m.hp>0&&!m.isAlly);if(!target)return;
+            if(actor.spatial?.bodyMember)this.takeBodyDecision(actor,target);
+            else actor.commitPartyOrderAttack(this,target);
+        }
+    }
+    private takeBodyDecision(core: Monster, requestedTarget?: Creature): void {
         const group = this.bodyGroups?.find(g => g.coreId === core.id);
         if (!group) throw new Error('Invalid body decision owner');
         const definition = this.spatialCatalog.body(group.bodyDefinitionId), order = bodyConstraintOrder(definition);
@@ -14611,7 +14646,7 @@ export class Game {
             && c.spatial?.bodyMember?.groupId !== group.groupId && monstersAreEnemies(core, c));
         targets.sort((a, b) => distanceBetweenFootprints(core, a) - distanceBetweenFootprints(core, b) || a.id - b.id);
         const normalAlly = core.isAlly && core.state !== MonsterState.FLEEING && !core.hasStatus('magical_fear') && !core.hasStatus('discordant');
-        const target = normalAlly ? core.bodyAllyEnemy(this) ?? undefined : targets[0];
+        const target = requestedTarget ?? (normalAlly ? core.bodyAllyEnemy(this) ?? undefined : targets[0]);
         const fleeing = core.state === MonsterState.FLEEING || core.hasStatus('magical_fear') || !!(target && core.hasBehavior('MONST_MAINTAINS_DISTANCE') && distanceBetweenFootprints(core,target) < 3);
         if (core.hasStatus('nauseous') && this.tryVomit(core)) return;
         let count = 0, maxTicks = 0;
@@ -16501,10 +16536,11 @@ export class Game {
 
     /** CE setMonsterLocation picks up without a second player action/turn. */
     private pickUpItemAfterDisplacement(): void {
+        const member=this.party?.state.members.find(m=>m.actorId===this.commandActor.id), ai=member&&isPartyAi(member,this.party!.state.window.seq);
         // An explicit manual walk/pickup can recover an avoided item. Only
         // automatic travel must leave it alone when crossing its cell.
         const index = this.items.findIndex(item => item.loc.x === this.commandActor.loc.x && item.loc.y === this.commandActor.loc.y
-            && (!this.inAutoTravelStep || !item.flags?.includes('ITEM_PLAYER_AVOIDS'))
+            && ((!this.inAutoTravelStep && !ai) || !item.flags?.includes('ITEM_PLAYER_AVOIDS'))
             && (!this.extensionRuntime || this.extensionRuntime.itemAutoPickup(item)));
         if (index < 0) return;
         const item = this.items[index]!;

@@ -21,7 +21,7 @@ function start() {
     g.animationEnabled = false; clear(); return g;
 }
 const digest = (g: Game) => mechanicalDigest(g.toSnapshot(), (g as any).recordingInputState());
-const batch = (g: Game) => ({ kind: 'party:window', schema: 1, seq: g.party!.state.window.seq + 1,
+const batch = (g: Game) => ({ kind: 'party:window', schema: 2, seq: g.party!.state.window.seq + 1,
     expectedRevision: g.party!.state.revision, issuerSlot: 'local:0', startTick: timeSystem.currentTick,
     length: { kind: 'ticks', ticks: 300 }, fineActorId: null, automatic: false, trigger: 'manual', plans: [] });
 beforeEach(() => vi.spyOn(Date, 'now').mockReturnValue(1792252800000));

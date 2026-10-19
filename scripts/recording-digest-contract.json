@@ -165,7 +165,7 @@
     "StatPipeline": "Excluded: cache, diagnostics, actorStatRevision, frozen provider views and hypothetical proposal contexts. Persist only ExtensionSnapshot.foundation.stats in extensions dirty domain.",
     "EdibleFoundation": "5A4: knowledge/needs/timedStats/departures roots belong to extensions; Item.fireContactCooldownUntilTurn belongs to native. FireContact queue/draining/DF nesting are session, name/appearance/effect/nextDue are derived and excluded.",
     "ItemFoundation": "C6-1: Item.moduleData is native and also hashed in knowledge for partial-known changes; foundation.itemDrops lifecycle/receipts are extensions. Sealed plans, presentation/knowledge weak bindings and stat projection caches are session-only.",
-    "PartySession": "P1b: execution scope/focus, planning drafts/ready/deadline/preview and answer cursor are session-only, root/revision bound. PartyRuntime state2 including accepted window/decision/receipt is party domain, native actors/timers and knowledge remain unique. Whole-run9/recording6 with semantic full on each window/decision segment; no-party remains F20/S7/R4/O2."
+    "PartySession": "P1c: state3 member control, pending switch, epoch, temporary seq, AI settings/order/ordinal/diagnostic and companionOrders are entirely in party.state/party digest. No duplicated native owner. Scope, planning drafts and preview remain session-only. F23/S10/R7/O5; no-party unchanged."
   },
   "world5Leaves": {
     "foundation": 11,

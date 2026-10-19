@@ -5,6 +5,6 @@ export function hasPartyIdentity(manifest: Pick<ExtensionManifest, 'modules'> | 
 }
 export function effectivePartyCodec(manifest: Pick<ExtensionManifest, 'modules'> | null | undefined) {
   return hasPartyIdentity(manifest)
-    ? {foundation:22 as const,wholeRun:9 as const,recording:6 as const,origin:4 as const,schema:'brogue-web-whole-run-v9' as const}
+    ? {foundation:23 as const,wholeRun:10 as const,recording:7 as const,origin:5 as const,schema:'brogue-web-whole-run-v10' as const}
     : {foundation:20 as const,wholeRun:7 as const,recording:4 as const,origin:2 as const,schema:'brogue-web-whole-run-v7' as const};
 }

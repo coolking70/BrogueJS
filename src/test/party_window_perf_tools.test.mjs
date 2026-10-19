@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { hash } from '../../scripts/ext-perf-common.mjs';
 import { it, expect } from 'vitest';
-import { parseOptions, validateWindowMeasurement } from '../../scripts/run-party-window-perf.mjs';
+import { parseOptions, validateWindowMeasurement, validateAiMeasurement } from '../../scripts/run-party-window-perf.mjs';
 import { merge, readShard } from '../../scripts/merge-party-window-perf.mjs';
 const h = 'a'.repeat(64),
   stat = { n: 1, p50: 1, p95: 1, p99: 1, max: 1, total: 1 };
@@ -154,3 +154,12 @@ it.each(['missing-side', 'wrong-side', 'domains', 'missing-domains', 'rows', 'rn
     expect(() => merge(reports)).toThrow();
   }
 );
+
+function aiReports(){return reports().map(r=>({...r,identity:'party-ai-v1',options:{...r.options,scene:'ai'},runs:r.runs.map(run=>({...run,measurement:{...run.measurement,identity:'party-ai-v1',scene:'ai',aiCounters:{calls:2,acceptedDecisions:2,nodes:7,budgetFallbacks:0,cacheHits:0}}}))}));}
+it('keeps AI calibration distinct and rejects A/B or mixed identities',()=>{
+  expect(merge(aiReports()).status).toBe('smoke-only');
+  expect(()=>parseOptions(['--head','b','--out','x','--scene','ai','--base','a'])).toThrow();
+  const mixed=aiReports();mixed[0].runs[0].measurement.identity='party-window-v1';expect(()=>merge(mixed)).toThrow();
+  expect(()=>validateWindowMeasurement(aiReports()[0].runs[0].measurement)).toThrow();
+});
+it.each(['calls','acceptedDecisions','nodes'])('rejects absent AI work counter %s',key=>{const row=aiReports()[0].runs[0].measurement;delete row.aiCounters[key];expect(()=>validateAiMeasurement(row)).toThrow();});

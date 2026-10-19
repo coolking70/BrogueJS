@@ -24,7 +24,7 @@ it('freezes a distant member, preserves its resources, and reactivates it on ret
 },120000);
 it.each([['single',false],['window',false],['single',true],['window',true]] as const)('walks both members through a natural first floor using %s, combat=%s, and replays the complete prefix',(mode,combat)=>{
  const g=start(combat);let h:Game|undefined;try{
- const step=(intent:ActorIntent,id:number)=>{if(mode==='single')g.submitPartyIntent(intent,id);else g.submitPartyWindow({kind:'party:window',schema:1,seq:g.party!.state.window.seq+1,expectedRevision:g.party!.state.revision,issuerSlot:'local:0',startTick:timeSystem.currentTick,length:{kind:'fine'},fineActorId:id,automatic:false,trigger:'manual',plans:[{actorId:id,controllerSlot:'local:0',update:'replace',plan:{kind:'queue',actions:[intent]}}]});};
+ const step=(intent:ActorIntent,id:number)=>{if(mode==='single')g.submitPartyIntent(intent,id);else g.submitPartyWindow({kind:'party:window',schema:2,seq:g.party!.state.window.seq+1,expectedRevision:g.party!.state.revision,issuerSlot:'local:0',startTick:timeSystem.currentTick,length:{kind:'fine'},fineActorId:id,automatic:false,trigger:'manual',plans:[{actorId:id,controllerSlot:'local:0',update:'replace',plan:{kind:'queue',actions:[intent]}}]});};
  const key=(x:number,y:number)=>`${x},${y}`,lead=g.controlledActors[1]!;
  for(let steps=0;steps<1400&&g.depth===1;steps++){
   clear();const stairsAt=(g as any).levelSeeds[0].downStairsLoc;const id=mode==='window'?(lead.x===stairsAt.x&&lead.y===stairsAt.y?g.player.id:lead.id):g.readyPartyActorId;expect(id).not.toBeNull();const actor=g.controlledActors.find(a=>a.id===id)!,stairs=(g as any).levelSeeds[0].downStairsLoc;

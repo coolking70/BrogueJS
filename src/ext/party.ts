@@ -1,3 +1,4 @@
+import { validateController, validateAiState, type PartyController, type PartyAiState, type CompanionOrder } from './partyAi';
 import { validateWindowState, type PartyWindowState } from './partyWindow';
 /** P1a finite input contract. No engine objects, UI focus, plans or AI state. */
 import { c5Canonical } from './worldJson';
@@ -18,10 +19,15 @@ export interface MemberState {
   actorId: number;
   life: 'active' | 'frozen' | 'dead';
   level: LevelRef;
-  controller: { kind: 'human'; slot: string };
+  controller: PartyController;
+  pendingController: PartyController | null;
+  controlEpoch: number;
+  temporaryAiSeq: number | null;
+  ai: PartyAiState;
 }
 export interface PartyState {
-  schema: 2;
+  schema: 3;
+  companionOrders: CompanionOrder[];
   window: PartyWindowState;
   revision: number;
   primaryActorId: number;
@@ -117,32 +123,34 @@ export function parsePartyInput(value: unknown): PartyInput {
 }
 export function validatePartyState(value: unknown): asserts value is PartyState {
   try { c5Canonical(value); } catch { return fail(); }
-  keys(value, 'schema,revision,primaryActorId,leaderActorId,members,window');
-  if (value.schema !== 2) throw new PartyFailure('VERSION_MISMATCH');
+  keys(value, 'schema,revision,primaryActorId,leaderActorId,members,window,companionOrders');
+  if (value.schema !== 3) throw new PartyFailure('VERSION_MISMATCH');
   integer(value.revision); integer(value.primaryActorId, 1); integer(value.leaderActorId, 1);
   if (!Array.isArray(value.members) || !value.members.length || value.members.length > PARTY_LIMIT) fail();
   let previous = 0;
   const members = value.members as unknown[];
   for (const member of members) {
-    keys(member, 'actorId,life,level,controller'); integer(member.actorId, previous + 1); previous = member.actorId;
+    keys(member, 'actorId,life,level,controller,pendingController,controlEpoch,temporaryAiSeq,ai'); integer(member.actorId, previous + 1); previous = member.actorId;
     if (!['active','frozen','dead'].includes(member.life as string)) fail();
-    level(member.level); keys(member.controller, 'kind,slot');
-    if (member.controller.kind !== 'human') fail();
-    slot(member.controller.slot);
+    level(member.level); validateController(member.controller);
+    if(member.pendingController!==null)validateController(member.pendingController);integer(member.controlEpoch);validateAiState(member.ai);
+    if(member.temporaryAiSeq!==null){integer(member.temporaryAiSeq,1);if(member.temporaryAiSeq!==(value.window as PartyWindowState).seq||(value.window as PartyWindowState).phase!=='awaiting-decision'||member.life!=='active')fail();}
   }
   if (![value.primaryActorId,value.leaderActorId].every(id => (members as MemberState[]).some(m => m.actorId === id))) fail();
+  if(!Array.isArray(value.companionOrders)||value.companionOrders.length>64)fail();
+  let previousCompanion=0;for(const row of value.companionOrders as unknown[]){keys(row,'actorId,level,ai');integer(row.actorId,previousCompanion+1);previousCompanion=row.actorId;integer(row.level,1);if(row.level>40||(members as MemberState[]).some(m=>m.actorId===row.actorId))fail();validateAiState(row.ai);}
   validateWindowState(value.window,value as unknown as PartyState);
   const active = (members as MemberState[]).filter(m => m.life === 'active');
   if (active.some((m: MemberState) => c5Canonical(m.level) !== c5Canonical(active[0]!.level))) fail();
 }
 
 /** Authorization is engine-owned; the asserted issuer is never its own credential. */
-export function authorizePartyInput(state: PartyState | undefined, input: PartyInput, authenticatedSlot: string): MemberState {
+export function authorizePartyInput(state: PartyState | undefined, input: PartyInput, authenticatedSlot: string, internal = false): MemberState {
   if (!state) throw new PartyFailure('PARTY_DISABLED');
   if (input.expectedRevision !== state.revision) throw new PartyFailure('STALE_REVISION');
   const member = state.members.find(m => m.actorId === input.actorId);
   if (!member || member.life === 'dead') throw new PartyFailure('BAD_ACTOR');
-  if (input.issuerSlot !== authenticatedSlot || member.controller.slot !== authenticatedSlot) throw new PartyFailure('NOT_CONTROLLER');
+  if (input.issuerSlot !== authenticatedSlot || authenticatedSlot !== 'local:0' || input.kind === 'party:actor-step' && !internal && (member.controller.kind !== 'human' || member.controller.slot !== authenticatedSlot)) throw new PartyFailure('NOT_CONTROLLER');
   if (member.life === 'frozen' && !(input.kind === 'party:control' && input.change.kind === 'recover-level')) throw new PartyFailure('ACTOR_FROZEN');
   return member;
 }

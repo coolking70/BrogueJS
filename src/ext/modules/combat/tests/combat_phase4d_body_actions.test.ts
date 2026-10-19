@@ -33,7 +33,9 @@ function configure(mode:Mode='normal', balance=20, mixed=false) {
     const descriptors=catalog.getInstalledModuleDescriptors();
     let seen:Readonly<PartBreakRequest>|undefined,proof:PartBreakPrepareContext['member'];
     const registry=registryFromDescriptors(descriptors.map(d=>{
-        const base=installed.create(installed.manifest([d.id]))[0]!;
+        // Preserve the unrelated configurable descriptor; a manifest already includes the party variant.
+    if (d.id === 'party') return d;
+    const base=installed.create(installed.manifest([d.id]))[0]!;
         if(d.id==='body-fixture'&&mixed){
             data.definition.parts[2]!.formId='body-fixture.fixture-claw';
             const nativeForms=[...base.nativeForms!,{...data.leg,id:'body-fixture.fixture-claw'}];

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import {ref} from 'vue';
+import PartyAiPanel from './PartyAiPanel.vue';
 import PartyWindowPanel from './PartyWindowPanel.vue';
 import {useTranslation} from 'i18next-vue';
-defineProps<{windowProps:InstanceType<typeof PartyWindowPanel>['$props'];items:readonly {id:number;name:string;quantity:number}[];travel:(direction:number,leave:number[])=>void;exchange:(to:number,item:number,quantity:number)=>void;feedback:string|null;presentationHidden?:boolean;focused:number;ready:number|null;members:readonly {id:number;hp:number;maxHp:number;life:string;depth:number}[];focus:(id:number)=>void;recover:(depth:number)=>void}>();
+defineProps<{aiProps:InstanceType<typeof PartyAiPanel>['$props'];windowProps:InstanceType<typeof PartyWindowPanel>['$props'];items:readonly {id:number;name:string;quantity:number}[];travel:(direction:number,leave:number[])=>void;exchange:(to:number,item:number,quantity:number)=>void;feedback:string|null;presentationHidden?:boolean;focused:number;ready:number|null;members:readonly {id:number;hp:number;maxHp:number;life:string;depth:number}[];focus:(id:number)=>void;recover:(depth:number)=>void}>();
 const {t}=useTranslation();
 const leave=ref<number[]>([]),to=ref(0),item=ref(0),quantity=ref(1);
 </script>
@@ -12,7 +13,7 @@ const leave=ref<number[]>([]),to=ref(0),item=ref(0),quantity=ref(1);
 <small>{{ready===member.id?t('ext.party.ready'):member.life==='frozen'?t('ext.party.frozen'):member.life==='dead'?t('ext.party.dead'):t('ext.party.waiting')}}</small>
 </button>
 <template v-if="members.every(m=>m.life!=='active')"><button v-for="member in members.filter(m=>m.life==='frozen')" :key="member.id" @click="recover(member.depth)">{{t('ext.party.recover')}} · {{t('ext.party.depth',{depth:member.depth})}}</button></template>
-<PartyWindowPanel v-bind="windowProps"/>
+<PartyAiPanel v-bind="aiProps"/><PartyWindowPanel v-bind="windowProps"/>
 <details><summary>{{t('ext.party.controls')}}</summary>
 <div v-for="member in members.filter(m=>m.life==='active'&&m.id!==focused)" :key="member.id"><label><input v-model="leave" type="checkbox" :value="member.id">{{t('ext.party.leave',{number:members.findIndex(m=>m.id===member.id)+1})}}</label></div>
 <button @click="travel(-1,leave)">{{t('ext.party.up')}}</button><button @click="travel(1,leave)">{{t('ext.party.down')}}</button>

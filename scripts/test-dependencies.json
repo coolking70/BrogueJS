@@ -616,11 +616,15 @@
       "optional": []
     },
     "src/ext/modules/party/tests/party_travel.test.ts": {
-      "required": ["combat"],
+      "required": [
+        "combat"
+      ],
       "optional": []
     },
     "src/ext/modules/party/tests/party_entry_checkpoint.test.ts": {
-      "required": ["combat"],
+      "required": [
+        "combat"
+      ],
       "optional": []
     },
     "src/ext/modules/party/tests/party_extensions.test.ts": {
@@ -650,6 +654,73 @@
     },
     "src/ext/modules/party/tests/party_window_review_r1.test.ts": {
       "required": [],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_ai.test.ts": {
+      "required": [],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_ai_integration.test.ts": {
+      "required": [],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_ai_review_geometry.test.ts": {
+      "required": [],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_ai_review_control.test.ts": {
+      "required": [
+        "combat"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_ai_review_temporary.test.ts": {
+      "required": [],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_ai_review_movement.test.ts": {
+      "required": [],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_ai_review_rejected.test.ts": {
+      "required": [],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_ai_review_pickup.test.ts": {
+      "required": [
+        "loot"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_ai_review_fall.test.ts": {
+      "required": [],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_ai_review_rally.test.ts": {
+      "required": [],
+      "optional": []
+    },
+    "src/test/ext_party_inert.test.ts": {
+      "required": [
+        "combat",
+        "crafting",
+        "foraging",
+        "giants",
+        "growth",
+        "loot",
+        "narrative",
+        "settlement"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_ai_r1_control.test.ts": {
+      "required": [],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_ai_r1_companion.test.ts": {
+      "required": [
+        "combat"
+      ],
       "optional": []
     }
   }

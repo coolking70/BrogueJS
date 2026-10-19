@@ -3,14 +3,17 @@ import { readFileSync, mkdirSync, writeFileSync, cpSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { write, hash } from './ext-perf-common.mjs';
-import { validateWindowMeasurement, compareWindowPair } from './run-party-window-perf.mjs';
+import { validateWindowMeasurement, validateAiMeasurement, compareWindowPair } from './run-party-window-perf.mjs';
 export function merge(reports) {
   assert.equal(reports.length, 3, 'Require all three shards');
-  const first = reports[0],
+  const first = reports[0];
+  assert.ok(['party-window-v1','party-ai-v1'].includes(first.identity));
+  if(first.identity==='party-ai-v1')assert.equal(first.mode,'calibration-only');
+  const
     runs = [], sides = first.mode === 'ab' ? ['A', 'B'] : ['B'];
   assert.ok(['ab', 'calibration-only'].includes(first.mode));
   for (const report of reports) {
-    assert.equal(report.identity, 'party-window-v1');
+    assert.equal(report.identity, first.identity);
     assert.equal(report.mode, first.mode);
     assert.deepEqual(report.sources, first.sources);
     assert.ok(['smoke-only', 'measured-no-budget'].includes(report.status));
@@ -21,7 +24,7 @@ export function merge(reports) {
   }
   const seen = new Set();
   for (const r of runs) {
-    validateWindowMeasurement(r.measurement);
+    (first.identity==='party-ai-v1'?validateAiMeasurement:validateWindowMeasurement)(r.measurement);
     const side = r.side ?? 'B';
     assert.ok(sides.includes(side));
     const key = `${r.round}-${side}-${r.measurement.actors}-${r.measurement.mode}`;
@@ -62,7 +65,7 @@ export function merge(reports) {
       ...compareWindowPair(a.measurement, b.measurement) };
   }) : [];
   return {
-    identity: 'party-window-v1',
+    identity: first.identity,
     mode: first.mode,
     ...(first.mode === 'ab' ? { sources: first.sources } : {}),
     comparisons,

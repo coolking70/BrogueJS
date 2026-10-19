@@ -53,7 +53,7 @@ function start() {
 function batch(g: Game, actions?: ActorIntent[], ticks: 100 | 300 = 300): WindowBatch {
   return {
     kind: 'party:window',
-    schema: 1,
+    schema: 2,
     seq: g.party!.state.window.seq + 1,
     expectedRevision: g.party!.state.revision,
     issuerSlot: 'local:0',
@@ -419,7 +419,7 @@ it.each(['stop', 'continue'] as const)(
       for (const actor of g.controlledActors)
         g.executeCommand('party:policy', {
           kind: 'party:policy',
-          schema: 1,
+          schema: 2,
           expectedRevision: g.party!.state.revision,
           issuerSlot: 'local:0',
           actorId: actor.id,

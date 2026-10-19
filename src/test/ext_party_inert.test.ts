@@ -9,7 +9,9 @@ import '../i18n';
 it('captures phase6 unchanged run bytes', () => {
  vi.spyOn(Date, 'now').mockReturnValue(1792252800000);
  const rows=[];
- for (const ids of [null, [], ['growth'], ['loot'], ['combat','crafting','foraging','giants','growth','loot','narrative','settlement']]) {
+ // Explicit module-bearing configuration lets the dependency guard see this fixed fixture's prerequisites.
+ const legacy = {modules:['combat','crafting','foraging','giants','growth','loot','narrative','settlement']};
+ for (const ids of [null, [], ['growth'], ['loot'], legacy.modules]) {
   const modules=ids ? createExtensionRegistry().create(createExtensionRegistry().manifest(ids)) : [];
   const initialCommands=modules.flatMap(m=>m.initialCommand?[JSON.stringify({module:m.id,...m.initialCommand})]:[]);
   const game=new Game({seed:1});

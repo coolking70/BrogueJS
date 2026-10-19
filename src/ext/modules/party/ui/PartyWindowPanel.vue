@@ -17,7 +17,7 @@ const props = defineProps<{
   rehearse: (length: WindowLength, automatic: boolean) => void;
   cancelPreview: () => void;
   choose: (choice: string) => void;
-  policy: (empty: 'wait' | 'interrupt', reaction: 'stop' | 'continue') => void;
+  policy: (empty: 'wait' | 'interrupt', reaction: 'stop' | 'continue' | 'ai-this-window') => void;
 }>();
 const { t } = useTranslation();
 const plan = computed(() => {
@@ -29,7 +29,7 @@ const plan = computed(() => {
 });
 const length = ref('100'),
   empty = ref<'wait' | 'interrupt'>('wait'),
-  reaction = ref<'stop' | 'continue'>('stop');
+  reaction = ref<'stop' | 'continue' | 'ai-this-window'>('stop');
 const selected = (): WindowLength =>
   length.value === 'fine'
     ? { kind: 'fine' }
@@ -60,7 +60,7 @@ const dirs = [
             ? t('ext.party.plan.empty')
             : draft.kind === 'queue'
               ? t('ext.party.plan.steps', { count: draft.actions.length })
-              : t('ext.party.plan.travel', { x: draft.target.x, y: draft.target.y })
+              : draft.kind==='travel' ? t('ext.party.plan.travel', { x: draft.target.x, y: draft.target.y }) : t('ext.party.ai.temporary')
       }}
     </div>
     <ol v-if="plan?.kind === 'queue'" class="steps">
@@ -125,7 +125,7 @@ const dirs = [
         <option value="interrupt">{{ t('ext.party.plan.emptyStop') }}</option></select
       ><select v-model="reaction" @change="policy(empty, reaction)">
         <option value="stop">{{ t('ext.party.window.stop') }}</option>
-        <option value="continue">{{ t('ext.party.window.continue') }}</option>
+        <option value="ai-this-window">{{t('ext.party.ai.temporary')}}</option><option value="continue">{{ t('ext.party.window.continue') }}</option>
       </select>
     </details>
     <ol v-if="state.receipt?.interrupts.length">

@@ -1768,6 +1768,11 @@ export class Monster extends Creature {
     /** Uses the native ally perception target after this decision's single prelude. */
     public hasNativeResidentPriority(game:Game):boolean {return !!closestBlinkEnemy(game,this)||!!this.targetCorpseLoc||monsterBlinkAvoids(game,this,this.loc);}
     public moveResidentStep(at:Pos,game:Game):void {this.tryMoveTo(at.x,at.y,game);}
+    /** Party orders reuse the native ally attack, including geometry, recovery and resources. */
+    public commitPartyOrderAttack(game:Game,target:Monster):void {
+        if(!game.party||!this.isAlly||this.isCaged||this.hasCEBehavior('MONST_IMMOBILE')||target.isAlly||!game.isBodyDecisionOwner(this.id))return;
+        this.resolveBodyMeleeAdjacent(game,target,'ally');
+    }
     public prepareNativeDecision(game: Game, stealthRange: number): boolean {
         assertNativeSpatial(this);
         if (this.hp <= 0) return true;

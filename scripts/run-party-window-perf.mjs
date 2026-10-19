@@ -22,12 +22,15 @@ export function parseOptions(args) {
   assert.ok(o.head && o.out);
   assert.ok([1, 2, 3].includes(o.rounds));
   assert.ok(Number.isSafeInteger(o.steps) && o.steps > 0 && o.steps <= 2049);
-  assert.ok(['single', 'windows', 'fixed-ticks'].includes(o.scene));
+  assert.ok(['single', 'windows', 'fixed-ticks', 'ai'].includes(o.scene));
   if (o.shard) assert.ok(['classic', 'all-full', 'all-prefix'].includes(o.shard));
+  if(o.scene==='ai')assert.ok(!o.base,'AI v1 is B calibration only');
   return o;
 }
-export function validateWindowMeasurement(row) {
-  assert.equal(row.identity, 'party-window-v1');
+export function validateWindowMeasurement(row) {return validateMeasurement(row,'party-window-v1');}
+export function validateAiMeasurement(row) {assert.equal(row.scene,'ai');assert.ok(row.aiCounters.calls>0);assert.ok(row.aiCounters.nodes>=0);assert.ok(row.aiCounters.acceptedDecisions>0);return validateMeasurement(row,'party-ai-v1');}
+function validateMeasurement(row, identity) {
+  assert.equal(row.identity, identity);
   assert.equal(row.oos, 0);
   assert.equal(row.previewPollution, 0);
   assert.ok([1, 2, 4].includes(row.actors));
@@ -98,7 +101,7 @@ export async function run(args) {
       toolNames.map((n) => [n, hash(readFileSync(resolve(control, 'scripts', n), 'utf8'))])
     );
   const result = {
-    identity: 'party-window-v1',
+    identity: o.scene==='ai'?'party-ai-v1':'party-window-v1',
     mode: o.base ? 'ab' : 'calibration-only',
     ...(o.base ? { sources } : {}),
     comparisons: [],
@@ -124,6 +127,7 @@ export async function run(args) {
         for (const side of o.base ? (round % 2 ? ['A', 'B'] : ['B', 'A']) : ['B']) {
           const artifact = `${round}-${o.base ? side + '-' : ''}${actors}-${mode}.json`,
             file = resolve(out, artifact),
+            childStarted = performance.now(),
             child = spawnSync(
               process.execPath,
               [
@@ -143,12 +147,12 @@ export async function run(args) {
               }
             );
           write(resolve(out, artifact + '.log.json'), {
-            exit: child.status,
+            exit: child.status, signal: child.signal, error: child.error ? {code:child.error.code??null,message:child.error.message}:null, elapsedMs:performance.now()-childStarted, timeoutMs:1200000,
             stdout: child.stdout,
             stderr: child.stderr
           });
           assert.equal(child.status, 0, `Failed ${artifact}: ${child.stderr}`);
-          const row = validateWindowMeasurement(JSON.parse(readFileSync(file, 'utf8')));
+          const row = (o.scene==='ai'?validateAiMeasurement:validateWindowMeasurement)(JSON.parse(readFileSync(file, 'utf8')));
           assert.equal(row.sourceHash, sources[side].sourceHash);
           const old = result.runs.find(
             (r) => (r.side ?? 'B') === side && r.measurement.actors === actors && r.measurement.mode === mode

@@ -12,7 +12,19 @@
     "tests/party_window_ui.test.ts",
     "tests/party_window_review_r1.test.ts",
     "tests/party_checkpoint.test.ts",
-    "tests/party_entry_checkpoint.test.ts"
+    "tests/party_entry_checkpoint.test.ts",
+    "tests/party_ai.test.ts",
+    "tests/party_ai_integration.test.ts",
+    "tests/party_ai_review_geometry.test.ts",
+    "tests/party_ai_review_control.test.ts",
+    "tests/party_ai_review_temporary.test.ts",
+    "tests/party_ai_review_movement.test.ts",
+    "tests/party_ai_review_rejected.test.ts",
+    "tests/party_ai_review_pickup.test.ts",
+    "tests/party_ai_review_fall.test.ts",
+    "tests/party_ai_review_rally.test.ts",
+    "tests/party_ai_r1_control.test.ts",
+    "tests/party_ai_r1_companion.test.ts"
   ],
   "drift": []
 }

@@ -7,7 +7,7 @@ on:
         description: 'phase6 keeps D6; party measures separate 1/2/4 actor scenes'
         type: choice
         default: phase6
-        options: [phase6, party, party-window]
+        options: [phase6, party, party-window, party-ai]
       mode:
         description: 'ab compares revisions; calibration-only measures party B without A'
         type: choice
@@ -72,9 +72,10 @@ jobs:
           import {execFileSync} from 'node:child_process';
           import {appendFileSync} from 'node:fs';
           const calibration = process.env.PERF_MODE === 'calibration-only';
-          if (calibration && !['party','party-window'].includes(process.env.PERF_SUITE)) throw Error('calibration-only requires party suite');
+          if (calibration && !['party','party-window','party-ai'].includes(process.env.PERF_SUITE)) throw Error('calibration-only requires party suite');
           if (calibration && process.env.PERF_BASE) throw Error('Omit base_ref for calibration-only');
           if (!calibration && !process.env.PERF_BASE) throw Error('ab requires base_ref');
+          if(process.env.PERF_SUITE==='party-ai'&&!calibration)throw Error('party-ai requires calibration-only');
           const refs = calibration ? [['head', process.env.PERF_HEAD]] : [['base', process.env.PERF_BASE], ['head', process.env.PERF_HEAD]];
           for (const [name, ref] of refs) {
             let sha;
@@ -139,14 +140,15 @@ jobs:
           node control/scripts/run-ext-perf-ab.mjs --party "${args[@]}" \
             --head "$GITHUB_WORKSPACE/head" --out "$RUNNER_TEMP/ext-perf" \
             --shard "$PERF_SHARD" --rounds "$PERF_ROUNDS"
-      - name: Party window same-input A/B or calibration
-        if: inputs.suite == 'party-window'
+      - name: Party window or AI calibration
+        if: inputs.suite == 'party-window' || inputs.suite == 'party-ai'
         env:
           PERF_ROUNDS: ${{ inputs.rounds }}
           PERF_SHARD: ${{ matrix.shard }}
           PERF_MODE: ${{ inputs.mode }}
         run: |
           args=()
+          if [ '${{ inputs.suite }}' = party-ai ]; then args=(--scene ai); fi
           if [ "$PERF_MODE" = ab ]; then args=(--base "$GITHUB_WORKSPACE/base"); fi
           node control/scripts/run-party-window-perf.mjs "${args[@]}" \
             --head "$GITHUB_WORKSPACE/head" --out "$RUNNER_TEMP/ext-perf" \
@@ -212,7 +214,7 @@ jobs:
           pattern: ext-perf-${{ github.run_id }}-${{ github.run_attempt }}-*
           path: ${{ runner.temp }}/shards
       - name: Recheck evidence, adjudicate D6 and suggest budget
-        if: always() && inputs.suite != 'party-window'
+        if: always() && inputs.suite != 'party-window' && inputs.suite != 'party-ai'
         env:
           ARTIFACT: ext-perf-${{ github.run_id }}-${{ github.run_attempt }}
         run: >-
@@ -222,7 +224,7 @@ jobs:
           "$RUNNER_TEMP/shards/$ARTIFACT-all-full"
           "$RUNNER_TEMP/shards/$ARTIFACT-all-prefix"
       - name: Recheck party window calibration completeness
-        if: always() && inputs.suite == 'party-window'
+        if: always() && (inputs.suite == 'party-window' || inputs.suite == 'party-ai')
         env:
           ARTIFACT: ext-perf-${{ github.run_id }}-${{ github.run_attempt }}
         run: >-

@@ -471,3 +471,18 @@ P1a实测1/2/4人单步、event/full摘要/Worker flush、存档录像与新增�
 - 安全提交后才发布窗口事件；订阅者得到分离收据，发布期间拒绝公开机械命令重入。UI状态修改和报告观察不会重新执行窗口。
 
 性能阈值未冻结。新增 `party-window-v1` 与旧 `party-v1` 分立；本地冒烟和分层计时不代替云端三轮、逐指标数字裁定及独立冻结验证。维护者派发命令与边界见P1b报告。
+
+## 11 P1c 实施合同（维护者裁定 2026-10-18，实施 2026-10-20）
+
+C1–C7 全部按 [P1c 任务单 §8](party-p1c.task.md#8-维护者裁定2026-10-18) 的推荐批准。本节覆盖上文 AI 草案及 P1b 的同名限制；实际声明见 `src/ext/partyAi.ts`、`party.ts`、`partyWindow.ts`。验收状态以 [P1c 报告](party-p1c.report.md) 为准。
+
+- party 有效身份 F23/S10/R7/O5、模块 0.3.0、PartyState.schema3。创建配置/模块初始化 state、actor-step/control/decision 仍各 schema1；window/policy 升 schema2；新增 party:ai schema1。无 party 维持 F20/S7/R4/O2，无新增默认根；旧 party 不迁移。
+- 每成员持久化 controller、pendingController、controlEpoch、temporaryAiSeq、ai（settings/order/ordinal/diagnostic）。同伴指令唯一根是 party.state.companionOrders，稳定按 actorId 排序、最多64条；必须是当前层合资格原生盟友的唯一 decision owner。其 HP/库存/原生计时仍归 native/actorActions。party 整根已由 U03、digest、快照和事务捕获覆盖。
+- local:0 可在全 AI、忙碌、冻结、待决时请求控制变更。实际变更立即废弃未执行 tail，epoch/revision 各增一次；同值 no-op 不录制。最后请求胜出；原子结算/换层发布后的下一活动空闲点应用，待决先答。永久人工生效清临时 AI。单步显式推进只到最近人工决策点，仍受1000tick/1024决策限制；全 AI 使用有限窗口。
+- 本窗 AI 计划或软反应暂停原 tail/cursor，同行 seq 待决续段保持；窗末/死亡/换层清理。硬停和 stop 优先，不代答确认。预演在独立已知投影上用临时序号调用同一纯策略，不执行暂停的 travel 尾队列。
+- AI 默认 follow、avoidDanger=true、autoPickup/consumables=false；五档 follow/attack/distance/defend/still。恢复白名单为已知 potion_of_life/potion_of_healing（HP≤25%）与 ration_of_food/mango（已有饥饿资格，nutrition≤500）；仅本人库存。still 可自卫/恢复，不位移。安全→恢复→指令→战术→拾取→wait；仍须通过原生提交校验。
+- autoPickup 表示主动搜集食物/金币，默认关闭；原生位移附带拾取仍保留。AI 候选与实际脚下首件重验局级过滤和 ITEM_PLAYER_AVOIDS，自动移动同样尊重避让；人工明确拾取/步行维持原覆盖规则。普通敌人及无指令同伴继续原 takeTurn 入口。显式旅行和强制坠层在生成、落位、伤害、enteredLevel 与视野完整发布后同事务清理失效同伴指令并应用空闲 pending controller。
+- 选择派生键包含 seed/有效规则指纹/policyId/actorId/ordinal/purpose，固定候选排序；不消耗原双流。每次决策累计4096个BFS展开，预期失败完整回滚后仅尝试一次正常wait；内部异常保留失败语义。ordinal只在接受决策时+1；确认/取消/预演不冒充接受。
+- gather/attack/guard/retreat/explore 接收明确列表并整体预检，后命令覆盖，null取消；人工须先托管。guard 在目标已占时允许邻位；集合/守点/撤退的对角到达必须通过已知侧格的斜角阻挡检查。探索只走已知安全格，发现向下楼梯即靠近并交硬停；不自动下楼。无路、未知或预算不足保守等待，狭道不保证同时到达。
+- 已知敌人/盟友身体只投影公开格；执行者邻接和射线预测不读取隐藏锚点/肢体。实际攻击仍由原生接触/射程判定；多格同伴移动交 whole-body planner，排除自身group占位；原生同伴不取得成员名额或玩家库存。
+- 新 `party-ai-v1` 只做 B 校准，旧 party/window 比较器仍严格要求原摘要相等。跨格式适配器未交付，旧版 A/B 保持不可比；phase6 沿 D6，AI及party校准均不自动设硬预算。浏览器、正式云端、发布分别留维护者验收；招募归P1d、网络归P2、条件规则表归P3。

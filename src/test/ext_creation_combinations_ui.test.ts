@@ -165,6 +165,14 @@ function assertStarted(payload: CreationPayload, ids: readonly string[]) {
         g.animationEnabled=false;
         for(const actor of g.controlledActors){while(logger.pendingAcknowledgment)logger.acknowledgeNext();if(g.party)g.submitPartyIntent({kind:'wait'},actor.id);else g.executeCommand('wait');}
         if(g.party){while(logger.pendingAcknowledgment)logger.acknowledgeNext();const planner=g.partyPlanner()!;planner.append(g.player.id,{kind:'wait'});planner.submit(planner.batch(timeSystem.currentTick,{kind:'ticks',ticks:100},null),b=>g.submitPartyWindow(b));expect(g.party.state.window.seq).toBe(1);}
+        if(g.party){
+          const ai=(change:unknown)=>{while(logger.pendingAcknowledgment)logger.acknowledgeNext();g.executeCommand('party:ai',{kind:'party:ai',schema:1,issuerSlot:'local:0',expectedRevision:g.party!.state.revision,change});};
+          for(const m of g.party.state.members)ai({kind:'controller',actorId:m.actorId,expectedEpoch:m.controlEpoch,controller:{kind:'ai',policyId:'party-ai-v1'}});
+          ai({kind:'order',actorIds:g.party.state.members.map(m=>m.actorId),order:{kind:'gather',level:g.depth,x:g.player.x,y:g.player.y}});
+          const planner=g.partyPlanner()!;while(logger.pendingAcknowledgment)logger.acknowledgeNext();planner.submit(planner.batch(timeSystem.currentTick,{kind:'ticks',ticks:100},null),b=>g.submitPartyWindow(b));
+          expect(g.party.state.members.some(m=>m.ai.ordinal>0)).toBe(true);
+          for(const m of g.party.state.members)ai({kind:'controller',actorId:m.actorId,expectedEpoch:m.controlEpoch,controller:{kind:'human',slot:'local:0'}});
+        }
         const save=g.toSaveSnapshot(),recording = g.exportRecording();
         const h=new Game({seed:1});try{const errors:string[]=[];const loaded=h.loadSnapshot(JSON.parse(JSON.stringify(save)),e=>errors.push(e));expect(loaded,errors.join(';')).toBe(true);expect(h.loadReplay(recording)).toBe(true);while(h.replayCursor<recording.events.length&&!h.replayError)h.replayStep(true);expect(h.replayError).toBeNull();h.replaySeek(recording.events.length);expect(h.replayError).toBeNull();const branch=JSON.parse(JSON.stringify(h.toSaveSnapshot()));expect(h.loadSnapshot(branch)).toBe(true);while(logger.pendingAcknowledgment)logger.acknowledgeNext();if(h.party)h.submitPartyIntent({kind:'wait'},h.readyPartyActorId!);else h.executeCommand('wait');expect(h.exportRecording().events.length).toBe(recording.events.length+1);}finally{h.disposeRecording();}
         expect(recording.extensions).toEqual(expectedManifest);

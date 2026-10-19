@@ -1,3 +1,6 @@
+import type { PartyAiInput } from '../../../partyAi';
+import { eligiblePartyCompanion } from '../../../../engine/Core/PartyAi';
+import { canSeeMonster } from '../../../../engine/UI/MonsterVisibility';
 import { PartyFailure } from '../../../party';
 import { SOFT_INTERRUPTS, type WindowLength } from '../../../partyWindow';
 import { timeSystem } from '../../../../engine/Systems/Time';
@@ -14,15 +17,21 @@ export function usePartyUi(host: ModuleUiHost): ModuleUiSession {
     refresh = () => {
       revision.value++;
     };
+  let cancelMap: (() => void) | undefined;
   const unsubscribe = observePartyWindows(game, refresh);
-  if (getCurrentScope()) onScopeDispose(unsubscribe);
+  if (getCurrentScope())
+    onScopeDispose(() => {
+      unsubscribe();
+      cancelMap?.();
+    });
   const hud = computed(() => {
     host.tick.value;
     revision.value;
     const root = game.party;
     if (!root) return null;
     const planner = game.partyPlanner()!;
-    const expectedRevision = root.state.revision;
+    const expectedRevision = root.state.revision,
+      focusedId = game.focusedActor.id;
     const act = (work: () => void) => {
       if (host.game() !== game || game.party !== root || root.state.revision !== expectedRevision)
         return;
@@ -30,9 +39,10 @@ export function usePartyUi(host: ModuleUiHost): ModuleUiSession {
         work();
         feedback.value = null;
       } catch (error) {
-        feedback.value = error instanceof PartyFailure
-          ? i18next.t('ext.party.error.' + error.code)
-          : i18next.t('ext.party.error.INTERNAL_FAILURE');
+        feedback.value =
+          error instanceof PartyFailure
+            ? i18next.t('ext.party.error.' + error.code)
+            : i18next.t('ext.party.error.INTERNAL_FAILURE');
       }
       refresh();
     };
@@ -40,7 +50,7 @@ export function usePartyUi(host: ModuleUiHost): ModuleUiSession {
       planner.batch(
         timeSystem.currentTick,
         length,
-        length.kind === 'fine' ? game.focusedActor.id : null,
+        length.kind === 'fine' ? focusedId : null,
         automatic
       );
     const advance = async (length: WindowLength, automatic: boolean) => {
@@ -59,29 +69,29 @@ export function usePartyUi(host: ModuleUiHost): ModuleUiSession {
     };
     const windowProps = {
       state: structuredClone(root.state.window),
-      focused: game.focusedActor.id,
-      draft: planner.drafts.get(game.focusedActor.id),
+      focused: focusedId,
+      draft: planner.drafts.get(focusedId),
       busy: busy.value,
       preview: planner.preview,
       advance,
       append: (kind: 'wait' | 'search' | 'move', dx = 0, dy = 0) =>
-        act(() =>
-          planner.append(game.focusedActor.id, kind === 'move' ? { kind, dx, dy } : { kind })
-        ),
-      clear: () => act(() => planner.edit(game.focusedActor.id, null)),
-      keep: () => act(() => planner.keep(game.focusedActor.id)),
+        act(() => planner.append(focusedId, kind === 'move' ? { kind, dx, dy } : { kind })),
+      clear: () => act(() => planner.edit(focusedId, null)),
+      keep: () => act(() => planner.keep(focusedId)),
       undo: () =>
         act(() => {
-          const plan = planner.drafts.get(game.focusedActor.id);
+          const plan = planner.drafts.get(focusedId);
           if (plan?.kind === 'queue')
-            planner.edit(game.focusedActor.id, {
+            planner.edit(focusedId, {
               kind: 'queue',
               actions: plan.actions.slice(0, -1)
             });
         }),
       rehearse: async (length: WindowLength, automatic: boolean) => {
         try {
-          await planner.rehearse(game.knownPartyWorld(), batch(length, automatic));
+          await planner.rehearse(game.knownPartyWorld(), batch(length, automatic), (view) =>
+            game.decideKnownPartyAi(view)
+          );
         } catch {
           feedback.value = i18next.t('ext.party.unavailable');
         }
@@ -115,14 +125,14 @@ export function usePartyUi(host: ModuleUiHost): ModuleUiSession {
           refresh();
         }
       },
-      policy: (emptyPlan: 'wait' | 'interrupt', reaction: 'stop' | 'continue') =>
+      policy: (emptyPlan: 'wait' | 'interrupt', reaction: 'stop' | 'continue' | 'ai-this-window') =>
         act(() =>
           game.executeCommand('party:policy', {
             kind: 'party:policy',
-            schema: 1,
+            schema: 2,
             expectedRevision: root.state.revision,
             issuerSlot: 'local:0',
-            actorId: game.focusedActor.id,
+            actorId: focusedId,
             change: {
               kind: 'reactions',
               emptyPlan,
@@ -134,6 +144,69 @@ export function usePartyUi(host: ModuleUiHost): ModuleUiSession {
     return {
       component: PartyHud,
       props: {
+        aiProps: {
+          state: structuredClone(root.state),
+          focused: focusedId,
+          depth: game.depth,
+          at: { ...game.focusedActor.loc },
+          companions: game.monsters
+            .filter((m) => eligiblePartyCompanion(game, m.id))
+            .map((m) => ({ id: m.id, name: m.name })),
+          enemies: game.monsters
+            .filter(
+              (m) =>
+                m.hp > 0 &&
+                !m.isAlly &&
+                game.activeControlledActors.some((a) => canSeeMonster(a, game.grid, m))
+            )
+            .map((m) => ({ id: m.id, name: m.name })),
+          pickMap: (select: (at: { x: number; y: number }) => void) => {
+            cancelMap?.();
+            const cells = game.knownPartyWorld().cells.filter((c) => c.passable);
+            cancelMap = host.selectMapCells?.(
+              root,
+              (at) => {
+                cancelMap?.();
+                cancelMap = undefined;
+                if (
+                  host.game() === game &&
+                  game.party === root &&
+                  root.state.revision === expectedRevision &&
+                  game.focusedActor.id === focusedId
+                )
+                  select(at);
+              },
+              cells
+            );
+          },
+          cancelMap: () => {
+            cancelMap?.();
+            cancelMap = undefined;
+          },
+          send: (change: PartyAiInput['change']) =>
+            act(() =>
+              game.executeCommand('party:ai', {
+                kind: 'party:ai',
+                schema: 1,
+                expectedRevision,
+                issuerSlot: 'local:0',
+                change
+              })
+            ),
+          leader: () =>
+            act(() =>
+              game.executeCommand('party:control', {
+                kind: 'party:control',
+                schema: 1,
+                expectedRevision,
+                issuerSlot: 'local:0',
+                actorId: focusedId,
+                change: { kind: 'leader', actorId: focusedId }
+              })
+            ),
+          step: () => act(() => game.advancePartyToHuman()),
+          temporary: () => act(() => planner.edit(focusedId, { kind: 'ai-this-window' }))
+        },
         windowProps,
         feedback: feedback.value,
         items: game.focusedActor.inventory.items.map((i) => ({
@@ -148,14 +221,14 @@ export function usePartyUi(host: ModuleUiHost): ModuleUiSession {
               schema: 1,
               expectedRevision: root.state.revision,
               issuerSlot: 'local:0',
-              actorId: game.focusedActor.id,
+              actorId: focusedId,
               change:
                 (direction === -1 && game.depth === 1) || (direction === 1 && game.depth === 40)
                   ? { kind: 'exit-party' }
                   : {
                       kind: 'travel-party',
                       destination: { kind: 'dungeon', depth: game.depth + direction },
-                      leavingBehind: leave.filter((id) => id !== game.focusedActor.id)
+                      leavingBehind: leave.filter((id) => id !== focusedId)
                     }
             })
           ),
@@ -163,7 +236,7 @@ export function usePartyUi(host: ModuleUiHost): ModuleUiSession {
           act(() =>
             game.submitPartyIntent({ kind: 'exchange', toActorId: to, itemId: item, quantity })
           ),
-        focused: game.focusedActor.id,
+        focused: focusedId,
         ready: game.readyPartyActorId,
         members: root.state.members.map((m) => {
           const actor = game.controlledActors.find((a) => a.id === m.actorId)!;
@@ -177,6 +250,8 @@ export function usePartyUi(host: ModuleUiHost): ModuleUiSession {
         }),
         focus: (id: number) => {
           if (host.game() !== game) return;
+          cancelMap?.();
+          cancelMap = undefined;
           game.focusPartyMember(id);
           refresh();
         },
@@ -205,6 +280,9 @@ export function usePartyUi(host: ModuleUiHost): ModuleUiSession {
     commands: ref([]),
     panelOpen: ref(false),
     refresh,
-    close() {}
+    close() {
+      cancelMap?.();
+      cancelMap = undefined;
+    }
   };
 }

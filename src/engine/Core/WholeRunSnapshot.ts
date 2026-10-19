@@ -75,7 +75,7 @@ export interface GameSnapshot extends LevelSnapshot {
     extensions?: ExtensionSnapshot;
     /** Shared whole-run envelope; entity row/graph codec has no independent version slot. */
     version: number;
-    schema: typeof WHOLE_RUN_SCHEMA | 'brogue-web-whole-run-v9';
+    schema: typeof WHOLE_RUN_SCHEMA | 'brogue-web-whole-run-v10';
     party?: { state: PartyState; actors: GameSnapshotPlayer[]; native: import('./PartyRuntime').PartyRuntime['native'] };
     savedAt: number;
     seed: string;
@@ -562,6 +562,11 @@ export function isWholeRunSnapshot(value: unknown, spatialCatalog?: SpatialCatal
                     if(memberCells.has(key))return false;
                     memberCells.add(key);
                 }
+            }
+            for(const row of s.party.state.companionOrders){
+                const a=s.monsters.find(m=>m.id===row.actorId);
+                if(row.level!==s.depth||!a||a.hp<=0||!a.isAlly||a.isCaged||a.isDormant||(a.statusDurations.confused??0)>0||(a.statusDurations.discordant??0)>0||s.run.world5?.residents.some(r=>r.actorId===a.id)||s.run.world5?.raidCamps.some(c=>c.event?.actorIds.includes(a.id)))return false;
+                if(a.spatial?.bodyMember&&!s.run.spatialWorld?.groups.some(b=>b.coreId===a.id))return false;
             }
             if(s.party.state.members.every(m=>m.life==='dead')&&!s.run.isGameOver)return false;
         } catch {return false;}

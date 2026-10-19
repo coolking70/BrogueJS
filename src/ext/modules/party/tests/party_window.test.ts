@@ -33,7 +33,7 @@ function start(n = 2) {
 function batch(g: Game, ticks: 100 | 300 | 1000 = 100): WindowBatch {
   return {
     kind: 'party:window',
-    schema: 1,
+    schema: 2,
     seq: g.party!.state.window.seq + 1,
     expectedRevision: g.party!.state.revision,
     issuerSlot: 'local:0',
@@ -179,8 +179,8 @@ describe('P1b window clock and accepted prefix', () => {
     const save = JSON.parse(JSON.stringify(g.toSaveSnapshot())),
       rec = g.exportRecording(),
       digest = mechanicalDigest(g.toSnapshot(), (g as any).recordingInputState());
-    expect(save.version).toBe(9);
-    expect(rec.version).toBe(6);
+    expect(save.version).toBe(10);
+    expect(rec.version).toBe(7);
     expect(
       rec.events
         .filter((e) => e.action === 'party:window')
@@ -484,7 +484,7 @@ it('requires an explicit safe switch before single-step can discard an accepted 
   expect(() => g.submitPartyIntent({ kind: 'wait' }, g.readyPartyActorId!)).toThrow('ACTOR_BUSY');
   g.executeCommand('party:policy', {
     kind: 'party:policy',
-    schema: 1,
+    schema: 2,
     expectedRevision: g.party!.state.revision,
     issuerSlot: 'local:0',
     actorId: g.player.id,
@@ -549,7 +549,7 @@ it('new and changed visible telegraph coverage interrupts once across window bou
 it('an explicit empty-plan interrupt stops before taking a fallback wait', () => {
   const g = start(); safe(g); const a = g.controlledActors[0]!;
   const m = g.party!.state.window.members[0]!;
-  g.executeCommand('party:policy', {kind:'party:policy',schema:1,expectedRevision:g.party!.state.revision,issuerSlot:'local:0',actorId:a.id,change:{kind:'reactions',emptyPlan:'interrupt',values:m.reactions}});
+  g.executeCommand('party:policy', {kind:'party:policy',schema:2,expectedRevision:g.party!.state.revision,issuerSlot:'local:0',actorId:a.id,change:{kind:'reactions',emptyPlan:'interrupt',values:m.reactions}});
   g.submitPartyWindow(batch(g));
   expect(g.party!.state.window.elapsed).toBe(0);
   expect(g.party!.state.window.receipt!.trace).toHaveLength(0);
