@@ -139,15 +139,16 @@ jobs:
           node control/scripts/run-ext-perf-ab.mjs --party "${args[@]}" \
             --head "$GITHUB_WORKSPACE/head" --out "$RUNNER_TEMP/ext-perf" \
             --shard "$PERF_SHARD" --rounds "$PERF_ROUNDS"
-      - name: Party window calibration (B only, independent identity)
+      - name: Party window same-input A/B or calibration
         if: inputs.suite == 'party-window'
         env:
           PERF_ROUNDS: ${{ inputs.rounds }}
           PERF_SHARD: ${{ matrix.shard }}
           PERF_MODE: ${{ inputs.mode }}
         run: |
-          test "$PERF_MODE" = calibration-only
-          node control/scripts/run-party-window-perf.mjs \
+          args=()
+          if [ "$PERF_MODE" = ab ]; then args=(--base "$GITHUB_WORKSPACE/base"); fi
+          node control/scripts/run-party-window-perf.mjs "${args[@]}" \
             --head "$GITHUB_WORKSPACE/head" --out "$RUNNER_TEMP/ext-perf" \
             --shard "$PERF_SHARD" --rounds "$PERF_ROUNDS"
       - name: Interleaved A/B and B calibration

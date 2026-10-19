@@ -3,14 +3,16 @@ import { readFileSync, mkdirSync, writeFileSync, cpSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { write, hash } from './ext-perf-common.mjs';
-import { validateWindowMeasurement } from './run-party-window-perf.mjs';
+import { validateWindowMeasurement, compareWindowPair } from './run-party-window-perf.mjs';
 export function merge(reports) {
   assert.equal(reports.length, 3, 'Require all three shards');
   const first = reports[0],
-    runs = [];
+    runs = [], sides = first.mode === 'ab' ? ['A', 'B'] : ['B'];
+  assert.ok(['ab', 'calibration-only'].includes(first.mode));
   for (const report of reports) {
     assert.equal(report.identity, 'party-window-v1');
-    assert.equal(report.mode, 'calibration-only');
+    assert.equal(report.mode, first.mode);
+    assert.deepEqual(report.sources, first.sources);
     assert.ok(['smoke-only', 'measured-no-budget'].includes(report.status));
     assert.deepEqual(report.source, first.source);
     assert.deepEqual(report.tools, first.tools);
@@ -20,22 +22,24 @@ export function merge(reports) {
   const seen = new Set();
   for (const r of runs) {
     validateWindowMeasurement(r.measurement);
-    const key = `${r.round}-${r.measurement.actors}-${r.measurement.mode}`;
+    const side = r.side ?? 'B';
+    assert.ok(sides.includes(side));
+    const key = `${r.round}-${side}-${r.measurement.actors}-${r.measurement.mode}`;
     assert.ok(!seen.has(key), 'Duplicate scene');
     seen.add(key);
-    assert.equal(r.measurement.sourceHash, first.source.sourceHash);
+    assert.equal(r.measurement.sourceHash, (first.mode === 'ab' ? first.sources[side] : first.source).sourceHash);
     assert.equal(r.measurement.steps, first.options.steps);
     assert.equal(r.measurement.scene, first.options.scene);
   }
   for (let round = 1; round <= first.options.rounds; round++)
     for (const a of [1, 2, 4])
       for (const mode of ['party-only', 'party-all'])
-        assert.ok(seen.has(`${round}-${a}-${mode}`), 'Missing scene');
-  assert.equal(runs.length, first.options.rounds * 6);
+        for (const side of sides) assert.ok(seen.has(`${round}-${side}-${a}-${mode}`), 'Missing scene');
+  assert.equal(runs.length, first.options.rounds * 6 * sides.length);
   for (const a of [1, 2, 4])
-    for (const mode of ['party-only', 'party-all']) {
+    for (const mode of ['party-only', 'party-all']) for (const side of sides) {
       const rows = runs
-        .filter((r) => r.measurement.actors === a && r.measurement.mode === mode)
+        .filter((r) => (r.side ?? 'B') === side && r.measurement.actors === a && r.measurement.mode === mode)
         .map((r) => r.measurement);
       for (const row of rows)
         for (const key of [
@@ -43,6 +47,7 @@ export function merge(reports) {
           'rowsHash',
           'rngHash',
           'fullDigest',
+          'fullDomains',
           'node',
           'machine',
           'sourceHash',
@@ -51,9 +56,16 @@ export function merge(reports) {
         ])
           assert.deepEqual(row[key], rows[0][key]);
     }
+  const comparisons = first.mode === 'ab' ? runs.filter(r => r.side === 'A').map(a => {
+    const b = runs.find(r => r.side === 'B' && r.round === a.round && r.measurement.actors === a.measurement.actors && r.measurement.mode === a.measurement.mode);
+    return { round: a.round, actors: a.measurement.actors, mode: a.measurement.mode,
+      ...compareWindowPair(a.measurement, b.measurement) };
+  }) : [];
   return {
     identity: 'party-window-v1',
-    mode: 'calibration-only',
+    mode: first.mode,
+    ...(first.mode === 'ab' ? { sources: first.sources } : {}),
+    comparisons,
     status:
       first.options.rounds === 3 && first.options.steps === 2049
         ? 'measured-no-budget'
@@ -70,7 +82,7 @@ export function merge(reports) {
 export function readShard(file) {
   const report = JSON.parse(readFileSync(file, 'utf8'));
   for (const run of report.runs) {
-    assert.match(run.artifact, /^[1-3]-[124]-party-(only|all)\.json$/);
+    assert.match(run.artifact, /^[1-3]-(?:[AB]-)?[124]-party-(only|all)\.json$/);
     const path = resolve(dirname(file), run.artifact),
       raw = readFileSync(path, 'utf8');
     assert.equal(hash(raw), run.artifactHash, 'Raw measurement hash mismatch');

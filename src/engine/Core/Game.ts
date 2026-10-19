@@ -743,8 +743,15 @@ export class Game {
         const traps=grids.map(grid=>{const cells=this.displacementTrapDepressions?.get(grid);return {grid,cells,values:[...(cells??[])]};});
         const restoreLists=checkpointOwnedMonsterLists([this.monsters,this.dormantMonsters,...cached.flatMap(level=>[level.monsters,...(level.dormantMonsters?[level.dormantMonsters]:[])])]);
         const display=[this.lightMap,...cached.map(level=>level.lightMap)].map(light=>light.checkpointRenderState());
-        const restore=(captures?.capture ?? checkpointGenerationWorld)(()=>({shallow:[this],
-            deep:[this.player,...(this.party?[this.party]:[]),creatures,this.squareMotion,this.grid,this.environment,this.fov,this.scent,this.waypoints,
+        // Keep every savepoint and its write set. Only party uses the cheaper
+        // descriptor representation; pooled captures and non-party stay unchanged.
+        const capture = captures?.capture ?? (this.party
+            ? (select: () => GenerationCheckpointRoots) => checkpointGenerationWorld(select, true)
+            : checkpointGenerationWorld);
+        const restore=capture(()=>({shallow:[this],
+            // Party actions can generate a floor (including a forced fall), then
+            // fail after its inner transaction commits. Own the in-place metadata too.
+            deep:[this.player,...(this.party?[this.party,this.levelSeeds,this.meteredItems]:[]),creatures,this.squareMotion,this.grid,this.environment,this.fov,this.scent,this.waypoints,
                 this.lightMap,...cached.map(level=>level.lightMap),
                 this.monsters,this.dormantMonsters,this.purgatory,this.items,this.levels,this.pendingFallenByDepth,
                 this.pendingFallenItemsByDepth,this.bodyGroups,this.stats,this.visibleMonsters,this.visibleItems,
@@ -760,6 +767,7 @@ export class Game {
         const restoreActions=checkpointProductionActorActions(this), restoreDefense=checkpointPhasedAttackSources(this),
             restoreRevisions=checkpointSpatialActorRevisions(actors), restoreLog=logger.checkpoint();
         const invalid=isProductionActorActionRunInvalid(this), origin=recordingState(this).origin,machine=getNextMachineNumber();
+        const rewards=this.party?getRewardRoomsGenerated():undefined;
         const dying=creatures.map(actor=>[actor,dyingMonsters.has(actor),convertedDropDeaths.has(actor)] as const);
         return()=>{restore();restoreWindow?.();for(const {actor,descriptors:saved} of descriptors){
             for(const key of Reflect.ownKeys(actor))if(Object.getOwnPropertyDescriptor(actor,key)?.configurable)Reflect.deleteProperty(actor,key);
@@ -769,6 +777,7 @@ export class Game {
             for(const {grid,cells,values} of traps){if(cells){cells.clear();values.forEach(value=>cells.add(value));this.displacementTrapDepressions?.set(grid,cells);}else this.displacementTrapDepressions?.delete(grid);}
             restoreActions();restoreDefense();restoreRevisions();restoreLog();restoreProductionActorActionValidity(this,invalid);
             recordingState(this).origin=origin;restoreNextMachineNumber(machine);
+            if(rewards!==undefined)setRewardRoomsGenerated(rewards);
             for(const [actor,wasDying,wasConverted] of dying){
                 if(wasDying)dyingMonsters.add(actor);else dyingMonsters.delete(actor);
                 if(wasConverted)convertedDropDeaths.add(actor);else convertedDropDeaths.delete(actor);
@@ -2061,7 +2070,7 @@ export class Game {
         return allMonsters.find(m => m.id === monsterId) ?? null;
     }
 
-    private generateDepth(isGoingUp: boolean = false, isFirstLevel: boolean = false, fell: boolean = false) {
+    private generateDepth(isGoingUp: boolean = false, isFirstLevel: boolean = false, fell: boolean = false, preparePartyEntry?: () => void) {
         if (this.extensionRuntime) {
             const runtime = this.extensionRuntime;
             // Production camp departure reports participate in the same floor
@@ -2152,6 +2161,10 @@ export class Game {
                 enterWorldWorkLevel(this,firstVisit);
                 settleTimedStats(this,true);settleActorNeeds(this,true);
                 spawnResidentCandidates(this,token);
+                // Party placement and its entry fact belong to this same floor
+                // transaction. Hooks publish only after the arriving members are
+                // installed, while world-placement capabilities are still valid.
+                preparePartyEntry?.();
                 if(!this.party)runtime.emit('enteredLevel', { depth: this.depth, firstVisit, actorIds: [...new Set([this.player.id,...this.monsters.map(actor=>actor.id),...this.dormantMonsters.map(actor=>actor.id)])].sort((a,b)=>a-b) });
                 // Mutable module hooks only see the completed world and the run
                 // RNG restored by the generation coordinator's finally block.
@@ -4635,21 +4648,22 @@ export class Game {
         try{
             for(const m of root.state.members)if(m.life==='active')m.life='frozen';
             const firstVisit=!this.levelSeeds[depth-1]?.visited;
-            this.depth=depth;this.generateDepth(depth<oldDepth);
-            const occupied=new Set<string>(this.monsters.filter(m=>m.hp>0).map(m=>`${m.x},${m.y}`));
-            const arrival={...actor.loc};
-            const placements=new Map<number,Pos>();
-            for(const member of moving){
-                const preferred=returning.has(member.actorId)?positions.get(member.actorId)!:arrival;
-                let place:Pos|undefined;
-                for(let radius=0;radius<Math.max(this.grid.width,this.grid.height)&&!place;radius++)for(let y=preferred.y-radius;y<=preferred.y+radius&&!place;y++)for(let x=preferred.x-radius;x<=preferred.x+radius;x++){
-                    if(Math.max(Math.abs(x-preferred.x),Math.abs(y-preferred.y))!==radius||occupied.has(`${x},${y}`)||!this.entryQualifiesForPlacement(x,y))continue;
-                    place={x,y};occupied.add(`${x},${y}`);break;
+            this.depth=depth;this.generateDepth(depth<oldDepth,false,false,()=>{
+                const occupied=new Set<string>(this.monsters.filter(m=>m.hp>0).map(m=>`${m.x},${m.y}`));
+                const arrival={...actor.loc};
+                const placements=new Map<number,Pos>();
+                for(const member of moving){
+                    const preferred=returning.has(member.actorId)?positions.get(member.actorId)!:arrival;
+                    let place:Pos|undefined;
+                    for(let radius=0;radius<Math.max(this.grid.width,this.grid.height)&&!place;radius++)for(let y=preferred.y-radius;y<=preferred.y+radius&&!place;y++)for(let x=preferred.x-radius;x<=preferred.x+radius;x++){
+                        if(Math.max(Math.abs(x-preferred.x),Math.abs(y-preferred.y))!==radius||occupied.has(`${x},${y}`)||!this.entryQualifiesForPlacement(x,y))continue;
+                        place={x,y};occupied.add(`${x},${y}`);break;
+                    }
+                    if(!place)throw new PartyFailure('NO_SPACE');placements.set(member.actorId,place);
                 }
-                if(!place)throw new PartyFailure('NO_SPACE');placements.set(member.actorId,place);
-            }
-            for(const member of moving){member.life='active';member.level={kind:'dungeon',depth};const body=this.controlledActors.find(a=>a.id===member.actorId)!;commitCreatureAnchor(body,placements.get(member.actorId)!);}
-            this.extensionRuntime?.emit('enteredLevel',{depth,firstVisit,actorIds:moving.map(m=>m.actorId).sort((a,b)=>a-b)});
+                for(const member of moving){member.life='active';member.level={kind:'dungeon',depth};const body=this.controlledActors.find(a=>a.id===member.actorId)!;commitCreatureAnchor(body,placements.get(member.actorId)!);}
+                this.extensionRuntime?.emit('enteredLevel',{depth,firstVisit,actorIds:moving.map(m=>m.actorId).sort((a,b)=>a-b)});
+            });
             this.updateVision();this.needsRender=true;
         }catch(error){restore();restoreExtensions();rng.setState(random);restoreNextEntityId(next);throw error;}
     }
@@ -11835,33 +11849,34 @@ export class Game {
         for(const member of root.state.members)if(member.life==='active')member.life='frozen';
         const destination=this.depth+1,firstVisit=!this.levelSeeds[destination-1]?.visited;
         const returning=root.state.members.filter(m=>m.life==='frozen'&&m.level.kind==='dungeon'&&m.level.depth===destination);
-        this.depth=destination;this.generateDepth(false,false,true);
-        const occupied=new Set<string>();
-        for(const row of returning){
-            const member=this.controlledActors.find(a=>a.id===row.actorId)!;
-            const at=this.findQualifyingPathLocNear(member.loc);
-            if(!at)throw new PartyFailure('NO_SPACE');
-            commitCreatureAnchor(member,at);row.life='active';
-        }
-        for(const member of falling){
-            if(member!==actor || this.controlledOccupies(member.loc) || this.getMonsterAt(member.x,member.y))withPartyActor(this,member,()=>this.placePlayerOnFallLanding(origins.get(member.id)!.at.x,origins.get(member.id)!.at.y));
-            if(this.controlledOccupies(member.loc,member)||this.getMonsterAt(member.x,member.y))throw new PartyFailure('NO_SPACE');
-            if(occupied.has(`${member.x},${member.y}`)){
-                const cells=ENTRANCEMENT_DIRECTIONS.map(([x,y])=>({x:member.x+x,y:member.y+y})).filter(p=>this.entryQualifiesForPlacement(p.x,p.y)&&!occupied.has(`${p.x},${p.y}`));
-                if(!cells.length)throw new PartyFailure('NO_SPACE');commitCreatureAnchor(member,cells[0]!);
+        this.depth=destination;this.generateDepth(false,false,true,()=>{
+            const occupied=new Set<string>();
+            for(const row of returning){
+                const member=this.controlledActors.find(a=>a.id===row.actorId)!;
+                const at=this.findQualifyingPathLocNear(member.loc);
+                if(!at)throw new PartyFailure('NO_SPACE');
+                commitCreatureAnchor(member,at);row.life='active';
             }
-            occupied.add(`${member.x},${member.y}`);
-            const row=root.state.members.find(m=>m.actorId===member.id)!;row.life='active';row.level={kind:'dungeon',depth:destination};
-            const flags=cellTerrainFlags(this.grid,member.x,member.y),mech=cellTerrainMechFlags(this.grid,member.x,member.y);
-            let damage=rng.randClumpedRange(Game.FALL_DAMAGE_MIN,Game.FALL_DAMAGE_MAX,2);
-            if(!(flags&T_IS_DEEP_WATER)){
-                if(mech&TM_ALLOWS_SUBMERGING)damage=Math.floor(damage/2);
-                this.extensionRuntime!.causality.withOrigin(origins.get(member.id)!.cause,()=>member.takeDamage(damage,false,this.grid,undefined,'physical'));
-                logger.log(i18next.t('fall.injured'),'#ff6666');
+            for(const member of falling){
+                if(member!==actor || this.controlledOccupies(member.loc) || this.getMonsterAt(member.x,member.y))withPartyActor(this,member,()=>this.placePlayerOnFallLanding(origins.get(member.id)!.at.x,origins.get(member.id)!.at.y));
+                if(this.controlledOccupies(member.loc,member)||this.getMonsterAt(member.x,member.y))throw new PartyFailure('NO_SPACE');
+                if(occupied.has(`${member.x},${member.y}`)){
+                    const cells=ENTRANCEMENT_DIRECTIONS.map(([x,y])=>({x:member.x+x,y:member.y+y})).filter(p=>this.entryQualifiesForPlacement(p.x,p.y)&&!occupied.has(`${p.x},${p.y}`));
+                    if(!cells.length)throw new PartyFailure('NO_SPACE');commitCreatureAnchor(member,cells[0]!);
+                }
+                occupied.add(`${member.x},${member.y}`);
+                const row=root.state.members.find(m=>m.actorId===member.id)!;row.life='active';row.level={kind:'dungeon',depth:destination};
+                const flags=cellTerrainFlags(this.grid,member.x,member.y),mech=cellTerrainMechFlags(this.grid,member.x,member.y);
+                let damage=rng.randClumpedRange(Game.FALL_DAMAGE_MIN,Game.FALL_DAMAGE_MAX,2);
+                if(!(flags&T_IS_DEEP_WATER)){
+                    if(mech&TM_ALLOWS_SUBMERGING)damage=Math.floor(damage/2);
+                    this.extensionRuntime!.causality.withOrigin(origins.get(member.id)!.cause,()=>member.takeDamage(damage,false,this.grid,undefined,'physical'));
+                    logger.log(i18next.t('fall.injured'),'#ff6666');
+                }
+                if(member.hp<=0)this.triggerGameOver(false,i18next.t('death.fall'));
             }
-            if(member.hp<=0)this.triggerGameOver(false,i18next.t('death.fall'));
-        }
-        this.extensionRuntime?.emit('enteredLevel',{depth:destination,firstVisit,actorIds:[...returning.map(m=>m.actorId),...falling.map(a=>a.id)].sort((a,b)=>a-b)});
+            this.extensionRuntime?.emit('enteredLevel',{depth:destination,firstVisit,actorIds:[...returning.map(m=>m.actorId),...falling.map(a=>a.id)].sort((a,b)=>a-b)});
+        });
         this.updateVision();this.needsRender=true;
     }
 

@@ -15,7 +15,7 @@ export interface GenerationCheckpointRoots {
  * setters on owned creature lists, or RNG/ID allocation during restoration.
  * Weak session associations are restored separately by the generation boundary.
  * Classic generation never calls this function. */
-export function checkpointGenerationWorld(select: () => GenerationCheckpointRoots): () => void {
+export function checkpointGenerationWorld(select: () => GenerationCheckpointRoots, orderedProperties = false): () => void {
     const roots = select();
     const seen = new Set<unknown>(roots.references);
     const shallow = new Set(roots.shallow);
@@ -43,6 +43,31 @@ export function checkpointGenerationWorld(select: () => GenerationCheckpointRoot
             restore.push(() => { value.clear(); for (const entry of entries) value.add(entry); });
             if (descend) entries.forEach(capture);
         } else {
+            // Ordinary mutable data properties need only their value. Retaining
+            // a descriptor object per grid-cell property makes GC dominate the
+            // party savepoint. Keep full descriptors only for exceptional flags
+            // or accessors; never invoke getters while capturing.
+            if (orderedProperties) {
+                const keys = Reflect.ownKeys(value), values: unknown[] = [];
+                let special: Array<PropertyDescriptor | undefined> | undefined;
+                for (let i = 0; i < keys.length; i++) {
+                    const descriptor = Object.getOwnPropertyDescriptor(value, keys[i]!);
+                    // Match getOwnPropertyDescriptors when a proxy removes a key
+                    // between ownKeys and descriptor lookup.
+                    if (!descriptor) { keys.splice(i--, 1); continue; }
+                    values.push('value' in descriptor ? descriptor.value : undefined);
+                    if (!('value' in descriptor && descriptor.writable && descriptor.enumerable && descriptor.configurable))
+                        (special ??= [])[i] = descriptor;
+                }
+                restore.push(() => {
+                    const saved = new Set(keys);
+                    for (const key of Reflect.ownKeys(value)) if (!saved.has(key)) Reflect.deleteProperty(value, key);
+                    for (let i = 0; i < keys.length; i++) Object.defineProperty(value, keys[i]!, special?.[i]
+                        ?? { value: values[i], writable: true, enumerable: true, configurable: true });
+                });
+                if (descend) for (const child of values) capture(child);
+                return;
+            }
             const descriptors = Object.getOwnPropertyDescriptors(value);
             restore.push(() => {
                 for (const key of Reflect.ownKeys(value)) {

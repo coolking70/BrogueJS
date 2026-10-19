@@ -53,7 +53,9 @@ export function install(observer: (fact: CombatEventFact, context: ExtensionCont
                     } } } };
             return { ...descriptor, create: () => observed };
         }
-        return { ...descriptor, rules: module.rules, create: () => module };
+        // Unmodified modules retain their configuration-aware factory and the
+        // descriptor's default identity, not the assembled manifest's party rules.
+        return descriptor;
     }));
     vi.mocked(catalog.createExtensionRegistry).mockReturnValue(registry);
 }

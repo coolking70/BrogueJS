@@ -121,3 +121,36 @@ it.each(['stalled', 'duplicate', 'truncated', 'missing-counter'])('rejects false
   if (kind === 'missing-counter') delete row.initialRecordLength;
   expect(() => validateWindowMeasurement(row)).toThrow();
 });
+
+function abReports() {
+  return reports(3).map(report => {
+    const sources = { A: report.source, B: { sha: 'b'.repeat(40), sourceHash: 'b'.repeat(64) } };
+    return { ...report, mode: 'ab', source: sources.B, sources, runs: report.runs.flatMap(run => ['A', 'B'].map(side => ({
+      ...structuredClone(run), side, measurement: { ...structuredClone(run.measurement), sourceHash: sources[side].sourceHash,
+        fullDomains: Object.fromEntries(['actorActions', 'extensions', 'knowledge', 'native', 'party', 'random', 'world5'].map(k => [k, h])) }
+    }))) };
+  });
+}
+it('accepts window A/B with distinct source hashes and compares all three rounds without inventing a budget', () => {
+  expect(parseOptions(['--base', 'a', '--head', 'b', '--out', 'c']).base).toBe('a');
+  const result = merge(abReports());
+  expect(result.mode).toBe('ab'); expect(result.runs).toHaveLength(36); expect(result.comparisons).toHaveLength(18);
+  expect(result.comparisons.every(c => c.commandP95Ratio === 1 && c.status === 'report-only')).toBe(true);
+  expect(result.budget).toBeNull();
+});
+it.each(['missing-side', 'wrong-side', 'domains', 'missing-domains', 'rows', 'rng', 'work', 'source', 'input', 'cpu'])(
+  'rejects window A/B %s drift rather than reporting a speedup', kind => {
+    const reports = abReports(), run = reports[0].runs[1];
+    if (kind === 'missing-side') reports[0].runs.splice(1, 1);
+    if (kind === 'wrong-side') run.side = 'C';
+    if (kind === 'domains') run.measurement.fullDomains.party = 'c'.repeat(64);
+    if (kind === 'missing-domains') for (const report of reports) for (const r of report.runs) delete r.measurement.fullDomains;
+    if (kind === 'rows') run.measurement.rowsHash = 'c'.repeat(64);
+    if (kind === 'rng') run.measurement.rngHash = 'c'.repeat(64);
+    if (kind === 'work') run.measurement.samples[0].memberActions = 27;
+    if (kind === 'source') run.measurement.sourceHash = h;
+    if (kind === 'input') run.measurement.input.hash = 'c'.repeat(64);
+    if (kind === 'cpu') run.measurement.machine.cpu = 'other';
+    expect(() => merge(reports)).toThrow();
+  }
+);

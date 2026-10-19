@@ -11,7 +11,7 @@ export function parseOptions(args) {
   for (let i = 0; i < args.length; i++) {
     const k = args[i];
     assert.ok(
-      ['--head', '--out', '--rounds', '--steps', '--shard', '--scene'].includes(k) && !seen.has(k),
+      ['--base', '--head', '--out', '--rounds', '--steps', '--shard', '--scene'].includes(k) && !seen.has(k),
       'Unknown/duplicate option'
     );
     seen.add(k);
@@ -57,6 +57,23 @@ export function validateWindowMeasurement(row) {
   }
   return row;
 }
+/** Same-input optimization comparison: semantic drift is an error, not a
+ * performance result. Layer timers overlap and must never be added together. */
+export function compareWindowPair(a, b) {
+  validateWindowMeasurement(a); validateWindowMeasurement(b);
+  for (const key of ['actors', 'mode', 'steps', 'scene', 'input', 'rowsHash', 'rngHash',
+    'fullDigest', 'fullDomains', 'ticks', 'zeroTicks', 'initialRecordLength', 'finalRecordLength', 'node', 'machine'])
+    assert.deepEqual(a[key], b[key], `A/B drift ${key}`);
+  assert.deepEqual(Object.keys(a.fullDomains ?? {}).sort(),
+    ['actorActions', 'extensions', 'knowledge', 'native', 'party', 'random', 'world5']);
+  const work = row => row.samples.map(({index, action, label, ticks, blocks, npcActions, memberActions, reason, recordLength}) =>
+    ({index, action, label, ticks, blocks, npcActions, memberActions, reason, recordLength}));
+  assert.deepEqual(work(a), work(b), 'A/B workload drift');
+  const ratio = (x, y) => x > 0 ? y / x : null;
+  const tail = row => Math.max(0, ...row.samples.filter(s => ['1000', 'auto'].includes(s.label)).map(s => s.inputToReadyMs));
+  return { status: 'report-only', commandP95Ratio: ratio(a.inputToReady.p95, b.inputToReady.p95),
+    longWindowMaxRatio: ratio(tail(a), tail(b)) };
+}
 export async function run(args) {
   const o = parseOptions(args),
     out = resolve(o.out),
@@ -64,11 +81,13 @@ export async function run(args) {
     control = resolve(dirname(fileURLToPath(import.meta.url)), '..');
   assert.ok(!existsSync(out));
   mkdirSync(out, { recursive: true });
-  let sha = null;
-  try {
-    sha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
-  } catch {}
-  const source = { sha, sourceHash: hashCandidate(root).sha256 },
+  const roots = o.base ? { A: resolve(o.base), B: root } : { B: root };
+  const sources = Object.fromEntries(Object.entries(roots).map(([side, path]) => {
+    let commit = null;
+    try { commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: path, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim(); } catch {}
+    return [side, { sha: commit, sourceHash: hashCandidate(path).sha256 }];
+  }));
+  const source = sources.B,
     toolNames = [
       'profile-party-window-perf.mjs',
       'run-party-window-perf.mjs',
@@ -80,7 +99,9 @@ export async function run(args) {
     );
   const result = {
     identity: 'party-window-v1',
-    mode: 'calibration-only',
+    mode: o.base ? 'ab' : 'calibration-only',
+    ...(o.base ? { sources } : {}),
+    comparisons: [],
     status: 'running',
     options: o,
     source,
@@ -99,8 +120,9 @@ export async function run(args) {
           ? [[1, 2, 4][['classic', 'all-full', 'all-prefix'].indexOf(o.shard)]]
           : rotation;
       for (const actors of counts)
-        for (const mode of ['party-only', 'party-all']) {
-          const artifact = `${round}-${actors}-${mode}.json`,
+        for (const mode of ['party-only', 'party-all'])
+        for (const side of o.base ? (round % 2 ? ['A', 'B'] : ['B', 'A']) : ['B']) {
+          const artifact = `${round}-${o.base ? side + '-' : ''}${actors}-${mode}.json`,
             file = resolve(out, artifact),
             child = spawnSync(
               process.execPath,
@@ -113,7 +135,7 @@ export async function run(args) {
                 o.scene
               ],
               {
-                cwd: root,
+                cwd: roots[side],
                 env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=3072' },
                 encoding: 'utf8',
                 maxBuffer: 16 * 1024 * 1024,
@@ -127,9 +149,9 @@ export async function run(args) {
           });
           assert.equal(child.status, 0, `Failed ${artifact}: ${child.stderr}`);
           const row = validateWindowMeasurement(JSON.parse(readFileSync(file, 'utf8')));
-          assert.equal(row.sourceHash, source.sourceHash);
+          assert.equal(row.sourceHash, sources[side].sourceHash);
           const old = result.runs.find(
-            (r) => r.measurement.actors === actors && r.measurement.mode === mode
+            (r) => (r.side ?? 'B') === side && r.measurement.actors === actors && r.measurement.mode === mode
           );
           if (old)
             for (const k of [
@@ -138,6 +160,7 @@ export async function run(args) {
               'rowsHash',
               'rngHash',
               'fullDigest',
+              'fullDomains',
               'ticks',
               'zeroTicks',
               'node',
@@ -146,6 +169,7 @@ export async function run(args) {
               assert.deepEqual(row[k], old.measurement[k], `Drift ${k}`);
           result.runs.push({
             round,
+            ...(o.base ? { side } : {}),
             artifact,
             artifactHash: hash(readFileSync(file, 'utf8')),
             measurement: row
@@ -153,7 +177,12 @@ export async function run(args) {
           write(resolve(out, 'result.json'), result);
         }
     }
-    assert.equal(hashCandidate(root).sha256, source.sourceHash, 'Candidate changed');
+    for (const side of Object.keys(roots)) assert.equal(hashCandidate(roots[side]).sha256, sources[side].sourceHash, 'Candidate changed');
+    if (o.base) for (const a of result.runs.filter(r => r.side === 'A')) {
+      const b = result.runs.find(r => r.side === 'B' && r.round === a.round && r.measurement.actors === a.measurement.actors && r.measurement.mode === a.measurement.mode);
+      result.comparisons.push({ round: a.round, actors: a.measurement.actors, mode: a.measurement.mode,
+        ...compareWindowPair(a.measurement, b.measurement) });
+    }
     result.status = o.rounds === 3 && o.steps === 2049 ? 'measured-no-budget' : 'smoke-only';
   } catch (error) {
     result.status = 'failed';
@@ -163,7 +192,7 @@ export async function run(args) {
     write(resolve(out, 'result.json'), result);
     writeFileSync(
       resolve(out, 'summary.md'),
-      `# Party window ${result.status}\n\n${result.runs.length} observations; ${o.scene}, rounds=${o.rounds}, steps=${o.steps}. Calibration only, no D6 verdict or frozen threshold. Node endpoints are not browser/FPS or memory peak evidence.\n`
+      `# Party window ${result.status}\n\n${result.runs.length} observations; ${o.scene}, rounds=${o.rounds}, steps=${o.steps}. ${result.mode === 'ab' ? 'Same-input A/B, report only' : 'Calibration only'}, no D6 verdict or frozen threshold. Node endpoints are not browser/FPS or memory peak evidence.\n`
     );
   }
   return result;

@@ -615,6 +615,14 @@
       ],
       "optional": []
     },
+    "src/ext/modules/party/tests/party_travel.test.ts": {
+      "required": ["combat"],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_entry_checkpoint.test.ts": {
+      "required": ["combat"],
+      "optional": []
+    },
     "src/ext/modules/party/tests/party_extensions.test.ts": {
       "required": [
         "crafting",

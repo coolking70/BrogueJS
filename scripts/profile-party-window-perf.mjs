@@ -223,6 +223,7 @@ try {
       flush.push(performance.now() - f);
       nonemptyFlush++;
     }
+    const layerOffsets = Object.fromEntries(Object.entries(layers).map(([key, values]) => [key, values.length]));
     const cpuStart = process.cpuUsage(),
       acceptedAt = performance.now(),
       before = timeSystem.currentTick,
@@ -408,6 +409,8 @@ try {
       processCpuMs: (processCpu.user + processCpu.system) / 1000,
       waitMs: acceptedAt - inputStart,
       synchronousMs: simulated - acceptedAt,
+      layers: Object.fromEntries(Object.entries(layers).map(([key, values]) => [key,
+        stats(values.slice(layerOffsets[key]))])),
       inputToReadyMs: end - inputStart,
       ticks: tick - before,
       blocks: g.absoluteTurnNumber - turns,
@@ -492,6 +495,8 @@ try {
   const h = new Game({ seed: 1 });
   live.push(h);
   assert.ok(h.loadSnapshot(JSON.parse(JSON.stringify(save))), 'Save rejected');
+  assert.deepEqual(mechanicalDigest(h.projectWholeRun(), h.recordingInputState()), digest);
+  assert.deepEqual(rng.getState(), random);
   assert.ok(h.loadReplay(recording), 'Replay rejected');
   assert.equal(recording.events.length, initialRecordLength + steps);
   while (h.replayCursor < recording.events.length && !h.replayError) {
@@ -535,6 +540,7 @@ try {
     rowsHash: hash(rows),
     rngHash: hash(random),
     fullDigest: digest.root,
+    fullDomains: digest.domains,
     oos: 0,
     previewPollution,
     initialRecordLength,

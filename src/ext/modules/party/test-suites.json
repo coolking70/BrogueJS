@@ -10,7 +10,9 @@
     "tests/party_window.test.ts",
     "tests/party_window_decisions.test.ts",
     "tests/party_window_ui.test.ts",
-    "tests/party_window_review_r1.test.ts"
+    "tests/party_window_review_r1.test.ts",
+    "tests/party_checkpoint.test.ts",
+    "tests/party_entry_checkpoint.test.ts"
   ],
   "drift": []
 }
