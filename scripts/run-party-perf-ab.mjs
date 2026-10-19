@@ -7,6 +7,21 @@ import {spawnSync,execFileSync} from 'node:child_process';
 import {hash,write} from './ext-perf-common.mjs';
 import {hashCandidate} from './check-module-removal.mjs';
 import {PARTY_PERF_ID,PARTY_PERF_POLICY,partyShardActors,validatePartyMeasurement,parsePartyPerfOptions,assertStablePartyMeasurement} from './party-perf-identity.mjs';
+// Includes SSR boot, measurement, save/load and the complete seed replay.
+// The one-actor baseline can exceed ten minutes on the hosted Xeon runner.
+// Match the window runner's bounded twenty-minute allowance; this is not a perf budget.
+export const PARTY_PROFILE_TIMEOUT_MS = 1200000;
+export function runPartyProfile({control,root,file,mode,actors,steps}, spawn = spawnSync) {
+ const started = performance.now();
+ const child = spawn(process.execPath,[resolve(control,'scripts/profile-party-perf.mjs'),file,mode,String(actors),String(steps)],{
+  cwd:root,env:{...process.env,NODE_OPTIONS:'--max-old-space-size=3072'},encoding:'utf8',maxBuffer:16*1024*1024,timeout:PARTY_PROFILE_TIMEOUT_MS
+ });
+ const log = {exit:child.status,signal:child.signal??null,error:child.error?{code:child.error.code??null,message:child.error.message}:null,
+  timeoutMs:PARTY_PROFILE_TIMEOUT_MS,elapsedMs:performance.now()-started,stdout:child.stdout,stderr:child.stderr};
+ write(file+'.log.json',log);
+ assert.ok(!child.error&&child.status===0,
+  `Failed ${file}: exit=${log.exit}, signal=${log.signal}, error=${log.error?.code??log.error?.message??'none'}, elapsedMs=${log.elapsedMs.toFixed(0)}, timeoutMs=${log.timeoutMs}\n${child.stderr??''}`);
+}
 export async function runPartyAb(args){
  const options=parsePartyPerfOptions(args);
  const counts=options.shard?[partyShardActors(options.shard)]:[1,2,4],out=resolve(options.out);assert.ok(!existsSync(out),'Evidence directory must be fresh');mkdirSync(out,{recursive:true});
@@ -18,8 +33,7 @@ export async function runPartyAb(args){
  try{
   for(let round=1;round<=options.rounds;round++)for(const actors of counts)for(const mode of PARTY_PERF_POLICY.modes)for(const side of sides){
    const artifact=`${round}-${side}-${actors}-${mode}.json`,file=resolve(out,artifact);
-   const child=spawnSync(process.execPath,[resolve(control,'scripts/profile-party-perf.mjs'),file,mode,String(actors),String(options.steps)],{cwd:roots[side],env:{...process.env,NODE_OPTIONS:'--max-old-space-size=3072'},encoding:'utf8',maxBuffer:16*1024*1024,timeout:600000});
-   write(resolve(out,artifact+'.log.json'),{exit:child.status,stdout:child.stdout,stderr:child.stderr});assert.equal(child.status,0,`Failed ${artifact}: ${child.stderr}`);
+   runPartyProfile({control,root:roots[side],file,mode,actors,steps:options.steps});
    const row=validatePartyMeasurement(JSON.parse(readFileSync(file,'utf8')),{actors,mode,steps:options.steps});assert.equal(row.sourceHash,sources[side].sourceHash,'Source changed during measurement');
    const previous=result.runs.find(r=>r.side===side&&r.actors===actors&&r.mode===mode);if(previous)assertStablePartyMeasurement(row,previous.measurement);
    result.runs.push({round,side,actors,mode,artifact,artifactHash:hash(readFileSync(file,'utf8')),measurement:row});write(resolve(out,'result.json'),result);

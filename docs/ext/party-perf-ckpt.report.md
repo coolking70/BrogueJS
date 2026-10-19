@@ -1,5 +1,181 @@
 # Party 战斗事实世界捕获性能优化
 
+## 云端复核与工具修复（2026-10-19，当前结论）
+
+本节覆盖下方审查前候选及“待云端”状态。开工分支 `ext/party-p1a`，HEAD=`708f0de895902d777b2ab0d962d6b74c365d2d82`；本轮只改性能运行器、脚本回归及报告/预算登记，**没有生产代码修改，没有 commit/push/dispatch**。A=`a4117b225a73f68b697fabe552aa168a17fee4a7`，B=`708f0de895902d777b2ab0d962d6b74c365d2d82`，云端 B 已包含 F1/F2 修复。
+
+### Party 单步失败归因及修复
+
+[run 39198154915](https://github.com/coolking70/BrogueJS/actions/runs/39198154915) 整体为 **failed，不能出具完整单步性能结论**。classic（一人）分片的首项 `1-A-1-party-only.json` 未产出 measurement，子进程 `exit=null`、stderr为空；该分片 `runs=[]`，B 尚未执行。其余 all-full（二人）和 all-prefix（四人）各已完成12项，并非整次运行完全没有测量。离线核对这24份原始measurement的hash及12对 A/B，输入、rowsHash、rngHash、fullDigest、零tick数、Node/机器完全相等，OOS=0。聚合器因classic缺失而拒绝，属于正确拒绝，不放宽完整性校验。
+
+根因定位为**旧 party 运行器的600000ms整进程时限不足**，并伴随失败诊断缺失：`spawnSync`涵盖SSR初始化、2049输入、存读及完整seed replay；云端从前置校验04:10:46到失败04:21:10，首子进程约十分钟即被终止。旧日志只保存status/stdout/stderr，丢失signal/error，所以无法事后直接读取ETIMEDOUT或排除外部信号；这一归因依据退出形态、时限及时间线，不能伪称日志原文含ETIMEDOUT。旁证是同一A源码在Xeon 8370C的一人窗口测量加验证已接近596秒，纯测量之外还有初始化与回放成本。没有B OOS或摘要偏差证据，不修改生产语义。
+
+`run-party-perf-ab.mjs`现将单场进程限时对齐window运行器为1200000ms（20分钟），保留3072MiB heap、原seed/2049输入及全部存读/回放断言。它是基础设施时限，不是性能预算；没有重试、删慢样本或吞异常。失败日志新增signal、error.code/message、elapsedMs、timeoutMs，结果摘要同时保留这些原因。真实子进程回归分别验证ETIMEDOUT/SIGTERM、非零OOS stderr及成功退出；原聚合缺项/失败拒绝测试保持。工作流360分钟job限时可容纳每分片最多12项×20分钟，无需改workflow。云端仍须完整重跑party三轮确认宿主下余量。
+
+### Window A/B：完整同输入结果
+
+[run 39198164024](https://github.com/coolking70/BrogueJS/actions/runs/39198164024)：三分片×三轮×两配置×A/B=36项，18对，`measured-no-budget`、budget=null。用原 `readShard` 重验measurement/save/recording运输hash，重跑 `merge` 与aggregate一致；18对的输入、逐步工作量（tick/环境块/NPC/成员动作/停止原因）、双RNG、七个digest domain及root完全一致，OOS/previewPollution均0。A/B顺序逐轮AB/BA/AB；每对同机。1人Xeon Platinum 8370C，2人EPYC 9V74，4人EPYC 9V45；Linux x64、Node v24.21.0、heap3072MiB。不能横跨人数或旧run直接比较CPU扩展比例。
+
+下表P95/P99是**三轮各自分位数的中位数**，变化率=B中位/A中位−1；“三轮最大”是所有三轮原样本的最大值，不合并样本重算P95。`inputToReady`为Node提交前等待到执行器必要flush完成，不是浏览器画面可见延迟。每轮2049输入，冷步、GC、慢样本均保留。新B建议仍按原B6公式：U=三轮指标最大值，P50/P95参考上限=向上取整至0.01ms的U+max(1ms,10%U)，P99/max用25%。**新B数字仅建议、report-only，尚无独立B验证，不替换已冻结A参考值。**
+
+| 人数 / 配置 | P95 A→B ms | 变化 | P99 A→B ms | 三轮最慢输入 A→B ms | B参考上限 P50/P95/P99/max ms |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 1 / party-only | 205.06 → 158.49 | -22.71% | 254.48 → 206.88 | 424.65 → 355.71 | 105.38 / 176.47 / 263.71 / 444.64 |
+| 1 / party-all | 319.59 → 241.50 | -24.43% | 1028.84 → 726.53 | 1301.84 → 975.40 | 92.17 / 267.84 / 912.07 / 1219.26 |
+| 2 / party-only | 101.96 → 77.47 | -24.02% | 203.22 → 176.19 | 1459.27 → 1068.96 | 61.69 / 85.32 / 227.47 / 1336.20 |
+| 2 / party-all | 108.04 → 86.16 | -20.25% | 225.29 → 195.08 | 1584.87 → 1163.30 | 67.88 / 95.75 / 245.41 / 1454.12 |
+| 4 / party-only | 76.12 → 61.04 | -19.82% | 155.33 → 143.40 | 861.65 → 741.82 | 47.75 / 75.98 / 196.20 / 927.28 |
+| 4 / party-all | 83.96 → 74.60 | -11.15% | 259.62 → 218.78 | 2411.60 → 1754.35 | 49.24 / 86.42 / 300.84 / 2192.94 |
+
+| 人数 / 配置 | 场景 | 每轮 n | P95中位 A→B ms | 变化 | 三轮最大 A→B ms | B参考上限 P95/max ms |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| 1 / party-only | fine | 7 | 346.57 → 301.74 | -12.94% | 350.14 → 311.50 | 342.65 / 389.37 |
+| 1 / party-only | explicit-clear | 1 | 1.34 → 1.34 | +0.53% | 1.34 → 1.35 | 2.36 / 2.36 |
+| 1 / party-only | single | 2008 | 201.02 → 154.38 | -23.20% | 352.15 → 316.22 | 171.51 / 395.28 |
+| 1 / party-only | confirmation | 1 | 193.58 → 163.88 | -15.34% | 194.25 → 166.80 | 183.49 / 208.51 |
+| 1 / party-only | decision | 1 | 275.78 → 268.80 | -2.53% | 284.46 → 273.27 | 300.60 / 341.59 |
+| 1 / party-only | 300 | 7 | 346.92 → 293.18 | -15.49% | 347.43 → 296.18 | 325.81 / 370.23 |
+| 1 / party-only | 1000 | 9 | 369.23 → 308.91 | -16.34% | 393.71 → 332.41 | 365.65 / 415.51 |
+| 1 / party-only | auto | 6 | 304.99 → 257.87 | -15.45% | 311.41 → 303.47 | 333.82 / 379.34 |
+| 1 / party-only | 100 | 9 | 394.49 → 328.81 | -16.65% | 424.65 → 355.71 | 391.28 / 444.64 |
+| 1 / party-all | fine | 8 | 239.88 → 215.62 | -10.11% | 301.20 → 228.18 | 251.00 / 285.23 |
+| 1 / party-all | explicit-clear | 1 | 7.26 → 5.10 | -29.74% | 7.96 → 6.63 | 7.64 / 8.30 |
+| 1 / party-all | single | 1854 | 156.39 → 117.31 | -24.99% | 382.18 → 301.72 | 129.13 / 377.16 |
+| 1 / party-all | confirmation | 1 | 197.02 → 167.48 | -14.99% | 204.49 → 171.42 | 188.56 / 214.28 |
+| 1 / party-all | decision | 1 | 267.92 → 268.45 | +0.20% | 281.91 → 286.63 | 315.29 / 358.29 |
+| 1 / party-all | phased | 1 | 138.15 → 109.14 | -21.00% | 141.75 → 112.78 | 124.07 / 140.98 |
+| 1 / party-all | phased-resume | 1 | 280.86 → 239.46 | -14.74% | 286.73 → 252.28 | 277.52 / 315.36 |
+| 1 / party-all | 300 | 77 | 459.14 → 376.16 | -18.07% | 483.76 → 405.64 | 425.35 / 507.05 |
+| 1 / party-all | 1000 | 67 | 1156.51 → 858.25 | -25.79% | 1264.56 → 931.61 | 953.15 / 1164.51 |
+| 1 / party-all | auto | 27 | 1010.71 → 684.26 | -32.30% | 1301.84 → 975.40 | 830.47 / 1219.26 |
+| 1 / party-all | 100 | 11 | 272.37 → 239.99 | -11.89% | 273.40 → 242.60 | 266.86 / 303.25 |
+| 2 / party-only | fine | 9 | 281.42 → 237.32 | -15.67% | 283.14 → 263.24 | 289.57 / 329.06 |
+| 2 / party-only | explicit-clear | 1 | 1.19 → 1.20 | +0.80% | 1.24 → 1.42 | 2.42 / 2.42 |
+| 2 / party-only | single | 2000 | 95.44 → 74.03 | -22.43% | 212.98 → 188.20 | 81.97 / 235.26 |
+| 2 / party-only | confirmation | 1 | 214.19 → 171.54 | -19.91% | 216.24 → 172.34 | 189.58 / 215.44 |
+| 2 / party-only | decision | 1 | 229.06 → 209.91 | -8.36% | 248.09 → 222.21 | 244.44 / 277.77 |
+| 2 / party-only | 300 | 10 | 483.78 → 384.47 | -20.53% | 502.61 → 404.38 | 444.82 / 505.48 |
+| 2 / party-only | 1000 | 10 | 1456.60 → 1059.86 | -27.24% | 1459.27 → 1068.96 | 1175.86 / 1336.20 |
+| 2 / party-only | auto | 8 | 213.58 → 198.84 | -6.90% | 220.41 → 204.98 | 225.48 / 256.23 |
+| 2 / party-only | 100 | 9 | 298.10 → 261.16 | -12.39% | 338.62 → 277.03 | 304.74 / 346.30 |
+| 2 / party-all | fine | 7 | 221.33 → 201.78 | -8.83% | 233.17 → 202.44 | 222.69 / 253.06 |
+| 2 / party-all | explicit-clear | 1 | 6.16 → 5.99 | -2.81% | 6.37 → 6.23 | 7.24 / 7.79 |
+| 2 / party-all | single | 1993 | 103.19 → 79.24 | -23.20% | 254.52 → 195.90 | 89.14 / 244.88 |
+| 2 / party-all | confirmation | 1 | 225.29 → 179.81 | -20.19% | 229.47 → 180.24 | 198.27 / 225.30 |
+| 2 / party-all | decision | 1 | 205.91 → 205.64 | -0.13% | 209.53 → 207.75 | 228.53 / 259.69 |
+| 2 / party-all | phased | 1 | 106.16 → 92.81 | -12.57% | 108.82 → 160.69 | 176.77 / 200.87 |
+| 2 / party-all | phased-resume | 1 | 295.24 → 252.53 | -14.47% | 331.43 → 260.27 | 286.30 / 325.34 |
+| 2 / party-all | 1000 | 12 | 1564.74 → 1146.46 | -26.73% | 1584.87 → 1163.30 | 1279.63 / 1454.12 |
+| 2 / party-all | auto | 11 | 1463.80 → 1022.53 | -30.15% | 1537.39 → 1035.76 | 1139.34 / 1294.70 |
+| 2 / party-all | 100 | 13 | 287.68 → 259.05 | -9.95% | 288.77 → 267.67 | 294.44 / 334.59 |
+| 2 / party-all | 300 | 8 | 447.27 → 361.67 | -19.14% | 459.78 → 390.85 | 429.94 / 488.57 |
+| 4 / party-only | fine | 8 | 244.33 → 189.34 | -22.51% | 245.53 → 221.06 | 243.17 / 276.32 |
+| 4 / party-only | explicit-clear | 1 | 1.22 → 1.13 | -6.87% | 1.26 → 1.28 | 2.28 / 2.28 |
+| 4 / party-only | single | 2007 | 70.78 → 57.24 | -19.12% | 144.63 → 157.71 | 69.67 / 197.14 |
+| 4 / party-only | confirmation | 1 | 163.37 → 133.17 | -18.48% | 187.62 → 138.02 | 151.83 / 172.53 |
+| 4 / party-only | decision | 1 | 157.48 → 173.57 | +10.22% | 159.71 → 173.83 | 191.22 / 217.29 |
+| 4 / party-only | 300 | 7 | 576.03 → 467.07 | -18.92% | 646.78 → 484.21 | 532.63 / 605.26 |
+| 4 / party-only | 1000 | 9 | 850.02 → 679.45 | -20.07% | 861.65 → 741.82 | 816.01 / 927.28 |
+| 4 / party-only | auto | 6 | 217.66 → 172.00 | -20.98% | 220.27 → 176.64 | 194.30 / 220.80 |
+| 4 / party-only | 100 | 9 | 268.06 → 214.49 | -19.98% | 276.93 → 237.28 | 261.01 / 296.60 |
+| 4 / party-all | fine | 7 | 301.18 → 258.70 | -14.11% | 302.62 → 265.52 | 292.08 / 331.91 |
+| 4 / party-all | explicit-clear | 1 | 4.39 → 4.56 | +3.66% | 4.42 → 4.93 | 5.93 / 6.16 |
+| 4 / party-all | single | 1995 | 79.04 → 68.20 | -13.71% | 216.32 → 146.14 | 79.46 / 182.68 |
+| 4 / party-all | confirmation | 1 | 167.46 → 147.67 | -11.82% | 175.71 → 150.84 | 165.93 / 188.55 |
+| 4 / party-all | decision | 1 | 173.96 → 188.90 | +8.59% | 174.63 → 240.67 | 264.74 / 300.84 |
+| 4 / party-all | phased | 1 | 179.00 → 173.27 | -3.20% | 183.97 → 211.15 | 232.27 / 263.94 |
+| 4 / party-all | phased-resume | 1 | 320.71 → 309.42 | -3.52% | 320.99 → 317.34 | 349.08 / 396.68 |
+| 4 / party-all | 1000 | 13 | 2158.29 → 1708.23 | -20.85% | 2411.60 → 1754.35 | 1929.79 / 2192.94 |
+| 4 / party-all | auto | 7 | 2116.42 → 1681.73 | -20.54% | 2156.87 → 1682.22 | 1850.45 / 2102.78 |
+| 4 / party-all | 100 | 12 | 309.80 → 256.74 | -17.13% | 330.08 → 257.16 | 282.88 / 321.45 |
+| 4 / party-all | 300 | 10 | 739.94 → 614.80 | -16.91% | 749.73 → 637.30 | 701.03 / 796.62 |
+
+**长窗裁决：优化后尾部下降，但不能把跨机的3.7→1.7秒全部归因于代码。** 四人全开1000窗三轮P95 A=2411.60/2158.29/2138.67ms，B=1754.35/1575.22/1708.23ms；auto A=2156.87/2061.28/2116.42ms，B=1681.73/1525.25/1682.22ms。两档每一轮都下降，中位降幅分别20.85%/20.54%，三轮最大下降27.25%/22.01%。每轮n=13/7，所以这里P95=max，不是稳定的总体尾分位估计。
+
+原P1b校准约3.66/3.57秒、独立验证约3.71/3.63秒均来自EPYC 7763；这次同机A本身约2.16/2.12秒，B约1.71/1.68秒，runner/运行环境差异已经改变A的绝对耗时。只把同机约21%计为本次观察到的长窗改善，不承诺同CPU普遍降至1.7秒或浏览器/手机体验合格。新B四人全开1000/auto的P95参考上限建议分别1929.79/1850.45ms，max参考上限2192.94/2102.78ms，适用此run的工具/路线/机器；完整各场建议在上表。
+
+改善并非所有桶一致：四人only/all的decision P95分别+10.22%/+8.59%（每轮各1样本）；二人all phased的三轮最大108.82→160.69ms，四人only single最大144.63→157.71ms。保留反向数值，不标“全场景性能pass”。
+
+### P1b参考预算冻结与独立验证
+
+维护者本轮明确裁定：**窗口预算冻结为参考值，全部report-only，不作硬门禁**。冻结来源仍为 [校准run 39132723627](https://github.com/coolking70/BrogueJS/actions/runs/39132723627) 的a4117b2数字与B6公式，混合路线P50/P95原“hard候选”也降为report-only；hardLimits=null。详见 [P1b预算节](party-p1b.report.md#b6-窗口预算参考值冻结2026-10-19维护者裁定) 及 `scripts/party-perf-p1b-budget.json`。旧提案JSON保留历史标签，由预算登记的统一report-only等级覆盖，不重算/抬高旧上限以追逐新runner。
+
+[独立验证run 39178576337](https://github.com/coolking70/BrogueJS/actions/runs/39178576337) 是另一完整三轮18项、a4117b2，工具hash与原校准一致，绝非从原三轮抽出一轮。已重验全部原始measurement/save/recording运输hash，并重聚合核对；与旧提案逐场input/rows/RNG/root/tick/零tick、环境块/NPC/成员动作、各label及label:reason的样本数一致。OOS/previewPollution=0、源hash一致。窗口参考值对照如下；越参考只记录，不判回归/通过硬预算。
+
+| 人数 / 配置 | 校准→独立 CPU | P95参考上限 ms | 独立P95中位 / 最慢轮 ms | P50/P95/P99/max越参考轮数 | 窗口label P95/max越参考次数 |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 1 / party-only | AMD EPYC 9V74 80-Core Processor → Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz | 182.57 | 202.00 / 203.55 | 3 / 3 / 0 / 1（各/3） | 19 / 4（各/21） |
+| 1 / party-all | AMD EPYC 9V74 80-Core Processor → Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz | 267.82 | 315.41 / 315.98 | 3 / 3 / 3 / 2（各/3） | 24 / 11（各/27） |
+| 2 / party-only | AMD EPYC 7763 64-Core Processor → AMD EPYC 9V45 96-Core Processor | 143.43 | 74.03 / 76.38 | 0 / 0 / 0 / 0（各/3） | 0 / 0（各/21） |
+| 2 / party-all | AMD EPYC 7763 64-Core Processor → AMD EPYC 9V45 96-Core Processor | 154.40 | 80.59 / 81.09 | 0 / 0 / 0 / 0（各/3） | 0 / 0（各/27） |
+| 4 / party-only | AMD EPYC 7763 64-Core Processor → AMD EPYC 7763 64-Core Processor | 129.38 | 118.15 / 118.39 | 0 / 0 / 0 / 0（各/3） | 1 / 0（各/21） |
+| 4 / party-all | AMD EPYC 7763 64-Core Processor → AMD EPYC 7763 64-Core Processor | 151.54 | 137.69 / 140.21 | 0 / 0 / 0 / 0（各/3） | 0 / 0（各/27） |
+
+表中label次数只统计fine、confirmation、decision、phased、phased-resume、100/300/1000/auto，排除single/explicit-clear；分母是该场label数×3轮。逐label对照、逐原因桶与辅助指标的超参考明细（含Worker，体积/内存另比观测最大值）见 [云端派生证据](party-perf-ckpt.cloud-summary.json)。一人和二人CPU不匹配，绝对参考无法作等环境独立门禁验证；四人型号匹配也只是一种环境匹配，不能假设硬件/宿主负载完全相同。四人only fine第一轮488.214ms，比487.41ms参考上限高0.804ms；如实保留1/3，不抬值、不重测择优。四人all 1000/auto最大3725.36/3629.58ms，均低于原P95参考4067.08/3962.81ms，但仍是秒级开销。
+
+冻结的是有来源、有限适用环境的参考表，不是用户体验承诺或D6 pass。低样本P95常等于max，RSS/heap是端点而非峰值；Worker在途峰值不等于进程RSS峰值，浏览器点击到提示、长任务与真机仍待人工。新B工具增加分层/逐域观察，且runner不同；只将上表同机A/B作为优化证据，单列新B参考建议，不能用它覆盖旧校准或宣称完成新B独立验证。
+
+### 非party回归
+
+[run 39198172878](https://github.com/coolking70/BrogueJS/actions/runs/39198172878)：A=a4117b2、B=708f0de，6c4身份、三轮、limit=0；aggregate **status=pass、hard=pass**。离线重读原summary/rounds并重新应用D6-2026-10-16，与aggregate一致：classic/full、all/full、all/prefix越线分别0/3、1/3、1/3，均pass。C1/C4与独立第四次冻结验证按原artifact记录通过。没有在本轮重跑非party性能，也不把此pass扩展为party窗口硬预算通过。
+
+### 本地限定检查与重跑
+
+Node v24.19.0：`party_perf_tools` 12项、`party_window_perf_tools` 25项，合计2文件37项，0失败/跳过；`scripts/test-ext-perf-ab.mjs`通过；测试依赖695文件、errors=[]，各命令exit0。本轮没有生产修改，按任务限定未跑boundary/vue-tsc/build、npm test/full/gen/drift或浏览器。未改原断言、守卫、基线与黄金trace。
+
+A/B均由对应不可变SHA的`git archive`导出到仓外隔离目录，使用同一已安装依赖和当前修复后的control脚本；候选本身未改。`hashCandidate`的3254/3261个文件摘要分别与云端A/B完全一致，见`archive-identity.json`。归档无.git，因此运行器sha字段为null、启动日志有两条git识别提示；不可变SHA由归档命令与匹配的全候选hash绑定，不把null当成已识别commit。
+
+**失败分片的完整本地冒烟通过**：classic（一人）×party-only/all×A/B，共4场，rounds=1、steps=2049，均首次exit0/OOS=0，结果`smoke-only`。party-only整进程A/B=488.793/541.555秒，party-all=395.812/283.776秒（原始精度见`smoke-verified.json`）；两对input、rowsHash、rngHash、fullDigest、zeroTicks及同机Node一致。分别读回原始save/recording，严格对象比较相等，只归一化`save.savedAt`、`save.run.recordingOrigin.header.recordedAt`、`recording.recordedAt`三个墙钟字段。辅助raw对比初次只归一化顶层时间而失败，逐字段诊断确认唯一遗漏是续录头时间戳后补齐此位置，未忽略其他字段；见`raw-clock-comparison.json`。
+
+本地为单轮正确性/工具冒烟，期间还做了离线分析和短脚本检查，没有安静环境性能设计；保留only B较慢的实际耗时，不据此外推性能收益或云端完成。SSR日志有既有WebSocket EPERM提示，实际Node Worker与游戏回放完成；不称浏览器验证。
+
+**三分片工具冒烟亦通过**：rounds=1、steps=8，1/2/4人×only/all×A/B共12场/6对，三分片均exit0；原`mergePartyAb`完整性与工具hash复核通过，aggregate=`smoke-only`、budget=null。另逐对强制input/rows/RNG/full/zeroTicks/Node/machine相等（不是仅采信旧runner的comparable标记）。完整一人长场与三分片短场分别列账，不拼成一次完整三轮云端测量。命令清单与退出结果见`short-smoke-verified.json`、`short-smoke.log`；最终`git diff --check`通过，六个变更文件均LF且小于1MB。
+
+```bash
+export PATH=/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH
+node node_modules/vitest/vitest.mjs run src/test/party_perf_tools.test.mjs \
+  src/test/party_window_perf_tools.test.mjs --maxWorkers=1 --no-file-parallelism \
+  --reporter=default --reporter=json \
+  --outputFile=/private/tmp/party-perf-cloud-followup/tests.json
+node scripts/test-ext-perf-ab.mjs
+node scripts/check-test-dependencies.mjs
+node scripts/run-ext-perf-ab.mjs --party \
+  --base /private/tmp/party-perf-cloud-followup/A \
+  --head /private/tmp/party-perf-cloud-followup/B \
+  --out /private/tmp/party-perf-cloud-followup/smoke-classic-full \
+  --shard classic --rounds 1 --steps 2049
+node /private/tmp/party-perf-cloud-followup/check-smoke.mjs
+node /private/tmp/party-perf-cloud-followup/short-smoke.mjs
+```
+
+原始证据根为 `/private/tmp/party-perf-cloud-followup/`，云端原始产物仍在各 `/private/tmp/perfci-<run>/`；不提交日志、save/recording等大工件。`validate.mjs`重验原工件/聚合/D6，`derive.py`逐场从原samples计算分位数、原参考对照及新B建议；完整派生数据留仓外，精简来源hash/身份/三轮数据见 [云端汇总](party-perf-ckpt.cloud-summary.json)。本节离线分析不冒充新云端测量。
+
+**需要重跑：party单步完整三分片三轮。** 不能点击旧run的rerun（它仍会使用旧工具）；维护者提交并推送本次修复后，从包含修复的分支dispatch，用新提交的完整SHA固定head。下面在维护者该提交的干净工作树执行，本执行者未dispatch：
+
+```bash
+set -e
+HEAD_SHA=$(git rev-parse HEAD)
+test -z "$(git status --porcelain)"
+test "$HEAD_SHA" != 708f0de895902d777b2ab0d962d6b74c365d2d82
+test "$(gh api repos/coolking70/BrogueJS/commits/ext/party-p1a --jq .sha)" = "$HEAD_SHA"
+gh workflow run ext-perf.yml --repo coolking70/BrogueJS --ref ext/party-p1a \
+  -f suite=party -f mode=ab \
+  -f base_ref=a4117b225a73f68b697fabe552aa168a17fee4a7 \
+  -f head_ref="$HEAD_SHA" -f rounds=3
+```
+
+可选但独立列账：若要验证本节**新B参考建议**，使用同一维护者SHA另跑窗口B校准；这不是补旧A独立验证（旧A独立验证已完成），也不会自动升级为硬预算。仍须按场景核对runner，环境不匹配保留差异：
+
+```bash
+gh workflow run ext-perf.yml --repo coolking70/BrogueJS --ref ext/party-p1a \
+  -f suite=party-window -f mode=calibration-only \
+  -f head_ref="$HEAD_SHA" -f rounds=3
+```
+
+本轮无生产变动且窗口工具未改，既有window A/B与非party pass继续按708f0de身份引用；不要求为文档/party进程时限变更重跑phase6或window A/B。若维护者另改生产，须重新评估该沿用范围。
+
+## 以下为优化实施及审查历史
+
 2026-10-19；起点 `ext/party-p1a` / `ba360b4b7a31868b09d7c92a0debf7f083a9ea10`。A 为已发布 P1b `a4117b225a73f68b697fabe552aa168a17fee4a7`，B 为审查修复前的性能候选（下述源码散列固定）。当前未提交工作树还包含 F1/F2 修复，不能直接沿用 B 的测量结果。两起点之间只有报告和预算状态差异，生产源码相同。未 commit/push/派发云端。
 
 ## 独立审查 F1/F2 修复（2026-10-19）

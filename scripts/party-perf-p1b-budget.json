@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "identity": "party-window-v1",
-  "status": "pending-maintainer-review",
-  "decisionDate": "2026-10-18",
+  "status": "frozen-reference-only",
+  "decisionDate": "2026-10-19",
   "methodApproved": "B6",
   "sourceRuns": [
     {
@@ -10,9 +10,141 @@
       "head": "a4117b225a73f68b697fabe552aa168a17fee4a7"
     }
   ],
-  "metrics": [],
+  "metrics": [
+    {
+      "actors": 1,
+      "mode": "party-only",
+      "grade": "report-only",
+      "node": "v24.21.0",
+      "machine": {
+        "platform": "linux",
+        "arch": "x64",
+        "cpu": "AMD EPYC 9V74 80-Core Processor"
+      },
+      "inputToReadyReferenceMs": {
+        "p50": 111.07,
+        "p95": 182.57,
+        "p99": 256.04,
+        "max": 380.68
+      }
+    },
+    {
+      "actors": 1,
+      "mode": "party-all",
+      "grade": "report-only",
+      "node": "v24.21.0",
+      "machine": {
+        "platform": "linux",
+        "arch": "x64",
+        "cpu": "AMD EPYC 9V74 80-Core Processor"
+      },
+      "inputToReadyReferenceMs": {
+        "p50": 96.23,
+        "p95": 267.82,
+        "p99": 984.53,
+        "max": 1245.75
+      }
+    },
+    {
+      "actors": 2,
+      "mode": "party-only",
+      "grade": "report-only",
+      "node": "v24.21.0",
+      "machine": {
+        "platform": "linux",
+        "arch": "x64",
+        "cpu": "AMD EPYC 7763 64-Core Processor"
+      },
+      "inputToReadyReferenceMs": {
+        "p50": 110.4,
+        "p95": 143.43,
+        "p99": 337.91,
+        "max": 2349.8
+      }
+    },
+    {
+      "actors": 2,
+      "mode": "party-all",
+      "grade": "report-only",
+      "node": "v24.21.0",
+      "machine": {
+        "platform": "linux",
+        "arch": "x64",
+        "cpu": "AMD EPYC 7763 64-Core Processor"
+      },
+      "inputToReadyReferenceMs": {
+        "p50": 120.55,
+        "p95": 154.4,
+        "p99": 367.73,
+        "max": 2538.46
+      }
+    },
+    {
+      "actors": 4,
+      "mode": "party-only",
+      "grade": "report-only",
+      "node": "v24.21.0",
+      "machine": {
+        "platform": "linux",
+        "arch": "x64",
+        "cpu": "AMD EPYC 7763 64-Core Processor"
+      },
+      "inputToReadyReferenceMs": {
+        "p50": 102.46,
+        "p95": 129.38,
+        "p99": 321.65,
+        "max": 1826.74
+      }
+    },
+    {
+      "actors": 4,
+      "mode": "party-all",
+      "grade": "report-only",
+      "node": "v24.21.0",
+      "machine": {
+        "platform": "linux",
+        "arch": "x64",
+        "cpu": "AMD EPYC 7763 64-Core Processor"
+      },
+      "inputToReadyReferenceMs": {
+        "p50": 102.19,
+        "p95": 151.54,
+        "p99": 565.26,
+        "max": 4621.68
+      }
+    }
+  ],
   "hardLimits": null,
-  "independentValidation": null,
-  "note": "Complete cloud calibration received (18 measurements). Proposed numbers and grades in docs/ext/party-p1b.report.md await maintainer review and a separate complete validation; hardLimits remain null. Not a frozen budget or D6 pass.",
-  "proposalDate": "2026-10-19"
+  "independentValidation": {
+    "runId": "39178576337",
+    "head": "a4117b225a73f68b697fabe552aa168a17fee4a7",
+    "measurements": 18,
+    "status": "compared-reference-only",
+    "integrity": "pass",
+    "semanticWorkload": "match",
+    "environment": "CPU differs for 1 and 2 actors; CPU model matches for 4 actors. Not an environment-matched hard-budget pass.",
+    "exceedances": "Preserved in docs/ext/party-perf-ckpt.cloud-summary.json; 1-actor timing exceeds several references, 4-actor party-only fine P95 exceeds by 0.804 ms in round 1."
+  },
+  "note": "Maintainer froze original a4117b2 calibration as report-only reference values. No hard performance gate and no D6/window-budget pass. Keep original thresholds despite independent-run exceedances and CPU differences; optimized B suggestions are separate and not yet independently verified.",
+  "proposalDate": "2026-10-19",
+  "grade": "report-only",
+  "reference": {
+    "path": "docs/ext/party-p1b.perf-followup.json",
+    "sha256": "00c4570d3df4af53285bbaa7143c3672b9b5ee1a425d473ba0ae875c99c1cbbd",
+    "selectors": [
+      "cases[].timing",
+      "cases[].labels",
+      "cases[].buckets",
+      "cases[].worker",
+      "cases[].observedBytes"
+    ],
+    "gradeOverride": "report-only for every metric, including historical hard-candidate labels; proposed timing values are reference limits, never hard limits"
+  },
+  "optimizedProposal": {
+    "runId": "39198164024",
+    "head": "708f0de895902d777b2ab0d962d6b74c365d2d82",
+    "status": "suggested-reference-only",
+    "independentValidation": null,
+    "path": "docs/ext/party-perf-ckpt.cloud-summary.json"
+  }
 }

@@ -177,7 +177,7 @@ node scripts/check-module-removal.mjs --root=/private/tmp/party-p1b/candidate \
 
 ## 性能跟进：云端校准与单步归因（2026-10-19）
 
-**最新状态覆盖下方历史待办：P1b 已发布为 `a4117b225a73f68b697fabe552aa168a17fee4a7`。四人“慢约30%”来自跨 runner 的旧校准与新 B 测量比较；同一次 A/B 三轮并未复现该回归。非 party 云端回归 pass。窗口预算建议如下，全部待维护者审定，尚未冻结或独立验证。** 本次不改生产代码、玩法、录像或旧基线，不 commit/push；本地 profile 及限定检查见下文。
+**最新状态覆盖下方历史待办：P1b 已发布为 `a4117b225a73f68b697fabe552aa168a17fee4a7`。四人“慢约30%”来自跨 runner 的旧校准与新 B 测量比较，同一次 A/B 三轮未复现。2026-10-19维护者已裁定窗口预算全部冻结为report-only参考值，不作硬门禁；独立run 39178576337对照已完成，CPU差异/越参考值如实保留。后续708f0de窗口优化及非party pass见预算节链接。** 本次不改生产代码、玩法、录像或旧基线，不 commit/push；本地 profile 及限定检查见下文。
 
 ### 云端单步：先纠正比较基准
 
@@ -233,7 +233,11 @@ CPU profile只覆盖测量循环（含原工具诊断、排除初始化与回放
 ```
 
 
-### B6 窗口预算数字与等级建议（待维护者审定）
+### B6 窗口预算参考值冻结（2026-10-19维护者裁定）
+
+**裁定已生效：本节原校准数字原样冻结为参考值，所有指标均为report-only，包含原混合路线P50/P95的hard候选；不作CI硬门禁，hardLimits=null。** 来源为run 39132723627 / a4117b2，另一次完整run 39178576337已做独立对照。冻结不等于所有环境验证通过：一/二人CPU改变，一人出现超参考值，四人only fine也有1轮高0.804ms，均保留。机器可读登记见 [预算状态](../../scripts/party-perf-p1b-budget.json)，旧派生JSON只保留历史提案标签，由此登记统一覆盖为report-only。
+
+优化后708f0de的[完整云端报告](party-perf-ckpt.report.md#云端复核与工具修复2026-10-19当前结论)给出各人数/配置/窗口P95与尾部比较、新B参考建议及精确重跑命令。新B建议尚未另次独立验证，单列保留，不覆盖本节a4117b2冻结数字。
 
 来源：[窗口校准 run 39132723627](https://github.com/coolking70/BrogueJS/actions/runs/39132723627)，`party-window-v1` / `window-mixed-v1` / seed42，**6场景×3轮=18项测量**，每项2049输入；`measured-no-budget`、budget=null。源SHA为a4117b2，sourceHash=`2fb116bab6376ab3774022f3be2d1b1e4119ab9f8ac7dddc53904e91f5515b43`，Linux x64/Node v24.21.0/heap3072MiB。人数分片使用的CPU不同，禁止跨人数用绝对耗时推导扩展比例。三轮内每场的输入hash、rowsHash、RNG、fullDigest、ticks及零tick数固定，OOS=0、previewPollution=0，逐输入录像增长校验通过。原始产物在 `/private/tmp/perfci-39132723627/`；逐场三轮数值、hash、工具身份与候选计算在 [精简派生证据](party-p1b.perf-followup.json)，离线计算脚本为 `/private/tmp/party-p1b-perf-followup/derive.py`。
 
@@ -248,11 +252,11 @@ CPU profile只覆盖测量循环（含原工具诊断、排除初始化与回放
 
 计时边界：`inputToReady` 为Node提交前等待→执行器必要flush完成，含同步模拟及可能的Worker等待；并非浏览器点击→画面可见。`positive/zero`只计同步输入；层计时嵌套、Worker与主线程重叠，禁止相加。模拟CPU/tick包含并行Worker CPU，不拿墙钟ms的1ms余量套到CPU/tick。当前各场输入多数为单步（1854–2008条），以下“混合路线”预算不能称作每个窗口档位的响应预算。
 
-计算严格采用B6起点：每项指标参考值=三轮分位数中位数；`U=max(三轮该分位数)`，P50/P95建议=`U+max(1ms,0.10U)`，P99/max建议=`U+max(1ms,0.25U)`，向上取整到0.01ms。不是“中位数×1.1”，不是D6相对判退公式，也不是已批准产品体验标准。
+计算严格采用B6起点：每项指标参考值=三轮分位数中位数；`U=max(三轮该分位数)`，P50/P95参考上限=`U+max(1ms,0.10U)`，P99/max参考上限=`U+max(1ms,0.25U)`，向上取整到0.01ms。不是“中位数×1.1”，不是D6相对判退公式，也不是已批准产品体验标准。
 
-**等级建议：** 下表混合路线P50/P95列为 **hard候选**，仅适用于上表完全相同的输入/工作量/工具/Node与CPU环境，并经维护者批准及另次完整验证后生效。P99/max均为 **report-only**；单一混合尾分位数难以代表各档位，先保留解释性指标。正确性、完整三轮/三分片、输入与身份一致性仍为必需条件。环境不匹配时这些绝对上限不作pass/fail裁定，应保持未验证或另行校准，不从同次结果挑快轮通过。
+**冻结等级：** 下表混合路线P50/P95/P99/max全部为 **report-only参考值**。适用上表输入/工作量/工具/Node与CPU环境；环境不匹配时只作带环境差异的对照，不作pass/fail裁定。正确性、完整三轮/三分片、输入与身份一致性仍须核验，不从同次结果挑快轮通过。
 
-| 人数 / 配置 | P50 中位→建议上限 ms | P95 中位→建议上限 ms | P99 中位→参考上限 ms | max 中位→参考上限 ms |
+| 人数 / 配置 | P50 中位→参考上限 ms | P95 中位→参考上限 ms | P99 中位→参考上限 ms | max 中位→参考上限 ms |
 | --- | ---: | ---: | ---: | ---: |
 | 1 / party-only | 100.85 → 111.07 | 164.70 → 182.57 | 204.63 → 256.04 | 297.77 → 380.68 |
 | 1 / party-all | 86.67 → 96.23 | 241.41 → 267.82 | 781.32 → 984.53 | 949.29 → 1245.75 |
@@ -261,7 +265,7 @@ CPU profile只覆盖测量循环（含原工具诊断、排除初始化与回放
 | 4 / party-only | 92.82 → 102.46 | 116.96 → 129.38 | 251.41 → 321.65 | 1423.30 → 1826.74 |
 | 4 / party-all | 92.14 → 102.19 | 137.13 → 151.54 | 437.82 → 565.26 | 3658.37 → 4621.68 |
 
-摘要/flush/模拟预演/切焦点建议全部 **report-only**。下表为P95参考上限ms，括号是每轮样本n；独立full仅9/13样本，不能把Worker任务数替代它。接受前等待、positive/zero同步输入、Worker主线程投影/编码/派发/发布各项三轮P95建议也在派生JSON内，均只报告；不因较低耗时就冻结低样本分位数。CPU/tick、分层总耗时、GC维持归因指标，不设置硬阈值。
+摘要/flush/模拟预演/切焦点建议全部 **report-only**。下表为P95参考上限ms，括号是每轮样本n；独立full仅9/13样本，不能把Worker任务数替代它。接受前等待、positive/zero同步输入、Worker主线程投影/编码/派发/发布各项三轮P95建议也在派生JSON内，均只报告；不因较低耗时就把低样本分位数设为硬门限。CPU/tick、分层总耗时、GC维持归因指标，不设置硬阈值。
 
 | 人数 / 配置 | projection | full摘要 | encoding | flush | preview | focus | Worker compute |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -272,7 +276,7 @@ CPU profile只覆盖测量循环（含原工具诊断、排除初始化与回放
 | 4 / party-only | 27.34 (9) | 180.33 (9) | 20.04 (9) | 170.94 (19) | 4.40 (9) | 1.16 (9) | 171.79 (47) |
 | 4 / party-all | 35.60 (13) | 146.09 (13) | 22.06 (13) | 179.92 (24) | 4.09 (13) | 1.16 (13) | 170.90 (59) |
 
-按窗口档位/场景的具体建议如下，**全部report-only、待维护者审定**。label内合并自然结束原因，仅用于呈现；每个 `label:reason` 的n、三轮P95/max与建议值另存派生JSON，独立验证仍逐桶核对工作量。fine/100/300/1000/auto、confirmation/decision和阶段动作不可混用上限。样本最大仅77/轮，许多n=1，此时P95=max只是样本值，不能当稳定尾分位数。1000/auto四人全开实测约3.7秒的尾部属于需要浏览器评估的已知长窗口开销，本表约4秒的参考上限不表示交互体验合格；后续如优化须保持相同tick/成员动作/环境块。
+按窗口档位/场景的具体建议如下，**全部已冻结为report-only参考值**。label内合并自然结束原因，仅用于呈现；每个 `label:reason` 的n、三轮P95/max与建议值另存派生JSON，独立验证仍逐桶核对工作量。fine/100/300/1000/auto、confirmation/decision和阶段动作不可混用上限。样本最大仅77/轮，许多n=1，此时P95=max只是样本值，不能当稳定尾分位数。1000/auto四人全开实测约3.7秒的尾部属于需要浏览器评估的已知长窗口开销，本表约4秒的参考上限不表示交互体验合格；后续如优化须保持相同tick/成员动作/环境块。
 
 | 人数 / 配置 | 窗口场景 label | 每轮样本 n | P95 中位→参考上限 ms | max 中位→参考上限 ms |
 | --- | --- | ---: | ---: | ---: |
@@ -336,27 +340,53 @@ CPU profile只覆盖测量循环（含原工具诊断、排除初始化与回放
 | 4 / party-only | 4652882 / 4652085 | 8636356 | 1246437376 / 676189688 |
 | 4 / party-all | 4650586 / 4650807 | 8442698 | 1375748096 / 715824128 |
 
-### 独立验证的精确命令与判读
+### 独立验证结果与适用限制
 
-本次没有生产或测量工具代码变更，因此新运行的head继续固定为已发布的a4117b2。**维护者先审定上述数字/等级/环境，再另行运行**；现有三轮校准不可抽一轮充当独立验证。本次只提供命令，未dispatch。
+[run 39178576337](https://github.com/coolking70/BrogueJS/actions/runs/39178576337)，head=a4117b225a73f68b697fabe552aa168a17fee4a7，完整18项（三分片×两配置×三轮）、每项2049输入，`measured-no-budget`/budget=null。这是校准之后的独立运行，没有把原三轮抽一轮当验证。原始数据在 `/private/tmp/perfci-39178576337/`。本次用 `readShard/merge` 重新核验measurement/save/recording运输hash与aggregate，工具身份与原校准相同；源、输入、rows/RNG/root、tick/零tick、成员/NPC/环境工作量及label/label:reason样本数逐场匹配，OOS/previewPollution=0。
 
-```bash
-gh workflow run ext-perf.yml --repo coolking70/BrogueJS --ref ext/party-p1a \
-  -f suite=party-window -f mode=calibration-only \
-  -f head_ref=a4117b225a73f68b697fabe552aa168a17fee4a7 -f rounds=3
-```
+| 人数 / 配置 | 校准→独立 CPU | P95参考上限 ms | 独立P95中位 / 最慢轮 ms | P50/P95/P99/max越参考轮数 | 窗口label P95/max越参考次数 |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 1 / party-only | AMD EPYC 9V74 80-Core Processor → Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz | 182.57 | 202.00 / 203.55 | 3 / 3 / 0 / 1（各/3） | 19 / 4（各/21） |
+| 1 / party-all | AMD EPYC 9V74 80-Core Processor → Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz | 267.82 | 315.41 / 315.98 | 3 / 3 / 3 / 2（各/3） | 24 / 11（各/27） |
+| 2 / party-only | AMD EPYC 7763 64-Core Processor → AMD EPYC 9V45 96-Core Processor | 143.43 | 74.03 / 76.38 | 0 / 0 / 0 / 0（各/3） | 0 / 0（各/21） |
+| 2 / party-all | AMD EPYC 7763 64-Core Processor → AMD EPYC 9V45 96-Core Processor | 154.40 | 80.59 / 81.09 | 0 / 0 / 0 / 0（各/3） | 0 / 0（各/27） |
+| 4 / party-only | AMD EPYC 7763 64-Core Processor → AMD EPYC 7763 64-Core Processor | 129.38 | 118.15 / 118.39 | 0 / 0 / 0 / 0（各/3） | 1 / 0（各/21） |
+| 4 / party-all | AMD EPYC 7763 64-Core Processor → AMD EPYC 7763 64-Core Processor | 151.54 | 137.69 / 140.21 | 0 / 0 / 0 / 0（各/3） | 0 / 0（各/27） |
 
-`--ref`选择工具工作流的分支，`head_ref`固定被测源码；运行前核对分支里的profile/run/merge/common四工具hash与派生JSON的windowTools相同。该命令生成另次三分片18项完整测量。工具仍输出 `measured-no-budget`，**没有自动窗口硬预算判定器**。下载新aggregate后用原 `readShard`/`merge`校验全部原始measurement/save/recording运输hash，再逐场与已审表比对，不改工具状态为pass。建议独立验证准则（同样待审定）：身份、hash、工作量、样本匹配且OOS/污染=0；获批hard项每场三轮均不得严格大于上限，report-only项记录差值与原因。此准则与D6“两轮越线”分开，不冒称现有脚本已实现。新runner型号不匹配时保留未验证，不能按新数据抬高预算直接关闭；可安排同机配对/匹配runner后再审。
+越参考次数只报告，不作D6或硬预算判定。label分母为各场窗口场景数×3轮，不含single/explicit-clear；更细逐桶及辅助指标明细在 [云端证据](party-perf-ckpt.cloud-summary.json)。一/二人runner CPU不同，不能称原绝对上限已经等环境独立验证；四人CPU型号匹配。四人only fine第一轮488.214ms > 487.41ms，差0.804ms；不抬参考上限、不择快轮。四人all 1000/auto的P95中位3706.99/3627.08ms，三轮最大3725.36/3629.58ms，低于原P95参考4067.08/3962.81ms，但仍有约3.7秒开销。
 
-若维护者在验证前另有生产或测量代码修订，改用其**提交并推送后的完整SHA**作为head，更新工具身份并重新校准/审定；不能继续拿a4117b2的数字冒充新候选。`scripts/party-perf-p1b-budget.json`仅将流程状态更新为待审定，hardLimits仍null，不提前写入获批阈值。
+**维护者冻结的是参考表，非交互体验合格结论。** P95低样本常等于max；Node输入到API可继续不同于点击到提示可见，memory端点不是峰值。CPU/工具/工作量不同不可直接应用绝对上限。旧建议JSON的hard-candidate标签只留历史，预算登记统一降为report-only；没有新增窗口硬预算判定器，没有把工具的measured-no-budget改成pass。
 
-### 非 party 云端回归：pass
+### 708f0de优化后的新候选参考建议（不替换原冻结值）
+
+[run 39198164024](https://github.com/coolking70/BrogueJS/actions/runs/39198164024) 完成A=a4117b2、B=708f0de的36项窗口测量；18对逐步工作量、RNG、七域/root相同。1/2/4人各用Xeon8370C/EPYC9V74/EPYC9V45，Node v24.21.0。六场混合P95中位下降11.15%–24.43%。下面是按原B6公式给出的新B建议，全部report-only、尚无另次B验证：
+
+| 人数 / 配置 | B混合P95中位 ms | B参考上限 P50/P95/P99/max ms |
+| --- | ---: | ---: |
+| 1 / party-only | 158.49 | 105.38 / 176.47 / 263.71 / 444.64 |
+| 1 / party-all | 241.50 | 92.17 / 267.84 / 912.07 / 1219.26 |
+| 2 / party-only | 77.47 | 61.69 / 85.32 / 227.47 / 1336.20 |
+| 2 / party-all | 86.16 | 67.88 / 95.75 / 245.41 / 1454.12 |
+| 4 / party-only | 61.04 | 47.75 / 75.98 / 196.20 / 927.28 |
+| 4 / party-all | 74.60 | 49.24 / 86.42 / 300.84 / 2192.94 |
+
+所有窗口档位/场景的A/B P95、三轮最大值及B参考上限详见 [优化报告表格](party-perf-ckpt.report.md#window-ab完整同输入结果)。四人全开1000/auto同机P95中位2158.29→1708.23ms（−20.85%）、2116.42→1681.73ms（−20.54%）；B参考P95上限1929.79/1850.45ms，max上限2192.94/2102.78ms。原3.7秒来自EPYC7763，不能把跨机3.7→1.7秒全部算作代码收益。decision等少量反向数据也在优化报告保留。
+
+本轮party单步run 39198154915因A首场整进程时限失败，已修运行器并列重跑命令；不能以window结果冒称单步完整三轮通过。只需维护者提交工具修复后重新dispatch party三轮；新B窗口独立校验为可选后续，精确命令见 [重跑节](party-perf-ckpt.report.md#本地限定检查与重跑)，无需再要求旧A独立校验。未自行dispatch。
+
+### 优化后非party回归：pass
+
+[run 39198172878](https://github.com/coolking70/BrogueJS/actions/runs/39198172878)：A=a4117b2、B=708f0de，6c4身份、三轮完整/limit=0，aggregate status=pass、hard=pass。离线原summary/rounds与D6重算一致，classic/full、all/full、all/prefix越线分别0/3、1/3、1/3，均pass；C1/C4及独立冻结验证按原artifact记录通过。本次引用既有云端结果，没有重新跑非party性能。详细来源及本轮工具测试/本地冒烟证据见优化报告。
+
+### 前次非 party 云端回归：pass（历史）
 
 [run 39132740608](https://github.com/coolking70/BrogueJS/actions/runs/39132740608)，A=a502cea、B=a4117b2，双方6c4身份，三轮完整运行、limit=0：aggregate `status=pass`、`hard=pass`，D6-2026-10-16。classic/full两侧2208输入/2431环境块；all/full与prefix均2423输入/2549块，配对工作量未变。classic/full、all/full、all/prefix越线轮数分别0/3、0/3、1/3，均pass；C1/C4及独立冻结验证按原artifact结果记录通过。本结论来自既有云端产物，不是本次重跑，也不替代party窗口预算或浏览器验收。
 
 phase6的 `sourceHash` 表示工作区差量摘要，干净树为SHA256空输入值；源码身份按A/B/control不可变commit及srcTree核对：A `50d3dc423705ddd23f6aca1f447042be1b4e4728`，B/control `cc195521e81a8f63143105b2e0a4c2def0853eb0`。这与party工具的全候选sourceHash口径不同，原证据均保留。
 
-### 本次限定检查与证据
+### 前次限定检查与证据（a4117b2历史）
+
+本轮708f0de之后的工具测试、依赖检查与rounds=1冒烟见 [优化报告](party-perf-ckpt.report.md#本地限定检查与重跑)，以下保留前次执行记录。
 
 Node v24.19.0下，相关性能工具测试2文件25项通过（`party_perf_tools` 11项、`party_window_perf_tools` 14项），D6脚本测试通过；测试依赖扫描693文件，errors=[]。全部exit0。没有生产修改，本次未跑boundary/vue-tsc/build、完整npm test/drift/full/gen或浏览器，也未派发新云端任务。
 

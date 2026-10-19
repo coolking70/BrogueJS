@@ -21,6 +21,27 @@ import {mkdtempSync,mkdirSync,readFileSync,writeFileSync,rmSync,existsSync} from
 import {tmpdir} from 'node:os';
 import {resolve} from 'node:path';
 import {hash} from '../../scripts/ext-perf-common.mjs';
+import {spawnSync} from 'node:child_process';
+import {runPartyProfile} from '../../scripts/run-party-perf-ab.mjs';
+it('keeps process timeouts and termination diagnostics distinct from semantic failures',()=>{
+ const root=mkdtempSync(resolve(tmpdir(),'party-process-test-'));
+ try{
+  const file=resolve(root,'measurement.json'),args={control:process.cwd(),root,file,mode:'party-only',actors:1,steps:2049};
+  const invoke=(code,overrides={})=>(exe,argv,options)=>{
+   expect(argv.slice(-3)).toEqual(['party-only','1','2049']);
+   expect(options.timeout).toBe(1200000);
+   return spawnSync(exe,['-e',code],{...options,...overrides});
+  };
+  expect(()=>runPartyProfile(args,invoke('setInterval(()=>{},1000)',{timeout:50}))).toThrow('error=ETIMEDOUT');
+  const timeout=JSON.parse(readFileSync(file+'.log.json','utf8'));
+  expect(timeout.exit).toBeNull();expect(timeout.signal).toBe('SIGTERM');expect(timeout.error.code).toBe('ETIMEDOUT');expect(timeout.elapsedMs).toBeGreaterThan(0);
+  expect(()=>runPartyProfile(args,invoke('console.error("OOS regression");process.exit(1)'))).toThrow('OOS regression');
+  const oos=JSON.parse(readFileSync(file+'.log.json','utf8'));
+  expect(oos.exit).toBe(1);expect(oos.signal).toBeNull();expect(oos.error).toBeNull();
+  runPartyProfile(args,invoke('console.log("complete")'));
+  expect(JSON.parse(readFileSync(file+'.log.json','utf8')).exit).toBe(0);
+ }finally{rmSync(root,{recursive:true,force:true});}
+});
 it('aggregates B-only calibration, withholds smoke budgets and rejects incomplete or unstable evidence',()=>{
  const root=mkdtempSync(resolve(tmpdir(),'party-calibration-test-'));let serial=0;
  try{
