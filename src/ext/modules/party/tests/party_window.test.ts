@@ -179,8 +179,8 @@ describe('P1b window clock and accepted prefix', () => {
     const save = JSON.parse(JSON.stringify(g.toSaveSnapshot())),
       rec = g.exportRecording(),
       digest = mechanicalDigest(g.toSnapshot(), (g as any).recordingInputState());
-    expect(save.version).toBe(10);
-    expect(rec.version).toBe(7);
+    expect(save.version).toBe(11);
+    expect(rec.version).toBe(8);
     expect(
       rec.events
         .filter((e) => e.action === 'party:window')

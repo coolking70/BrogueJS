@@ -116,6 +116,8 @@ export interface EffectsPort {
 
 export interface TimePorts {
     world: WorldPort; clock: ClockPort; effects: EffectsPort;
+    /** Stationed people remain resident-owned; they never become command-ready members. */
+    residents?: { actors():readonly Creature[]; runAs<T>(actor:Creature,work:()=>T):T; takeTurn(actor:Creature):void };
     party?: { windowRemaining?():number; windowStop?():boolean; actors():readonly Creature[]; onStairs():boolean; runAs<T>(actor:Creature,work:()=>T):T; hasReady():boolean; hasActive():boolean; nextBoundary():number; advance(elapsed:number):void; accepted():void; settleDeaths():void; settleDue():void; forEachActive(work:()=>void):void };
     bodies?: { isDecisionOwner(id: number): boolean; advanceElapsed(ticks: number): void };
     /** Opt-in foundation scheduling; absence retains the native iteration/order. */
@@ -142,6 +144,10 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                     soonestTurn = m.ticksUntilTurn;
                 }
             }
+            for(const actor of ports.residents?.actors()??[]){
+                if(actor.hp>0&&(!actions||actions.isDecisionOwner(actor.id))&&!actions?.isBusy(actor.id))
+                    soonestTurn=Math.min(soonestTurn,actor.ticksUntilTurn);
+            }
             // CE Time.c:2652：客观时间门是 soonestTurn 的第三候选。
             if (ports.clock.ticksTillUpdateEnvironment < soonestTurn) {
                 soonestTurn = ports.clock.ticksTillUpdateEnvironment;
@@ -163,6 +169,10 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                 if (m.hp > 0 && (!ports.bodies || ports.bodies.isDecisionOwner(m.id)) && (!actions || (actions.isDecisionOwner(m.id) && !actions.isBusy(m.id)))) {
                     m.ticksUntilTurn -= soonestTurn;
                 }
+            }
+            for(const actor of ports.residents?.actors()??[]){
+                if(actor.hp>0&&(!actions||actions.isDecisionOwner(actor.id))&&!actions?.isBusy(actor.id))
+                    actor.ticksUntilTurn-=soonestTurn;
             }
             if (soonestTurn > 0) ports.bodies?.advanceElapsed(soonestTurn);
             // Busy native timers are mirrors written by this one countdown owner.
@@ -230,17 +240,18 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                 // 唯一倒计时；没有 scheduler 的经典路径仍保持 CE 原顺序。
                 if (!ports.party && actions && !playerWasBusy) ports.world.player.ticksUntilTurn -= soonestTurn;
                 const dueActors = actions
-                    ? [...ports.world.monsters, ...(ports.party?ports.party.actors().filter(a=>actions.isBusy(a.id)):playerWasBusy ? [ports.world.player] : [])]
+                    ? [...ports.world.monsters, ...(ports.residents?.actors()??[]), ...(ports.party?ports.party.actors().filter(a=>actions.isBusy(a.id)):playerWasBusy ? [ports.world.player] : [])]
                         .filter(actor => actions.isDecisionOwner(actor.id)).sort((a, b) => a.id - b.id)
-                    : [...ports.world.monsters];
+                    : [...ports.world.monsters,...(ports.residents?.actors()??[])];
                 for (const actor of dueActors) {
-                    if (actor !== ports.world.player && !ports.party?.actors().includes(actor) && !ports.world.monsters.includes(actor as Monster)) continue;
+                    const resident=ports.residents?.actors().includes(actor);
+                    if (actor !== ports.world.player && !ports.party?.actors().includes(actor) && !resident && !ports.world.monsters.includes(actor as Monster)) continue;
                     if (ports.bodies && !ports.bodies.isDecisionOwner(actor.id)) continue;
                     if (ports.clock.isGameOver) break; // CE Time.c:2721 的 gameHasEnded 守卫
                     if (!(actor.hp > 0 && actor.ticksUntilTurn <= 0)) continue;
                     if (actions) {
                         const wasBusy = actions.isBusy(actor.id);
-                        const result = ports.party?.actors().includes(actor)?ports.party.runAs(actor,()=>actions.dispatchActorBoundary(actor.id)):actions.dispatchActorBoundary(actor.id);
+                        const result = resident?ports.residents!.runAs(actor,()=>actions.dispatchActorBoundary(actor.id)):ports.party?.actors().includes(actor)?ports.party.runAs(actor,()=>actions.dispatchActorBoundary(actor.id)):actions.dispatchActorBoundary(actor.id);
                         // A completed foundation phase publishes its custody/output
                         // before this now-free actor may choose or move again.
                         if (wasBusy && result === 'native-fallback')
@@ -249,6 +260,10 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                             if (actor.hp > 0 && actor.ticksUntilTurn <= 0) throw new Error('Actor action boundary must establish a positive timer');
                             continue;
                         }
+                    }
+                    if(resident){
+                        if(actor.hp>0&&ports.residents!.actors().includes(actor))ports.residents!.runAs(actor,()=>ports.residents!.takeTurn(actor));
+                        continue;
                     }
                     if (actor.hp <= 0 || actor === ports.world.player || !ports.world.monsters.includes(actor as Monster)) continue; // All same-tick actors resolve before input resumes.
                     const m = actor as Monster;

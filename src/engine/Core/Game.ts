@@ -1,3 +1,6 @@
+import { parsePartyRosterInput, type PartyRosterInput } from '../../ext/partyRoster';
+import { recordPartyRescue, preparePartyRoster, convertPartyActor, visiblePartyCandidates } from './PartyRecruitment';
+import { preparePartyStation, commitPartyStation, finishPartyStation, retireStationedResident, commitPartyResidentRelease, applyPartyResidentNutrition } from './PartyResident';
 import { defaultPartyAi, parsePartyAiInput, type PartyAiInput } from '../../ext/partyAi';
 import { applyIdleControllers, validatePartyAiInput, commitPartyAiInput, decidePartyAi, takePartyCompanionOrder, partyAiView, isPartyAi } from './PartyAi';
 import { observeStatusIncreases } from '../Status/StatusObservation';
@@ -6,7 +9,7 @@ import { newPartyWindow, parseWindowInput, parseWindowPolicy, type WindowPolicy,
 import { executePartyWindow, validateWindowAcceptance, windowClock, publishPartyWindow, isPublishingPartyWindow, answerWindowQuestion, withWindowAnswers, WindowQuestion, type PartyWindowPort, type WindowAttempt } from './PartyWindow';
 import {setPartyPerception,canActorSeeCell} from '../UI/PartyPerception';
 import { TM_IS_WIRED, T_OBSTRUCTS_GAS, T_OBSTRUCTS_SURFACE_EFFECTS } from '../Map/TerrainCatalog';
-import { bindPartyMember } from './PartyActorIdentity';
+import { bindPartyMember, unbindPartyMember } from './PartyActorIdentity';
 import { ControlledActor } from '../../entities/ControlledActor';
 import { effectivePartyCodec } from '../../ext/partyIdentity';
 import { parsePartyInput, authorizePartyInput, PartyFailure, type PartyInput } from '../../ext/party';
@@ -29,7 +32,7 @@ import { checkpointResidentPaths } from './ResidentPathing';
 import { c5Canonical } from '../../ext/worldJson';
 import { worldText } from '../../ext/worldText';
 import {isResidentCommand,prepareResidentCommand,commitResidentCommand,spawnResidentCandidates,recordRescuedResident,removeResident,terminateResidentSource,sealResidentCandidate} from './ResidentProduction';
-import {residentComponent,residentEligible,candidateSource,checkpointResidentBeds} from './ResidentWorld';
+import {residentDisabled,residentComponent,residentEligible,candidateSource,checkpointResidentBeds} from './ResidentWorld';
 import {transactResidentWorld,residentTransactionOwnsNativeWrites} from './ResidentWorld';
 import { freezeRaidLevel, resumeRaidLevel, campEconomicTick, reportRaidVisits, isRaidActor, recordRaidDeath, recordRaidForm, recordRaidFall, frozenRaidActors, finishRaidEvents, recordRaidLevelEntry } from './SettlementRaids';
 import {settleResidentNeeds,freezeResidentCamps,hasPendingResidentNeeds} from './ResidentNeeds';
@@ -510,22 +513,29 @@ export class Game {
     public get controlledActors(): readonly Player[] { return this.party ? [this.player,...this.party.actors.values()] : [this.player]; }
     private partyDropCredit(id:number|null|undefined):number {return this.party&&id&&this.controlledActors.some(a=>a.id===id)?id:this.player.id;}
     private get partyModalActor():Player|undefined {return this.party?this.controlledActors.find(a=>this.party!.native[a.id]?.modal):undefined;}
-    private get commandRested():boolean {return this.party?.native[this.commandActor.id]?.justRested??this.justRested;}
-    private set commandRested(value:boolean){if(this.party)this.party.native[this.commandActor.id]!.justRested=value;else this.justRested=value;}
-    private get commandDamageSource():string {return this.party?.native[this.commandActor.id]?.lastDamageSource??this.lastDamageSource;}
-    private set commandDamageSource(value:string){if(this.party)this.party.native[this.commandActor.id]!.lastDamageSource=value;else this.lastDamageSource=value;}
-    public setActorDamageSource(actor:Creature,value:string):void {if(this.party?.native[actor.id])this.party.native[actor.id]!.lastDamageSource=value;else if(actor===this.player)this.lastDamageSource=value;}
+    public get nativeAllyActors():readonly ControlledActor[]{return this.party?[...this.activeControlledActors,...this.activeStationedResidents]:this.activeControlledActors;}
+    private get activeStationedResidents():ControlledActor[]{
+        if(!this.party?.stationed.size)return [];
+        return [...this.party.stationed.values()].filter(actor=>actor.hp>0&&!this.party!.state.retired.some(row=>row.actorId===actor.id)&&this.world5?.residents.some(row=>row.actorId===actor.id&&row.levelRef.kind==='dungeon'&&row.levelRef.depth===this.depth));
+    }
+    private get commandNative(){return this.party?.native[this.commandActor.id]??this.party?.stationedNative[this.commandActor.id];}
+    private get commandRested():boolean {return this.commandNative?.justRested??this.justRested;}
+    private set commandRested(value:boolean){if(this.party)this.commandNative!.justRested=value;else this.justRested=value;}
+    private get commandDamageSource():string {return this.commandNative?.lastDamageSource??this.lastDamageSource;}
+    private set commandDamageSource(value:string){if(this.party)this.commandNative!.lastDamageSource=value;else this.lastDamageSource=value;}
+    public setActorDamageSource(actor:Creature,value:string):void {const native=this.party?.native[actor.id]??this.party?.stationedNative[actor.id];if(native)native.lastDamageSource=value;else if(actor===this.player)this.lastDamageSource=value;}
     /** Reconcile HP before any new human decision, including early-return paths. */
     private settlePartyDeaths():void {
         if(!this.party||this.isGameOver)return;
+        for(const actor of this.party.stationed.values())if(actor.hp<=0&&!this.party.state.retired.some(r=>r.actorId===actor.id))retireStationedResident(this,actor.id,'dead');
         const dead=this.controlledActors.filter(a=>a.hp<=0&&this.party!.state.members.some(m=>m.actorId===a.id&&m.life!=='dead'));
         if(!dead.length)return;
         const source=this.party.native[dead[dead.length-1]!.id]!.lastDamageSource;
         const key:Record<string,string>={fire:'burned',poison:'poisoned',starvation:'starved',steam:'scalded','caustic gas':'caustic_gas','thorned vines':'vines','creeping death':'creeping_death','violent explosion':'explosion'};
         this.triggerGameOver(false,source?i18next.t(key[source]?`death.${key[source]}`:'death.killed_by',{monster:source}):undefined);
     }
-    private get commandFalling():boolean {return this.party?.native[this.commandActor.id]?.falling??this.playerFalling;}
-    private set commandFalling(value:boolean){if(this.party)this.party.native[this.commandActor.id]!.falling=value;else this.playerFalling=value;}
+    private get commandFalling():boolean {return this.commandNative?.falling??this.playerFalling;}
+    private set commandFalling(value:boolean){if(this.party)this.commandNative!.falling=value;else this.playerFalling=value;}
     public get focusedActor():Player {return this.party?this.controlledActors.find(a=>a.id===partyFocus(this,this.party!.state))??this.player:this.player;}
     public readFocusedModuleView(moduleId:string,query?:import('../../ext/types').Json){
         return withPartyActor(this,this.focusedActor,()=>this.extensionRuntime?.readModuleView(moduleId,query)??null);
@@ -666,6 +676,52 @@ export class Game {
         if(state.window.phase==='failed')throw new PartyFailure('INTERNAL_FAILURE');
         const member=state.members.find(m=>m.actorId===input.actorId);if(!member||member.life==='dead')throw new PartyFailure('BAD_ACTOR');if(input.issuerSlot!=='local:0')throw new PartyFailure('NOT_CONTROLLER');
     }
+    public partyRosterCandidates(){return visiblePartyCandidates(this);}
+    public partyStationCamps():{id:number}[]{return this.extensionRuntime?.residentOwners().flatMap(owner=>this.extensionRuntime!.worldCampRecords(owner).filter(c=>c.depth===this.depth).map(c=>({id:c.regionId})))??[];}
+    public moveStationedResident(actor:ControlledActor,at:Pos):boolean {
+        if(!this.party?.stationed.has(actor.id)||!this.canStepFootprint(actor,at))return false;
+        return withPartyActor(this,actor,()=>{
+            const previous=this.footprintOf(actor);commitCreatureAnchor(actor,at);
+            actor.ticksUntilTurn=nativeStat(actor,'native.move-speed');this.needsRender=true;
+            this.applyEnvironmentalEffects(actor,false,undefined,previous);return true;
+        });
+    }
+    private *partyRosterStages(input:PartyRosterInput):CommandStages<void> {
+        const source=preparePartyRoster(this,input),root=this.party!,initiator=this.controlledActors.find(a=>a.id===input.actorId)!;
+        const restore=this.checkpointCombatFactWorld(),ext=this.extensionRuntime!.checkpointPartyCommand(),random=rng.getState(),allocator=getNextEntityId();
+        try{withPartyActor(this,initiator,()=>{
+            let memory=root.state.residentMemories.find(m=>m.actorId===input.targetId);
+            if(input.operation==='station'){
+                const actor=root.actors.get(input.targetId)!,plan=preparePartyStation(this,actor,input.campId!);
+                memory=commitPartyStation(this,actor,plan,memory);
+                unbindPartyMember(actor);root.actors.delete(actor.id);root.stationed.set(actor.id,actor);root.state.members=root.state.members.filter(m=>m.actorId!==actor.id);root.stationedNative[actor.id]=root.native[actor.id]!;delete root.native[actor.id];
+                finishPartyStation(this,actor);
+            }else{
+                if(this.world5?.residents.some(r=>r.actorId===input.targetId))memory=commitPartyResidentRelease(this,input.targetId);
+                const old=this.monsters.find(m=>m.id===input.targetId),actor=convertPartyActor(this,source!);
+                if(source!.kind==='narrative'&&!root.stationed.has(actor.id))this.extensionRuntime!.retirePartyInteractable(actor.id);
+                if(old){this.monsters.splice(this.monsters.indexOf(old),1);this.visibleMonsters.delete(old);this.everSeenMonsters.delete(old);for(const level of this.levels.values())level.visibleMonsters.delete(old);for(const m of this.departureActors())if(m.leader===old){m.leader=null;m.boundToLeader=false;}}
+                root.stationed.delete(actor.id);root.actors.set(actor.id,actor);bindPartyMember(actor);
+                root.state.members.push({actorId:actor.id,life:'active',level:{kind:'dungeon',depth:this.depth},controller:{kind:'human',slot:'local:0'},pendingController:null,controlEpoch:0,temporaryAiSeq:null,ai:defaultPartyAi()});root.state.members.sort((a,b)=>a.actorId-b.actorId);
+                root.native[actor.id]=root.stationedNative[actor.id]??{modal:false,falling:false,pendingTurn:false,poisonedDuringTurn:false,searchingCharge:0,justSearched:false,justRested:false,lastDamageSource:'',receivedLevitationWarning:false};delete root.stationedNative[actor.id];
+                if(!root.state.sources.some(s=>s.actorId===actor.id)){root.state.sources.push(source!);root.state.sources.sort((a,b)=>a.actorId-b.actorId);}
+                if(old)this.extensionRuntime!.replacePartyCreature(old,actor);else this.extensionRuntime!.attachCreature(actor,false);
+                if(memory)applyPartyResidentNutrition(actor,memory);
+            }
+            if(memory){root.state.residentMemories=root.state.residentMemories.filter(m=>m.actorId!==memory!.actorId);root.state.residentMemories.push(memory);root.state.residentMemories.sort((a,b)=>a.actorId-b.actorId);}
+            const origin=root.state.sources.find(s=>s.actorId===input.targetId)!;
+            root.state.transfers.push({seq:root.state.transfers.length+1,actorId:input.targetId,kind:input.operation,sourceKey:origin.key,level:{kind:'dungeon',depth:this.depth},tick:timeSystem.currentTick});
+            root.state.companionOrders=root.state.companionOrders.filter(o=>o.actorId!==input.targetId);
+            for(const member of root.state.members){member.pendingController=null;member.temporaryAiSeq=null;member.ai.order=null;}
+            const fresh=newPartyWindow(root.state.members.map(m=>m.actorId));
+            root.state.window={...fresh,seq:root.state.window.seq,nextDecisionId:root.state.window.nextDecisionId};
+            root.state.revision++;
+            const hp=new Map([...this.controlledActors,...root.stationed.values()].map(a=>[a,a.hp]));
+            this.extensionRuntime!.emit('partyRosterChanged',{actorId:input.targetId,joining:input.operation==='join'});
+            this.collectExtensionComponents();for(const [actor,before]of hp)actor.hp=Math.min(before,actor.maxHp);
+            this.configureControlledNativeStats();assertPartyRuntime(this,root);this.updateVision();this.needsRender=true;
+        });}catch(error){restore();ext();for(const a of root.actors.values())bindPartyMember(a);for(const a of root.stationed.values())unbindPartyMember(a);rng.setState(random);restoreNextEntityId(allocator);throw error;}
+    }
     private *partyAiStages(input:PartyAiInput):CommandStages<void> {commitPartyAiInput(this,input);}
     private *partyPolicyStages(input:WindowPolicy):CommandStages<void> {
         this.validatePartyPolicy(input);const state=this.party!.state;
@@ -707,8 +763,8 @@ export class Game {
                 if(item){item.enchantment=0;item.isCursed=false;item.runicType=undefined;item.runicKnown=true;item.identified=true;item.quantity=quantity;markItemStatsDirty(item);actor.inventory.addItem(item);if(equip)actor.equip(item);}
             }
         }
-        this.party={state:{schema:3,companionOrders:[],window:newPartyWindow([this.player.id,...actors.keys()]),revision:0,primaryActorId:this.player.id,leaderActorId:this.player.id,
-            members:[this.player,...actors.values()].map(a=>({actorId:a.id,life:'active',level:{kind:'dungeon',depth:this.depth},controller:{kind:'human',slot:'local:0'},pendingController:null,controlEpoch:0,temporaryAiSeq:null,ai:defaultPartyAi()}))},actors,native:Object.fromEntries([this.player,...actors.values()].map(a=>[a.id,{modal:false,falling:false,pendingTurn:false,poisonedDuringTurn:false,searchingCharge:0,justSearched:false,justRested:false,lastDamageSource:'',receivedLevitationWarning:false}]))};
+        this.party={state:{schema:4,initialActorIds:[this.player.id,...actors.keys()],sources:[this.player.id,...actors.keys()].map((actorId,index)=>({actorId,kind:'creation',key:`creation:${index}`,template:'party-member'})),transfers:[],rescued:[],retired:[],residentMemories:[],companionOrders:[],window:newPartyWindow([this.player.id,...actors.keys()]),revision:0,primaryActorId:this.player.id,leaderActorId:this.player.id,
+            members:[this.player,...actors.values()].map(a=>({actorId:a.id,life:'active',level:{kind:'dungeon',depth:this.depth},controller:{kind:'human',slot:'local:0'},pendingController:null,controlEpoch:0,temporaryAiSeq:null,ai:defaultPartyAi()}))},actors,stationed:new Map(),stationedNative:{},native:Object.fromEntries([this.player,...actors.values()].map(a=>[a.id,{modal:false,falling:false,pendingTurn:false,poisonedDuringTurn:false,searchingCharge:0,justSearched:false,justRested:false,lastDamageSource:'',receivedLevitationWarning:false}]))};
         for(const actor of this.controlledActors)bindPartyMember(actor);
         for(const actor of actors.values())this.extensionRuntime!.attachCreature(actor);
         this.configureControlledNativeStats();
@@ -721,8 +777,8 @@ export class Game {
     /** Read-only world index for the optional persistent action executor. */
     public actorActionWorld(): ActorActionProductionWorld {
         return { depth: this.depth, player: this.player,...(this.party?{playerDepth:(this.party.state.members.find(m=>m.actorId===this.player.id)!.level as {kind:'dungeon';depth:number}).depth}:{}), frozenRaidActorIds:frozenRaidActors(this), ...(this.bodyGroups?.length ? { bodyGroups: this.bodyGroups } : {}), levels: [
-            { depth: this.currentLevelDepth ?? this.depth, actors: [...this.monsters, ...this.dormantMonsters,...(this.party?[...this.party.actors.values()].filter(a=>this.party!.state.members.some(m=>m.actorId===a.id&&m.level.kind==='dungeon'&&m.level.depth===this.depth)):[])] },
-            ...[...this.levels].map(([depth, level]) => ({ depth, actors: [...level.monsters, ...(level.dormantMonsters ?? []),...(this.party?[...this.party.actors.values()].filter(a=>this.party!.state.members.some(m=>m.actorId===a.id&&m.level.kind==='dungeon'&&m.level.depth===depth)):[])] })),
+            { depth: this.currentLevelDepth ?? this.depth, actors: [...this.monsters, ...this.dormantMonsters,...(this.party?[...this.party.stationed.values()].filter(a=>this.world5?.residents.some(r=>r.actorId===a.id&&r.levelRef.kind==='dungeon'&&r.levelRef.depth===this.depth)):[]),...(this.party?[...this.party.actors.values()].filter(a=>this.party!.state.members.some(m=>m.actorId===a.id&&m.level.kind==='dungeon'&&m.level.depth===this.depth)):[])] },
+            ...[...this.levels].map(([depth, level]) => ({ depth, actors: [...level.monsters, ...(level.dormantMonsters ?? []),...(this.party?[...this.party.stationed.values()].filter(a=>this.world5?.residents.some(r=>r.actorId===a.id&&r.levelRef.kind==='dungeon'&&r.levelRef.depth===depth)):[]),...(this.party?[...this.party.actors.values()].filter(a=>this.party!.state.members.some(m=>m.actorId===a.id&&m.level.kind==='dungeon'&&m.level.depth===depth)):[])] })),
             ...[...this.pendingFallenByDepth].map(([depth, actors]) => ({ depth, actors })),
         ] };
     }
@@ -748,7 +804,7 @@ export class Game {
         const creatures=collectEntityGraph([...extraActors,...this.monsters,...this.dormantMonsters,...this.purgatory,
             ...cached.flatMap(level=>[...level.monsters,...(level.dormantMonsters??[])]),
             ...[...this.pendingFallenByDepth.values()].flat()]).monsters;
-        const actors=[...this.controlledActors,...creatures], actionState=runtime.actorActionBinding()?.state;
+        const actors=[...this.controlledActors,...(this.party?.stationed.values()??[]),...creatures], actionState=runtime.actorActionBinding()?.state;
         const grids=[this.grid,...cached.map(level=>level.grid)],restoreFeatures=checkpointDungeonFeatureState(grids),restoreTerrain=checkpointSpatialTerrain(grids);
         const traps=grids.map(grid=>{const cells=this.displacementTrapDepressions?.get(grid);return {grid,cells,values:[...(cells??[])]};});
         const restoreLists=checkpointOwnedMonsterLists([this.monsters,this.dormantMonsters,...cached.flatMap(level=>[level.monsters,...(level.dormantMonsters?[level.dormantMonsters]:[])])]);
@@ -849,7 +905,7 @@ export class Game {
             depth: () => this.depth,
             turn: () => this.absoluteTurnNumber,
             interactableCandidates: request => interactablePlacementCells(this.grid, this.player.loc,
-                [...(this.party ? this.activeControlledActors : [this.player]), ...this.monsters, ...this.dormantMonsters, ...this.items].map(entity => entity.loc), request),
+                [...(this.party ? this.nativeAllyActors : [this.player]), ...this.monsters, ...this.dormantMonsters, ...this.items].map(entity => entity.loc), request),
             isInteractableVisible: entity => entity.depth === this.depth && !!this.grid.getCell(entity.x,entity.y)?.isVisible,
             canInteractWith: entity => this.canInteractWith(entity),
             visibleActorActionCells: (sourceId, cells) => {
@@ -924,7 +980,10 @@ export class Game {
 
     /** Select session adapters once; classic calls retain the original method bodies. */
     private configureControlledNativeStats():void {
-        for(const actor of this.controlledActors){configureNativeStats(actor,{darkness:()=>this.playerInDarkness(actor),shadow:()=>this.lightMap.inShadowAt(actor.x,actor.y),rested:()=>this.party?.native[actor.id]?.justRested??this.justRested});
+        // These callbacks are mechanical dependencies, including for decoded residents.
+        // Bind every owned entity; active-world ports below still filter level/life.
+        const actors=this.party?[...this.controlledActors,...this.party.stationed.values()]:this.controlledActors;
+        for(const actor of actors){configureNativeStats(actor,{darkness:()=>this.playerInDarkness(actor),shadow:()=>this.lightMap.inShadowAt(actor.x,actor.y),rested:()=>this.party?.native[actor.id]?.justRested??this.party?.stationedNative[actor.id]?.justRested??this.justRested});
             if(this.party)bindSlumberWake(actor,()=>logger.log(i18next.t('ext.foundation.status.slumber_wake_player'),'#cccccc'));}
     }
     private configureExtensionRuleAdapters(): void {
@@ -1971,8 +2030,8 @@ export class Game {
             get pendingFallenByDepth() { return thisGame.pendingFallenByDepth; },
             set pendingFallenByDepth(value: Game["pendingFallenByDepth"]) { thisGame.pendingFallenByDepth = value; },
             get player() { return thisGame.commandActor; },
-            get controlled() { return thisGame.party ? thisGame.activeControlledActors.filter(a=>a!==thisGame.commandActor) : undefined; },
-            get inactivePlayer() { return thisGame.party ? !thisGame.activeControlledActors.includes(thisGame.commandActor) : undefined; },
+            get controlled() { return thisGame.party ? thisGame.nativeAllyActors.filter(a=>a!==thisGame.commandActor) : undefined; },
+            get inactivePlayer() { return thisGame.party ? !thisGame.nativeAllyActors.includes(thisGame.commandActor) : undefined; },
             set player(value: Game["player"]) { thisGame.player = value; },
             get scent() { return thisGame.scent; },
             set scent(value: Game["scent"]) { thisGame.scent = value; },
@@ -3630,7 +3689,7 @@ export class Game {
 
     /** CE getFOVMask 的 HAS_MONSTER|HAS_PLAYER 遮挡谓词（Light.c:85）。 */
     private hasCreatureAtForLight(x: number, y: number): boolean {
-        if (this.activeControlledActors.some(a=>footprintContains(a,{x,y}))) return true;
+        if (this.nativeAllyActors.some(a=>footprintContains(a,{x,y}))) return true;
         return !!monsterAt(this.monsters, x, y, true);
     }
 
@@ -3714,7 +3773,7 @@ export class Game {
                 });
             }
         };
-        for(const actor of this.activeControlledActors)paintBurning(actor,false);
+        for(const actor of this.nativeAllyActors)paintBurning(actor,false);
         for (const m of this.monsters) {
             if (m.hp > 0) paintBurning(m, m.hasBehavior('MONST_FIERY'));
         }
@@ -3726,7 +3785,7 @@ export class Game {
         }
 
         const lightingChanged = withMonsterLookup(this.monsters, () => lightMap.updateLighting(lights));
-        for(const actor of this.activeControlledActors)markStatsDirty(actor);
+        for(const actor of this.nativeAllyActors)markStatsDirty(actor);
         this.updateFieldOfViewDisplay((x, y) => lightMap.lightSumAt(x, y), remember);
 
         // 5. 渲染馈送（GameCanvas 消费 getLight 接口不变——引擎数据升级，
@@ -3937,7 +3996,7 @@ export class Game {
         // that temporary boundary must not make the command chain depend on
         // how often the caller saved. Fixed chunk boundaries remain intact.
         const previous = this.recordedInputEvents[this.recordedInputEvents.length - 1];
-        if (previous?.fullCheckpoint && (previous.index + 1) % 256 !== 0 && !['party:window','party:decision'].includes(previous.action)) {
+        if (previous?.fullCheckpoint && (previous.index + 1) % 256 !== 0 && !['party:window','party:decision','party:roster'].includes(previous.action)) {
             previous.fullCheckpoint = null;
             previous.chainDigest = recordingChain(this.recordedInputEvents[previous.index - 1]?.chainDigest
                 ?? recordingStart(recordingState(this).header!), previous);
@@ -3960,7 +4019,7 @@ export class Game {
         const roots = [...this.monsters, ...this.dormantMonsters, ...this.purgatory,
             ...[...this.levels.values()].flatMap(level => [...level.monsters, ...(level.dormantMonsters ?? [])]),
             ...[...this.pendingFallenByDepth.values()].flat()];
-        const reachable = [...this.controlledActors, ...collectEntityGraph(roots).monsters];
+        const reachable = [...this.controlledActors,...(this.party?.stationed.values()??[]), ...collectEntityGraph(roots).monsters];
         this.extensionRuntime.collectWorld([this.depth, ...this.levels.keys()], this.isGameOver);
         bindPhasedAttackProduction(this);
         forEachItemRoot(this,item=>this.extensionRuntime!.bindItemData(item));
@@ -3996,8 +4055,8 @@ export class Game {
         const state = recordingState(this);
         const header = state.header ?? (state.header = this.makeRecordingHeader());
         event.checkpoint = this.recordingEventDigest(header.extensions);
-        const semanticFull=event.action==='party:window'||event.action==='party:decision';
-        if(semanticFull)event.partyReceipt=structuredClone(this.party!.state.window.receipt!);
+        const semanticFull=event.action==='party:window'||event.action==='party:decision'||event.action==='party:roster';
+        if(event.action==='party:window'||event.action==='party:decision')event.partyReceipt=structuredClone(this.party!.state.window.receipt!);
         if (((event.index + 1) % 256 === 0 || semanticFull) && state.backend) {
             this.enqueueRecordingCheckpoint(event, (event.index + 1) % 2048 === 0);
         } else {
@@ -4201,7 +4260,7 @@ export class Game {
     /** Every user command, including inventory and modal choices, crosses this boundary. */
     public executeCommand(action: string, data?: unknown, perform?: () => void): void {
         if(isPublishingPartyWindow(this))throw new PartyFailure('ACTOR_BUSY');
-        if(action.startsWith('party:')&&!['party:window','party:decision','party:actor-step','party:control','party:policy','party:ai'].includes(action))throw new PartyFailure('BAD_PAYLOAD');
+        if(action.startsWith('party:')&&!['party:window','party:decision','party:actor-step','party:control','party:policy','party:ai','party:roster'].includes(action))throw new PartyFailure('BAD_PAYLOAD');
         if (this.recordingInputBlocked) return;
         if(this.party&&action==='ext:command'&&!this.extensionRuntime?.isInitialCommand(action,data)){
             let input:any;try{input=typeof data==='string'?JSON.parse(data):data;}catch{throw new PartyFailure('BAD_PAYLOAD');}
@@ -4219,6 +4278,7 @@ export class Game {
         if(this.partyModalActor&&['move','confirm_target','escape','mouse_travel','arcana:risk-confirm'].includes(action)){
             data={kind:'party:actor-step',schema:1,expectedRevision:this.party!.state.revision,issuerSlot:'local:0',actorId:this.partyModalActor.id,intent:{kind:'module',owner:'foundation',commandId:'native-ui',payload:{action,data:data??null}}};action='party:actor-step';
         }
+        if(action==='party:roster'){let parsed:unknown;try{parsed=typeof data==='string'?JSON.parse(data):data;}catch{throw new PartyFailure('BAD_PAYLOAD');}const input=parsePartyRosterInput(parsed);preparePartyRoster(this,input);data=JSON.stringify(input);}
         if(action==='party:ai'){let parsed:unknown;try{parsed=typeof data==='string'?JSON.parse(data):data;}catch{throw new PartyFailure('BAD_PAYLOAD');}const input=parsePartyAiInput(parsed);if(!validatePartyAiInput(this,input))return;data=JSON.stringify(input);}
         if(action==='party:policy'){let parsed:unknown;try{parsed=typeof data==='string'?JSON.parse(data):data;}catch{throw new PartyFailure('BAD_PAYLOAD');}const input=parseWindowPolicy(parsed);this.validatePartyPolicy(input);data=JSON.stringify(input);}
         if(action==='party:window'||action==='party:decision'){
@@ -4267,6 +4327,13 @@ export class Game {
                 const intent=this.partyModalChoice(pending,choice.choiceId) as Extract<import('../../ext/party').ActorIntent,{kind:'module'}>;
                 const command=withPartyActor(this,actor,()=>this.preparePartyNativeCommand(actor,intent));
                 allowed=withPartyActor(this,actor,()=>this.extensionRuntime!.allowsInput(command.action,command.data));
+            }else if(action==='party:actor-step'&&this.extensionRuntime){
+                const input=parsePartyInput(JSON.parse(data as string));
+                if(input.kind==='party:actor-step'&&input.intent.kind==='module'){
+                    const actor=this.controlledActors.find(a=>a.id===input.actorId);if(!actor)throw new PartyFailure('BAD_ACTOR');
+                    const command=withPartyActor(this,actor,()=>this.preparePartyNativeCommand(actor,input.intent as Extract<import('../../ext/party').ActorIntent,{kind:'module'}>,true));
+                    allowed=withPartyActor(this,actor,()=>this.extensionRuntime!.allowsInput(command.action,command.data));
+                }else allowed=this.extensionRuntime.allowsInput(action,data);
             }else allowed = !this.extensionRuntime || this.extensionRuntime.allowsInput(action, data);
         }
         catch (error) { this.recordingFromNewGame = false; throw error; }
@@ -4355,6 +4422,10 @@ export class Game {
             && !this.world5?.tickets.some(t => t.status === 'working' && !this.world5!.orders.some(o => o.ticketId === t.ticketId))
             && !runtime.actorActionBinding()?.state.bonfires?.active;
             if (eligibleBoundary) restoreBoundary = this.checkpointExtensionCommandBoundary();
+            if(execution.action==='party:roster'){
+                const native=this.checkpointCombatFactWorld(),ext=runtime!.checkpointPartyCommand(),random=rng.getState(),allocator=getNextEntityId();
+                restoreBoundary=()=>{native();ext();for(const actor of this.party!.actors.values())bindPartyMember(actor);for(const actor of this.party!.stationed.values())unbindPartyMember(actor);rng.setState(random);restoreNextEntityId(allocator);state.execution=null;state.nextCommandId=execution.id;};
+            }
             let result = execution.stages.next(answer!);
             while (!result.done) {
                 if ((this.onCommandConfirmRequest || result.value.recordDecision === false) && !this.replayRecording) {
@@ -4384,7 +4455,7 @@ export class Game {
             let restored = false;
             const receipt = (execution as CommandExecution).rolledBackFailure;
             if (restoreBoundary && this.extensionRuntime === runtime && !this.isAdvancing
-                && receipt && Object.is(receipt.error, error)) {
+                && (execution.action==='party:roster'||receipt && Object.is(receipt.error, error))) {
                 try { restoreBoundary(); restored = true; } catch { /* Incomplete restoration fails closed. */ }
             }
             if (!restored) this.recordingFromNewGame = false;
@@ -4680,6 +4751,7 @@ export class Game {
                     if(!place)throw new PartyFailure('NO_SPACE');placements.set(member.actorId,place);
                 }
                 for(const member of moving){member.life='active';member.temporaryAiSeq=null;member.level={kind:'dungeon',depth};const body=this.controlledActors.find(a=>a.id===member.actorId)!;commitCreatureAnchor(body,placements.get(member.actorId)!);}
+                this.updateVision();
                 this.extensionRuntime?.emit('enteredLevel',{depth,firstVisit,actorIds:moving.map(m=>m.actorId).sort((a,b)=>a-b)});
             });
             this.updateVision();applyIdleControllers(this);this.needsRender=true;
@@ -4772,7 +4844,7 @@ export class Game {
         // Replay and internal synchronous stages share the public input barrier.
         this.settleResidentNativeInput(action, data, perform);
         this.worldWorkCommandEpoch++;
-        const body=action==='party:ai'?this.partyAiStages(parsePartyAiInput(typeof data==='string'?JSON.parse(data):data)):action==='party:policy'?this.partyPolicyStages(parseWindowPolicy(typeof data==='string'?JSON.parse(data):data)):action==='party:window'||action==='party:decision'?this.partyWindowStages(parseWindowInput(typeof data==='string'?JSON.parse(data):data)):action==='party:actor-step'||action==='party:control'?this.partyCommandStages(parsePartyInput(typeof data==='string'?JSON.parse(data):data)):this.applyCommandBodyStages(action,data,perform);
+        const body=action==='party:roster'?this.partyRosterStages(parsePartyRosterInput(typeof data==='string'?JSON.parse(data):data)):action==='party:ai'?this.partyAiStages(parsePartyAiInput(typeof data==='string'?JSON.parse(data):data)):action==='party:policy'?this.partyPolicyStages(parseWindowPolicy(typeof data==='string'?JSON.parse(data):data)):action==='party:window'||action==='party:decision'?this.partyWindowStages(parseWindowInput(typeof data==='string'?JSON.parse(data):data)):action==='party:actor-step'||action==='party:control'?this.partyCommandStages(parsePartyInput(typeof data==='string'?JSON.parse(data):data)):this.applyCommandBodyStages(action,data,perform);
         let answer:boolean|undefined;
         try { for(;;) {
             const before=this.executingRecordedCommand;this.executingRecordedCommand=true;
@@ -5063,7 +5135,7 @@ export class Game {
             const primary = this.monsters.find(monster => monster.id === target.id)!;
             const contact = primary.spatial ? this.publicMeleeContact(primary)! : nearestContact(this.commandActor, primary);
             const dx = contact.to.x - contact.from.x, dy = contact.to.y - contact.from.y;
-            const flags = this.commandActor.equippedWeapon?.flags ?? [];
+            const flags = [...(this.commandActor.equippedWeapon?.flags??[]),...((this.commandActor as PartyMember).partyProfile?.penetrate?['ITEM_ATTACKS_PENETRATE']:[])];
             const whip = flags.includes('ITEM_ATTACKS_EXTEND') ? this.preparePlayerWhipAttack(dx, dy) : null;
             const spear = !whip && flags.includes('ITEM_ATTACKS_PENETRATE') ? this.preparePlayerSpearAttack(dx, dy) : null;
             const hitList = whip ? [whip] : spear ?? this.buildPlayerMeleeHitList(primary);
@@ -7564,7 +7636,7 @@ export class Game {
 
     private boltWorld(caster: Creature | null, hideDetails = false): BoltWorld {
         const base=boltWorldFor(caster, this.commandActor, this.monsters, hideDetails);
-        return this.party?{...base,creatureAt:pos=>this.activeControlledActors.find(a=>footprintContains(a,pos))??base.creatureAt(pos)}:base;
+        return this.party?{...base,creatureAt:pos=>this.nativeAllyActors.find(a=>footprintContains(a,pos))??base.creatureAt(pos)}:base;
     }
 
     /** Bolt identities select DFs; the common transaction handles all contact,
@@ -7637,13 +7709,13 @@ export class Game {
                     impactFrames.push(...contact.frames.slice(1));
                     applied = true;
                 }
-                if (this.commandActor.hp <= 0 || this.isGameOver || this.party&&hit?.creature instanceof ControlledActor&&hit.creature.hp<=0) return false;
+                if (this.boltStoppedByDeath(hit?.creature)) return false;
                 // Residual terrain has no bolt ownership, even if this cast
                 // itself is nested within another synchronous effect.
                 autoID = (causality
                     ? causality.withOrigin(null, () => this.applyBoltTerrainAt(result.bolt, pos))
                     : this.applyBoltTerrainAt(result.bolt, pos)) || autoID;
-                if (this.commandActor.hp <= 0 || this.isGameOver) return false;
+                if (this.boltStoppedByDeath()) return false;
             },
         });
         Object.assign(result, actual);
@@ -7937,6 +8009,16 @@ export class Game {
         return damage;
     }
 
+    /** CE's player-death stop extends to roster members, not every actor with
+     * player capabilities. A stationed resident can also be the temporary
+     * command actor while a monster aims at it; its death must not stop travel
+     * or the hit cell's terrain exposure. Keep the classic branch unchanged. */
+    private boltStoppedByDeath(hit?: Creature): boolean {
+        if (!this.party) return this.commandActor.hp <= 0 || this.isGameOver;
+        return this.isGameOver || [this.commandActor, hit].some(actor => actor && actor.hp <= 0
+            && this.party!.state.members.some(member => member.actorId === actor.id));
+    }
+
     /** CE Items.c:5168-5177: a fatal player contact ends the zap immediately.
      * The original caster owns the death, including after a reflection. */
     private finishLethalBoltHit(target: Creature, caster: Creature | null, boltName: string): boolean {
@@ -7964,7 +8046,7 @@ export class Game {
     }
 
     private canObserveBoltTarget(target: Creature): boolean {
-        if(this.party&&target instanceof ControlledActor)return target===this.commandActor||this.activeControlledActors.includes(target)&&canActorSeeCell(this.commandActor,this.grid,target.x,target.y);
+        if(this.party&&target instanceof ControlledActor)return target===this.commandActor||this.nativeAllyActors.includes(target)&&canActorSeeCell(this.commandActor,this.grid,target.x,target.y);
         return canObserveBoltCreature(this.commandActor, this.grid, target);
     }
 
@@ -8861,11 +8943,11 @@ export class Game {
                     : this.applyMonsterBoltHit(caster, hit.creature, ceBoltName, meta))) || autoID;
                 // CE Items.c:5168-5178: lethal player damage returns before
                 // tile exposure and terminates even a piercing spark.
-                if (this.commandActor.hp <= 0 || this.isGameOver || this.party&&hit?.creature instanceof ControlledActor&&hit.creature.hp<=0) return false;
+                if (this.boltStoppedByDeath(hit?.creature)) return false;
                 autoID = (causality
                     ? causality.withOrigin(null, () => this.applyBoltTerrainAt(visualBolt, pos))
                     : this.applyBoltTerrainAt(visualBolt, pos)) || autoID;
-                if (this.commandActor.hp <= 0 || this.isGameOver) return false;
+                if (this.boltStoppedByDeath()) return false;
             },
         });
         // CE detonateBolt :5562: target DF at the actual landing, even a wall
@@ -9467,7 +9549,7 @@ export class Game {
 
         const px = this.commandActor.loc.x;
         const py = this.commandActor.loc.y;
-        if(this.party)for(const member of this.activeControlledActors){
+        if(this.party)for(const member of this.nativeAllyActors){
             if(member!==this.commandActor&&(px-member.x)**2+(py-member.y)**2<=distance*distance&&this.hasLineOfSight(px,py,member.x,member.y))this.negateCreatureMagic(member);
         }
         const bodyTargets = squareListUsers(this.monsters) ? new Map(this.collectAreaBodyTargets(this.commandActor.loc, distance, 'identity').map(t => [t.entityId, t])) : null;
@@ -9870,31 +9952,35 @@ export class Game {
             x = path[i]!.x;
             y = path[i]!.y;
 
-            const monst = this.getMonsterAt(x, y);
-            if (monst && monst.hp > 0 && !monst.submerged) {
+            const monst = (this.party ? this.nativeAllyActors.find(a=>footprintContains(a,{x,y})) : undefined)
+                ?? this.getMonsterAt(x, y);
+            if (monst && monst.hp > 0 && !(monst instanceof Monster && monst.submerged)) {
                 if (thrown.category === ItemCategory.WEAPON && !isIncendiaryDart(thrown)) {
                     const defeatTarget = bodyDecisionActor(monst);
                     // CE Items.c:6906-6921：命中 → 结算后投掷物消失；
                     // 未命中 → break，投掷物落在怪物所在格的合格邻格。
                     // CE pre-hit aggression preserves permanent flight; Combat
                     // owns the fear exception and release even on a missed throw.
-                    if (bodyDecisionActor(monst).creatureMode !== MonsterMode.PERM_FLEEING && !monst.isAlly && bodyDecisionActor(monst).state !== MonsterState.FLEEING) {
+                    if (monst instanceof Monster && bodyDecisionActor(monst).creatureMode !== MonsterMode.PERM_FLEEING && !monst.isAlly && bodyDecisionActor(monst).state !== MonsterState.FLEEING) {
                         bodyDecisionActor(monst).state = MonsterState.HUNTING;
                     }
                     const effects = this.extensionRuntime?.causality;
                     const projectileOrigin = effects ? effects.create('projectile', this.commandActor.id, this.commandActor.id, this.commandActor.extensionHooks?.partyId(this.commandActor) ?? null) : null;
                     const contact: BodyAttackContact = { from: { ...origin, zoneId: 'body' }, to: { x, y, zoneId: 'body' },
                         distance: Math.max(Math.abs(x - origin.x), Math.abs(y - origin.y)) };
+                    const thrower = this.commandActor;
+                    const armor = monst instanceof ControlledActor ? (damage: number) =>
+                        withPartyActor(this,monst,()=>this.tryTriggerArmorRunic(thrower,damage,true,false)) : undefined;
                     const res = withBodyAttackContact(this.commandActor, monst, contact, () => effects ? effects.withOrigin(projectileOrigin,
-                        () => CombatSystem.resolveThrownWeapon(this.commandActor, monst, thrown, this.grid))
-                        : CombatSystem.resolveThrownWeapon(this.commandActor, monst, thrown, this.grid));
+                        () => CombatSystem.resolveThrownWeapon(thrower, monst, thrown, this.grid, armor))
+                        : CombatSystem.resolveThrownWeapon(thrower, monst, thrown, this.grid, armor));
                     if (res.hit) {
                         if (res.killed) {
                             logger.log(i18next.t('throw.killed', {
                                 weapon: thrown.displayName, monster: monst.name,
                                 defaultValue: `The thrown ${thrown.displayName} killed the ${monst.name}!`
                             }), '#ffaa00');
-                            if (defeatTarget.hp <= 0) this.stats.kills++;
+                            if (defeatTarget instanceof Monster && defeatTarget.hp <= 0) this.stats.kills++;
                         } else {
                             logger.log(i18next.t('throw.hit', {
                                 weapon: thrown.displayName, monster: monst.name, damage: res.damage,
@@ -10011,7 +10097,7 @@ export class Game {
         // including empty ground and the thrower's cell. Never lands as loot.
         if (resolveIncendiaryDart(thrown, { x, y }, {
             grid: this.grid,
-            creatureAt: pos => this.activeControlledActors.find(a=>footprintContains(a,pos))??this.getMonsterAt(pos.x,pos.y),
+            creatureAt: pos => this.nativeAllyActors.find(a=>footprintContains(a,pos))??this.getMonsterAt(pos.x,pos.y),
             exposeToFire: creature => {
                 if (creature instanceof ControlledActor || creature instanceof Monster) {
                     if (this.extensionRuntime) {
@@ -10295,10 +10381,10 @@ export class Game {
         finally{runicTransactions.delete(this);}
     }
 
-    private applyWeaponRunicEffect(target: Monster, damage: number, runicType: string, projectile?:Item): void {
+    private applyWeaponRunicEffect(target: Monster | ControlledActor, damage: number, runicType: string, projectile?:Item): void {
         return this.runicEffectTransaction(projectile??this.commandActor.equippedWeapon,()=>this.applyWeaponRunicEffectBody(target,damage,runicType,projectile));
     }
-    private applyWeaponRunicEffectBody(target: Monster, damage: number, runicType: string, projectile?:Item): void {
+    private applyWeaponRunicEffectBody(target: Monster | ControlledActor, damage: number, runicType: string, projectile?:Item): void {
         if (this.extensionRuntime && this.extensionRuntime.causality.current?.actorId !== this.commandActor.id) {
             const effects = this.extensionRuntime.causality;
             return effects.withOrigin(effects.create('melee', this.commandActor.id, this.commandActor.id, this.commandActor.extensionHooks?.partyId(this.commandActor) ?? null),
@@ -10336,7 +10422,8 @@ export class Game {
             }
             case 'venom': {
                 const poisonDmg = Math.max(1, Math.floor(damage * 0.5));
-                const applied = this.applyStatusToMonster(target, 'poisoned', poisonDmg, 'runic');
+                const applied = target instanceof Monster ? this.applyStatusToMonster(target, 'poisoned', poisonDmg, 'runic')
+                    : this.applyTimedStatus(target, 'poisoned', poisonDmg);
                 if (applied) {
                     logger.log(i18next.t('runic.weapon.venom', { target: this.monsterDisplayName(target), damage: poisonDmg, defaultValue: `Runic venom poisons the ${this.monsterDisplayName(target)} for ${poisonDmg} turns.` }), '#88dd88');
                 }
@@ -10352,7 +10439,7 @@ export class Game {
                 break;
             }
             case 'slaying': {
-                if(controlled&&(!weapon.vorpalEnemy||!monsterIsInClass(target.typeId,weapon.vorpalEnemy)))break;
+                if(controlled&&(!weapon.vorpalEnemy||!(target instanceof Monster)||!monsterIsInClass(target.typeId,weapon.vorpalEnemy)))break;
                 const hp=target.hp;
                 withWholeBodyDamage(target, () => target.takeDamage(9999, true, this.grid));
                 committed=hp>target.hp;
@@ -10467,10 +10554,12 @@ export class Game {
                 // CE forceWeaponHit: a collision before full travel damages
                 // both the launched creature and the creature it strikes.
                 if (traveled > 0 && traveled < dist && target.hp > 0) {
-                    const other = target.spatial ? this.footprintOf(target).map(p => this.getMonsterAt(p.x + ndx, p.y + ndy, target)).find(c => !!c)
-                        : this.getMonsterAt(target.x + ndx, target.y + ndy);
-                    if (!target.isImmuneToWeapons() && !target.isInvulnerable()) target.takeDamage(traveled, false, this.grid);
-                    if (other && !other.isImmuneToWeapons() && !other.isInvulnerable()) other.takeDamage(traveled, false, this.grid);
+                    const collisionAt = (at: Pos) => (this.party ? this.nativeAllyActors.find(a=>a!==target&&footprintContains(a,at)) : undefined)
+                        ?? this.getMonsterAt(at.x,at.y,target instanceof Monster ? target : undefined);
+                    const other = target.spatial ? this.footprintOf(target).map(p => collisionAt({x:p.x+ndx,y:p.y+ndy})).find(c => !!c)
+                        : collisionAt({x:target.x+ndx,y:target.y+ndy});
+                    if (!(target instanceof Monster) || !target.isImmuneToWeapons() && !target.isInvulnerable()) target.takeDamage(traveled, false, this.grid);
+                    if (other && (!(other instanceof Monster) || !other.isImmuneToWeapons() && !other.isInvulnerable())) other.takeDamage(traveled, false, this.grid);
                 }
                 break;
             }
@@ -10504,10 +10593,10 @@ export class Game {
 
     /** Runtime attacks pass beforeDamage=true so armor acts before shielding
      * (CE Combat.c:1272,1325). Default preserves the public post-hit API. */
-    public tryTriggerArmorRunic(attacker: Monster, incomingDamage: number, beforeDamage = false, melee = true): number {
+    public tryTriggerArmorRunic(attacker: Monster | ControlledActor, incomingDamage: number, beforeDamage = false, melee = true): number {
         return this.runicEffectTransaction(this.commandActor.equippedArmor,()=>this.tryTriggerArmorRunicBody(attacker,incomingDamage,beforeDamage,melee));
     }
-    private tryTriggerArmorRunicBody(attacker: Monster, incomingDamage: number, beforeDamage: boolean, melee: boolean): number {
+    private tryTriggerArmorRunicBody(attacker: Monster | ControlledActor, incomingDamage: number, beforeDamage: boolean, melee: boolean): number {
         let remainingDamage = incomingDamage;
         const prevent = (amount: number) => {
             remainingDamage -= amount;
@@ -10530,7 +10619,7 @@ export class Game {
         // casts. No post-damage half-hit shortcut and no second reflection roll.
 
         if (armor.runicType === 'multiplicity' && melee &&
-            !attacker.hasBehavior('MONST_INANIMATE') && !attacker.hasBehavior('MONST_INVULNERABLE') &&
+            !(attacker instanceof Monster && (attacker.hasBehavior('MONST_INANIMATE') || attacker.hasBehavior('MONST_INVULNERABLE'))) &&
             rng.randPercent(33)) {
             for (let i = 0; i < armorImageCount(netEnch); i++) {
                 const clone = this.extensionRuntime
@@ -10646,8 +10735,7 @@ export class Game {
         }
 
         if (armor.runicType === 'reprisal' && melee &&
-            !attacker.hasBehavior('MONST_INANIMATE') &&
-            !attacker.hasBehavior('MONST_INVULNERABLE')) {
+            !(attacker instanceof Monster && (attacker.hasBehavior('MONST_INANIMATE') || attacker.hasBehavior('MONST_INVULNERABLE')))) {
             // CE Combat.c:1037-1056（A_REPRISAL）：仅近战、恒触发（无概率判定），
             // 反弹 armorReprisalPercent(netEnchant)% 伤害（PowerTables.c:106）：
             // max(1, percent * damage / 100)（C 整数除法）。
@@ -10659,7 +10747,7 @@ export class Game {
                     () => attacker.takeDamage(reprisalDmg, true, this.grid, undefined, 'physical'));
             } else attacker.takeDamage(reprisalDmg, true, this.grid);
             committed=incomingDamage>0&&attacker.hp<beforeHp;
-            if (canSeeMonster(this.commandActor, this.grid, attacker)) {
+            if (attacker instanceof Monster ? canSeeMonster(this.commandActor, this.grid, attacker) : this.canObserveBoltTarget(attacker)) {
                 if(!controlled)armor.runicKnown = true;
                 if(!controlled)markItemStatsDirty(armor);
                 logger.log(
@@ -10673,7 +10761,7 @@ export class Game {
             return finish(remainingDamage);
         }
 
-        if (armor.runicType === 'immunity' && monsterIsInClass(attacker.typeId, armor.vorpalEnemy)) {
+        if (armor.runicType === 'immunity' && attacker instanceof Monster && monsterIsInClass(attacker.typeId, armor.vorpalEnemy)) {
             committed=incomingDamage>0;prevent(incomingDamage);
             const wasKnown = armor.runicKnown;
             if(!controlled)armor.runicKnown = true;
@@ -10723,7 +10811,8 @@ export class Game {
     private resolvePoisonDamage(entity: Player | Monster): void {
         if (bodyStatusOwner(entity, 'poisoned') !== entity) return;
         if (entity.hp <= 0 || !entity.hasStatus('poisoned')) return;
-        if (entity instanceof ControlledActor && this.party?.native[entity.id]) this.party.native[entity.id]!.poisonedDuringTurn=true; else if (entity === this.player) this.poisonedDuringTurn = true;
+        const native=this.party?.native[entity.id]??this.party?.stationedNative[entity.id];
+        if (entity instanceof ControlledActor && native) native.poisonedDuringTurn=true; else if (entity === this.player) this.poisonedDuringTurn = true;
         if (!entity.canBePoisoned()) {
             if (this.extensionRuntime) this.extensionRuntime.causality.clearStatus(entity.id, 'poisoned');
             return;
@@ -10803,6 +10892,14 @@ export class Game {
                 logger.log(i18next.t('status.monster.lifespan_off', { name: this.monsterDisplayName(m), defaultValue: 'The {{name}} dissipates into thin air.' }), '#cccccc');
             }
         }
+        for(const actor of this.activeStationedResidents)withPartyActor(this,actor,()=>{
+            this.resolveBurningDamage(actor);this.resolvePoisonDamage(actor);
+            if(actor.hp<=0)return;
+            // Camp economy owns food; native HP recovery and status clocks still advance.
+            if(actor.nutrition>0)actor.recoverPerTurn(actor.hasStatus('poisoned'));
+            this.clearDisplacedEntanglement(actor);actor.tickStatuses();actor.tickTemporaryImmunities();
+        });
+        if(this.party)this.settlePartyDeaths();
         // CE Time.c:2685–2692: once per objective update, after status decay.
         for (const m of this.monsters) emitCreatureFeature(this.grid, m, 'objective');
     }
@@ -10870,7 +10967,7 @@ export class Game {
      * X3-U1 在调用方对名单做酸性怪确认；hitList 顺序：突进目标占首、连枷随后（CE 同）。
      */
     private buildLungeFlailHitList(dx: number, dy: number, newX: number, newY: number): Monster[] {
-        const flags = this.commandActor.equippedWeapon?.flags;
+        const flags = [...(this.commandActor.equippedWeapon?.flags??[]),...((this.commandActor as PartyMember).partyProfile?.penetrate?['ITEM_ATTACKS_PENETRATE']:[])];
         if (!flags?.length) return [];
         const ux = Math.sign(dx);
         const uy = Math.sign(dy);
@@ -10954,7 +11051,7 @@ export class Game {
      * 近战分支（buildHitList sweep）。dx/dy 统一取符号归一成 8 向单位步。
      */
     private *tryPlayerWeaponGeometryAttackStages(dx: number, dy: number, control?: ControlledPlayerAction): CommandStages<boolean | 'aborted'> {
-        const flags = this.commandActor.equippedWeapon?.flags;
+        const flags = [...(this.commandActor.equippedWeapon?.flags??[]),...((this.commandActor as PartyMember).partyProfile?.penetrate?['ITEM_ATTACKS_PENETRATE']:[])];
         if (!flags?.length) return false;
         const ux = Math.sign(dx);
         const uy = Math.sign(dy);
@@ -11896,6 +11993,7 @@ export class Game {
                 }
                 if(member.hp<=0)this.triggerGameOver(false,i18next.t('death.fall'));
             }
+            this.updateVision();
             this.extensionRuntime?.emit('enteredLevel',{depth:destination,firstVisit,actorIds:[...returning.map(m=>m.actorId),...falling.map(a=>a.id)].sort((a,b)=>a-b)});
         });
         this.updateVision();applyIdleControllers(this);this.needsRender=true;
@@ -12162,7 +12260,7 @@ export class Game {
         if (this.squareLandingRetry?.grid !== this.grid) this.clearSquareLandingRetry();
         const retry = this.squareLandingRetry ??= { grid: this.grid, revision: -1, occupancy: '', pending: '' };
         const revision = spatialTerrainRevision(this.grid, retry);
-        const occupancy = JSON.stringify([...(this.party ? this.activeControlledActors : [this.player]), ...this.monsters, ...this.dormantMonsters].map(c => [c.id, c.x, c.y, c.hp > 0, c.spatial?.footprintId]));
+        const occupancy = JSON.stringify([...(this.party ? this.nativeAllyActors : [this.player]), ...this.monsters, ...this.dormantMonsters].map(c => [c.id, c.x, c.y, c.hp > 0, c.spatial?.footprintId]));
         const pending = JSON.stringify(queue.map(c => c.id).sort((a, b) => a - b));
         if (retry.revision === revision && retry.occupancy === occupancy && retry.pending === pending) return;
         Object.assign(retry, { revision, occupancy, pending });
@@ -12732,6 +12830,23 @@ export class Game {
                     applyIdleControllers(this);
                 }
             }}:{}),
+            ...(this.party?{residents:{
+                actors:()=>this.activeStationedResidents,
+                runAs:<T,>(actor:Creature,work:()=>T):T=>withPartyActor(this,actor as ControlledActor,work),
+                takeTurn:(actor:Creature)=>{
+                    if(!residentDisabled(actor)){
+                        const result=selectNativeActorAction(this,actor.id);
+                        if(!['handled','blocked','native-fallback'].includes(result))throw new Error('Invalid resident action selection');
+                        if(result==='native-fallback'){
+                            // Civilian fallback: defend adjacent contact, never pursue or own input.
+                            const enemy=this.monsters.filter(m=>m.hp>0&&!m.isAlly&&!m.isCaged&&this.meleeContact(actor,m)&&canSeeMonster(actor as ControlledActor,this.grid,m)).sort((a,b)=>a.id-b.id)[0];
+                            if(enemy&&this.commitPlayerNativeAttack(undefined,()=>this.resolvePlayerMeleeAttackOn(enemy)))actor.ticksUntilTurn=nativeStat(actor,'native.attack-speed');
+                        }
+                    }
+                    if(actor.hp>0&&actor.ticksUntilTurn<=0)actor.ticksUntilTurn=nativeStat(actor,'native.move-speed');
+                    if(actor.hp>0&&!actorActionSchedulerFor(this)?.isBusy(actor.id))this.sweepDeepWaterItem(actor,actor.ticksUntilTurn);
+                }
+            }}:{}),
             ...(game.bodyGroups?.length ? { bodies: {
                 isDecisionOwner: (id: number) => game.isBodyDecisionOwner(id),
                 advanceElapsed: (ticks: number) => game.advanceBodyElapsed(ticks),
@@ -12766,16 +12881,16 @@ export class Game {
                 get playerFalling() { return game.party?game.activeControlledActors.some(a=>game.party!.native[a.id]!.falling):game.commandFalling; },
                 get isGameOver() { return game.isGameOver; },
                 animationPauseMs: Game.ANIMATION_PAUSE_MS,
-                get poisonedDuringTurn() { return game.party?.native[game.commandActor.id]?.poisonedDuringTurn ?? game.poisonedDuringTurn; },
-                set poisonedDuringTurn(value) { if(game.party)game.party.native[game.commandActor.id]!.poisonedDuringTurn=value;else game.poisonedDuringTurn = value; },
+                get poisonedDuringTurn() { return game.commandNative?.poisonedDuringTurn ?? game.poisonedDuringTurn; },
+                set poisonedDuringTurn(value) { if(game.party)game.commandNative!.poisonedDuringTurn=value;else game.poisonedDuringTurn = value; },
                 get currentLevelDepth() { return game.currentLevelDepth; },
                 get monsterPathCache() { return game.monsterPathCache; },
                 get updatedSafetyMapThisTurn() { return game.updatedSafetyMapThisTurn; },
                 set updatedSafetyMapThisTurn(value) { game.updatedSafetyMapThisTurn = value; },
-                get searchingCharge() { return game.party?.native[game.commandActor.id]?.searchingCharge ?? game.searchingCharge; },
-                set searchingCharge(value) { if(game.party)game.party.native[game.commandActor.id]!.searchingCharge=value;else game.searchingCharge = value; },
-                get justSearched() { return game.party?.native[game.commandActor.id]?.justSearched ?? game.justSearched; },
-                set justSearched(value) { if(game.party)game.party.native[game.commandActor.id]!.justSearched=value;else game.justSearched = value; },
+                get searchingCharge() { return game.commandNative?.searchingCharge ?? game.searchingCharge; },
+                set searchingCharge(value) { if(game.party)game.commandNative!.searchingCharge=value;else game.searchingCharge = value; },
+                get justSearched() { return game.commandNative?.justSearched ?? game.justSearched; },
+                set justSearched(value) { if(game.party)game.commandNative!.justSearched=value;else game.justSearched = value; },
                 get animationEnabled() { return game.animationEnabled; },
                 get lastDamageSource() { return game.commandDamageSource; },
                 set lastDamageSource(value) { game.commandDamageSource = value; },
@@ -12784,7 +12899,7 @@ export class Game {
                 objectiveTimeBlock: () => game.objectiveTimeBlock(),
                 beginObjectiveTime: game.extensionRuntime?.hasHook('objectiveTime') ? () => {
                     const runtime = game.extensionRuntime!;
-                    const actorIds = [...game.activeControlledActors, ...game.monsters].filter(actor => actor.hp > 0).map(actor => actor.id);
+                    const actorIds = [...game.activeControlledActors, ...game.activeStationedResidents, ...game.monsters].filter(actor => actor.hp > 0).map(actor => actor.id);
                     return () => {
                         runtime.emit('objectiveTime', { ticks: 100, mode: 'realtime', actorIds });
                         // A timed stealth modifier may expire midway through a slow native action.
@@ -12823,14 +12938,14 @@ export class Game {
                     }
                     };
                     if(game.party){
-                        const candidates=game.activeControlledActors.filter(a=>(!a.hasStatus('invisible')||distanceBetweenFootprints(monster,a)<=1)&&game.hasLineOfSight(monster.x,monster.y,a.x,a.y));
+                        const candidates=game.nativeAllyActors.filter(a=>(!a.hasStatus('invisible')||distanceBetweenFootprints(monster,a)<=1)&&game.hasLineOfSight(monster.x,monster.y,a.x,a.y));
                         candidates.sort((a,b)=>distanceBetweenFootprints(monster,a)-distanceBetweenFootprints(monster,b)||a.id-b.id);
-                        const target=candidates[0]??game.activeControlledActors[0];if(target){game.monsterPathCache={safeTerrain:null,allySafety:null};game.updatedSafetyMapThisTurn=false;withPartyActor(game,target,()=>{stealthRange=game.calculateStealthRange();decision();});}
+                        const target=candidates[0]??game.nativeAllyActors[0];if(target){game.monsterPathCache={safeTerrain:null,allySafety:null};game.updatedSafetyMapThisTurn=false;withPartyActor(game,target,()=>{stealthRange=game.calculateStealthRange();decision();});}
                     }else decision();
                 },
                 updateEnvironment: () => game.updateEnvironment(),
-                tickArcanaResources: () => {for(const actor of game.activeControlledActors)withPartyActor(game,actor,()=>game.tickArcanaResources());},
-                processIncrementalAutoID: () => {for(const actor of game.activeControlledActors)withPartyActor(game,actor,()=>game.processIncrementalAutoID());},
+                tickArcanaResources: () => {for(const actor of [...game.activeControlledActors,...game.activeStationedResidents])withPartyActor(game,actor,()=>game.tickArcanaResources());},
+                processIncrementalAutoID: () => {for(const actor of [...game.activeControlledActors,...game.activeStationedResidents])withPartyActor(game,actor,()=>game.processIncrementalAutoID());},
                 spawnPeriodicHorde: () => game.spawnPeriodicHorde(),
                 applyEnvironmentalEffects: (target, objective) => game.applyEnvironmentalEffects(target, objective),
                 tickCreatureStatuses: () => game.tickCreatureStatuses(),
@@ -13013,8 +13128,8 @@ export class Game {
     }
 
     /** CE Time.c:2878-2911. Recomputed from current layers; no RNG or path changes. */
-    private get commandShoreWarning():boolean{return this.party?.native[this.commandActor.id]?.receivedLevitationWarning??this.receivedLevitationWarning;}
-    private set commandShoreWarning(value:boolean){if(this.party)this.party.native[this.commandActor.id]!.receivedLevitationWarning=value;else this.receivedLevitationWarning=value;}
+    private get commandShoreWarning():boolean{return this.commandNative?.receivedLevitationWarning??this.receivedLevitationWarning;}
+    private set commandShoreWarning(value:boolean){if(this.party)this.commandNative!.receivedLevitationWarning=value;else this.receivedLevitationWarning=value;}
     private checkShoreWarning(): void {
         const flags = cellTerrainFlags(this.grid, this.commandActor.x, this.commandActor.y);
         const levitation = this.commandActor.getStatusDuration('levitating');
@@ -13399,8 +13514,8 @@ export class Game {
             },
         });
         if (this.extensionRuntime) snapshot.extensions = this.extensionRuntime.snapshot();
-        if(this.party){snapshot.party={state:structuredClone(this.party.state),actors:[...this.party.actors.values()].map(serializeControlledActor),native:structuredClone(this.party.native)};
-            snapshot.version=10;snapshot.schema='brogue-web-whole-run-v10';}
+        if(this.party){snapshot.party={state:structuredClone(this.party.state),actors:[...this.party.actors.values()].map(serializeControlledActor),stationed:[...this.party.stationed.values()].map(serializeControlledActor),stationedNative:structuredClone(this.party.stationedNative),native:structuredClone(this.party.native)};
+            snapshot.version=11;snapshot.schema='brogue-web-whole-run-v11';}
         return snapshot;
     }
 
@@ -13487,6 +13602,10 @@ export class Game {
         try { validateSnapshotItems(snapshot, extensions, 'load'); } catch { return refuse(); }
         if (!isWholeRunSnapshot(snapshot, extensions?.spatialCatalog)) return refuse();
         try {
+            if(snapshot.party)for(const source of snapshot.party.state.sources){
+                if(source.kind==='narrative'){const proof=extensions!.queryOptional('narrative.party-proof.v1',{key:source.key,template:source.template});if(proof.status!=='available'||proof.value!==true)return refuse();}
+                if(source.kind==='resident'){const memory=snapshot.party.state.residentMemories.find(m=>m.actorId===source.actorId);if(!memory?.source||!extensions!.residentOwners().includes(memory.source.owner))return refuse();const actual=extensions!.residentComponent<import('../../ext/residentSdk').ResidentSource>(memory.source.owner,source.actorId,'source');const terminal=snapshot.party.state.retired.some(r=>r.actorId===source.actorId)||snapshot.party.state.members.some(m=>m.actorId===source.actorId&&m.life==='dead');const sourceValid=actual?actual.key===source.key&&actual.kind===memory.source.source.kind&&actual.consumed:terminal&&memory.source.source.kind==='spawn'&&extensions!.worldCampState(memory.source.owner).spawnSlots.some(slot=>slot.status==='terminal'&&slot.actorId===null&&source.key===`${memory.source!.owner}.spawn.${slot.depth}`);if(!sourceValid||!extensions!.residentPolicy(memory.source.owner)?.templates.some(t=>t.id===source.template))return refuse();}
+            }
             if (!!snapshot.run.world5 !== !!extensions?.needsWorld5) return refuse();
             if (!!snapshot.run.actorActions !== !!(extensions?.needsWorld5 || extensions?.actorActionBinding())) return refuse();
             if (snapshot.run.actorActions) validateActorActionsRoot(snapshot.run.actorActions, !!extensions?.actorActionBinding(),!!snapshot.run.world5);
@@ -13527,15 +13646,15 @@ export class Game {
         const extensionRoots = [...restored.values()].flatMap(level => [...level.monsters, ...(level.dormantMonsters ?? [])]);
         extensionRoots.push(...(snapshot.purgatory ?? []).map(monster => entityGraph.monsters.get(monster.id)!));
         extensionRoots.push(...snapshot.pendingFallenByDepth.flatMap(queue => queue.monsters.map(monster => entityGraph.monsters.get(monster.id)!)));
-        let decodedPartyActors:Player[];
-        try{decodedPartyActors=snapshot.party?.actors.map(a=>decodePlayer(a,entityGraph.items,true))??[];}catch{return refuse();}finally{restoreNextEntityId(preflightNextId);}
+        let decodedPartyActors:Player[],decodedStationed:Player[];
+        try{decodedPartyActors=snapshot.party?.actors.map(a=>decodePlayer(a,entityGraph.items,true))??[];decodedStationed=snapshot.party?.stationed.map(a=>decodePlayer(a,entityGraph.items,true))??[];}catch{return refuse();}finally{restoreNextEntityId(preflightNextId);}
         if(snapshot.party)for(const actor of [decodedPlayer,...decodedPartyActors])bindPartyMember(actor);
-        const extensionCreatures = [...collectEntityGraph(extensionRoots).monsters,...decodedPartyActors];
+        const extensionCreatures = [...collectEntityGraph(extensionRoots).monsters,...decodedPartyActors,...decodedStationed];
         try {
-            if(snapshot.party)assertPartyRuntime({player:decodedPlayer,depth:snapshot.depth,world5:snapshot.run.world5},{state:snapshot.party.state,actors:new Map(decodedPartyActors.map(a=>[a.id,a as PartyMember])),native:snapshot.party.native});
+            if(snapshot.party)assertPartyRuntime({player:decodedPlayer,depth:snapshot.depth,world5:snapshot.run.world5},{state:snapshot.party.state,actors:new Map(decodedPartyActors.map(a=>[a.id,a as PartyMember])),stationed:new Map(decodedStationed.map(a=>[a.id,a as PartyMember])),stationedNative:snapshot.party.stationedNative,native:snapshot.party.native});
             if (extensions) {
                 const world = snapshot.extensions!.foundation.world;
-                const nativeIds = new Set([snapshot.player.id,...decodedPartyActors.map(a=>a.id), ...entityGraph.monsters.keys(), ...entityGraph.items.keys()]);
+                const nativeIds = new Set([snapshot.player.id,...decodedPartyActors.map(a=>a.id),...decodedStationed.map(a=>a.id), ...entityGraph.monsters.keys(), ...entityGraph.items.keys()]);
                 for (const entity of world.entities) {
                     const level = restored.get(entity.depth);
                     if (!level?.grid.getCell(entity.x,entity.y) || nativeIds.has(entity.id) || entity.id >= snapshot.run.nextEntityId)
@@ -13555,16 +13674,16 @@ export class Game {
                 const candidateExtensions = extensions;
                 const candidateStatWorld:ActorActionProductionWorld={depth:snapshot.depth,player:decodedPlayer,playerDepth:snapshot.party?.state.members.find(m=>m.actorId===decodedPlayer.id)?.level.kind==='dungeon'?(snapshot.party!.state.members.find(m=>m.actorId===decodedPlayer.id)!.level as {depth:number}).depth:snapshot.depth,
                     ...(snapshot.run.spatialWorld?.groups.length?{bodyGroups:snapshot.run.spatialWorld.groups}:{}),
-                    levels:[...[...restored].map(([depth,level])=>({depth,actors:[...level.monsters,...(level.dormantMonsters??[]),...decodedPartyActors.filter(a=>snapshot.party!.state.members.some(m=>m.actorId===a.id&&m.level.kind==='dungeon'&&m.level.depth===depth))]})),
+                    levels:[...[...restored].map(([depth,level])=>({depth,actors:[...level.monsters,...(level.dormantMonsters??[]),...decodedPartyActors.filter(a=>snapshot.party!.state.members.some(m=>m.actorId===a.id&&m.level.kind==='dungeon'&&m.level.depth===depth)),...decodedStationed.filter(a=>snapshot.run.world5?.residents.some(r=>r.actorId===a.id&&r.levelRef.kind==='dungeon'&&r.levelRef.depth===depth))]})),
                         {depth:snapshot.depth,actors:(snapshot.purgatory??[]).map(actor=>entityGraph.monsters.get(actor.id)!)},
                         ...snapshot.pendingFallenByDepth.map(queue=>({depth:queue.depth,actors:queue.monsters.map(actor=>entityGraph.monsters.get(actor.id)!)}))]};
-                const candidateDepths=new Map([decodedPlayer,...decodedPartyActors,...entityGraph.monsters.values()].map(actor=>[actor.id,resolveActorQueryScope(candidateStatWorld,actor)?.depth??snapshot.depth]));
-                candidateExtensions.withStatWorld([decodedPlayer,...decodedPartyActors, ...entityGraph.monsters.values()], () => {
+                const candidateDepths=new Map([decodedPlayer,...decodedPartyActors,...decodedStationed,...entityGraph.monsters.values()].map(actor=>[actor.id,resolveActorQueryScope(candidateStatWorld,actor)?.depth??snapshot.depth]));
+                candidateExtensions.withStatWorld([decodedPlayer,...decodedPartyActors,...decodedStationed, ...entityGraph.monsters.values()], () => {
                     candidateExtensions.validateWorld([decodedPlayer, ...extensionCreatures], { depth: snapshot.depth, turn: snapshot.run.absoluteTurnNumber,
                         isGameOver: snapshot.run.isGameOver, nextEntityId: snapshot.run.nextEntityId });
                     let frozenRaidActorIds: number[] = [];
                     if(snapshot.run.world5){const level=restored.get(snapshot.depth)!;
-                        const candidate=Object.assign({},{currentSeed:snapshot.seed,player:decodedPlayer,commandActor:decodedPlayer,controlledActors:[decodedPlayer,...decodedPartyActors],...(snapshot.party?{party:{state:snapshot.party.state,actors:new Map(decodedPartyActors.map(a=>[a.id,a])),native:snapshot.party.native}}:{}),grid:level.grid,depth:snapshot.depth,items:level.items,monsters:level.monsters,dormantMonsters:level.dormantMonsters,
+                        const candidate=Object.assign({},{currentSeed:snapshot.seed,player:decodedPlayer,commandActor:decodedPlayer,controlledActors:[decodedPlayer,...decodedPartyActors],...(snapshot.party?{party:{state:snapshot.party.state,actors:new Map(decodedPartyActors.map(a=>[a.id,a])),stationed:new Map(decodedStationed.map(a=>[a.id,a as PartyMember])),stationedNative:snapshot.party.stationedNative,native:snapshot.party.native}}:{}),grid:level.grid,depth:snapshot.depth,items:level.items,monsters:level.monsters,dormantMonsters:level.dormantMonsters,
                             levels:restored,currentLevelDepth:snapshot.depth,pendingFallenByDepth:new Map(snapshot.pendingFallenByDepth.map(q=>[q.depth,q.monsters.map(m=>entityGraph.monsters.get(m.id)!)])),pendingFallenItemsByDepth:new Map(snapshot.pendingFallenItemsByDepth.map(q=>[q.depth,q.items.map(i=>entityGraph.items.get(i.id)!)])),purgatory:(snapshot.purgatory??[]).map(m=>entityGraph.monsters.get(m.id)!),
                             world5:snapshot.run.world5,autoAction:snapshot.run.autoAction,actorActions:snapshot.run.actorActions,worldWorkDetails:snapshot.run.worldWorkDetails,worldWorkFacts:snapshot.run.worldWorkFacts,extensionRuntime:candidateExtensions,worldContainerItems:new Map(snapshot.run.world5.containers.flatMap(c=>c.itemIds.map(id=>[id,entityGraph.items.get(id)!]))) });
                         validateWorldWorkReferences(candidate as unknown as Game);
@@ -13575,11 +13694,11 @@ export class Game {
                     if (actionBinding) {
                         const candidateWorld:ActorActionProductionWorld={depth:snapshot.depth,player:decodedPlayer,playerDepth:snapshot.party?.state.members.find(m=>m.actorId===decodedPlayer.id)?.level.kind==='dungeon'?(snapshot.party!.state.members.find(m=>m.actorId===decodedPlayer.id)!.level as {depth:number}).depth:snapshot.depth,
                             ...(snapshot.run.spatialWorld?.groups.length?{bodyGroups:snapshot.run.spatialWorld.groups}:{}),
-                            levels:[...[...restored].map(([depth,level])=>({depth,actors:[...level.monsters,...(level.dormantMonsters??[]),...decodedPartyActors.filter(a=>snapshot.party!.state.members.some(m=>m.actorId===a.id&&m.level.kind==='dungeon'&&m.level.depth===depth))]})),
+                            levels:[...[...restored].map(([depth,level])=>({depth,actors:[...level.monsters,...(level.dormantMonsters??[]),...decodedPartyActors.filter(a=>snapshot.party!.state.members.some(m=>m.actorId===a.id&&m.level.kind==='dungeon'&&m.level.depth===depth)),...decodedStationed.filter(a=>snapshot.run.world5?.residents.some(r=>r.actorId===a.id&&r.levelRef.kind==='dungeon'&&r.levelRef.depth===depth))]})),
                                 {depth:snapshot.depth,actors:(snapshot.purgatory??[]).map(monster=>entityGraph.monsters.get(monster.id)!)},
                                 ...snapshot.pendingFallenByDepth.map(queue=>({depth:queue.depth,actors:queue.monsters.map(monster=>entityGraph.monsters.get(monster.id)!)}))]};
-                        validateActorCombatCapacities(actionBinding.state,actionBinding.definition,[decodedPlayer,...decodedPartyActors,...entityGraph.monsters.values()],
-                            (actor,_input)=>candidateExtensions.withStatWorld([decodedPlayer,...decodedPartyActors,...entityGraph.monsters.values()],()=>({staminaCapacity:candidateExtensions.stats.value(actor.id,'combat.stamina-capacity'),poiseCapacity:candidateExtensions.stats.value(actor.id,'combat.poise-capacity')})),source=>{
+                        validateActorCombatCapacities(actionBinding.state,actionBinding.definition,[decodedPlayer,...decodedPartyActors,...decodedStationed,...entityGraph.monsters.values()],
+                            (actor,_input)=>candidateExtensions.withStatWorld([decodedPlayer,...decodedPartyActors,...decodedStationed,...entityGraph.monsters.values()],()=>({staminaCapacity:candidateExtensions.stats.value(actor.id,'combat.stamina-capacity'),poiseCapacity:candidateExtensions.stats.value(actor.id,'combat.poise-capacity')})),source=>{
                                 const identity=source.spatial?.bodyMember;
                                 const group=candidateWorld.bodyGroups?.find(group=>group.groupId===identity?.groupId);
                                 const part=group&&candidateExtensions.spatialCatalog.body(group.bodyDefinitionId).parts.find(part=>part.partId===identity?.partId);
@@ -13589,7 +13708,7 @@ export class Game {
                                     &&bodyPartAttackAvailable(candidateExtensions.spatialCatalog,group!,source,id))};
                             },snapshot.run.actorActions);
                     }
-                    if (actionBinding) validatePhasedAttackGeometry(actionBinding.state,actionBinding.definition,[decodedPlayer,...decodedPartyActors,...entityGraph.monsters.values()],
+                    if (actionBinding) validatePhasedAttackGeometry(actionBinding.state,actionBinding.definition,[decodedPlayer,...decodedPartyActors,...decodedStationed,...entityGraph.monsters.values()],
                         (depth,x,y)=>restored.get(depth)?.grid.isValidPos(x,y)===true,
                         new Set([decodedPlayer.id,...decodedPartyActors.map(a=>a.id),...(restored.get(snapshot.depth)?.monsters??[]).map(actor=>actor.id),...frozenRaidActorIds]), (source,attackId) => {
                             const identity = source.spatial?.bodyMember;
@@ -13604,7 +13723,7 @@ export class Game {
                         frozenRaidActorIds,
                         ...(snapshot.run.spatialWorld?.groups.length ? { bodyGroups: snapshot.run.spatialWorld.groups } : {}),
                         levels: [
-                            ...[...restored].map(([depth, level]) => ({ depth, actors: [...level.monsters, ...(level.dormantMonsters ?? []),...decodedPartyActors.filter(a=>snapshot.party!.state.members.some(m=>m.actorId===a.id&&m.level.kind==='dungeon'&&m.level.depth===depth))] })),
+                            ...[...restored].map(([depth, level]) => ({ depth, actors: [...level.monsters, ...(level.dormantMonsters ?? []),...decodedPartyActors.filter(a=>snapshot.party!.state.members.some(m=>m.actorId===a.id&&m.level.kind==='dungeon'&&m.level.depth===depth)),...decodedStationed.filter(a=>snapshot.run.world5?.residents.some(r=>r.actorId===a.id&&r.levelRef.kind==='dungeon'&&r.levelRef.depth===depth))] })),
                             ...snapshot.pendingFallenByDepth.map(queue => ({ depth: queue.depth,
                                 actors: queue.monsters.map(monster => entityGraph.monsters.get(monster.id)!) })),
                         ],
@@ -13660,7 +13779,7 @@ export class Game {
 
         this.player = decodedPlayer;
         delete this.party;resetPartySession(this);
-        if(snapshot.party)this.party={state:structuredClone(snapshot.party.state),actors:new Map(decodedPartyActors.map(a=>[a.id,a as unknown as PartyMember])),native:structuredClone(snapshot.party.native)};
+        if(snapshot.party)this.party={state:structuredClone(snapshot.party.state),actors:new Map(decodedPartyActors.map(a=>[a.id,a as unknown as PartyMember])),stationed:new Map(decodedStationed.map(a=>[a.id,a as PartyMember])),stationedNative:structuredClone(snapshot.party.stationedNative),native:structuredClone(snapshot.party.native)};
         if(this.world5)for(const actor of this.controlledActors)bindInventoryReservations(actor.inventory,()=>withPartyActor(this,actor,()=>reservedInventorySlots(this)));
 
         const run = JSON.parse(JSON.stringify(snapshot.run)) as GameSnapshot['run'];
@@ -14155,6 +14274,7 @@ export class Game {
                     this.extensionRuntime.causality.markDisplacement(entity.id);
                 }
                 if (entity instanceof ControlledActor) {
+                    if(this.party?.stationed.has(entity.id)){retireStationedResident(this,entity.id,'fallen');return;}
                     this.commandFalling = true;
                     return;
                 }
@@ -14264,7 +14384,7 @@ export class Game {
             // CE Time.c:370/392 returns on lethal contact before gas statuses.
             if (entity.hp <= 0) return;
 
-            if ((!(entity instanceof ControlledActor) || !deferPlayerNausea) && effect('nausea', !!(exposure && (exposure.flags & T_CAUSES_NAUSEA)))) this.applyNauseaFromTerrain(entity);
+            if ((!(entity instanceof ControlledActor) || this.party?.stationed.has(entity.id) || !deferPlayerNausea) && effect('nausea', !!(exposure && (exposure.flags & T_CAUSES_NAUSEA)))) this.applyNauseaFromTerrain(entity);
 
             // CE Time.c:592-640: all layers, once, in layer order. U08 vines
             // share gradual damage with gas; contact itself does not deal it.
@@ -14406,7 +14526,7 @@ export class Game {
             checkEntity(instantTarget, instantTarget.name);
             return;
         }
-        for(const actor of this.activeControlledActors)withPartyActor(this,actor,()=>this.runicEffectTransaction(this.party&&actor.equippedArmor?.moduleData&&!actor.equippedArmor.runicKnown&&['respiration','dampening'].includes(actor.equippedArmor.runicType??'')?actor.equippedArmor:null,()=>checkEntity(actor,actor.name)));
+        for(const actor of [...this.activeControlledActors,...this.activeStationedResidents])withPartyActor(this,actor,()=>this.runicEffectTransaction(this.party&&actor.equippedArmor?.moduleData&&!actor.equippedArmor.runicKnown&&['respiration','dampening'].includes(actor.equippedArmor.runicType??'')?actor.equippedArmor:null,()=>checkEntity(actor,actor.name)));
         for (const m of [...this.monsters]) {
             checkEntity(m, m.name);
         }
@@ -14472,8 +14592,8 @@ export class Game {
     }
     private controlledSpatialPort(depth = this.depth) {
         if (!this.party) return {};
-        const actors = this.controlledActors.filter(a=>a.hp>0 && this.party!.state.members.some(m=>m.actorId===a.id
-            && m.life!=='dead' && m.level.kind==='dungeon' && m.level.depth===depth && (depth!==this.depth || m.life==='active')));
+        const actors = [...this.controlledActors.filter(a=>a.hp>0 && this.party!.state.members.some(m=>m.actorId===a.id
+            && m.life!=='dead' && m.level.kind==='dungeon' && m.level.depth===depth && (depth!==this.depth || m.life==='active'))),...this.party.stationed.values()].filter(a=>!this.party!.stationed.has(a.id)||a.hp>0&&this.world5?.residents.some(r=>r.actorId===a.id&&r.levelRef.kind==='dungeon'&&r.levelRef.depth===depth));
         return { inactivePlayer: !actors.includes(this.player), controlled: actors.filter(a=>a!==this.player) };
     }
     public spatialWorldPort() { return { grid: this.grid, player:this.player,...this.controlledSpatialPort(), monsters: this.monsters, dormantMonsters: this.dormantMonsters }; }
@@ -15055,7 +15175,7 @@ export class Game {
      * 忘调的表现是：该层上任何 DFF_ACTIVATE_DORMANT_MONSTER 的 DF 静默不唤醒。
      */
     private bindDormantAwakener(): void {
-        for(const actor of [...this.activeControlledActors,...this.monsters,...this.dormantMonsters])bindSlumberWake(actor,()=>{if(actor===this.player||this.grid.getCell(actor.x,actor.y)?.isVisible)logger.log(i18next.t(actor===this.player?'ext.foundation.status.slumber_wake_player':'ext.foundation.status.slumber_wake_monster',{monster:actor.name}),'#cccccc');});
+        for(const actor of [...this.nativeAllyActors,...this.monsters,...this.dormantMonsters])bindSlumberWake(actor,()=>{if(actor===this.player||this.grid.getCell(actor.x,actor.y)?.isVisible)logger.log(i18next.t(actor===this.player?'ext.foundation.status.slumber_wake_player':'ext.foundation.status.slumber_wake_monster',{monster:actor.name}),'#cccccc');});
         this.bindMovementRegionSession();
         setDormantAwakener(this.grid, (origin, builtCells) =>
             this.awakenDormantMonstersAt(origin, builtCells));
@@ -15072,7 +15192,7 @@ export class Game {
         if (this.squareMotion && this.squareMotion.spatial.grid !== this.grid) { this.squareMotion.spatial.dispose(); delete this.squareMotion; }
         if (this.squareLandingRetry && this.squareLandingRetry.grid !== this.grid) this.clearSquareLandingRetry();
         setDungeonFeatureEffects(this.grid, {
-            creatures: () => [...this.activeControlledActors, ...this.monsters.filter(m => !m.isDormant)]
+            creatures: () => [...this.nativeAllyActors, ...this.monsters.filter(m => !m.isDormant)]
                 .filter(c => c.hp > 0).map(c => ({ loc: c.loc, occupies: (at: Pos) => footprintContains(c, at), ...(c.spatial ? { canPlace: (at: Pos, excluded: (p: Pos) => boolean) => canPlaceCreature(this.spatialWorldPort(), c, at) && this.footprintOf(c).every(p => !excluded({ x: p.x + at.x - c.x, y: p.y + at.y - c.y }) && !(cellTerrainFlags(this.grid, p.x + at.x - c.x, p.y + at.y - c.y) & (c instanceof Monster ? speciesForbiddenFlags(c.snapshotForm()) : T_PATHING_BLOCKER))) } : {}), commitPosition: (at: Pos) => commitCreatureAnchor(c, at, 'mutate'), forbiddenTerrain:
                     c instanceof Monster ? speciesForbiddenFlags({ behaviorFlags: [...c.behaviorFlags] }) : T_PATHING_BLOCKER })),
             refreshCell: pos => this.refreshDungeonFeatureCell(pos),
@@ -15084,7 +15204,7 @@ export class Game {
             },
             spatialContacts: () => squareListUsers(this.monsters) > 0,
             instantEffects: (pos, scope) => {
-                const creature = this.activeControlledActors.find(a=>a.hp>0&&footprintContains(a,pos)) ?? this.monsters.find(m => m.hp > 0 && !m.isDormant && footprintContains(m, pos));
+                const creature = this.nativeAllyActors.find(a=>a.hp>0&&footprintContains(a,pos)) ?? this.monsters.find(m => m.hp > 0 && !m.isDormant && footprintContains(m, pos));
                 if (creature) this.applyDungeonFeatureContact(creature, scope);
             },
             burnItems: pos => this.burnFloorItemsAt(pos),
@@ -15094,7 +15214,7 @@ export class Game {
                 if (!this.pendingCaughtFireCells.some(p => p.x === pos.x && p.y === pos.y)) this.pendingCaughtFireCells.push(pos);
             },
             playerFireOrDescent: () => {
-                for(const actor of this.activeControlledActors)if (cellTerrainFlags(this.grid, actor.x, actor.y) & (T_IS_FIRE | T_AUTO_DESCENT)) this.applyDungeonFeatureContact(actor);
+                for(const actor of this.nativeAllyActors)if (cellTerrainFlags(this.grid, actor.x, actor.y) & (T_IS_FIRE | T_AUTO_DESCENT)) this.applyDungeonFeatureContact(actor);
             },
             describe: (feat, pos) => {
                 if ((this.player.x === 0 && this.player.y === 0) || !this.grid.getCell(pos.x, pos.y)?.isVisible) return false;
@@ -15245,7 +15365,7 @@ export class Game {
             const distance = distances[x]![y]!;
             if (distance >= 0 && distance <= radius) this.scent.replaceScent(this.grid, x, y, 2 * distance);
         }
-        for(const actor of this.activeControlledActors)if (actor.x === origin.x && actor.y === origin.y) actor.applyStatus('aggravating', radius);
+        for(const actor of this.nativeAllyActors)if (actor.x === origin.x && actor.y === origin.y) actor.applyStatus('aggravating', radius);
         if (this.activeControlledActors.some(a=>distances[a.x]?.[a.y]! <= radius)) {
             if (discoverSecretsAt(this.grid, origin.x, origin.y)) this.disturbed = true;
             const cell = this.grid.getCell(origin.x, origin.y)!;
@@ -15487,7 +15607,7 @@ export class Game {
         const deletedFields=[...(this.squareMotion||this.bodyGroups?[this]:[]),...actors.flatMap(a=>
             a.carriedItem&&Object.prototype.hasOwnProperty.call(a.carriedItem,'fireContactCooldownUntilTurn')?[a.carriedItem]:[])];
         const descriptors=deletedFields.map(target=>({target,values:Object.getOwnPropertyDescriptors(target)}));
-        const base=this.checkpointWorldWork(()=>({shallow:[this,...cached],deep:[...actors,this.extensionRuntime,this.squareMotion,this.bodyGroups,this.examinedEntityIds,this.monsters,this.dormantMonsters,this.purgatory,this.pendingFallenByDepth,this.pendingFallenItemsByDepth,this.levels,this.visibleMonsters,this.everSeenMonsters,...cached.flatMap(l=>[l.monsters,l.dormantMonsters,l.items,l.visibleMonsters])],references:[this.grid,...cached.map(l=>l.grid),this.spatialCatalog,...actors.flatMap(a=>[a.mapToMe,a.safetySnapshot])]}),captures);
+        const base=this.checkpointWorldWork(()=>({shallow:[this,...cached],deep:[...actors,...(this.party?[this.party]:[]),this.extensionRuntime,this.squareMotion,this.bodyGroups,this.examinedEntityIds,this.monsters,this.dormantMonsters,this.purgatory,this.pendingFallenByDepth,this.pendingFallenItemsByDepth,this.levels,this.visibleMonsters,this.everSeenMonsters,...cached.flatMap(l=>[l.monsters,l.dormantMonsters,l.items,l.visibleMonsters])],references:[this.grid,...cached.map(l=>l.grid),this.spatialCatalog,...actors.flatMap(a=>[a.mapToMe,a.safetySnapshot])]}),captures);
         captures?.seal();
         return()=>{base();needs();dirty();paths();beds();native?.();
             for(const {target,values} of descriptors){for(const key of Reflect.ownKeys(target))if(Object.getOwnPropertyDescriptor(target,key)?.configurable)Reflect.deleteProperty(target,key);Object.defineProperties(target,values);}
@@ -16456,6 +16576,7 @@ export class Game {
         monster.seized = false;
         monster.state = MonsterState.WANDERING; // isAlly is web's MONSTER_ALLY state.
         recordRescuedResident(this,monster,rescued);
+        recordPartyRescue(this,monster,rescued);
         this.needsRender = true;
     }
 
@@ -16931,7 +17052,7 @@ export class Game {
         if(this.party&&this.isGameOver)return;
         if(this.party&&!won){
             actorActionSchedulerFor(this)?.cancelDeadActions();
-            for(const row of this.party.state.members)if(row.life!=='dead'&&this.controlledActors.find(a=>a.id===row.actorId)!.hp<=0){const dead=this.controlledActors.find(a=>a.id===row.actorId)!;for(const ticket of [...this.world5?.tickets??[]])if(ticket.actorId===row.actorId)cancelWorldWork(this,ticket.ticketId,'dead');retirePhasedAttackSource(this,row.actorId);this.extensionRuntime?.captureDeath(dead,false,this.extensionRuntime.causality.deathOrigin(dead.id));row.life='dead';const native=this.party.native[row.actorId]!;native.pendingTurn=false;native.falling=false;if(native.modal){native.modal=false;this.pendingArcana=null;this.pendingUseConfirm=null;this.pendingIdentify=false;this.pendingEnchantment=false;this.isThrowing=false;this.throwItemTarget=null;}}
+            for(const row of this.party.state.members)if(row.life!=='dead'&&this.controlledActors.find(a=>a.id===row.actorId)!.hp<=0){const dead=this.controlledActors.find(a=>a.id===row.actorId)!;for(const ticket of [...this.world5?.tickets??[]])if(ticket.actorId===row.actorId)cancelWorldWork(this,ticket.ticketId,'dead');retirePhasedAttackSource(this,row.actorId);this.extensionRuntime?.captureDeath(dead,false,this.extensionRuntime.causality.deathOrigin(dead.id));row.life='dead';terminateResidentSource(this,row.actorId);this.party.state.transfers.push({seq:this.party.state.transfers.length+1,actorId:row.actorId,kind:'death',sourceKey:this.party.state.sources.find(s=>s.actorId===row.actorId)!.key,level:structuredClone(row.level),tick:timeSystem.currentTick});const native=this.party.native[row.actorId]!;native.pendingTurn=false;native.falling=false;if(native.modal){native.modal=false;this.pendingArcana=null;this.pendingUseConfirm=null;this.pendingIdentify=false;this.pendingEnchantment=false;this.isThrowing=false;this.throwItemTarget=null;}}
             if(this.party.state.members.some(m=>m.life!=='dead'))return;
         }
         if (this.isGameOver) return;

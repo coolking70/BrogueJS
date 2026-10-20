@@ -10,7 +10,6 @@ import { assertResidentJob, validResident } from '../../ext/residentSchema';
 import { exact, uint, checkedAdd, World5Error } from '../../ext/worldBasics';
 import { c5Canonical } from '../../ext/worldJson';
 import { hasInteractionLine } from '../../ext/worldSpatial';
-import { canDirectlySeeMonster } from '../UI/MonsterVisibility';
 import { travelDistanceMap } from '../Movement/LevelTravel';
 import { T_PATHING_BLOCKER } from '../Map/TerrainCatalog';
 import { regionContains } from '../../ext/regions';
@@ -18,7 +17,7 @@ import { productionActorActionScheduler } from './ActorActionProduction';
 import { initialResidentNeed, residentEfficiency } from './ResidentEconomy';
 import { triggerActorNeeds } from './ActorNeeds';
 import {
-  residentActors,
+  residentActors, activeResidentActors, residentActorVisible, type ResidentActor,
   residentRecord,
   residentComponent,
   candidateSource,
@@ -42,6 +41,8 @@ import { containerRead } from './WorldWorkWorld';
 import { logger } from '../Systems/Logger';
 import i18next from 'i18next';
 import type { CampState } from '../../ext/structureSdk';
+import { ControlledActor } from '../../entities/ControlledActor';
+import { retireStationedResident } from './PartyResident';
 const sourceRetirements = new WeakMap<Game, Map<string, CampState>>();
 /** Called only inside the encompassing needs transaction. Components and native
  * retirement still publish in order; with no observers, validate/publish each
@@ -141,8 +142,8 @@ function prepareResidentCommandInternal(
     } else {
       uint(p.targetId, 'targetId', 1);
       uint(p.targetRevision, 'targetRevision');
-      const a = g.monsters.find((a) => a.id === p.targetId);
-      if (!a || !canDirectlySeeMonster(g.commandActor, g.grid, a)) failResident('C5_UNKNOWN_TARGET');
+      const a = activeResidentActors(g).find((a) => a.id === p.targetId);
+      if (!a || !residentActorVisible(g,a)) failResident('C5_UNKNOWN_TARGET');
       if (
         Math.max(Math.abs(a!.x - g.commandActor.x), Math.abs(a!.y - g.commandActor.y)) > 1 ||
         !hasInteractionLine(g.grid, g.commandActor.loc, a!.loc)
@@ -155,6 +156,7 @@ function prepareResidentCommandInternal(
           !(x.action !== 'recruit' && (g.world5!.residentJobs.some((j) => j.actorId === a!.id)||!!residentOrder(g,a!.id))))
       )
         failResident('C5_BUSY');
+      if(!(a instanceof Monster) && x.action === 'set-residence' && p.mode === 'escort') failResident('C5_GATE');
       const r = residentComponent(g, a!.id);
       if (x.action === 'recruit') {
         const source = candidateSource(g, a!.id);
@@ -312,7 +314,7 @@ export function commitResidentCommand(g: Game, plan: ResidentCommandPlan) {
           ? [...new Set([...c.granaryIds, p.containerId])].sort((a, b) => a - b)
           : c.granaryIds.filter((id) => id !== p.containerId);
       } else {
-        const a = g.monsters.find((a) => a.id === p.targetId)!;
+        const a = activeResidentActors(g).find((a) => a.id === p.targetId)!;
         let r = residentComponent(g, a.id);
         if (plan.action === 'recruit') {
           const source = candidateSource(g, a.id)!;
@@ -347,8 +349,8 @@ export function commitResidentCommand(g: Game, plan: ResidentCommandPlan) {
           g.world5!.offline.find((l) => l.campSlotId === c.slot)!.residentStates.push(
             initialResidentNeed(a.id)
           );
-          a.doesNotTrackLeader = true;
-          a.entersLevelIn = a.approaching = 0;
+          if(a instanceof Monster){a.doesNotTrackLeader = true;
+          a.entersLevelIn = a.approaching = 0;}
           logger.log(i18next.t('ext.world.resident.recruited', { name: a.name }), '#a5c98d');
         } else if (plan.action === 'dismiss-resident') {
           removeResident(g, a.id, 'dismiss', true);
@@ -362,10 +364,10 @@ export function commitResidentCommand(g: Game, plan: ResidentCommandPlan) {
           cancelResidentWork(g, a.id, 'reassigned');
           if (plan.action === 'set-residence' || plan.action === 'return-home') {
             r!.mode = plan.action === 'return-home' ? 'stay' : p.mode;
-            a.doesNotTrackLeader = r!.mode === 'stay';
+            if(a instanceof Monster){a.doesNotTrackLeader = r!.mode === 'stay';
             a.leader = null;
             a.boundToLeader = false;
-            a.entersLevelIn = a.approaching = 0;
+            a.entersLevelIn = a.approaching = 0;}
           } else if (plan.action === 'assign-job') r!.job = structuredClone(p.job);
           else if (plan.action === 'set-schedule')
             r!.schedule = [...p.schedule] as [number, number, number];
@@ -521,7 +523,7 @@ export function removeResident(
   transactResidentWorld(g, () => {
     cancelResidentWork(g, id, reason,occurredTick);
     const rec = residentRecord(g, id),
-      a = g.departureActor(id);
+      a = residentActors(g).find(a=>a.id===id);
     if (rec) {
       for (const l of g.world5!.offline) {
         if(l.productionQuotas)l.productionQuotas=l.productionQuotas.filter(q=>q.actorId!==id);
@@ -531,7 +533,7 @@ export function removeResident(
       g.world5!.orders = g.world5!.orders.filter((o) => o.actorId !== id);
       g.world5!.residents = g.world5!.residents.filter((r) => r.actorId !== id);
       g.extensionRuntime!.replaceResidentComponent(rec.owner, id, 'resident', null);
-      if (a && depart)
+      if (a && depart && !(a instanceof ControlledActor))
         beginDeparture(
           g,
           id,
@@ -539,15 +541,18 @@ export function removeResident(
             owner: rec.owner,
             reason,
             visibleGraceTicks:
-              g.monsters.includes(a) && canDirectlySeeMonster(g.commandActor, g.grid, a) ? 300 : 0,
+              activeResidentActors(g).includes(a) && residentActorVisible(g,a) ? 300 : 0,
             occurredTick
           },
-          !g.monsters.includes(a),
+          !activeResidentActors(g).includes(a),
           batchRetirement
         );
       updateWorldReasons(g);
-      if (a && a.hp > 0 && residentActors(g).includes(a))
+      if (a && a.hp > 0 && residentActors(g).includes(a) && !(a instanceof ControlledActor && depart))
         triggerActorNeeds(g, [a], 'resident-changed');
+    }
+    if(a instanceof ControlledActor&&g.party?.stationed.has(id)&&(depart||a.hp<=0)){
+      retireStationedResident(g,id,reason,true,occurredTick);return;
     }
     if (a && a.hp <= 0) terminateResidentSource(g, id);
   });
@@ -579,7 +584,7 @@ export function terminateResidentSource(g: Game, id: number): void {
   else g.extensionRuntime!.worldCampReplace(source.owner, state);
 }
 export function residentRead(g: Game, owner: string): ResidentRead {
-  const visible = (a: Monster) => canDirectlySeeMonster(g.commandActor, g.grid, a);
+  const visible = (a: ResidentActor) => residentActorVisible(g,a);
   return {
     tick: g.world5?.simulationTicks ?? 0,
     candidates: g.monsters
@@ -598,7 +603,7 @@ export function residentRead(g: Game, owner: string): ResidentRead {
       })),
     residents: residentActors(g)
       .filter(
-        (a) => visible(a) && g.monsters.includes(a) && residentRecord(g, a.id)?.owner === owner
+        (a) => visible(a) && activeResidentActors(g).includes(a) && residentRecord(g, a.id)?.owner === owner
       )
       .map((a) => {
         const r = residentComponent(g, a.id)!,

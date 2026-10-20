@@ -7,7 +7,7 @@ import type { RecipeDefinition, ItemAmount } from '../../ext/worldSdk';
 import { checkedAdd, uint, World5Error } from '../../ext/worldBasics';
 import { c5Canonical } from '../../ext/worldJson';
 import {
-  residentActors,
+  residentActors, activeResidentActors,
   residentComponent,
   residentRecord,
   campBox,
@@ -201,7 +201,7 @@ export function prepareResidentOrder(g: Game, c: CampRecord, action: string, p: 
   )
     failResident('C5_BUSY');
   if (residentComponent(g, p.targetId)?.mode !== 'stay') failResident('C5_GATE');
-  const actor = g.monsters.find((a) => a.id === p.targetId)!;
+  const actor = activeResidentActors(g).find((a) => a.id === p.targetId)!;
   if (residentHasNativePriority(g, actor)) failResident('C5_THREAT');
   uint(p.batchCount, 'batchCount', 1);
   if (p.batchCount > 16) failResident('C5_BAD_PAYLOAD');
@@ -861,7 +861,7 @@ function suspendOrderClock(g: Game, o: EconomicOrder) {
 }
 export function qualifyOrder(g: Game, o: EconomicOrder): void {
   const p = o.production!,
-    a = g.monsters.find((a) => a.id === o.actorId),
+    a = activeResidentActors(g).find((a) => a.id === o.actorId),
     r = residentComponent(g, o.actorId),
     target = orderTarget(g, o);
   let reason: string | null = null;
@@ -882,7 +882,7 @@ export function freezeResidentOrders(g: Game, depth: number): void {
     (o) => o.production && o.levelRef.kind === 'dungeon' && o.levelRef.depth === depth
   ) ?? []) {
     qualifyOrder(g, o);
-    const a = g.monsters.find((a) => a.id === o.actorId),
+    const a = activeResidentActors(g).find((a) => a.id === o.actorId),
       target = orderTarget(g, o);
     const distance =
       a && target ? Math.max(Math.abs(a.x - target.x), Math.abs(a.y - target.y)) : 30000;
@@ -925,7 +925,7 @@ export function suspendResidentOrdersForExit(g: Game, depth: number): void {
 export function selectResidentOrderDecision(g: Game, id: number): boolean {
   const o = residentOrder(g, id);
   if (!o) return false;
-  const a = g.monsters.find((a) => a.id === id)!,
+  const a = activeResidentActors(g).find((a) => a.id === id)!,
     t = residentOrderTicket(g, id),
     r = residentComponent(g, id)!;
   if (
@@ -987,7 +987,7 @@ export function selectResidentOrderDecision(g: Game, id: number): boolean {
 export function advanceResidentOrderLabor(g: Game, dt: number): void {
   for (const o of g.world5?.orders.filter((o) => o.production && o.status === 'working') ?? []) {
     const t = residentOrderTicket(g, o.actorId),
-      a = g.monsters.find((a) => a.id === o.actorId),
+      a = activeResidentActors(g).find((a) => a.id === o.actorId),
       d = t && g.worldWorkDetails!.find((d) => d.ticketId === t.ticketId),
       r = residentComponent(g, o.actorId);
     if (

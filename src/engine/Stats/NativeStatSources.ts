@@ -16,7 +16,7 @@ import { netEnchant, strengthModifier, accuracyFraction, enchantedDamage, monste
 import { MONSTER_CLASS_MEMBERS } from '../Combat/MonsterClass';
 import { armorStealthAdjustment, ringAwarenessBonus, ringStealthAdjustment } from '../Items/ItemEffectFormulas';
 import { bindItemStatInvalidation, unbindItemStatInvalidation, checkpointItemStatInvalidation } from '../Items/ItemStatInvalidation';
-type EquippedActor = Creature & { strength?: number; inventory?: {items: Item[]}; equippedWeapon?: Item|null; equippedArmor?: Item|null; ringLeft?: Item|null; ringRight?: Item|null; accuracy?: number; defense?: number; damageString?: string; regenTurns?: number; typeId?: string; isAlly?: boolean; isCaged?: boolean };
+type EquippedActor = Creature & { partyProfile?:import('../../ext/partyRoster').PartyNativeProfile; strength?: number; inventory?: {items: Item[]}; equippedWeapon?: Item|null; equippedArmor?: Item|null; ringLeft?: Item|null; ringRight?: Item|null; accuracy?: number; defense?: number; damageString?: string; regenTurns?: number; typeId?: string; isAlly?: boolean; isCaged?: boolean };
 interface NativeEnvironment { darkness(): boolean; shadow(): boolean; rested(): boolean }
 const environments = new WeakMap<Creature, NativeEnvironment>();
 const bindings = new WeakMap<Creature, { pipeline: StatPipeline; dirty(): void; bonus(key:string):number; atomic<T>(work:()=>T):T }>();
@@ -128,8 +128,8 @@ export function nativeBase(actor:Creature,key:string,dep:(key:string)=>number,fa
     case 'native.effective-strength':return dep('native.strength');
     case 'native.weapon-enchant':return facts.projectileEnchant??enchant(weapon)*4;
     case 'native.armor-enchant':return enchant(armor)*4;
-    case 'native.accuracy':return a.inventory?(weapon||facts.projectileEnchant!==undefined?Math.trunc(100*accuracyFraction(dep('native.weapon-enchant')/4)):monsterAccuracyAdjusted(100,a.weaknessAmount)):monsterAccuracyAdjusted(a.accuracy??100,a.weaknessAmount);
-    case 'native.defense':return a.inventory?(armor?.armor?Math.max(0,Math.trunc(dep('native.armor-base')+dep('native.armor-enchant')*2.5-a.getStatusDuration('donning')*10)):0):monsterDefenseAdjusted(a.defense??0,a.weaknessAmount);
+    case 'native.accuracy':return a.inventory?(weapon||facts.projectileEnchant!==undefined?Math.trunc(100*accuracyFraction(dep('native.weapon-enchant')/4)):monsterAccuracyAdjusted(a.partyProfile?.accuracy??100,a.weaknessAmount)):monsterAccuracyAdjusted(a.accuracy??100,a.weaknessAmount);
+    case 'native.defense':return a.inventory?(armor?.armor?Math.max(0,Math.trunc(dep('native.armor-base')+dep('native.armor-enchant')*2.5-a.getStatusDuration('donning')*10)):monsterDefenseAdjusted(a.partyProfile?.defense??0,a.weaknessAmount)):monsterDefenseAdjusted(a.defense??0,a.weaknessAmount);
     case 'native.damage-min':case 'native.damage-max':{const v=facts.baseValue??dep(key.endsWith('min')?'native.weapon-base-min':'native.weapon-base-max');if(facts.projectileEnchant!==undefined)return enchantedDamage(v,dep('native.weapon-enchant')/4);return weapon?Math.max(1,enchantedDamage(v,dep('native.weapon-enchant')/4)):v;}
     case 'native.hit-chance':case 'native.physical-damage-dealt':case 'native.physical-damage-taken':return facts.baseValue??0;
     case 'native.evasion':return 0;
@@ -147,11 +147,11 @@ export function nativeBase(actor:Creature,key:string,dep:(key:string)=>number,fa
     case 'native.regeneration-bonus':return ring('regeneration');
     case 'native.stealth-range':{if(facts.baseValue!==undefined)return facts.baseValue;if(a.hasStatus('invisible'))return 1;let r=14;const env=environments.get(actor);if(env?.darkness())r=Math.floor(r/2);if(env?.shadow())r=Math.floor(r/2);if(armor)r+=armorStealthAdjustment(armor.strengthRequired??0);if(env?.rested())r=Math.ceil(r/2);r+=a.getStatusDuration('aggravating')+ringStealthAdjustment(dep('native.stealth-points'));return Math.max(env?.rested()?1:2,r);}
     case 'native.regeneration':{
-      if(!a.inventory){const interval=a.regenTurns??0;if(interval<=0)return {numerator:0,denominator:1};
+      if(!a.inventory||a.partyProfile){const interval=a.regenTurns??0;if(interval<=0)return {numerator:0,denominator:1};
         if(a.typeId==='player_clone')for(const scale of [300,180]){const hp=Math.round(scale/interval);if(hp>0&&Math.abs(scale/hp-interval)<=Number.EPSILON*Math.max(1,interval)*4)return safeStatRational({numerator:BigInt(hp),denominator:BigInt(scale)});}
         const [digits,exponent='0']=String(interval).split('e'),parts=digits!.split('.'),places=parts[1]?.length??0;
         let n=BigInt(parts.join('')),d=10n**BigInt(places),e=Number(exponent);if(e>0)n*=10n**BigInt(e);else if(e<0)d*=10n**BigInt(-e);
-        return safeStatRational({numerator:d,denominator:n});} 
+        if(a.partyProfile){d*=BigInt(turnsForFullRegenInThousandths(0));n*=BigInt(turnsForFullRegenInThousandths(dep('native.regeneration-bonus')));if(a.hasStatus('regenerating')){d*=5n;n*=3n;}}return safeStatRational({numerator:d,denominator:n});}
       const full=BigInt(turnsForFullRegenInThousandths(dep('native.regeneration-bonus'))),whole=full/1000n,hp=BigInt(dep('native.max-hp')),per=whole>0n?(hp-1n)/whole:0n,left=hp-per*whole,interval=full/left;
       let d=interval>0n?interval:1n,n=per*d+(interval>0n?1000n:0n);
       if(a.hasStatus('regenerating')){n*=5n;d*=3n;}return safeStatRational({numerator:n,denominator:d});

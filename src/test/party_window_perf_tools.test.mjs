@@ -156,10 +156,10 @@ it.each(['missing-side', 'wrong-side', 'domains', 'missing-domains', 'rows', 'rn
   }
 );
 
-function aiReports(){return reports().map(r=>({...r,identity:'party-ai-v1',options:{...r.options,scene:'ai'},runs:r.runs.map(run=>({...run,measurement:{...run.measurement,identity:'party-ai-v1',scene:'ai',aiCounters:{calls:2,acceptedDecisions:2,nodes:7,budgetFallbacks:0,cacheHits:0}}}))}));}
-it('keeps AI calibration distinct and rejects A/B or mixed identities',()=>{
+function aiReports(){return reports().map(r=>({...r,identity:'party-ai-v1',options:{...r.options,scene:'ai'},runs:r.runs.map(run=>({...run,measurement:{...run.measurement,identity:'party-ai-v1',scene:'ai',input:{...run.measurement.input,route:'party-ai-managed-v1'},aiCounters:{calls:2,acceptedDecisions:2,nodes:7,budgetFallbacks:0,cacheHits:0}}}))}));}
+it('keeps AI calibration distinct, selects AI A/B and rejects mixed identities',()=>{
   expect(merge(aiReports()).status).toBe('smoke-only');
-  expect(()=>parseOptions(['--head','b','--out','x','--scene','ai','--base','a'])).toThrow();
+  expect(parseOptions(['--head','b','--out','x','--scene','ai','--base','a']).base).toBe('a');
   const mixed=aiReports();mixed[0].runs[0].measurement.identity='party-window-v1';expect(()=>merge(mixed)).toThrow();
   expect(()=>validateWindowMeasurement(aiReports()[0].runs[0].measurement)).toThrow();
 });
@@ -197,3 +197,46 @@ it('publishes the actual aggregate failure instead of the workflow setup fallbac
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 it.each(['calls','acceptedDecisions','nodes'])('rejects absent AI work counter %s',key=>{const row=aiReports()[0].runs[0].measurement;delete row.aiCounters[key];expect(()=>validateAiMeasurement(row)).toThrow();});
+
+function aiAbReports() {
+  return abReports().map(report => ({ ...report, identity: 'party-ai-v1', options: {...report.options, scene: 'ai'},
+    runs: report.runs.map(run => ({...run, measurement: {...run.measurement, identity: 'party-ai-v1', scene: 'ai',
+      input: {...run.measurement.input, route: 'party-ai-managed-v1'},
+      aiCounters: {calls: 3, acceptedDecisions: 3, nodes: 7, budgetFallbacks: 0, cacheHits: 0}}})) }));
+}
+it('compares all AI A/B sides and rounds with strict semantics and report-only budgets', () => {
+  const result = merge(aiAbReports());
+  expect(result.identity).toBe('party-ai-v1');
+  expect(result.runs).toHaveLength(36);
+  expect(result.comparisons).toHaveLength(18);
+  expect(result.comparisons.every(row => row.status === 'report-only' && row.commandP95Ratio === 1)).toBe(true);
+  expect(result.budget).toBeNull();
+});
+it.each(['calls', 'nodes', 'acceptedDecisions', 'budgetFallbacks', 'cacheHits', 'route', 'fullDigest', 'workload'])(
+  'rejects AI A/B semantic or workload drift in %s', key => {
+    const reports = aiAbReports();
+    for (const report of reports) for (const run of report.runs.filter(r => r.side === 'B')) {
+      if (key === 'route') run.measurement.input.route = 'unknown';
+      else if (key === 'fullDigest') run.measurement.fullDigest = 'b'.repeat(64);
+      else if (key === 'workload') run.measurement.samples[0].npcActions = 5;
+      else run.measurement.aiCounters[key]++;
+    }
+    expect(() => merge(reports)).toThrow();
+  }
+);
+it('preserves AI scene selection when the cloud workflow appends A/B arguments', () => {
+  const workflow = readFileSync('.github/workflows/ext-perf.yml', 'utf8');
+  expect(workflow).toContain('args=(--scene ai)');
+  expect(workflow).toContain('args+=(--base "$GITHUB_WORKSPACE/base")');
+  expect(workflow).not.toContain('party-ai requires calibration-only');
+});
+it('rejects a shortened multi-round window run', () => {
+  expect(() => parseOptions(['--head','b','--out','x','--steps','16','--rounds','3'])).toThrow('smoke-only');
+});
+import {verifyWindowTools} from '../../scripts/merge-party-window-perf.mjs';
+it('rechecks actual observer, runner, merger and adapter bytes before publishing a transported result',()=>{
+ const tools=Object.fromEntries(['profile-party-window-perf.mjs','run-party-window-perf.mjs','merge-party-window-perf.mjs','ext-perf-common.mjs','party-perf-crossformat.mjs'].map(name=>[name,hash(readFileSync(`scripts/${name}`,'utf8'))]));
+ expect(()=>verifyWindowTools(tools)).not.toThrow();
+ tools['party-perf-crossformat.mjs']='a'.repeat(64);expect(()=>verifyWindowTools(tools)).toThrow('Tool drift');
+ delete tools['party-perf-crossformat.mjs'];expect(()=>verifyWindowTools(tools)).toThrow('missing');
+});

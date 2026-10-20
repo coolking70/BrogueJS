@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import {registerModuleMapOverlay} from './ui/moduleMapOverlay';
 import {registerModuleMapSelection} from './ui/moduleMapSelection';
 import { computed, ref, watch, nextTick, provide, onMounted, onUnmounted } from 'vue';
 import { cancelHeldInputs } from './ui/heldInput';
@@ -118,6 +119,7 @@ const moduleUi = useModuleUi({
   isPresentationBusy: () => !!presentationTimeline(activeGame)?.busy || !!logger.pendingAcknowledgment,
   game: () => activeGame, tick: replayTick, immersive: computed(() => displaySettings.immersiveMode),
   selectMapCells: registerModuleMapSelection,
+  showMapOverlay: registerModuleMapOverlay,
   registerKeyHandler: (handler, priority) => inputManager.registerModalKeyHandler(handler, priority),
   cancelHeldKeys: () => inputManager.cancelHeldKeys(),
   canOpenPanel: () => !(activeGame.interactionActive || creationTransition.value || menuOpen.value || activeGame.isInventoryOpen || activeGame.isThrowing || activeGame.pendingArcana

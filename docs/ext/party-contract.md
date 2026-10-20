@@ -486,3 +486,17 @@ C1–C7 全部按 [P1c 任务单 §8](party-p1c.task.md#8-维护者裁定2026-10
 - gather/attack/guard/retreat/explore 接收明确列表并整体预检，后命令覆盖，null取消；人工须先托管。guard 在目标已占时允许邻位；集合/守点/撤退的对角到达必须通过已知侧格的斜角阻挡检查。探索只走已知安全格，发现向下楼梯即靠近并交硬停；不自动下楼。无路、未知或预算不足保守等待，狭道不保证同时到达。
 - 已知敌人/盟友身体只投影公开格；执行者邻接和射线预测不读取隐藏锚点/肢体。实际攻击仍由原生接触/射程判定；多格同伴移动交 whole-body planner，排除自身group占位；原生同伴不取得成员名额或玩家库存。
 - 新 `party-ai-v1` 只做 B 校准，旧 party/window 比较器仍严格要求原摘要相等。跨格式适配器未交付，旧版 A/B 保持不可比；phase6 沿 D6，AI及party校准均不自动设硬预算。浏览器、正式云端、发布分别留维护者验收；招募归P1d、网络归P2、条件规则表归P3。
+
+### 9.8 P1d 动态名册（2026-10-20 PD1–PD7 按推荐批准）
+
+本节覆盖 §9.3/9.7 中将正式招募和跨格式比较后置的历史排期。开工 `3431533`，foundation 冻结 `399df979f991434441182373c2fbc022645cab10`。P1d 有效身份 F24/S11/R8/O6、party 0.4.0/state4；无 party 仍 F20/S7/R4/O2，world5 仍 schema6。开局配置 members 仅表示开局人数，不因转换改写 manifest。
+
+- PD1：主实体永不派驻；非主队长先交接。最多四名存活在籍成员，留守计入，死亡历史不占活槽且不删除/复用 ID；终局不可招募。
+- PD2：首批原生救援限 goblin；居民限已消耗真实来源的 settlement.wayfarer/gardener；叙事限既有 cord.mender.first.slot.1 实例、splice 裁决与原放置收据。author-only recruitment 元数据不作为权限。原 ID、HP、计时、状态及物品移交，缺 growth 身份用稳定中性 build 一次初始化，不给初始装备或补血。详细字段映射见 P1d source-audit。
+- PD3：同层当面、合法邻接、不穿墙角、local:0、规划安全边界；身份转换零 tick，记录一个 schema1 party:roster 输入。原生 NPC 已支付行动间隔保留；进行中动作、未决、尚待完成窗口拒绝。新成员 local:0 人工，无队列/临时托管；使旧计划与目标失效并清理关联同伴指令。
+- PD4：派驻需要真实营地、床位和资格，初始无岗位。再编入按原居民 owner 事务结清安全可取消的票据/货物；不安全阶段拒绝。需求与营地经济连续交接，不补饱。同一个 ControlledActor 在 actors 与 stationed 根之间迁移；stationedNative 保存原生状态，当前层派驻者独立居民调度，离层经济仍用原 world5，普通留守仍冻结。退役保存来源历史，库存只落地一次。
+- PD5：成员横条、手机抽屉覆盖队列/旅行/AI/反应及显式推进；地图只投影已知路径/目标，草稿不进入机械摘要。桌面及320/390横竖屏视觉和真机由维护者清单验收。
+- PD6：initialActorIds、sources、rescued、transfers、residentMemories、retired 与 actors/stationed/stationedNative 联合验证；旧 party 格式拒绝，不迁移。growth 的历史成员/参与收据不随派驻删除，当前命令权限仍查实时名册。
+- PD7：跨格式比较使用独立协议，只容许明确列出的初始空名册差量；未知差量拒绝，旧同格式 strict 保持。party-ai 支持经校验的 A/B；party/window/AI/新转换均 report-only。phase6 沿 D6。正式云端由维护者派发，本地短冒烟不代替三轮和独立第四轮。
+
+数值平衡、P2网络、P3条件表、旧档迁移、真机视觉均不由本节提前宣称完成。执行证据和仍需裁定的不能无损承载事项见 [P1d 报告](party-p1d.report.md)。

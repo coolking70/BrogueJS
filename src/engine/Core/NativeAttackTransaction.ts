@@ -24,7 +24,7 @@ export function delayNativeDecision(grid: Grid | undefined, defender: Creature, 
     owner.ticksUntilTurn += ticks;
 }
 function owns(game: Game, actor: Creature): boolean {
-    return actor === game.player || game.monsters.some(candidate => candidate === actor);
+    return (game.party?game.nativeAllyActors.some(candidate=>candidate===actor):actor===game.player) || game.monsters.some(candidate => candidate === actor);
 }
 function current(game: Game, actor: Creature): Credential | undefined {
     const value = credentials.get(actor);

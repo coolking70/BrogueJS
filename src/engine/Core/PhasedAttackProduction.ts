@@ -62,7 +62,7 @@ function bumpRevision(state:ProductionActorAttackState):void {
     state.revision++;
 }
 const facings:ActorAttackFacing[]=['n','ne','e','se','s','sw','w','nw'];
-const actor=(game:Game,id:number):Creature|undefined=>game.activeControlledActors.find(a=>a.id===id)??game.monsters.find(m=>m.id===id);
+const actor=(game:Game,id:number):Creature|undefined=>(game.party?game.nativeAllyActors:game.activeControlledActors).find(a=>a.id===id)??game.monsters.find(m=>m.id===id);
 function shapeFor(attack:ActorAttackDefinition,index:number,facing:ActorAttackFacing):AttackShapeRequest {
     const shape=attack.segments[index]!.shape;
     return {schema:1,kind:'footprint-offset-union',offsets:shape.offsets[facing].map(p=>({...p})),selfExclusion:shape.selfExclusion};
@@ -211,7 +211,7 @@ export function isActorDodgeProtected(game:Game,actorId:number):boolean {
         &&!!bound&&bound.actor===source&&bound.depth===game.depth&&bound.revision===actorSourceRevision(source);
 }
 function advanceResources(game:Game,session:Session,delta:number):void {
-    const resolved=new Map<Creature,ReturnType<typeof resourcesFor>>([...game.activeControlledActors,...game.monsters].filter(source=>source.hp>0).map(source=>{
+    const resolved=new Map<Creature,ReturnType<typeof resourcesFor>>([...game.nativeAllyActors,...game.monsters].filter(source=>source.hp>0).map(source=>{
         const row=session.state.actors.find(row=>row.actorId===source.id);
         const busy=game.actorActions!.bundles.some(bundle=>bundle.depth===game.depth&&(bundle.decisionOwnerId===source.id
             ||bundle.subactions.some(child=>child.sourceEntityId===source.id&&child.phaseIndex<child.phases.length)));
@@ -222,7 +222,7 @@ function advanceResources(game:Game,session:Session,delta:number):void {
     if(session.state.actors.length+missing>4096)throw new Error('Actor resource budget exhausted');
     // An implicit initial pool is equivalent to a stored pool. Materialize it
     // when elapsed recovery can change it, including an initially empty NPC.
-    for(const source of [...game.activeControlledActors,...game.monsters]){
+    for(const source of [...game.nativeAllyActors,...game.monsters]){
         if(source.hp<=0||(source instanceof Monster&&(source.isDormant||source.deathProcessed)))continue;
         const {profile,base,policy,stats,row}=resolved.get(source)!;
         if(!row&&(policy.initialStamina<policy.staminaCapacity||!!stats)){
@@ -288,7 +288,7 @@ function prepare(game:Game,source:Creature,attackId:string,facing:ActorAttackFac
     return deepFreeze({moduleId:session.moduleId,sessionRevision:session.sessionRevision,sourceEntityId:source.id,attackId,facing,revision:session.state.revision,
         sourceVersion:sourceFootprintVersion(game.spatialOf(source)),profileId:profile.id,cost:attack.cost,shape,cells,
         facts:canonical({resource:resource??null,capacities:capacities(game,source,session.definitions.resourcePolicies.find(p=>p.id===profile.resourcePolicyId)!)??null,weapon:game.commandActor.equippedWeapon,armor:game.commandActor.equippedArmor,depth:game.depth,grid:game.grid.width,sourceHp:source.hp,status:source.statusDurations,
-            actors:[...game.activeControlledActors,...game.monsters].map(a=>({id:a.id,form:a instanceof Monster?a.typeId:'player',hp:a.hp,loc:a.loc,sourceRevision:actorSourceRevision(a),status:a.statusDurations,spatial:sourceFootprintVersion(game.spatialOf(a)),...(a.spatial?.zoneState?{zones:a.spatial.zoneState}:{})}))}),
+            actors:[...game.nativeAllyActors,...game.monsters].map(a=>({id:a.id,form:a instanceof Monster?a.typeId:'player',hp:a.hp,loc:a.loc,sourceRevision:actorSourceRevision(a),status:a.statusDurations,spatial:sourceFootprintVersion(game.spatialOf(a)),...(a.spatial?.zoneState?{zones:a.spatial.zoneState}:{})}))}),
         risks:approvedRisks.flatMap(target=>target.risks),approvedRisks});
 }
 function commit(game:Game,plan:PhasedAttackPlan,scope:ActorActionScope):boolean {
@@ -360,7 +360,7 @@ function commitBody(game:Game,core:Monster,plans:readonly PhasedAttackPlan[],sco
 function selectBody(game:Game,session:Session,core:Monster,scope:ActorActionScope):'handled'|'native-fallback' {
     if(!eligible(game,core,session)||core.hasStatus('confused')||core.hasStatus('magical_fear')||core.state!==MonsterState.HUNTING&&!core.isAlly)return 'native-fallback';
     const group=game.bodyGroups!.find(g=>g.coreId===core.id)!,plans:PhasedAttackPlan[]=[];
-    const targets=[...game.activeControlledActors,...game.monsters].filter(target=>target.hp>0&&target.spatial?.bodyMember?.groupId!==core.id&&monstersAreEnemies(core,target));
+    const targets=[...game.nativeAllyActors,...game.monsters].filter(target=>target.hp>0&&target.spatial?.bodyMember?.groupId!==core.id&&monstersAreEnemies(core,target));
     targets.sort((a,b)=>game.nearestContact(core,a).distance-game.nearestContact(core,b).distance||a.id-b.id);
     for(const slot of [...group.members].sort((a,b)=>a.partId<b.partId?-1:a.partId>b.partId?1:0)){
         if(plans.length===4)break;
@@ -454,7 +454,8 @@ export function bindPhasedAttackProduction(game:Game):void {
                 || source.hasStatus('magical_fear') || (!source.isAlly && source.state!==MonsterState.HUNTING)
                 || game.footprintOf(source).some(cell=>monsterBlinkAvoids(game,source,cell))) return 'native-fallback';
             const profile=session.definitions.profiles.find(p=>p.id===profileId(session,game,source));if(!profile)return 'native-fallback';
-            const targets=source.isAlly?game.monsters.filter(target=>target!==source&&monstersAreEnemies(source,target)):game.activeControlledActors;
+            const targets=source.isAlly?game.monsters.filter(target=>target!==source&&monstersAreEnemies(source,target))
+                :game.party?[...game.nativeAllyActors,...game.monsters.filter(target=>target!==source&&monstersAreEnemies(source,target))]:game.activeControlledActors;
             const target=targets.find(target=>target.hp>0&&bodySightContact(game.grid,source,target,(x,y,tx,ty)=>game.hasLineOfSight(x,y,tx,ty)));if(!target)return 'native-fallback';
             if (source.isAlly && target instanceof Monster && (blinkAllyFlees(game,source,target) || !allyShouldPursue(game,source,target))) return 'native-fallback';
             const dx=Math.sign(target.loc.x-source.loc.x),dy=Math.sign(target.loc.y-source.loc.y);

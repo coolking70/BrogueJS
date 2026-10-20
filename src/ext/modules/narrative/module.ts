@@ -1,3 +1,4 @@
+import {registerPartyVariant} from '../../partyVariants';
 import i18next from 'i18next';
 import type { CommittedFactConsumer, ExtensionModule, Json } from '../../types';
 import { extensionDataFingerprint } from '../../fingerprint';
@@ -12,7 +13,7 @@ import { planNarrativeFact, stagedNarrativeState, type NarrativePlan } from './e
 import { narrativeActiveWorldValid, validateNarrativeRecording, validateNarrativeWorldBindings } from './validation';
 
 /** Plans every effect first, then commits optional rewards and local state in one foundation transaction. */
-export function createNarrativeModuleFromPack(pack: NarrativePack): ExtensionModule {
+export function createNarrativeModuleFromPack(pack: NarrativePack, party=false): ExtensionModule {
     assertLoadedNarrativePack(pack);
     const command = (action: 'open' | 'choose' | 'close'): NonNullable<ExtensionModule['commands']>[string] => (payload, context) => {
         const plan = planNarrativeCommand(pack, narrativeCommandInput(action, payload), context);
@@ -36,11 +37,21 @@ export function createNarrativeModuleFromPack(pack: NarrativePack): ExtensionMod
             for (const message of plan.messages) context.message(i18next.t(message.textKey));
         },
     });
-    return {
+    const module:ExtensionModule = {
         id: 'narrative', version: pack.moduleVersion,
         rules: { schema: pack.schema, version: pack.rulesVersion, fingerprint: extensionDataFingerprint(pack) },
         initialState: () => initialNarrativeState(pack) as unknown as Json,
         validateState: (value): value is Json => isNarrativeState(value, pack),
+        ...(party?{optionalQueries:{'narrative.party-proof.v1':{
+            accepts:input=>!!input&&typeof input==='object'&&!Array.isArray(input)&&Object.keys(input).sort().join(',')==='key,template'&&typeof(input as any).key==='string'&&(input as any).template==='cord.mender',
+            query(input,context){const proof=input as {key:string;template:string},state=context.state as unknown as NarrativeState;return state.flags['cord.mender.verdict']==='splice'&&state.placementReceipts.some(p=>p.result==='placed'&&p.instanceKey===proof.key&&p.npcId===proof.template)&&!Object.values(state.npcBindings).some(b=>b.instanceKey===proof.key);},
+            validate:(v):v is Json=>typeof v==='boolean'
+        },'narrative.party-source.v1':{
+            accepts:input=>!!input&&typeof input==='object'&&!Array.isArray(input)&&Object.keys(input).join(',')==='actorId'&&Number.isSafeInteger((input as {actorId:unknown}).actorId),
+            query(input,context){const id=(input as {actorId:number}).actorId,state=context.state as unknown as NarrativeState,b=state.npcBindings[id];
+                return !state.active&&b?.npcId==='cord.mender'&&state.flags['cord.mender.verdict']==='splice'&&state.placementReceipts.some(p=>p.result==='placed'&&p.instanceKey===b.instanceKey&&p.npcId===b.npcId)?{actorId:id,key:b.instanceKey,template:b.npcId}:null;},
+            validate:(v):v is Json=>v===null||!!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')==='actorId,key,template'&&Number.isSafeInteger((v as any).actorId)&&typeof(v as any).key==='string'&&(v as any).template==='cord.mender'
+        }}}:{}),
         worldInteractables: true,
         interactionCommands: ['choose', 'close'],
         projectView: context => projectNarrativeView(pack, context),
@@ -82,4 +93,5 @@ export function createNarrativeModuleFromPack(pack: NarrativePack): ExtensionMod
         },
         commands: { open: command('open'), choose: command('choose'), close: command('close') },
     };
+    return party?module:registerPartyVariant(module,()=>createNarrativeModuleFromPack(pack,true));
 }

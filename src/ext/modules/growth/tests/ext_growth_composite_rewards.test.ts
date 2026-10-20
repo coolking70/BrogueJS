@@ -17,6 +17,7 @@ function positiveQuoteScene(combat:boolean) {
     pack.config.experience.kills.monsterQuotes.push({monsterId:'body-fixture.fixture-core',threatRank:6,amount:27},{monsterId:'body-fixture.fixture-leg',threatRank:6,amount:13});
     const parsed=parseGrowthDefinitionPack(pack,{moduleVersion:pack.moduleVersion,hasText:()=>true});
     const registry=registryFromDescriptors(descriptors.map(d=>{
+        if(d.id!=='growth'&&d.id!=='body-fixture')return d;
         const base=installed.create(installed.manifest([d.id]))[0]!;if(d.id!=='growth')return {...d,rules:base.rules,create:()=>base};
         const rules={...base.rules!,fingerprint:extensionDataFingerprint(pack)};return {...d,rules,create:()=>createGrowthGameplay(parsed,rules)};
     }));vi.mocked(catalog.createExtensionRegistry).mockReturnValue(registry);

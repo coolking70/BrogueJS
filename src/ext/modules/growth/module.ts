@@ -82,7 +82,7 @@ export function commitFirstVisitResource(context: ExtensionContext, state: Growt
 export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, identity: ExtensionModule['rules'], partySize=0): ExtensionModule {
     const config = pack.config;
     const isMember=(state:Readonly<GrowthState>,id:number)=>state.party?.members.includes(id)??false;
-    const memberIds=(context:ExtensionContext):number[]=>{const query=context.queryOptional('foundation.party.v1',{});return query.status==='available'?(query.value as {members:{actorId:number}[]}).members.map(m=>m.actorId):[];};
+    const memberIds=(context:Pick<ExtensionContext,'queryOptional'>):number[]=>{const query=context.queryOptional('foundation.party.v1',{});return query.status==='available'?(query.value as {members:{actorId:number}[]}).members.map(m=>m.actorId):[];};
     const activeMemberIds=(context:ExtensionContext):number[]=>{const query=context.queryOptional('foundation.party.v1',{});return query.status==='available'?(query.value as {members:{actorId:number;active:boolean;alive:boolean}[]}).members.filter(m=>m.active&&m.alive).map(m=>m.actorId):[];};
     const creationAction=partySize?'create-party':'create-character';
     const creationCommand=(data:unknown)=>isCreationCommand(data,!!partySize);
@@ -96,7 +96,7 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
         const members=[...new Set(ids)].filter(id=>isMember(state,id)).sort((a,b)=>a-b);
         const shares=members.map((actorId,index)=>({actorId,base:Math.floor(amount/members.length)+(index<amount%members.length?1:0),alive:(context.creature(actorId)?.hp??0)>0}));
         state.party.receipts.push({rewardId,shares});
-        for(const share of shares)if(share.alive)award(context,state,share.actorId,share.base);
+        for(const share of shares)if(share.alive)award(context,state,share.actorId,share.base,true);
     }
     const rejected = (): Error => new Error(i18next.t('ext.growth.command.rejected', {defaultValue:'Character command is not available in the current state.'}));
     const actorIdentity = (context: ExtensionRuleContext,id: number): GrowthIdentityBuild =>
@@ -184,12 +184,12 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
             {expectedStrength:native.strength,strength:addGrowthIntegers(native.strength,derived.appliedStrength),expectedGold:native.gold,gold:native.gold});
     }
     /** All grant math and native-resource bounds are checked before any write. */
-    function planAward(context: Pick<ExtensionContext, 'getComponent' | 'creature' | 'characterResources'> & Partial<Pick<ExtensionContext,'stats'|'previewStats'>>, state: Readonly<GrowthState>, recipientId: number, amount: number) {
+    function planAward(context: Pick<ExtensionContext, 'getComponent' | 'creature' | 'characterResources'> & Partial<Pick<ExtensionContext,'stats'|'previewStats'>>, state: Readonly<GrowthState>, recipientId: number, amount: number, partyShare = false) {
         const old = component<GrowthProgression>(context,recipientId,'progression'), actor = context.creature(recipientId);
         if (!old || !actor || amount === 0) return;
         const reward = component<GrowthReward>(context,recipientId,'reward');
         if (reward?.nativeStatsCopied && !config.monsters.clone.progression) return;
-        if (!actor.player && !isMember(state,actor.id) && !config.monsters.alliesGrow && actor.allied) return;
+        if (!actor.player && !partyShare && !config.monsters.alliesGrow && actor.allied) return;
         amount=context.stats?.value(recipientId,'growth.xp-gain',{baseValue:amount})??amount;
         const gain = grantExperience(config.levels,old,amount);
         const priorDerived = priorBonuses(context,recipientId);
@@ -197,7 +197,7 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
         const priorBuild = component<GrowthSkillBuild>(context,recipientId,'skill-build') ?? initialGrowthSkillBuild();
         const identity = component<GrowthIdentityBuild>(context,recipientId,'identity') ?? initialGrowthIdentityBuild();
         const oldScopes = growthSkillScopes(pack,priorBuild,state.objectiveClock,'actor',identity);
-        const nextBuild = !actor.player && !isMember(state,actor.id) && actor.allied && gain.levelsGained
+        const nextBuild = !actor.player && !partyShare && actor.allied && gain.levelsGained
             ? autoAllocateGrowthAlly(pack,recipientId,{progression:gain.progression,attributes:priorAttributes,build:priorBuild,identity})
             : {progression:gain.progression,attributes:priorAttributes,build:priorBuild,identity};
         const attributes = nextBuild.attributes, allocated = canonical(attributes) !== canonical(priorAttributes);
@@ -252,8 +252,8 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
         state.revision = plan.revision;
         if (plan.announceLevel !== null) context.message(i18next.t('ext.growth.level_gained', { level:plan.announceLevel,defaultValue:'You reached level {{level}}.' }));
     }
-    function award(context: ExtensionContext, state: GrowthState, recipientId: number, amount: number): void {
-        const plan = planAward(context,state,recipientId,amount);
+    function award(context: ExtensionContext, state: GrowthState, recipientId: number, amount: number, historicalPartyShare = false): void {
+        const plan = planAward(context,state,recipientId,amount,historicalPartyShare || !!state.party && memberIds(context).includes(recipientId));
         if (plan) commitAward(context,state,plan);
     }
     function prepareStoryReward(request: Readonly<OptionalRewardRequest>, context: OptionalRewardPrepareContext) {
@@ -297,9 +297,9 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
         if(!payload||typeof payload!=='object'||Array.isArray(payload)||!Number.isSafeInteger(payload.actorId))throw rejected();
         return payload.actorId as number;
     }
-    function memberPayload(payload:Json,actorId:number,context:Pick<ExtensionContext,'state'>):Json {
+    function memberPayload(payload:Json,actorId:number,context:Pick<ExtensionContext,'state'> & Partial<Pick<ExtensionContext,'queryOptional'>>):Json {
         if(!partySize)return payload;
-        if(!isMember(getState(context),actorId)||!payload||typeof payload!=='object'||Array.isArray(payload)||payload.actorId!==actorId)throw rejected();
+        if(!(context.queryOptional?memberIds({queryOptional:context.queryOptional}).includes(actorId):isMember(getState(context),actorId))||!payload||typeof payload!=='object'||Array.isArray(payload)||payload.actorId!==actorId)throw rejected();
         const {actorId:_,...rest}=payload;return rest;
     }
     function planCharacterCommand(action: 'allocate' | 'respec', payload: Json, context: ExtensionContext) {
@@ -431,7 +431,7 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
             state.nextEffectId = addGrowthIntegers(state.nextEffectId,1);
             const build = skillBuild(context,recipientId); build.effects.push(instance); put(context,recipientId,'skill-build',build);
             // Save clock/sequence before reconciling; policies read the same committed state.
-            if(state.party&&isMember(state,actorId)&&effect.modifiers.length){
+            if(state.party&&memberIds(context).includes(actorId)&&effect.modifiers.length){
                 // Only a committed timed effect on a current combat participant is an authoritative support result.
                 for(const ids of Object.values(state.party.participants))if(ids.includes(recipientId))remember(ids,actorId);
                 if(context.creature(recipientId)?.hostile){const ids=state.party.participants[recipientId]??=[];remember(ids,actorId);}
@@ -515,7 +515,7 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
                     || (rule.requireHostileAtDeath && !fact.actor.hostile) || !fact.origin?.creditActorId) continue;
                 const sourceId = fact.origin.creditActorId, source = state.actors[sourceId];
                 if (!source) continue;
-                if(isMember(state,sourceId)){
+                if(state.party&&memberIds(context).includes(sourceId)){
                     const ids=state.party!.participants[fact.actor.id]??[sourceId];
                     awardPool(context,state,ids,reward.amount,reward.rewardId);delete state.party!.participants[fact.actor.id];
                 } else if (source.player) {
@@ -523,7 +523,7 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
                 } else if (fact.origin.creditPartyId !== null) {
                     if (fact.origin.creditPartyId !== growthPartyId(state,sourceId)) continue;
                     const [player,ally] = splitGrowthReward(reward.amount,config.experience.allySplit.playerBasisPoints,config.experience.allySplit.rounding);
-                    awardPool(context,state,state.party?.participants[fact.actor.id]??state.party?.members??[],player,reward.rewardId); award(context,state,sourceId,ally);if(state.party)delete state.party.participants[fact.actor.id];
+                    awardPool(context,state,state.party?.participants[fact.actor.id]??memberIds(context),player,reward.rewardId); award(context,state,sourceId,ally);if(state.party)delete state.party.participants[fact.actor.id];
                 } else if (!source.allied) award(context,state,sourceId,reward.amount);
             } else {
                 if (!remember(state.storyReceipts,fact.rewardKey)) continue;
@@ -665,7 +665,7 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
             const state = getState(context), actor = context.creature(context.playerId);
             if (state.created || !validCreation(payload) || !actor || actor.hp <= 0)
                 throw new Error(i18next.t('ext.growth.command.rejected', {defaultValue:'Character command is not available in the current state.'}));
-            if(state.party)state.party.members=memberIds(context);
+            if(state.party)state.party.members=[...new Set([...state.party.members,...memberIds(context)])].sort((a,b)=>a-b);
             const ids=state.party?.members??[actor.id],selections=creationSelections(payload);
             if(ids.length!==selections.length)throw rejected();
             ids.forEach((id,index)=>{const member=context.creature(id);if(!member||member.hp<=0)throw rejected();initialize(context,state,member,{creationReason:'scripted',originalMonsterType:null,initiallyHostile:false,sourceId:null,nativeStatsCopied:false},creationBuild(selections[index]!,{maxHp:member.maxHp,strength:context.characterResources(id).strength!}));});
@@ -686,7 +686,7 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
                 for (const id of Object.keys(state.actors).map(Number)) {
                     if (!context.getComponent(id,'skill-build')) continue;
                     const build = skillBuild(context,id);
-                    if(isMember(state,id)&&!participants.has(id)){
+                    if(state.party&&memberIds(context).includes(id)&&!participants.has(id)){
                         if(blocks){for(const effect of build.effects)if(effect.expiresAt!==null){effect.startedAt=addGrowthIntegers(effect.startedAt,blocks);effect.expiresAt=addGrowthIntegers(effect.expiresAt,blocks);}
                             put(context,id,'skill-build',build);const skills=component<GrowthSkills>(context,id,'skills');
                             if(skills){for(const key of Object.keys(skills.readyAt))skills.readyAt[key]=addGrowthIntegers(skills.readyAt[key]!,blocks);put(context,id,'skills',skills);}}
@@ -706,13 +706,13 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
             },
             damage(fact,context){
                 const state=getState(context),source=fact.origin?.creditActorId??fact.sourceId;
-                if(state.party&&source!==null&&source!==undefined&&isMember(state,source)&&(fact.hpLost??0)>0&&context.creature(fact.creature.id)?.hostile){
+                if(state.party&&source!==null&&source!==undefined&&memberIds(context).includes(source)&&(fact.hpLost??0)>0&&context.creature(fact.creature.id)?.hostile){
                     const ids=state.party.participants[fact.creature.id]??=[];remember(ids,source);saveState(context,state);
                 }
             },
             physicalResolved(fact,context) {
                 const state=getState(context);
-                if(state.party&&isMember(state,fact.attacker.id)&&fact.hpLost>0&&context.creature(fact.defender.id)?.hostile){
+                if(state.party&&memberIds(context).includes(fact.attacker.id)&&fact.hpLost>0&&context.creature(fact.defender.id)?.hostile){
                     const ids=state.party.participants[fact.defender.id]??=[];remember(ids,fact.attacker.id);saveState(context,state);
                 }
                 for (const id of [...new Set([fact.attacker.id,fact.defender.id])]) {
@@ -729,6 +729,18 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
                         put(context,id,'skill-build',build);reconcileActor(context,id);}
                 }
             },
+            ...(partySize?{partyRosterChanged(event,context) {
+                const state=getState(context);if(!state.party)return;
+                state.party.members=[...new Set([...state.party.members,...memberIds(context)])].sort((a,b)=>a-b);
+                const actor=context.creature(event.actorId);if(!actor)throw rejected();observe(state,actor);
+                if(event.joining){
+                    const build=creationBuild({revision:0});
+                    for(const [name,value] of Object.entries({progression:build.progression,attributes:build.attributes,identity:build.identity,'skill-build':build.build,items:initialGrowthItemLedger(),focus:{current:0,remainder:0},skills:{readyAt:{}}}))
+                        if(!context.getComponent(actor.id,name))put(context,actor.id,name,value);
+                    if(!context.getComponent(actor.id,'reward'))put(context,actor.id,'reward',{creationReason:'scripted',originalMonsterType:actor.monsterId,initiallyHostile:false,sourceId:null,nativeStatsCopied:false,rewardId:`birth:${actor.id}`,threatRank:0,amount:0});
+                }
+                saveState(context,state);
+            }}:{}),
             creatureSpawned(event,context) {
                 const actor = context.creature(event.creature.id); if (!actor) return;
                 const state = getState(context); observe(state,actor);

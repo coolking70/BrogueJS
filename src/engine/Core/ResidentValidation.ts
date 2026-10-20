@@ -1,5 +1,6 @@
 /** Strict production references, evaluated on a decoded candidate before live retirement. */
 import type { Game } from './Game';
+import { Monster } from '../../entities/Monster';
 import { ItemCategory } from '../Items/Item';
 import type { ResidentComponent, ResidentSource } from '../../ext/residentSdk';
 import { uint, exact, World5Error } from '../../ext/worldBasics';
@@ -28,7 +29,7 @@ export function validateResidentReferences(g: Game): void {
     for (const id of rt.residentComponentIds(owner, 'source')) {
       const a = actors.find((a) => a.id === id),
         source = rt.residentComponent<ResidentSource>(owner, id, 'source')!;
-      if (!a || a.hp <= 0 || a.isClone) fail('source.actor');
+      if (!a || a.hp <= 0 || (a instanceof Monster && a.isClone)) fail('source.actor');
       if (source.kind === 'spawn') {
         const slot = state.spawnSlots.find((s) => s.actorId === id && s.status === 'placed');
         if (
@@ -41,7 +42,7 @@ export function validateResidentReferences(g: Game): void {
         if (
           source.key !== `${owner}.rescue.${id}` ||
           (!source.consumed &&
-            (!policy.rescuedTemplates.includes(a!.typeId) || !residentEligible(g, a!)))
+            (!(a instanceof Monster && policy.rescuedTemplates.includes(a.typeId)) || !residentEligible(g, a!)))
         )
           fail('source.rescue');
         if (!source.consumed) rescues++;
@@ -74,7 +75,7 @@ export function validateResidentReferences(g: Game): void {
           !a ||
           !residentEligible(g, a) ||
           !r ||
-          !source?.consumed ||
+          !(source?.consumed || g.party?.stationed?.get(row.actorId)===a && g.party.state.sources.some(s=>s.actorId===row.actorId)) ||
           r.campId !== c.regionId ||
           r.campOrdinal !== c.ordinal ||
           row.levelRef.kind !== 'dungeon' ||

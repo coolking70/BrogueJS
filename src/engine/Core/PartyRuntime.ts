@@ -1,3 +1,5 @@
+import type { StatusId } from '../../entities/Creature';
+import type { PartyNativeProfile } from '../../ext/partyRoster';
 import { ControlledActor } from '../../entities/ControlledActor';
 import type { Game } from './Game';
 import { PartyFailure, type PartyState } from '../../ext/party';
@@ -5,12 +7,25 @@ import { assertPartyOwnership, type PartyActorPort, type PartyWorldRead } from '
 
 /** Secondary members share native capabilities, not the unique Player class. */
 export class PartyMember extends ControlledActor {
+  public declare partyProfile?: PartyNativeProfile;
   public get isAlly(): true { return true; }
+  public get typeId():string {return this.partyProfile?.template ?? 'party-member';}
+  public get accuracy():number {return this.partyProfile?.accuracy ?? 100;}
+  public get defense():number {return this.partyProfile?.defense ?? 0;}
+  public get damageString():string {return this.partyProfile?.damage ?? '1d2';}
+  public get regenTurns():number {return this.partyProfile?.regenTurns ?? 0;}
+  public override get bloodType():number {return this.partyProfile?.bloodType ?? super.bloodType;}
+  public override hasStatusImmunity(id:StatusId):boolean {
+    if(this.partyProfile?.template==='goblin'&&id==='hallucinating')return false;
+    return super.hasStatusImmunity(id);
+  }
 }
 export interface PartyRuntime {
   state: PartyState;
   /** Only non-primary entities are owned here. The primary remains Game.player. */
   actors: Map<number, PartyMember>;
+  stationed: Map<number, PartyMember>;
+  stationedNative: PartyRuntime['native'];
   native: Record<number, { modal:boolean;falling:boolean;pendingTurn:boolean; poisonedDuringTurn:boolean; searchingCharge:number; justSearched:boolean; justRested:boolean; lastDamageSource:string; receivedLevitationWarning:boolean }>;
 }
 /** Transient trusted execution scope. UI focus is intentionally a different map. */

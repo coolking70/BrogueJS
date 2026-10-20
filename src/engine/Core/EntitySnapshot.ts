@@ -71,6 +71,7 @@ export interface EntitySnapshotGraph {
     items: GameSnapshotItem[];
 }
 export type GameSnapshotPlayer = Pick<Player, typeof PLAYER_FIELDS[number]> & {
+    partyProfile?:import('../../ext/partyRoster').PartyNativeProfile;
     statusImmunities: StatusId[];
     hungerTransition: HungerState | null;
     inventoryCapacity: number;

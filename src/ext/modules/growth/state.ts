@@ -56,12 +56,12 @@ export function isGrowthState(value: unknown, pack: DeepReadonly<GrowthDefinitio
         || !record(value.actors) || !Array.isArray(value.pending)) return false;
     if(party){
         const p=value.party;
-        if(!record(p,['members','participants','receipts'])||!sorted(p.members,(v):v is number=>integer(v,1))||p.members.length>4
+        if(!record(p,['members','participants','receipts'])||!sorted(p.members,(v):v is number=>integer(v,1))||p.members.length>128
             ||(value.created&&(!p.members.length||!p.members.includes(value.playerId)))||!record(p.participants)||!Array.isArray(p.receipts))return false;
         const memberIds=p.members;
         for(const [id,ids] of Object.entries(p.participants))if(!/^[1-9]\d*$/.test(id)||!sorted(ids,(v):v is number=>integer(v,1)&&memberIds.includes(v)))return false;
         const receipts=new Set<string>();
-        for(const r of p.receipts){if(!record(r,['rewardId','shares'])||!text(r.rewardId)||receipts.has(r.rewardId)||!Array.isArray(r.shares)||r.shares.length>4)return false;receipts.add(r.rewardId);
+        for(const r of p.receipts){if(!record(r,['rewardId','shares'])||!text(r.rewardId)||receipts.has(r.rewardId)||!Array.isArray(r.shares)||r.shares.length>128)return false;receipts.add(r.rewardId);
             let last=0;for(const share of r.shares){if(!record(share,['actorId','base','alive'])||!integer(share.actorId,last+1)||!p.members.includes(share.actorId)||!integer(share.base)||typeof share.alive!=='boolean')return false;last=share.actorId;}}
     }
     // An issuer may no longer be installed, and disabled legacy story grants still leave quoted receipts.

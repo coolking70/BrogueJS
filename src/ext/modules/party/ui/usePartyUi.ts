@@ -1,28 +1,46 @@
+import { actorActionSchedulerFor } from '../../../../engine/Core/ActorActionSession';
 import type { PartyAiInput } from '../../../partyAi';
 import { eligiblePartyCompanion } from '../../../../engine/Core/PartyAi';
 import { canSeeMonster } from '../../../../engine/UI/MonsterVisibility';
 import { PartyFailure } from '../../../party';
+import { World5Error } from '../../../worldBasics';
+import { partyFailureText } from './feedback';
 import { SOFT_INTERRUPTS, type WindowLength } from '../../../partyWindow';
 import { timeSystem } from '../../../../engine/Systems/Time';
 import i18next from 'i18next';
-import { computed, ref, getCurrentScope, onScopeDispose } from 'vue';
+import { computed, ref, getCurrentScope, onScopeDispose, watch } from 'vue';
 import { observePartyWindows } from '../../../../engine/Core/PartyWindow';
 import type { ModuleUiHost, ModuleUiSession } from '../../../ui/types';
+import { projectPartyPlans, PARTY_PLAN_COLORS } from './planProjection';
 import PartyHud from './PartyHud.vue';
 export function usePartyUi(host: ModuleUiHost): ModuleUiSession {
   const feedback = ref<string | null>(null),
-    busy = ref(false);
+    busy = ref(false), drawerOpen = ref(false);
   const revision = ref(0),
     game = host.game(),
     refresh = () => {
       revision.value++;
     };
   let cancelMap: (() => void) | undefined;
+  let cancelOverlay: (() => void) | undefined;
+  let mapToken = 0;
+  const setDrawer = (open: boolean) => {
+    if (open) { if (!host.canOpenPanel()) return; host.beforeOpenPanel(); }
+    drawerOpen.value = open;
+    if (!open) { cancelMap?.(); cancelMap = undefined; mapToken++; host.afterClosePanel(); }
+  };
+  const removeKeys = host.registerKeyHandler?.(event => {
+    if (!drawerOpen.value) return false;
+    if (event.key === 'Escape') { event.preventDefault(); setDrawer(false); }
+    return true;
+  }, 70);
   const unsubscribe = observePartyWindows(game, refresh);
   if (getCurrentScope())
     onScopeDispose(() => {
       unsubscribe();
+      removeKeys?.();
       cancelMap?.();
+      cancelOverlay?.();
     });
   const hud = computed(() => {
     host.tick.value;
@@ -33,15 +51,15 @@ export function usePartyUi(host: ModuleUiHost): ModuleUiSession {
     const expectedRevision = root.state.revision,
       focusedId = game.focusedActor.id;
     const act = (work: () => void) => {
-      if (host.game() !== game || game.party !== root || root.state.revision !== expectedRevision)
+      if (host.game() !== game || game.party !== root || root.state.revision !== expectedRevision || game.focusedActor.id !== focusedId)
         return;
       try {
         work();
         feedback.value = null;
       } catch (error) {
         feedback.value =
-          error instanceof PartyFailure
-            ? i18next.t('ext.party.error.' + error.code)
+          error instanceof PartyFailure || error instanceof World5Error
+            ? partyFailureText(error.code)
             : i18next.t('ext.party.error.INTERNAL_FAILURE');
       }
       refresh();
@@ -67,6 +85,19 @@ export function usePartyUi(host: ModuleUiHost): ModuleUiSession {
         refresh();
       }
     };
+    const pickMap = (select: (at: { x: number; y: number }) => void) => {
+      cancelMap?.();
+      const token = ++mapToken;
+      const cells = game.knownPartyWorld().cells.filter(c => c.passable);
+      cancelMap = host.selectMapCells?.(root, at => {
+        if (token !== mapToken || host.game() !== game || game.party !== root ||
+            root.state.revision !== expectedRevision || game.focusedActor.id !== focusedId ||
+            !cells.some(c => c.x === at.x && c.y === at.y)) return;
+        cancelMap?.(); cancelMap = undefined; mapToken++;
+        select(at);
+      }, cells);
+    };
+    const paths = projectPartyPlans(game.knownPartyWorld(), planner.drafts);
     const windowProps = {
       state: structuredClone(root.state.window),
       focused: focusedId,
@@ -74,6 +105,9 @@ export function usePartyUi(host: ModuleUiHost): ModuleUiSession {
       busy: busy.value,
       preview: planner.preview,
       advance,
+      pickTravel: () => pickMap(at => act(() => planner.edit(focusedId, { kind: 'travel', level: { kind: 'dungeon', depth: game.depth }, target: at }))),
+      cancelMap: () => { cancelMap?.(); cancelMap = undefined; mapToken++; },
+      paths,
       append: (kind: 'wait' | 'search' | 'move', dx = 0, dy = 0) =>
         act(() => planner.append(focusedId, kind === 'move' ? { kind, dx, dy } : { kind })),
       clear: () => act(() => planner.edit(focusedId, null)),
@@ -144,6 +178,21 @@ export function usePartyUi(host: ModuleUiHost): ModuleUiSession {
     return {
       component: PartyHud,
       props: {
+        rosterProps: {
+          settlementAvailable: game.extensionRuntime?.manifest.modules.some(m => m.id === 'settlement') ?? false,
+          candidates: game.partyRosterCandidates(),
+          camps: game.partyStationCamps().map(camp=>({...camp,name:i18next.t('ext.party.roster.camp',{id:camp.id})})),
+          focused: focusedId,
+          stationReason: focusedId === root.state.primaryActorId ? 'BAD_ACTOR' : focusedId === root.state.leaderActorId ? 'NOT_CONTROLLER' : root.state.window.decision ? 'DECISION_REQUIRED' : busy.value ? 'ACTOR_BUSY' : null,
+          join: (targetId: number) => act(() => game.executeCommand('party:roster', {
+            kind: 'party:roster', schema: 1, expectedRevision, issuerSlot: 'local:0', actorId: focusedId,
+            targetId, operation: 'join', campId: null, level: { kind: 'dungeon', depth: game.depth }
+          })),
+          station: (campId: number) => act(() => game.executeCommand('party:roster', {
+            kind: 'party:roster', schema: 1, expectedRevision, issuerSlot: 'local:0', actorId: focusedId,
+            targetId: focusedId, operation: 'station', campId, level: { kind: 'dungeon', depth: game.depth }
+          }))
+        },
         aiProps: {
           state: structuredClone(root.state),
           focused: focusedId,
@@ -160,28 +209,11 @@ export function usePartyUi(host: ModuleUiHost): ModuleUiSession {
                 game.activeControlledActors.some((a) => canSeeMonster(a, game.grid, m))
             )
             .map((m) => ({ id: m.id, name: m.name })),
-          pickMap: (select: (at: { x: number; y: number }) => void) => {
-            cancelMap?.();
-            const cells = game.knownPartyWorld().cells.filter((c) => c.passable);
-            cancelMap = host.selectMapCells?.(
-              root,
-              (at) => {
-                cancelMap?.();
-                cancelMap = undefined;
-                if (
-                  host.game() === game &&
-                  game.party === root &&
-                  root.state.revision === expectedRevision &&
-                  game.focusedActor.id === focusedId
-                )
-                  select(at);
-              },
-              cells
-            );
-          },
+          pickMap,
           cancelMap: () => {
             cancelMap?.();
             cancelMap = undefined;
+            mapToken++;
           },
           send: (change: PartyAiInput['change']) =>
             act(() =>
@@ -208,6 +240,8 @@ export function usePartyUi(host: ModuleUiHost): ModuleUiSession {
           temporary: () => act(() => planner.edit(focusedId, { kind: 'ai-this-window' }))
         },
         windowProps,
+        drawerOpen: drawerOpen.value,
+        setDrawer,
         feedback: feedback.value,
         items: game.focusedActor.inventory.items.map((i) => ({
           id: i.id,
@@ -242,9 +276,19 @@ export function usePartyUi(host: ModuleUiHost): ModuleUiSession {
           const actor = game.controlledActors.find((a) => a.id === m.actorId)!;
           return {
             id: m.actorId,
+            color: PARTY_PLAN_COLORS[paths.findIndex(p => p.actorId === m.actorId) % PARTY_PLAN_COLORS.length] ?? 0x777777,
             hp: actor.hp,
             maxHp: actor.maxHp,
             life: m.life,
+            controller: m.controller.kind,
+            pendingController: m.pendingController?.kind ?? null,
+            temporaryAi: m.temporaryAiSeq !== null,
+            remaining: actor.ticksUntilTurn,
+            actionBusy: actorActionSchedulerFor(game)?.isBusy(actor.id) ?? false,
+            source: ({ creation: 'initial', rescue: 'captive', narrative: 'narrative', resident: 'resident' } as const)[root.state.sources.find(s => s.actorId === m.actorId)!.kind],
+            plan: planner.drafts.has(m.actorId) ? planner.drafts.get(m.actorId) : root.state.window.members.find(w => w.actorId === m.actorId)?.plan,
+            draft: planner.drafts.has(m.actorId),
+            cursor: planner.drafts.has(m.actorId) ? 0 : root.state.window.members.find(w => w.actorId === m.actorId)?.cursor ?? 0,
             depth: m.level.kind === 'dungeon' ? m.level.depth : 0
           };
         }),
@@ -252,6 +296,7 @@ export function usePartyUi(host: ModuleUiHost): ModuleUiSession {
           if (host.game() !== game) return;
           cancelMap?.();
           cancelMap = undefined;
+          mapToken++;
           game.focusPartyMember(id);
           refresh();
         },
@@ -273,16 +318,30 @@ export function usePartyUi(host: ModuleUiHost): ModuleUiSession {
       }
     };
   });
+  watch(hud, slot => {
+    const paths = (slot?.props.windowProps as { paths: ReturnType<typeof projectPartyPlans> } | undefined)?.paths;
+    cancelOverlay?.();
+    if (!paths || host.game() !== game) return;
+    const colors = PARTY_PLAN_COLORS;
+    cancelOverlay = host.showMapOverlay?.(game, paths.flatMap((path, index) => {
+      const color = colors[index % colors.length]!;
+      return [...path.points.map((p, i) => ({ ...p, color, kind: i === 0 ? 'actor' as const : path.draft ? 'draft' as const : 'path' as const })),
+        ...(path.target ? [{ ...path.target, color, kind: 'target' as const }] : [])];
+    }));
+  }, { immediate: true });
   return {
     hud,
     bar: ref(null),
     panel: ref(null),
     commands: ref([]),
-    panelOpen: ref(false),
+    panelOpen: drawerOpen,
     refresh,
     close() {
+      drawerOpen.value = false;
       cancelMap?.();
       cancelMap = undefined;
+      mapToken++;
+      cancelOverlay?.();
     }
   };
 }

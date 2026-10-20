@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
+import PartyWindowControls from './PartyWindowControls.vue';
+import type { PlanProjection } from './planProjection';
 import { useTranslation } from 'i18next-vue';
 import type { PartyWindowState, PartyPlan, WindowLength } from '../../../partyWindow';
 import type { PartyPreviewResult } from '../../../../engine/Core/PartyPlanning';
 const props = defineProps<{
   state: PartyWindowState;
+  hideControls?: boolean;
+  pickTravel: () => void;
+  cancelMap: () => void;
+  paths: PlanProjection[];
   focused: number;
   draft: PartyPlan | null | undefined;
   busy: boolean;
@@ -27,16 +33,11 @@ const plan = computed(() => {
     ? { ...p, actions: p.actions.slice(props.draft === undefined ? m!.cursor : 0) }
     : p;
 });
-const length = ref('100'),
-  empty = ref<'wait' | 'interrupt'>('wait'),
-  reaction = ref<'stop' | 'continue' | 'ai-this-window'>('stop');
-const selected = (): WindowLength =>
-  length.value === 'fine'
-    ? { kind: 'fine' }
-    : {
-        kind: 'ticks',
-        ticks: length.value === 'auto' ? 100 : (Number(length.value) as 100 | 300 | 1000)
-      };
+const empty = ref<'wait' | 'interrupt'>('wait'), reaction = ref<'stop' | 'continue' | 'ai-this-window'>('stop');
+watch(() => [props.focused, props.state.members], () => {
+  const member = props.state.members.find(m => m.actorId === props.focused);
+  if (member) { empty.value = member.emptyPlan; reaction.value = member.reactions['new-hostile']; }
+}, { immediate: true });
 const choices = ref('');
 const dirs = [
   [-1, -1, '↖'],
@@ -93,31 +94,10 @@ const dirs = [
         {{ t('ext.party.plan.keep') }}
       </button>
     </div>
-    <div class="row">
-      <select
-        v-model="length"
-        :disabled="busy || !!state.decision"
-        :aria-label="t('ext.party.window.length')"
-      >
-        <option value="fine">{{ t('ext.party.window.fine') }}</option>
-        <option value="100">100</option>
-        <option value="300">300</option>
-        <option value="1000">1000</option>
-        <option value="auto">{{ t('ext.party.window.auto') }}</option></select
-      ><button
-        data-party-advance
-        :disabled="busy || !!state.decision || state.phase === 'failed'"
-        @click="advance(selected(), length === 'auto')"
-      >
-        {{ t('ext.party.window.advance') }}</button
-      ><button
-        data-party-preview
-        :disabled="busy || !!state.decision"
-        @click="rehearse(selected(), length === 'auto')"
-      >
-        {{ t('ext.party.window.preview') }}
-      </button>
-    </div>
+    <div class="row"><button data-party-travel :disabled="busy || !!state.decision" @click="pickTravel()">{{t('ext.party.plan.pickTravel')}}</button><button @click="cancelMap()">{{t('ext.party.ai.cancel_map')}}</button></div>
+    <PartyWindowControls v-if="!hideControls" :disabled="busy || !!state.decision || state.phase === 'failed'" :advance="advance" :rehearse="rehearse"/>
+    <p>{{t('ext.party.plan.mapLegend')}}</p>
+    <ul data-party-paths><li v-for="path in paths" :key="path.actorId">#{{path.actorId}} · {{t(path.draft ? 'ext.party.plan.draft' : 'ext.party.plan.accepted')}} · {{t('ext.party.plan.path.'+path.status)}}<span v-if="path.target"> · {{path.target.x}},{{path.target.y}}</span></li></ul>
     <details>
       <summary>{{ t('ext.party.window.policy') }}</summary>
       <select v-model="empty" @change="policy(empty, reaction)">
@@ -196,7 +176,7 @@ const dirs = [
 button,
 select {
   font: inherit;
-  min-height: 36px;
+  min-height: 44px;
   max-width: 100%;
   color: inherit;
   background: #232923;

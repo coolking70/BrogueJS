@@ -10,7 +10,7 @@ import { productionActorActionScheduler } from './ActorActionProduction';
 import { assertNativeActorDecisionScope, type ActorActionScope } from './ActorActionScope';
 import { sourceFootprintVersion } from '../Movement/AttackShape';
 import {
-  residentComponent,
+  residentComponent, activeResidentActors, type ResidentActor,
   residentRecord,
   residentCamp,
   campBox,
@@ -50,7 +50,7 @@ import { TRAVEL_DIRECTIONS } from '../Movement/LevelTravel';
 class ResidentStop extends Error {}
 const work = (g: Game, id: number) => g.world5?.residentJobs.find((j) => j.actorId === id);
 function source(g: Game, id: number) {
-  return g.monsters.find((a) => a.id === id);
+  return activeResidentActors(g).find((a) => a.id === id);
 }
 function efficiency(g: Game, id: number) {
   const r = residentComponent(g, id),
@@ -59,8 +59,8 @@ function efficiency(g: Game, id: number) {
   const phase = Math.floor(residentEconomicTick(g,id) / 1000) % 32;
   return phase < r.schedule[0] ? residentEfficiency(n) : 0;
 }
-export function residentHasNativePriority(g: Game, a: Monster): boolean {
-  return residentDisabled(a) || unsafeResidentCell(g, a.loc) || a.hasNativeResidentPriority(g);
+export function residentHasNativePriority(g: Game, a: ResidentActor): boolean {
+  return residentDisabled(a) || unsafeResidentCell(g, a.loc) || (a instanceof Monster ? a.hasNativeResidentPriority(g) : g.monsters.some(m=>m.hp>0&&!m.isAlly&&!m.isCaged&&Math.max(Math.abs(m.x-a.x),Math.abs(m.y-a.y))<=1));
 }
 
 function plot(g: Game, id: number) {
@@ -93,12 +93,12 @@ export function residentPlotReason(g: Game, id: number): string | null {
   }
   return water ? null : 'water';
 }
-function near(a: Monster, p: { x: number; y: number }) {
+function near(a: ResidentActor, p: { x: number; y: number }) {
   return Math.max(Math.abs(a.x - p.x), Math.abs(a.y - p.y)) <= 1;
 }
 export function stepResident(
   g: Game,
-  a: Monster,
+  a: ResidentActor,
   target: { x: number; y: number },
   adjacent = true,
   targetRevision = 0
@@ -114,7 +114,7 @@ export function stepResident(
         g.grid.isValidPos(p.x, p.y) &&
         !unsafeResidentCell(g, p) &&
         !playerTravelDiagonalBlocked(g.grid, a.loc, p, false) &&
-        a.canEnterMovementTerrain(g, p.x, p.y) &&
+        (a instanceof Monster ? a.canEnterMovementTerrain(g,p.x,p.y) : g.canStepFootprint(a,p)) &&
         !g.getMonsterAt(p.x, p.y) &&
         (g.party ? !g.controlledOccupies(p) : (g.player.x !== p.x || g.player.y !== p.y))
     );
@@ -134,7 +134,7 @@ export function stepResident(
       a.id,
       target,
       map,
-      (p) => !unsafeResidentCell(g, p) && a.canEnterMovementTerrain(g, p.x, p.y),
+      (p) => !unsafeResidentCell(g, p) && (a instanceof Monster ? a.canEnterMovementTerrain(g,p.x,p.y) : g.canStepFootprint(a,p)),
       a.loc
     );
     choices.sort(
@@ -142,7 +142,8 @@ export function stepResident(
     );
   }
   if (choices[0] && (map[choices[0].x]?.[choices[0].y] ?? 30000) < (map[a.x]?.[a.y] ?? 30000)) {
-    a.moveResidentStep(choices[0], g);
+    if(a instanceof Monster)a.moveResidentStep(choices[0],g);
+    else g.moveStationedResident(a,choices[0]);
     if (a.ticksUntilTurn <= 0) a.ticksUntilTurn = a.movementSpeed;
     return true;
   }
@@ -185,7 +186,7 @@ function startPhase(g: Game, j: ResidentWork, ticks: number) {
 }
 function accept(
   g: Game,
-  a: Monster,
+  a: ResidentActor,
   kind: 'plant' | 'haul',
   item: Item,
   quantity: number,

@@ -277,7 +277,7 @@ export function specificallyValidBoltTarget(caster: Monster, target: Creature, c
 
 /** P4-6：CE monsterAtLoc 的 web 等价（含玩家）：该格上的玩家或存活怪物。 */
 function creatureAtLoc(game: Game, x: number, y: number): Creature | undefined {
-    const member=game.activeControlledActors.find(a=>a.hp>0&&footprintContains(a,{x,y}));
+    const member=(game.party?game.nativeAllyActors:game.activeControlledActors).find(a=>a.hp>0&&footprintContains(a,{x,y}));
     if(member)return member;
     return game.getMonsterAt(x, y);
 }
@@ -1243,7 +1243,7 @@ export class Monster extends Creature {
     public tryUseBolt(game: Game): boolean {
         if (this.bolts.length === 0) return false;
 
-        const candidates: Creature[] = [game.commandActor, ...game.monsters.filter(m => m !== this && m.hp > 0)];
+        const candidates: Creature[] = [game.commandActor, ...(game.party?game.nativeAllyActors.filter(a=>a!==game.commandActor):[]), ...game.monsters.filter(m => m !== this && m.hp > 0)];
         for (const target of candidates) {
             if (target.hp <= 0) continue;
             if (!generallyValidBoltTarget(this, target, game)) continue;

@@ -185,7 +185,8 @@ export class ActorCombatResolutionAuthority {
         if (options && !isProductionActorActionSession(game)) fail('production authority requires a bound engine session');
         validateActorCombatResolutionState(state);
         this.player = game.player; this.grid = game.grid; this.depth = game.depth;
-        for (const actor of [...game.controlledActors, ...game.monsters]) {
+        const allies = game.party ? new Set([...game.controlledActors, ...game.nativeAllyActors]) : game.controlledActors;
+        for (const actor of [...allies, ...game.monsters]) {
             if (this.cohort.has(actor.id)) fail('duplicate world actor identity');
             this.cohort.set(actor.id, actor);
         }
@@ -205,7 +206,9 @@ export class ActorCombatResolutionAuthority {
         if (this.options && !isProductionActorActionSession(this.game)) fail('production authority session closed');
     }
     private liveActor(actorId: number): Creature | undefined {
-        const actor = this.game.controlledActors.find(a=>a.id===actorId) ?? this.game.monsters.find(m => m.id === actorId);
+        const actor = this.game.controlledActors.find(a=>a.id===actorId)
+            ?? (this.game.party ? this.game.nativeAllyActors.find(a=>a.id===actorId) : undefined)
+            ?? this.game.monsters.find(m => m.id === actorId);
         return actor && actor === this.cohort.get(actorId) ? actor : undefined;
     }
     private defense(actorId: number): ActorDefenseState | undefined {

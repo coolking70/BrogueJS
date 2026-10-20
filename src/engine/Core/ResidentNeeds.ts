@@ -15,7 +15,7 @@ import {
   residentRecord,
   residentBedIds,
   residentRations,
-  residentActors,
+  residentActors, activeResidentActors,
   transactResidentWorld,
   publishResident
 } from './ResidentWorld';
@@ -283,7 +283,7 @@ export function freezeResidentCamps(g: Game, depth: number): void {
           bedComponentId: r?.bedId ?? null,
           bedEligible: r?.bedId !== null && beds.includes(r?.bedId ?? -1),
           route: {
-            reachable: !!a && g.monsters.includes(a) && r?.mode === 'stay',
+            reachable: !!a && activeResidentActors(g).includes(a) && r?.mode === 'stay',
             distance: 0,
             travelTicks: 0
           }

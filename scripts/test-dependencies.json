@@ -11,6 +11,12 @@
     "settlement"
   ],
   "tests": {
+    "src/ext/modules/party/tests/party_roster_worker.test.ts": {
+      "required": [
+        "settlement"
+      ],
+      "optional": []
+    },
     "src/test/ext_creation_combinations_ui.test.ts": {
       "required": [
         "combat",
@@ -720,6 +726,46 @@
     "src/ext/modules/party/tests/party_ai_r1_companion.test.ts": {
       "required": [
         "combat"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_plan_projection.test.ts": {
+      "required": [],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_narrative_roster.test.ts": {
+      "required": [
+        "narrative",
+        "settlement"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_stationed_native.test.ts": {
+      "required": ["settlement", "combat"],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_resident_handoff.test.ts": {
+      "required": [
+        "settlement"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_captive_natural.test.ts": {
+      "required": [
+        "settlement"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_growth_roster.test.ts": {
+      "required": [
+        "growth",
+        "settlement"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/party/tests/party_resident_natural.test.ts": {
+      "required": [
+        "settlement"
       ],
       "optional": []
     }

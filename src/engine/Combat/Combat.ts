@@ -1,3 +1,4 @@
+import type { PartyMember } from '../Core/PartyRuntime';
 import { ControlledActor } from '../../entities/ControlledActor';
 import { isIncapacitated } from '../Status/Incapacitation';
 import { nativeProjectileProbability, nativeProjectileRoll, nativeProjectileRunic, nativeWeaknessFactor, nativeStat, nativePair, nativeHitChance, nativeHitBase, nativeRolledDamage } from '../Stats/NativeStatSources';
@@ -204,6 +205,7 @@ export class CombatSystem {
             && !(attacker.hasAbility('MA_SEIZES') && !attacker.seizing && legalSeizeContact(attacker, defender, opts?.grid))) attacker.submerged = false;
         // --- Determine attacker stats ---
         if (attacker instanceof ControlledActor) {
+            if((attacker as PartyMember).partyProfile)damageString=(attacker as PartyMember).partyProfile!.damage;
             if (attacker.equippedWeapon && attacker.equippedWeapon.damage) {
                 damageString = attacker.equippedWeapon.damage;
                 clumping = attacker.equippedWeapon.clumping;
@@ -321,7 +323,7 @@ export class CombatSystem {
 
         const parts = CombatSystem.parseDamageString(damageString);
         let { min, max } = parts;
-        if (weaponEnchant !== undefined || attacker instanceof Monster) {
+        if (weaponEnchant !== undefined || attacker instanceof Monster || !!(attacker as PartyMember).partyProfile) {
             // CE Items.c recalculateEquipmentBonuses: scale/truncate endpoints
             // BEFORE randClump, preserving clumpFactor and every interior value.
             min = nativeStat(attacker,'native.damage-min');
@@ -335,7 +337,7 @@ export class CombatSystem {
         let damage = immune ? 0 : clumpedRoll(min, max, clumping ?? parts.clumping,
             (lo, hi) => rng.randRange(lo, hi));
 
-        if (attacker instanceof Monster) damage = nativeRolledDamage(attacker,damage);
+        if (attacker instanceof Monster || !!(attacker as PartyMember).partyProfile) damage = nativeRolledDamage(attacker,damage);
 
         // CE :1248-1258: only the sneak set delays/wakes a monster, even on an
         // immune hit; lunge/captive/attackHit-only paralysis do not.
@@ -501,6 +503,7 @@ export class CombatSystem {
             && !(attacker.hasAbility('MA_SEIZES') && !attacker.seizing && legalSeizeContact(attacker, defender, opts?.grid))) attacker.submerged = false;
         // --- Determine attacker stats ---
         if (attacker instanceof ControlledActor) {
+            if((attacker as PartyMember).partyProfile)damageString=(attacker as PartyMember).partyProfile!.damage;
             if (attacker.equippedWeapon && attacker.equippedWeapon.damage) {
                 damageString = attacker.equippedWeapon.damage;
                 clumping = attacker.equippedWeapon.clumping;
@@ -626,7 +629,7 @@ export class CombatSystem {
 
         const parts = CombatSystem.parseDamageString(damageString);
         let { min, max } = parts;
-        if (weaponEnchant !== undefined || attacker instanceof Monster) {
+        if (weaponEnchant !== undefined || attacker instanceof Monster || !!(attacker as PartyMember).partyProfile) {
             // CE Items.c recalculateEquipmentBonuses: scale/truncate endpoints
             // BEFORE randClump, preserving clumpFactor and every interior value.
             min = nativeStat(attacker,'native.damage-min');
@@ -640,7 +643,7 @@ export class CombatSystem {
         let damage = immune ? 0 : clumpedRoll(min, max, clumping ?? parts.clumping,
             (lo, hi) => rng.randRange(lo, hi));
 
-        if (attacker instanceof Monster) damage = nativeRolledDamage(attacker,damage);
+        if (attacker instanceof Monster || !!(attacker as PartyMember).partyProfile) damage = nativeRolledDamage(attacker,damage);
 
         // CE :1248-1258: only the sneak set delays/wakes a monster, even on an
         // immune hit; lunge/captive/attackHit-only paralysis do not.
@@ -844,22 +847,24 @@ export class CombatSystem {
      */
     public static resolveThrownWeapon(
         thrower: Player,
-        defender: Monster,
+        defender: Monster | ControlledActor,
         item: Item,
-        grid?: Grid
+        grid?: Grid,
+        beforeDamage?: (damage: number) => number
     ): { hit: boolean; damage: number; killed: boolean; triggeredRunic?: string } {
         const hooks = thrower.extensionHooks ?? defender.extensionHooks;
-        if (!hooks) return CombatSystem.resolveThrownWeaponClassic(thrower, defender, item, grid);
+        if (!hooks && defender instanceof Monster) return CombatSystem.resolveThrownWeaponClassic(thrower, defender, item, grid);
+        if (!hooks) return CombatSystem.resolveThrownWeaponExtended(thrower, defender, item, grid, undefined, beforeDamage);
         const origin = hooks.causality.current?.kind === 'projectile' ? hooks.causality.current
             : hooks.causality.create('projectile', thrower.id, thrower.id, hooks.partyId(thrower));
         return hooks.causality.withOrigin(origin, () => {
 
             if (!(hooks.wantsPhysicalResolution?.() ?? !!hooks.physicalResolved))
-                return CombatSystem.resolveThrownWeaponExtended(thrower, defender, item, grid);
+                return CombatSystem.resolveThrownWeaponExtended(thrower, defender, item, grid, undefined, beforeDamage);
             const resolution = hooks.causality.create('projectile', thrower.id, origin.creditActorId, origin.creditPartyId);
             const trace: PhysicalResolutionTrace = { probabilityRolled: false, positivePhysicalDamage: false, hpLost: 0 };
             const result = hooks.causality.withOrigin(resolution,
-                () => CombatSystem.resolveThrownWeaponExtended(thrower, defender, item, grid, trace));
+                () => CombatSystem.resolveThrownWeaponExtended(thrower, defender, item, grid, trace, beforeDamage));
             hooks.physicalResolved?.(thrower, defender, { resolutionId: resolution.effectId, attackKind: 'thrown',
                 result: { hit: result.hit, damage: result.damage, backstab: false }, ...trace });
             return result;
@@ -926,11 +931,11 @@ export class CombatSystem {
         return { hit: true, damage, killed, triggeredRunic };
     }
 
-    private static resolveThrownWeaponExtended(thrower: Player, defender: Monster, item: Item, grid?: Grid, trace?: PhysicalResolutionTrace):
+    private static resolveThrownWeaponExtended(thrower: Player, defender: Monster | ControlledActor, item: Item, grid?: Grid, trace?: PhysicalResolutionTrace, beforeDamage?: (damage: number) => number):
         { hit: boolean; damage: number; killed: boolean; triggeredRunic?: string } {
         // CE Items.c:6790: a thrown weapon attempt releases even on a miss.
         defender.setStatusDuration('entranced', 0);
-        if (bodyDecisionActor(defender).creatureMode !== MonsterMode.PERM_FLEEING && !defender.isCaged && (!bodyDecisionActor(defender).isAlly || defender.hasStatus('magical_fear'))
+        if (defender instanceof Monster && bodyDecisionActor(defender).creatureMode !== MonsterMode.PERM_FLEEING && !defender.isCaged && (!bodyDecisionActor(defender).isAlly || defender.hasStatus('magical_fear'))
             && (bodyDecisionActor(defender).state !== MonsterState.FLEEING || defender.hasStatus('magical_fear'))) {
             bodyDecisionActor(defender).state = MonsterState.HUNTING;
             defender.shortenMagicalFear();
@@ -938,10 +943,10 @@ export class CombatSystem {
         const enchant=nativeProjectileRunic(thrower,item);
 
         // CE attackHit (Combat.c:149-158): short circuit, no accuracy roll.
-        const autoHit = isIncapacitated(defender) || defender.hasStatus('stuck') || defender.isCaged;
+        const autoHit = isIncapacitated(defender) || defender.hasStatus('stuck') || defender instanceof Monster && defender.isCaged;
         // A slaying rune (Combat.c:130-135) sets probability to 100 but still
         // consumes attackHit's rand_percent roll; only the conditions above skip it.
-        const slayingHit = item.runicType === 'slaying' && monsterIsInClass(defender.typeId, item.vorpalEnemy);
+        const slayingHit = item.runicType === 'slaying' && defender instanceof Monster && monsterIsInClass(defender.typeId, item.vorpalEnemy);
         const probability = slayingHit || (defender.seized && thrower.seizing)
             ? 100 : nativeProjectileProbability(thrower,defender,item);
         const rule=(port:'hitChance'|'physicalDamage',input:ExtensionRuleInput)=>combatStatPair(thrower,defender,port,input);
@@ -957,7 +962,7 @@ export class CombatSystem {
         }
 
         // CE Items.c:6817-6821：豁免在三目里先判，豁免时不掷伤害骰。
-        const immune = defender.isInvulnerable() || defender.isImmuneToWeapons();
+        const immune = defender instanceof Monster && (defender.isInvulnerable() || defender.isImmuneToWeapons());
         let damage = 0;
         if (!immune) {
             const parts = CombatSystem.parseDamageString(item.damage || '1d3');
@@ -968,6 +973,7 @@ export class CombatSystem {
 
         damage = rule('physicalDamage', { actorId: thrower.id, targetId: defender.id, baseValue: damage,
             attackKind: 'thrown', damageKind: 'physical', direct: true, immune });
+        if (beforeDamage) damage = beforeDamage(damage);
         if (trace) trace.positivePhysicalDamage = damage > 0 && !immune;
         const hpBefore = defender.hp;
         const hpDamage = defender.absorbShieldDamage(damage);
@@ -977,15 +983,15 @@ export class CombatSystem {
         // CE thrown hit calls moralAttack after the separate pre-hit aggro gate.
         // A permanent thief keeps its mode, but a surviving hit still shortens fear.
         if (!killed) defender.shortenMagicalFear();
-        defender.enrageAfterAttack();
+        if (defender instanceof Monster) defender.enrageAfterAttack();
 
         // CE Items.c:6845-6849：magicWeaponHit 只在非击杀分支调用。
         let triggeredRunic: string | undefined;
         if (!killed && item.runicType) {
             const parts = CombatSystem.parseDamageString(item.damage || '1d3');
             const chance = item.runicType === 'slaying'
-                ? (monsterIsInClass(defender.typeId, item.vorpalEnemy) ? 100 : 0)
-                : defender.hasCEBehavior('MONST_INANIMATE') || defender.isInvulnerable() ? 0
+                ? (defender instanceof Monster && monsterIsInClass(defender.typeId, item.vorpalEnemy) ? 100 : 0)
+                : defender instanceof Monster && (defender.hasCEBehavior('MONST_INANIMATE') || defender.isInvulnerable()) ? 0
                 : runicWeaponChance(enchant, item.runicType,
                     { damageMin: parts.min, damageMax: parts.max,
                       attacksStagger: item.flags?.includes('ITEM_ATTACKS_STAGGER'),

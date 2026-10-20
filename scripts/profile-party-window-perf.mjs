@@ -7,6 +7,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { Worker } from 'node:worker_threads';
 import { build } from 'esbuild';
 import { boot, write, hash, stats, drain } from './ext-perf-common.mjs';
+import { readCrossformatTarget, crossformatFrame, CROSSFORMAT_ID, CROSSFORMAT_DELTAS } from './party-perf-crossformat.mjs';
 import { hashCandidate } from './check-module-removal.mjs';
 const [output, mode, countText, stepsText = '2049', scene = 'windows'] = process.argv.slice(2),
   actors = Number(countText),
@@ -31,7 +32,7 @@ try {
   const { createExtensionRegistry, getInstalledModuleDescriptors } = await load('ext/catalog.ts'),
     { rng } = await load('engine/Random.ts'),
     { timeSystem } = await load('engine/Systems/Time.ts');
-  const { mechanicalDigest } = await load('engine/Core/RecordingDigest.ts'),
+  const { mechanicalDigest, hashJson } = await load('engine/Core/RecordingDigest.ts'),
     { WorkerRecordingBackend } = await load('engine/Core/RecordingBackend.ts');
   const registry = createExtensionRegistry(),
     ids = mode === 'party-all' ? getInstalledModuleDescriptors().map((m) => m.id) : ['party'],
@@ -207,6 +208,15 @@ try {
   })));
   gcObserver = new PerformanceObserver((list) => collectGc(list.getEntries()));
   gcObserver.observe({ entryTypes: ['gc'] });
+  const crossTarget = readCrossformatTarget(process.env.PARTY_PERF_CROSSFORMAT_TARGET),
+    crossFrames = [], crossProofMs = [];
+  const observeCross = index => {
+    if (!crossTarget) return;
+    const begin = performance.now();
+    crossFrames.push(crossformatFrame(g.projectWholeRun(), g.recordingInputState(), crossTarget.manifests[`${actors}/${mode}`], mechanicalDigest, hashJson, index));
+    crossProofMs.push(performance.now() - begin);
+  };
+  observeCross(0);
   const samples = [],
     rows = [],
     inputs = [],
@@ -460,6 +470,7 @@ try {
       hp: g.controlledActors.map((a) => [a.id, a.hp, a.nutrition]),
       rng: rng.getState()
     });
+    observeCross(index + 1);
     if (boundary || index === 0 || [254, 255, 256, 2046, 2047, 2048, steps - 1].includes(index)) {
       const p = performance.now(),
         world = g.projectWholeRun();
@@ -536,6 +547,12 @@ try {
   assert.equal(h.replayError, null);
   assert.deepEqual(rng.getState(), random);
   assert.deepEqual(mechanicalDigest(h.projectWholeRun(), h.recordingInputState()), digest);
+  if (crossTarget) {
+    h.replaySeek(0); assert.equal(h.replayCursor, 0); assert.equal(h.replayError, null);
+    h.replaySeek(recording.events.length); assert.equal(h.replayCursor, recording.events.length); assert.equal(h.replayError, null);
+    assert.deepEqual(mechanicalDigest(h.projectWholeRun(), h.recordingInputState()), digest);
+    assert.deepEqual(rng.getState(), random);
+  }
   assert.equal(previewPollution, 0);
   const positive = samples.filter((s) => s.ticks > 0),
     zero = samples.filter((s) => s.ticks === 0),
@@ -552,6 +569,7 @@ try {
     );
   write(resolve(output), {
     identity: scene==='ai'?'party-ai-v1':'party-window-v1',
+    ...(crossTarget ? {crossformat:{identity:CROSSFORMAT_ID,allowedDeltas:CROSSFORMAT_DELTAS,target:crossTarget,nativeCodec:{foundation:recording.codec.foundation,wholeRun:recording.codec.wholeRun,recording:recording.version,origin:recording.codec.origin,state:save.party.state.schema},frames:crossFrames,lifecycle:{saveLoad:true,seedReplay:true,seek:true},proofTiming:quantile(crossProofMs),timingScope:'Proof outside input-to-ready; included in measurement wall and process CPU'}} : {}),
     ...(scene==='ai'?{aiCounters}:{} ),
     status: 'measurement-only',
     mode,

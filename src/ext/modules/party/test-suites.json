@@ -5,6 +5,7 @@
     "tests/party_travel.test.ts",
     "tests/party_extensions.test.ts",
     "tests/party_worker.test.ts",
+    "tests/party_roster_worker.test.ts",
     "tests/party_r1_environment.test.ts",
     "tests/party_r2_occupancy.test.ts",
     "tests/party_window.test.ts",
@@ -24,7 +25,15 @@
     "tests/party_ai_review_fall.test.ts",
     "tests/party_ai_review_rally.test.ts",
     "tests/party_ai_r1_control.test.ts",
-    "tests/party_ai_r1_companion.test.ts"
+    "tests/party_ai_r1_companion.test.ts",
+    "tests/party_plan_projection.test.ts",
+    "tests/party_resident_handoff.test.ts",
+    "tests/party_roster.test.ts",
+    "tests/party_narrative_roster.test.ts",
+    "tests/party_captive_natural.test.ts",
+    "tests/party_growth_roster.test.ts",
+    "tests/party_resident_natural.test.ts",
+    "tests/party_stationed_native.test.ts"
   ],
   "drift": []
 }

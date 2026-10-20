@@ -513,6 +513,6 @@
   },
   "party": {
     "kind": "run",
-    "contract": "P1c: lazy party only. state3 owns member controller/pendingController/controlEpoch/temporaryAiSeq/ai(settings,order,ordinal,diagnostic), companionOrders and window. Full checkpoint captures entire state graph; party digest owns all control roots. Native entities/inventory/timers remain unique. Whole-run10/recording7/origin5, no-party F20/S7/R4/O2 unchanged. PartyPlanning drafts and previews are root/revision-bound session state; AI consumes detached known DTOs only."
+    "contract": "P1d: lazy party only. state4 owns initialActorIds, sources, rescued, transfers (join/station/death), retired, residentMemories, member control/AI and window. actors and stationed maps own disjoint single entities and inventories; native and stationedNative move each actor clock row without duplication; full checkpoint captures entire graph. Whole-run11/recording8/origin6; no-party F20/S7/R4/O2 unchanged. UI drafts/previews remain root/revision-bound session state."
   }
 }

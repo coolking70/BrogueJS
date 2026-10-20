@@ -1,5 +1,5 @@
 import { cancelResidentWork } from '../Core/ResidentJobs';
-import { transactResidentWorld } from '../Core/ResidentWorld';
+import { activeResidentActors, transactResidentWorld } from '../Core/ResidentWorld';
 import { settleResidentNeeds, freezeResidentCamps } from '../Core/ResidentNeeds';
 /** Trusted C5-1 foundation authority. No production catalog or public command. */
 import type { Game } from '../Core/Game';
@@ -678,7 +678,7 @@ function protectedCell(
   )
     fail('C5_PROTECTED');
   if (
-    [...game.activeControlledActors, ...game.monsters, ...game.dormantMonsters].some(
+    [...game.activeControlledActors, ...activeResidentActors(game), ...game.dormantMonsters].some(
       (a) => a.hp > 0 && game.footprintOf(a).some((p) => p.x === at.x && p.y === at.y)
     ) ||
     game.items.some((i) => i.x === at.x && i.y === at.y)
@@ -697,7 +697,7 @@ function protectedCell(
   if (blocking) {
     for (const actor of [
       game.commandActor,
-      ...[...game.monsters, ...game.dormantMonsters].filter(
+      ...[...activeResidentActors(game), ...game.dormantMonsters].filter(
         (m) => m.hp > 0 && game.world5!.residents.some((r) => r.actorId === m.id)
       )
     ])
@@ -710,7 +710,7 @@ function jobInRegion(
   actorId: number,
   ticketId: number | null
 ): boolean {
-  const actor = [...game.activeControlledActors, ...game.monsters, ...game.dormantMonsters].find(
+  const actor = [...game.activeControlledActors, ...activeResidentActors(game), ...game.dormantMonsters].find(
       (a) => a.id === actorId
     ),
     ticket = game.world5!.tickets.find((t) => t.ticketId === ticketId);
@@ -869,7 +869,7 @@ function validate(game: Game, owner: string, request: Request): string {
     };
     for (const e of runtime.worldWorkEntities().filter((e) => e.depth === game.depth))
       cutsBoundary([e, ...workPositions(game, e, e.interactionDistance)]);
-    for (const actor of [...game.activeControlledActors, ...game.monsters, ...game.dormantMonsters])
+    for (const actor of [...game.activeControlledActors, ...activeResidentActors(game), ...game.dormantMonsters])
       cutsBoundary(game.footprintOf(actor));
     if (!escapes(game, game.commandActor.loc, null)) fail('C5_PROTECTED');
     return c5Canonical([c, old?.revision ?? null]);

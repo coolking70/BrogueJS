@@ -5,12 +5,15 @@ import i18next from 'i18next';
 import '../../../../i18n';
 import { createSfcHarness } from '../../../../test/support/sfcHarness';
 import { Game } from '../../../../engine/Core/Game';
+import { rng } from '../../../../engine/Random';
 import { logger } from '../../../../engine/Systems/Logger';
 import { usePartyUi } from '../ui/usePartyUi';
+import { World5Error } from '../../../worldBasics';
 type N = {
   tag: string;
   text: string;
   props: Record<string, any>;
+  style: Record<string,string>;
   children: N[];
   parent: N | null;
   readonly tagName: string;
@@ -27,6 +30,7 @@ const node = (tag = '', text = ''): N =>
     tag,
     text,
     props: {},
+    style: {},
     children: [],
     parent: null,
     get tagName() {
@@ -95,6 +99,7 @@ beforeAll(async () => {
 });
 afterEach(() => {
   body.children = [];
+  vi.restoreAllMocks();
 });
 it.each([2, 4])(
   'real %i-member panel plans, previews, submits once, and invalidates stale callbacks',
@@ -167,3 +172,81 @@ it.each([2, 4])(
     }
   }
 );
+it('isolates old focus callbacks and maps known travel targets without a command or RNG advance', async () => {
+  const g = new Game({seed:1});
+  g.startNewGame({seed:42,ruleSet:'extended',extensions:['party']});
+  while(logger.pendingAcknowledgment) logger.acknowledgeNext();
+  const callbacks: ((at:{x:number;y:number})=>void)[]=[];
+  const ui=usePartyUi({game:()=>g,tick:Vue.ref(0),immersive:Vue.ref(false),canOpenPanel:()=>true,beforeOpenPanel(){},afterClosePanel(){},selectMapCells(_owner, select){callbacks.push(select);return ()=>{};}});
+  try {
+    const old=ui.hud.value!.props as any;
+    old.windowProps.pickTravel();
+    const second=g.party!.state.members[1]!.actorId;
+    old.focus(second);
+    const fresh=ui.hud.value!.props as any;
+    fresh.windowProps.pickTravel();
+    const revision=g.party!.state.revision, prefix=g.recordedInputEvents.length, random=rng.getState();
+    old.windowProps.append('wait');
+    callbacks[0]!({...g.focusedActor.loc});
+    expect(g.partyPlanner()!.drafts.size).toBe(0);
+    callbacks[1]!({...g.focusedActor.loc});
+    expect(g.partyPlanner()!.drafts.get(second)).toMatchObject({kind:'travel',target:{...g.focusedActor.loc}});
+    expect(g.party!.state.revision).toBe(revision);
+    expect(g.recordedInputEvents.length).toBe(prefix);
+    expect(rng.getState()).toEqual(random);
+  } finally {ui.close();g.disposeRecording();while(logger.pendingAcknowledgment)logger.acknowledgeNext();}
+});
+it('renders complete HUD with member strip, compact advance, drawer editing and actor status',async()=>{
+  const Hud=await createSfcHarness({baseURL:import.meta.url}).load('../ui/PartyHud.vue');
+  const g=new Game({seed:1});g.startNewGame({seed:42,ruleSet:'extended',extensions:['party']});
+  while(logger.pendingAcknowledgment)logger.acknowledgeNext();
+  const ui=usePartyUi({game:()=>g,tick:Vue.ref(0),immersive:Vue.ref(false),canOpenPanel:()=>true,beforeOpenPanel(){},afterClosePanel(){}});
+  const app=renderer.createApp({render:()=>Vue.h(Hud,ui.hud.value!.props)});app.use(I18NextVue,{i18next});app.mount(body);
+  try{
+    expect(all(body).filter(n=>n.props['data-party-actor']!==undefined)).toHaveLength(2);
+    expect(text(body)).toContain(i18next.t('ext.party.source.initial'));
+    expect(all(body).filter(n=>n.props['data-party-advance']!==undefined)).toHaveLength(1);
+    await all(body).find(n=>n.props['data-party-drawer-toggle']!==undefined)!.props.onClick();await Vue.nextTick();
+    expect(all(body).find(n=>n.props['data-party-editor']!==undefined)!.props.class).toContain('open');
+    expect(all(body).some(n=>n.props['data-party-travel']!==undefined)).toBe(true);
+    expect(all(body).some(n=>n.props['data-party-ai']!==undefined)).toBe(true);
+    await all(body).find(n=>n.props['data-party-drawer-close']!==undefined)!.props.onClick();await Vue.nextTick();
+    expect(all(body).find(n=>n.props['data-party-editor']!==undefined)!.props.class).not.toContain('open');
+  }finally{app.unmount();ui.close();g.disposeRecording();while(logger.pendingAcknowledgment)logger.acknowledgeNext();}
+});
+it('roster UI displays authoritative rejection and dispatches only explicit selected candidate/camp',async()=>{
+ const Roster=await createSfcHarness({baseURL:import.meta.url}).load('../ui/PartyRosterPanel.vue');
+ const join=vi.fn(),station=vi.fn();
+ const props=Vue.reactive({settlementAvailable:true,candidates:[{id:42,name:'known rescue',source:'rescue',reason:null},{id:43,name:'known resident',source:'resident',reason:'NO_SPACE'}],camps:[{id:7,name:'known camp'}],focused:18,stationReason:null,join,station});
+ const app=renderer.createApp({render:()=>Vue.h(Roster,props)});app.use(I18NextVue,{i18next});app.mount(body);
+ try {
+  const accepted=all(body).find(n=>n.props['data-party-candidate']===42)!;
+  const rejected=all(body).find(n=>n.props['data-party-candidate']===43)!;
+  expect(text(rejected)).toContain(i18next.t('ext.party.error.NO_SPACE'));
+  expect(all(rejected).find(n=>n.tag==='button')!.props.disabled).toBe(true);
+  await all(accepted).find(n=>n.tag==='button')!.props.onClick();expect(join).toHaveBeenCalledExactlyOnceWith(42);
+  await all(body).find(n=>n.tag==='button'&&text(n)===i18next.t('ext.party.roster.stationAction'))!.props.onClick();expect(station).toHaveBeenCalledExactlyOnceWith(7);
+  props.settlementAvailable=false;await Vue.nextTick();expect(all(body).some(n=>n.tag==='fieldset')).toBe(false);
+ } finally {app.unmount();}
+});
+it.each(['C5_ROOM','C5_INPUT','C5_RESERVED'] as const)('translates %s for resident candidates and command failures without diagnostics',async(code)=>{
+ const Roster=await createSfcHarness({baseURL:import.meta.url}).load('../ui/PartyRosterPanel.vue');
+ const g=new Game({seed:1});g.startNewGame({seed:42,ruleSet:'extended',extensions:['party']});
+ while(logger.pendingAcknowledgment)logger.acknowledgeNext();
+ const ui=usePartyUi({game:()=>g,tick:Vue.ref(0),immersive:Vue.ref(false),canOpenPanel:()=>true,beforeOpenPanel(){},afterClosePanel(){}});
+ const label=i18next.t('ext.foundation.world.error.'+code.slice(3).toLowerCase());
+ expect(label).not.toContain('ext.foundation');
+ const props={settlementAvailable:true,candidates:[{id:42,name:'known resident',source:'resident',reason:code}],camps:[{id:7,name:'known camp'}],focused:g.player.id,stationReason:code,join:vi.fn(),station:vi.fn()};
+ const app=renderer.createApp({render:()=>Vue.h(Roster,props)});app.use(I18NextVue,{i18next});app.mount(body);
+ try{
+  expect(text(body)).toContain(label);
+  expect(text(body)).not.toContain('ext.party.error.C5_');
+  vi.spyOn(g,'executeCommand').mockImplementation(()=>{throw new World5Error(code,'private diagnostic sentinel');});
+  (ui.hud.value!.props.rosterProps as any).station(7);
+  expect(ui.hud.value!.props.feedback).toBe(label);
+  expect(ui.hud.value!.props.feedback).not.toContain('sentinel');
+  vi.mocked(g.executeCommand).mockImplementation(()=>{throw new Error('private diagnostic sentinel');});
+  (ui.hud.value!.props.rosterProps as any).station(7);
+  expect(ui.hud.value!.props.feedback).toBe(i18next.t('ext.party.error.INTERNAL_FAILURE'));
+ }finally{app.unmount();ui.close();g.disposeRecording();while(logger.pendingAcknowledgment)logger.acknowledgeNext();}
+});

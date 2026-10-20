@@ -2301,6 +2301,19 @@ export class ExtensionRuntime {
         try{return this.transaction(work);}catch(error){restore();restoreStats();throw error;}
     }
 
+    /** Trusted same-ID handoff; components and capacity ledger stay on that ID. */
+    replacePartyCreature(previous:Creature,next:Creature):void {
+        if(!this.modules.some(m=>m.id==='party')||previous.id!==next.id||!this.creatures.has(previous))throw new Error('Invalid party handoff');
+        const session=statSessions.get(this)!;
+        this.creatures.delete(previous);this.spawned.delete(previous);unbindStats(previous);previous.extensionHooks=undefined;
+        session.actors.delete(previous.id);this.invalidateStats();this.attachCreature(next,false);markRecordingRoot(this);
+    }
+    retirePartyInteractable(id:number):void {
+        if(!this.modules.some(m=>m.id==='party')||this.world.gate)throw new Error('Invalid party handoff');
+        const source=this.world.entities.find(e=>e.id===id&&e.owner==='narrative');if(!source)throw new Error('Invalid party source');
+        this.world.entities=this.world.entities.filter(e=>e!==source);markRecordingRoot(this);
+        this.emit('interactablesRemoved',{owner:source.owner,entityIds:[id]});
+    }
     worldWorkEntities(): readonly WorldInteractable[] { return this.world.entities; }
     worldWorkPlacementProtected(at:{x:number;y:number},depth:number):boolean {
         return !!this.world.regions?.some(r=>r.depth===depth && regionContains(r,at) && !!this.modules.find(m=>m.id===r.owner)?.generationContributions?.length);

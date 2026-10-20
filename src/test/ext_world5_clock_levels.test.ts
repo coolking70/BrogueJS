@@ -500,7 +500,8 @@ describe('C5 related real-Game combinations (engine only, v4 recording path)', (
       });
       const play = () => {
         while (logger.pendingAcknowledgment) logger.acknowledgeNext();
-        g.executeCommand('wait');
+        if (g.party) g.submitPartyIntent({ kind: 'wait' }, g.readyPartyActorId!);
+        else g.executeCommand('wait');
       };
       play();
       play();

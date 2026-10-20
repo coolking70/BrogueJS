@@ -338,7 +338,7 @@ export function mechanicalDigest(
   const items = [
     ...root.items,
     ...root.player.inventory,
-    ...(root.party?.actors.flatMap((a:any)=>a.inventory)??[]),
+    ...(root.party?[...root.party.actors,...root.party.stationed].flatMap((a:any)=>a.inventory):[]),
     ...root.levels.flatMap((l: any) => l.items),
     ...root.pendingFallenItemsByDepth.flatMap((q: any) => q.items),
     ...root.entityGraph.items
@@ -450,7 +450,7 @@ export function mechanicalDigest(
     ...root.entityGraph.monsters,
     ...root.levels.flatMap((l: any) => [...l.monsters, ...l.dormantMonsters]),
     ...root.pendingFallenByDepth.flatMap((q: any) => q.monsters),
-    root.player, ...(root.party?.actors??[])
+    root.player, ...(root.party?[...root.party.actors,...root.party.stationed]:[])
   ]) {
     delete actor.mapToMe;
     actor.name = actor.typeId ?? 'entity.' + actor.id;

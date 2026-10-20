@@ -120,7 +120,7 @@ export function validateRecordingV4(
         )
           return false;
       }
-      if (((index + 1) % 256 === 0 || index === r.events.length - 1 || e.action==='party:window'||e.action==='party:decision') && e.fullCheckpoint === null)
+      if (((index + 1) % 256 === 0 || index === r.events.length - 1 || e.action==='party:window'||e.action==='party:decision'||e.action==='party:roster') && e.fullCheckpoint === null)
         return false;
       if (!hex(e.chainDigest) || recordingChain(chain, e) !== e.chainDigest) return false;
       chain = e.chainDigest;

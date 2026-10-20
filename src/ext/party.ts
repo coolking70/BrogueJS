@@ -1,3 +1,4 @@
+import { validatePartyRoster, type PartySource, type PartyTransfer, type PartyRescue } from './partyRoster';
 import { validateController, validateAiState, type PartyController, type PartyAiState, type CompanionOrder } from './partyAi';
 import { validateWindowState, type PartyWindowState } from './partyWindow';
 /** P1a finite input contract. No engine objects, UI focus, plans or AI state. */
@@ -26,7 +27,13 @@ export interface MemberState {
   ai: PartyAiState;
 }
 export interface PartyState {
-  schema: 3;
+  schema: 4;
+  initialActorIds:number[];
+  sources:PartySource[];
+  transfers:PartyTransfer[];
+  rescued:PartyRescue[];
+  retired:{actorId:number;reason:string;tick:number;level:LevelRef}[];
+  residentMemories:import('./partyRoster').PartyResidentMemory[];
   companionOrders: CompanionOrder[];
   window: PartyWindowState;
   revision: number;
@@ -123,10 +130,10 @@ export function parsePartyInput(value: unknown): PartyInput {
 }
 export function validatePartyState(value: unknown): asserts value is PartyState {
   try { c5Canonical(value); } catch { return fail(); }
-  keys(value, 'schema,revision,primaryActorId,leaderActorId,members,window,companionOrders');
-  if (value.schema !== 3) throw new PartyFailure('VERSION_MISMATCH');
+  keys(value, 'schema,revision,primaryActorId,leaderActorId,members,window,companionOrders,initialActorIds,sources,transfers,rescued,residentMemories,retired');
+  if (value.schema !== 4) throw new PartyFailure('VERSION_MISMATCH');
   integer(value.revision); integer(value.primaryActorId, 1); integer(value.leaderActorId, 1);
-  if (!Array.isArray(value.members) || !value.members.length || value.members.length > PARTY_LIMIT) fail();
+  if (!Array.isArray(value.members) || !value.members.length || value.members.length > 128) fail();
   let previous = 0;
   const members = value.members as unknown[];
   for (const member of members) {
@@ -139,6 +146,7 @@ export function validatePartyState(value: unknown): asserts value is PartyState 
   if (![value.primaryActorId,value.leaderActorId].every(id => (members as MemberState[]).some(m => m.actorId === id))) fail();
   if(!Array.isArray(value.companionOrders)||value.companionOrders.length>64)fail();
   let previousCompanion=0;for(const row of value.companionOrders as unknown[]){keys(row,'actorId,level,ai');integer(row.actorId,previousCompanion+1);previousCompanion=row.actorId;integer(row.level,1);if(row.level>40||(members as MemberState[]).some(m=>m.actorId===row.actorId))fail();validateAiState(row.ai);}
+  validatePartyRoster(value as unknown as PartyState);
   validateWindowState(value.window,value as unknown as PartyState);
   const active = (members as MemberState[]).filter(m => m.life === 'active');
   if (active.some((m: MemberState) => c5Canonical(m.level) !== c5Canonical(active[0]!.level))) fail();

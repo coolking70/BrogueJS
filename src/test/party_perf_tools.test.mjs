@@ -1,5 +1,5 @@
 import {it,expect} from 'vitest';
-import {PARTY_PERF_ID,PARTY_PERF_POLICY,partyShardActors,validatePartyMeasurement,parsePartyPerfOptions} from '../../scripts/party-perf-identity.mjs';
+import {PARTY_PERF_ID,PARTY_PERF_POLICY,partyShardActors,validatePartyMeasurement,parsePartyPerfOptions,partyRoundSides,comparePartyPair} from '../../scripts/party-perf-identity.mjs';
 import {mergePartyAb} from '../../scripts/merge-party-perf-ab.mjs';
 import {perfIdentity,loadPerfIdentity} from '../../scripts/ext-perf-selection.mjs';
 const stat={n:4,p50:1,p95:2,p99:2,max:2,total:5};
@@ -51,7 +51,7 @@ it('aggregates B-only calibration, withholds smoke budgets and rejects incomplet
    const paths=PARTY_PERF_POLICY.shards.map(shard=>{
     const path=resolve(dir,shard);mkdirSync(path);const actors=partyShardActors(shard),sides=ab?['A','B']:['B'];
     const data={identity:PARTY_PERF_ID,policy:PARTY_PERF_POLICY,status:rounds===3?'measured-no-budget':'smoke-only',options:{head:'b',out:path,rounds,steps,shard,calibrationOnly:!ab,...(ab?{base:'a'}:{})},sources:Object.fromEntries(sides.map(side=>[side,{sha:side,sourceHash:'d'.repeat(64)}])),tools,runs:[]};
-    for(let round=1;round<=rounds;round++)for(const mode of PARTY_PERF_POLICY.modes)for(const side of sides){
+    for(let round=1;round<=rounds;round++)for(const mode of PARTY_PERF_POLICY.modes)for(const side of partyRoundSides(round,!ab)){
      const row={...fixture(),actors,mode,steps,step:{...stat,n:steps},node:'v24.fixture',machine:{cpu:shard},input:{seed:42,command:PARTY_PERF_POLICY.command},memory:{rss:123,heapUsed:100}};
      data.runs.push({round,side,actors,mode,artifact:`${round}-${side}-${actors}-${mode}.json`,measurement:row});
     }
@@ -75,4 +75,13 @@ it('aggregates B-only calibration, withholds smoke budgets and rejects incomplet
    expect(JSON.parse(readFileSync(resolve(bad.out,'result.json'),'utf8')).status).toBe('failed');expect(existsSync(resolve(bad.out,'summary.md'))).toBe(true);expect(existsSync(resolve(bad.out,'party-perf-budget.suggested.json'))).toBe(false);
   }
  }finally{rmSync(root,{recursive:true,force:true});}
+});
+
+it('uses AB/BA/AB and rejects same-format semantic changes before ratios', () => {
+ expect([1,2,3].map(n=>partyRoundSides(n))).toEqual([['A','B'],['B','A'],['A','B']]);
+ expect(comparePartyPair(fixture(),fixture()).status).toBe('report-only');
+ for(const key of ['rowsHash','rngHash','fullDigest','zeroTicks','input']){
+  const a=fixture(),b=fixture();b[key]=key==='zeroTicks'?3:key==='input'?{seed:99}:'f'.repeat(64);
+  expect(()=>comparePartyPair(a,b)).toThrow();
+ }
 });

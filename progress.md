@@ -294,3 +294,22 @@ Node24、3GiB、2workers，resident_sources + settlement_runtime：2文件5测�
 
 ## 2026-10-18 Party P1a
 维护者2026-10-18批准 M1–M11，任务单/合同已回填。P1a 已实现独立受控成员、单世界调度、成长/掉落/阶段5、冻结迁移、F21/S8/R5/O3 与创建/HUD；无party保持F20/S7/R4/O2并通过五配置开工字节基线。报告 docs/ext/party-p1a.report.md 按批次和A01–A13登记自动证据及未验范围；证据 /private/tmp/party-p1a。boundary/依赖/vue-tsc/build与全删九模块限定门禁通过，真实party档缺包拒绝保活局。M11 party-v1 三人数/两配置rounds=1 A/A本地短跑已通，不作预算或提速结论；云端参数已交付、未dispatch。浏览器/真机留维护者，未跑全量或长性能基准，未commit/push。
+
+## 2026-10-20 Party P1d（实现与本地验收完成，未 commit）
+PD1–PD7 已按2026-10-20推荐回填。动态名册、三来源权限、居民交接与驻营、成长历史/F24-S11-R8-O6、UI和显式跨格式性能工具已实现；R1/R2发现及后续集成修复逐项保留。85个影响面整文件、13个真MainMenu配置、实体全删九模块的21个适用整文件、boundary/依赖/types/build通过；两个原有skip保留，无party五配置原字节fixture未重录。未跑全量/512子集。
+
+本地固定源分层与rounds=1工具链冒烟完成：三套party的36份A/B短测及独立merge、phase6最小有效limit3、641输入五档窗口、1/2/4人×0/8/16同伴AI负载、九转换13输入。OOS/污染与生命周期检查通过；短烟和小样本不代表正式D6或三轮预算通过。原始失败、源码/工具/build身份、性能数据和精确gh派发/下载/merge命令见 docs/ext/party-p1d.report.md，证据 /private/tmp/party-p1d。
+
+驻营护送拒绝、坠落安全退役而未继续跨层任职、原地自卫范围已列为维护者复核事项。正式云端与桌面/320/390/真机按 party-p1d.manual-checklist.md 留验；未commit/push/tag/云端派发，HEAD仍3431533。
+
+
+## 2026-10-20 Party P1d 本次独立R1修复（未 commit）
+按 party-p1d.review-findings.md 的“需修”结论，F1射线占位/效果、F2驻营原生属性环境与rested根、F3地形特效撤离/即时接触均已逐项复现修复；同类照明、范围消魔、焚烧飞镖、生成/放置占位一并接齐。原三探针同S11档复验：治疗5→11，潜行7→7，闸门撤至可通行格。新增11项回归含公开命令、存读、回放、双向seek、续录及实际敌方决策，原seed28自然路径另补驻营属性恢复断言。
+
+限定24文件首批470过/1新测试DF引用归属失败；保持守卫，仅将直接DF测试辅助入口放入src/test/support，4文件50/50复验关闭。去重24文件471项最终有效通过，无skip；boundary/依赖/vue-tsc/build通过。无party五配置原字节未重录。修后源hash 0d5d7328bf1e8d8ab3d9ec7a1b2f77c3201726e7743f22fb79106c1310062cbe；详见 docs/ext/party-p1d.report.md §9，原始日志 /private/tmp/party-p1d/r1-fix。原审查文档保持；没有新独立复审、全量、删除矩阵、性能/云端或浏览器复跑；未commit/push，HEAD仍3431533。
+
+
+## 2026-10-20 Party P1d 本次独立R2 F4末轮修复（未 commit）
+第2轮复审已独立关闭F1–F3，F4由作者用原公开闪电探针再次复现并修复：驻营致死不再截断玩家/怪物射线，包含驻营者临时commandActor及当前格地形；保留在籍成员死亡的原射线停止语义。同类排查另修投掷轨迹越过驻营/队员、combat锁定区域绑定/解析及资源世界遗漏、力量符文碰撞漏伤。报告§10列16类实际入口及逐项结论，没有第3轮独立审查。
+
+新增驻营整文件29/29及其余32文件691/691全部通过，去重33文件720项、无skip；boundary/717文件测试依赖/vue-tsc/build均exit0。含公开命令、死亡退役/落物一次、完整存读/回放/双向seek/续录、非主成员死亡、爆炸/火焰/反射/穿刺及真实combat范围攻击。无party五配置原字节对照通过，原黄金与守卫不变。最终源1b749443bb92c1e008f509a440e918b722c352944209d213c0fa985ee6f3f840，dist摘要fb149790d214c8f031f07ab4862d6cf20c89eb0da38651808103e36234b2e33c；详见 docs/ext/party-p1d.report.md §10，原始证据 /private/tmp/party-p1d/r2-fix。未跑全量/删除/性能/云端/浏览器；人工清单仍待人工。未commit/push，HEAD仍3431533。

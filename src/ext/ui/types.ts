@@ -16,6 +16,7 @@ export interface ModuleUiHost {
     registerKeyHandler?(handler: ModalKeyHandler, priority?: number): () => void;
     cancelHeldKeys?(): void;
     selectMapCells?(owner:object,select:(at:{x:number;y:number})=>void,cells:readonly {x:number;y:number}[]):()=>void;
+    showMapOverlay?(owner: object, marks: readonly import('../../ui/moduleMapOverlay').ModuleMapMark[]): () => void;
     /** Live display lag only; replay/seek must keep their read-only module UI. */
     isPresentationBusy?(): boolean;
     /** Public, frozen display DTO: during MORE this is the historical frame.

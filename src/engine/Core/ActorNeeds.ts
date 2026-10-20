@@ -3,8 +3,8 @@ import type { ActorNeedDeclaration, NeedEventFact, NeedTrigger } from '../../ext
 import type { ActorNeedRow } from './EdibleState';
 import { edibleState, peekEdibleState } from './EdibleState';
 import { Monster } from '../../entities/Monster';
+import { activeResidentActors, residentActorVisible, residentTypeId, type ResidentActor } from './ResidentWorld';
 import { beginDeparture, isDeparting } from './ActorDeparture';
-import { canDirectlySeeMonster } from '../UI/MonsterVisibility';
 import { checkedAdd } from '../../ext/world5';
 const due = new WeakMap<Game, { runtime: object; next: number }>();
 export function needDeclarations(game: Game): readonly ActorNeedDeclaration[] {
@@ -44,7 +44,7 @@ function event(
   reason: NeedEventFact['reason'] = null,
   degrade = true
 ): void {
-  const actor = game.monsters.concat(game.dormantMonsters).find((a) => a.id === row.actorId),
+  const actor = [...activeResidentActors(game),...game.dormantMonsters].find((a) => a.id === row.actorId),
     runtime = game.extensionRuntime!;
   const fact: NeedEventFact = {
     owner: d.owner,
@@ -58,7 +58,7 @@ function event(
     crossedAtTick,
     tick: game.world5!.simulationTicks,
     deferred,
-    visibleToPlayer: !!actor && canDirectlySeeMonster(game.player, game.grid, actor),
+    visibleToPlayer: !!actor && residentActorVisible(game,actor),
     reason
   };
   const departures: number[] = [];
@@ -85,7 +85,7 @@ function event(
 }
 export function triggerActorNeeds(
   game: Game,
-  actors: readonly Monster[],
+  actors: readonly ResidentActor[],
   trigger: NeedTrigger
 ): void {
   if (!game.extensionRuntime || !game.world5) return;
@@ -103,9 +103,9 @@ export function triggerActorNeeds(
         : 'single';
     const facts = {
       actorId: actor.id,
-      monsterId: actor.typeId,
-      allied: actor.isAlly,
-      inanimate: actor.hasBehavior('MONST_INANIMATE'),
+      monsterId: residentTypeId(game,actor),
+      allied: actor instanceof Monster ? actor.isAlly : true,
+      inanimate: actor instanceof Monster && actor.hasBehavior('MONST_INANIMATE'),
       timedSummon: actor.hasStatus('lifespan_remaining'),
       groupRole: role
     } as const;
@@ -250,7 +250,7 @@ export function settleActorNeeds(game: Game, deferred = false): void {
   const now = game.world5.simulationTicks,
     c = due.get(game);
   if (!deferred && c?.runtime === runtime && now < c.next) return;
-  const active = new Set(game.monsters.concat(game.dormantMonsters).map((a) => a.id));
+  const active = new Set([...activeResidentActors(game),...game.dormantMonsters].map((a) => a.id));
   for (const row of [...rows].sort(
     (a, b) => a.actorId - b.actorId || (a.needId < b.needId ? -1 : 1)
   )) {

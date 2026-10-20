@@ -1,14 +1,15 @@
 import assert from 'node:assert/strict';
+import {assertStableCrossformat} from './party-perf-crossformat.mjs';
 import { readFileSync, mkdirSync, writeFileSync, cpSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { write, hash } from './ext-perf-common.mjs';
-import { validateWindowMeasurement, validateAiMeasurement, compareWindowPair } from './run-party-window-perf.mjs';
+import { validateWindowMeasurement, validateAiMeasurement, compareWindowPair, compareAiPair } from './run-party-window-perf.mjs';
 export function merge(reports) {
   assert.equal(reports.length, 3, 'Require all three shards');
   const first = reports[0];
+  if(first.options?.comparison==='party-p1c-p1d-v1')assert.ok(first.tools?.['party-perf-crossformat.mjs'],'Missing adapter provenance');
   assert.ok(['party-window-v1','party-ai-v1'].includes(first.identity));
-  if(first.identity==='party-ai-v1')assert.equal(first.mode,'calibration-only');
   const
     runs = [], sides = first.mode === 'ab' ? ['A', 'B'] : ['B'];
   assert.ok(['ab', 'calibration-only'].includes(first.mode));
@@ -20,7 +21,7 @@ export function merge(reports) {
       `Shard ${report.options?.shard ?? 'unknown'} ${report.status}: ${report.error ?? 'measurement incomplete'}`);
     assert.deepEqual(report.source, first.source);
     assert.deepEqual(report.tools, first.tools);
-    for (const k of ['rounds', 'steps', 'scene']) assert.equal(report.options[k], first.options[k]);
+    for (const k of ['rounds', 'steps', 'scene', 'comparison']) assert.equal(report.options[k], first.options[k]);
     runs.push(...report.runs);
   }
   const seen = new Set();
@@ -45,6 +46,7 @@ export function merge(reports) {
       const rows = runs
         .filter((r) => (r.side ?? 'B') === side && r.measurement.actors === a && r.measurement.mode === mode)
         .map((r) => r.measurement);
+      for (const row of rows) assertStableCrossformat(row, rows[0]);
       for (const row of rows)
         for (const key of [
           'input',
@@ -52,6 +54,7 @@ export function merge(reports) {
           'rngHash',
           'fullDigest',
           'fullDomains',
+          ...(first.identity === 'party-ai-v1' ? ['aiCounters'] : []),
           'node',
           'machine',
           'sourceHash',
@@ -63,7 +66,7 @@ export function merge(reports) {
   const comparisons = first.mode === 'ab' ? runs.filter(r => r.side === 'A').map(a => {
     const b = runs.find(r => r.side === 'B' && r.round === a.round && r.measurement.actors === a.measurement.actors && r.measurement.mode === a.measurement.mode);
     return { round: a.round, actors: a.measurement.actors, mode: a.measurement.mode,
-      ...compareWindowPair(a.measurement, b.measurement) };
+      ...(first.identity === 'party-ai-v1' ? compareAiPair : compareWindowPair)(a.measurement, b.measurement, first.options.comparison ?? 'strict') };
   }) : [];
   return {
     identity: first.identity,
@@ -81,6 +84,11 @@ export function merge(reports) {
     budget: null,
     note: 'Numbers/metric grades need maintainer review, then a separate complete validation. No automatic freeze; no D6 verdict.'
   };
+}
+export function verifyWindowTools(tools) {
+  const names=['profile-party-window-perf.mjs','run-party-window-perf.mjs','merge-party-window-perf.mjs','ext-perf-common.mjs','party-perf-crossformat.mjs'];
+  assert.deepEqual(Object.keys(tools).sort(),names.sort(),'Unknown or missing measurement tool');
+  for(const name of names)assert.equal(hash(readFileSync(new URL(name,import.meta.url),'utf8')),tools[name],`Tool drift ${name}`);
 }
 /** Artifact transport is checked independently of the in-memory aggregation. */
 export function readShard(file) {
@@ -109,6 +117,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   mkdirSync(out, { recursive: true });
   try {
     const result = merge(args.map(readShard));
+    verifyWindowTools(result.tools);
     args.forEach((file, i) =>
       cpSync(dirname(resolve(file)), resolve(out, ['classic', 'all-full', 'all-prefix'][i]), {
         recursive: true
@@ -117,7 +126,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     write(resolve(out, 'result.json'), result);
     writeFileSync(
       resolve(out, 'summary.md'),
-      `# Party window ${result.status}\n\n${result.runs.length} measurements. ${result.note}\n`
+      `# ${result.identity} ${result.status}\n\n${result.runs.length} measurements. ${result.note}\n`
     );
   } catch (error) {
     write(resolve(out, 'result.json'), { status: 'failed', hard: 'failed', error: String(error), shards: args });

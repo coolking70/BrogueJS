@@ -1,6 +1,10 @@
 /** Trusted resident ownership and synchronous transaction; content never imports this module. */
 import type { Game } from './Game';
 import { Monster } from '../../entities/Monster';
+import { ControlledActor } from '../../entities/ControlledActor';
+import type { Creature } from '../../entities/Creature';
+import { canActorSeeCell } from '../UI/PartyPerception';
+import { canDirectlySeeMonster } from '../UI/MonsterVisibility';
 import type { ResidentComponent, ResidentSource } from '../../ext/residentSdk';
 import type { CampRecord } from '../../ext/structureSdk';
 import { World5Error, checkedAdd } from '../../ext/worldBasics';
@@ -36,7 +40,21 @@ export function checkpointResidentBeds(g: Game): () => void {
 export const failResident = (code: World5Error['code'], field: string | null = null): never => {
   throw new World5Error(code, field);
 };
-export const residentActors = (g: Game) =>
+export type ResidentActor = Monster | ControlledActor;
+/** The stationed map owns the entity; these arrays are transient read views. */
+export const stationedResidentActors = (g: Game): ControlledActor[] =>
+  [...(g.party?.stationed?.values() ?? [])];
+export const activeResidentActors = (g: Game): ResidentActor[] => g.party
+  ? [...g.monsters, ...stationedResidentActors(g).filter(a => !g.party!.state.retired.some(r=>r.actorId===a.id) &&
+      g.world5?.residents.some(r => r.actorId === a.id && r.levelRef.kind === 'dungeon' && r.levelRef.depth === g.depth))]
+  : g.monsters;
+export const residentActorVisible = (g: Game, a: ResidentActor): boolean =>
+  a instanceof Monster ? canDirectlySeeMonster(g.commandActor,g.grid,a)
+    : a.hp > 0 && canActorSeeCell(g.commandActor,g.grid,a.x,a.y);
+export const residentTypeId = (g: Game, a: ResidentActor): string =>
+  a instanceof Monster ? a.typeId : g.party?.state.sources.find(s => s.actorId === a.id)?.template ?? '';
+export const residentActors = (g: Game): ResidentActor[] => {
+  const actors: readonly ResidentActor[] =
   typeof g.departureActors === 'function'
     ? g.departureActors()
     : [
@@ -50,6 +68,9 @@ export const residentActors = (g: Game) =>
           ).pendingFallenByDepth.values()
         ].flat()
       ];
+  if (!g.party) return actors as Monster[];
+  return [...new Map([...actors, ...g.controlledActors, ...stationedResidentActors(g)].map(a => [a.id,a])).values()];
+};
 export function residentRecord(g: Game, id: number) {
   return g.world5?.residents.find((r) => r.actorId === id);
 }
@@ -69,7 +90,11 @@ export function candidateSource(
   }
   return undefined;
 }
-export function residentEligible(g: Game, a: Monster): boolean {
+export function residentEligible(g: Game, a: ResidentActor): boolean {
+  if (a instanceof ControlledActor) return !!g.party?.state.sources.some(s=>s.actorId===a.id)
+    && g.party.stationed?.get(a.id) === a && a.hp>0 && !a.spatial
+    && !g.party.state.retired.some(r=>r.actorId===a.id)
+    && !a.hasStatus('lifespan_remaining') && !isDeparting(g,a.id);
   return (
     (g.extensionRuntime?.residentOwners().some((o) => {
       const p = g.extensionRuntime!.residentPolicy(o)!;
@@ -91,7 +116,7 @@ export function residentEligible(g: Game, a: Monster): boolean {
         !a.spatial.bodyMember))
   );
 }
-export const residentDisabled = (a: Monster) =>
+export const residentDisabled = (a: Creature) =>
   isIncapacitated(a) ||
   a.hasStatus('entranced') ||
   a.hasStatus('confused') ||

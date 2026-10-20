@@ -412,6 +412,7 @@
     "src/test/x4_r6_integration.test.ts",
     "src/test/x4a_movement_rendering.test.ts",
     "src/test/x4b_flavor_text.test.ts",
+    "src/test/party_crossformat_perf_tools.test.mjs",
     "src/test/party_window_perf_tools.test.mjs"
   ],
   "drift": [

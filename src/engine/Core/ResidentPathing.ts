@@ -1,5 +1,6 @@
 /** Derived resident distance maps; occupancy is checked anew at each actual step. */
 import type { Game } from './Game';
+import { activeResidentActors } from './ResidentWorld';
 import type { Grid } from '../Map/Grid';
 import type { Pos } from '../../types';
 import { playerTravelDiagonalBlocked } from '../Movement/PlayerTravel';
@@ -100,7 +101,7 @@ export function residentBlockedMap(
   );
   const key = (p: Pos) => p.y * g.grid.width + p.x;
   const blocked = new Set(
-    [...g.monsters, ...g.dormantMonsters]
+    [...activeResidentActors(g), ...g.dormantMonsters]
       .filter((a) => a.hp > 0 && a.id !== actorId)
       .flatMap((a) => g.footprintOf(a).map(key))
   );

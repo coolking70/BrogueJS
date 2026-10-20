@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {existsSync,readFileSync,mkdirSync,cpSync,writeFileSync} from 'node:fs';
 import {resolve,relative} from 'node:path';
 import {write,hash} from './ext-perf-common.mjs';
-import {PARTY_PERF_ID,PARTY_PERF_POLICY,validatePartyMeasurement,partyShardActors,parsePartyPerfOptions,assertStablePartyMeasurement} from './party-perf-identity.mjs';
+import {PARTY_PERF_ID,PARTY_PERF_POLICY,validatePartyMeasurement,partyShardActors,parsePartyPerfOptions,assertStablePartyMeasurement,partyRoundSides,comparePartyPair} from './party-perf-identity.mjs';
 
 // Proposals only: observed medians plus conservative max-of-three headroom.
 // P1b must review these; no D6 comparison or automatic budget adoption.
@@ -31,15 +31,16 @@ export function mergePartyAb(output,inputs){
   Object.assign(result,{mode:calibrationOnly?'calibration-only':'ab',sources:first.sources,tools:first.tools,shards:results.map(r=>r.data.options.shard)});
   for(const {path,data} of results){
    const options=data.options;
-   parsePartyPerfOptions(['--head',options.head,'--out',options.out,'--rounds',String(options.rounds),'--steps',String(options.steps),'--shard',options.shard,...(options.calibrationOnly?['--calibration-only',...(options.base?['--base',options.base]:[])]:['--base',options.base])]);
+   parsePartyPerfOptions(['--head',options.head,'--out',options.out,'--rounds',String(options.rounds),'--steps',String(options.steps),'--shard',options.shard,'--comparison',options.comparison??'strict',...(options.calibrationOnly?['--calibration-only',...(options.base?['--base',options.base]:[])]:['--base',options.base])]);
    assert.equal(options.calibrationOnly===true,calibrationOnly,'Mixed measurement modes');
    assert.equal(data.identity,PARTY_PERF_ID);assert.deepEqual(data.policy,PARTY_PERF_POLICY);
    assert.equal(data.status,options.rounds===3&&options.steps===PARTY_PERF_POLICY.steps?'measured-no-budget':'smoke-only');
    assert.deepEqual(Object.keys(data.sources).sort(),sides);assert.deepEqual(data.sources,first.sources);assert.deepEqual(data.tools,first.tools);
    for(const [tool,digest] of Object.entries(data.tools))assert.equal(hash(readFileSync(new URL(tool,import.meta.url),'utf8')),digest,`Tool drift ${tool}`);
    assert.ok(data.tools['merge-party-perf-ab.mjs'],'Missing merge tool provenance');
-   assert.equal(options.rounds,first.options.rounds);assert.equal(options.steps,first.options.steps);
-   const expected=[];for(let round=1;round<=options.rounds;round++)for(const mode of PARTY_PERF_POLICY.modes)for(const side of sides)expected.push({round,side,mode});
+   if(options.comparison==='party-p1c-p1d-v1')assert.ok(data.tools['party-perf-crossformat.mjs'],'Missing adapter provenance');
+   assert.equal(options.comparison??'strict',first.options.comparison??'strict');assert.equal(options.rounds,first.options.rounds);assert.equal(options.steps,first.options.steps);
+   const expected=[];for(let round=1;round<=options.rounds;round++)for(const mode of PARTY_PERF_POLICY.modes)for(const side of partyRoundSides(round,calibrationOnly))expected.push({round,side,mode});
    assert.deepEqual(data.runs.map(({round,side,mode})=>({round,side,mode})),expected,'Missing/duplicate/reordered observations');
    const previous=new Map();
    for(const run of data.runs){
@@ -53,7 +54,7 @@ export function mergePartyAb(output,inputs){
     result.cases.push({actors:partyShardActors(options.shard),mode,runs:data.runs.filter(r=>r.side==='B'&&r.mode===mode).map(r=>r.measurement)});
     if(!calibrationOnly)for(let round=1;round<=options.rounds;round++){
      const select=side=>data.runs.find(r=>r.round===round&&r.side===side&&r.mode===mode).measurement,a=select('A'),b=select('B');
-     result.comparisons.push({round,actors:a.actors,mode,comparable:a.rowsHash===b.rowsHash&&a.rngHash===b.rngHash,commandP95Ratio:a.step.p95?b.step.p95/a.step.p95:null,status:'report-only'});
+     result.comparisons.push({round,actors:a.actors,mode,...comparePartyPair(a,b,options.comparison??'strict')});
     }
    }
    cpSync(path,resolve(out,options.shard),{recursive:true});

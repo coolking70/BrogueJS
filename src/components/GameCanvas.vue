@@ -107,6 +107,7 @@ import { logger } from '../engine/Systems/Logger';
 import { inputManager } from '../engine/Input';
 import i18next from 'i18next';
 import { displaySettings } from '../engine/Settings';
+import {moduleMapOverlay} from '../ui/moduleMapOverlay';
 import {moduleMapSelection,selectModuleMapCell,MODULE_MAP_SELECTION_COLOR} from '../ui/moduleMapSelection';
 import {readUsableMapViewport} from '../ui/mapViewport';
 import { viewport } from '../ui/layout';
@@ -136,6 +137,7 @@ import { RenderRequests } from '../ui/renderRequests';
 import { FrameProfile } from '../ui/frameProfile';
 import { mapMode } from '../ui/mapTiles';
 import { terrainSemantic, itemSemantic, rememberedItemSemantic, monsterSemantic, playerSemantic, projectileSemantic, floatingHanzi, type TileSemantic } from '../ui/mapTileSemantics';
+import { visibleStationedResidents } from '../ui/partyResidentMap';
 import { paintMapText, paintVectorTile, HANZI_FONT } from '../ui/mapTileDrawing';
 import { targetingState, clearAim, targetingTapCommand, type TapCommand, THROW_AIM_FILL, THROW_AIM_STROKE } from '../ui/targeting';
 import { publicZoneAt } from '../engine/UI/MonsterZones';
@@ -289,6 +291,17 @@ onMounted(async () => {
         canvasDirty = true;
         hoverHighlight.clear();
         const game = activeGame, frame = displayedFrame(game);
+        const overlay = moduleMapOverlay.value;
+        if (overlay?.owner === game && !frame && !presentationTimeline(game)?.busy && !dialogInput.busy()) {
+            for (const p of overlay.marks) {
+                const cell = game.grid.getCell(p.x,p.y);
+                if (!cell || (!cell.isVisible && !cell.hasMemory && !cell.isMagicMapped)) continue;
+                const inset = p.kind === 'path' ? 6 : p.kind === 'draft' ? 5 : 1;
+                hoverHighlight.rect(p.x*TILE_SIZE+inset,p.y*TILE_SIZE+inset,TILE_SIZE-inset*2,TILE_SIZE-inset*2)
+                    .stroke({color:p.color,width:p.kind === 'target' ? 2 : 1});
+                if (p.kind === 'path') hoverHighlight.fill({color:p.color,alpha:0.8});
+            }
+        }
         const selected=moduleMapSelection.value;
         if(selected&&!presentationTimeline(game)?.busy&&!dialogInput.busy())for(const p of selected.cells)if(game.grid.getCell(p.x,p.y)?.isVisible)hoverHighlight.rect(p.x*TILE_SIZE+1,p.y*TILE_SIZE+1,TILE_SIZE-2,TILE_SIZE-2).stroke({color:MODULE_MAP_SELECTION_COLOR,width:1.5});
         const pos = frame ? frame.hoverCell : game.hoveredCell;
@@ -515,6 +528,7 @@ onMounted(async () => {
         for (let i = floatIdx; i < MAX_FLOAT_SPRITES; i++) floatSprites[i]!.visible = false;
     };
     watch(moduleMapSelection,()=>renders.request());
+    watch(moduleMapOverlay,()=>renders.request());
     const render = () => {
         const profileStart = frameProfile ? performance.now() : 0;
         drawHover();
@@ -735,6 +749,12 @@ onMounted(async () => {
             if (visual) {
                 placeEntity(visual.char, visual.color, m.loc.x, m.loc.y, visual.interactive, monsterSemantic(m, visual.char, hallucinating, !direct && !known));
             }
+        }
+
+        // Stationed members use the resident root and NPC map semantics.
+        for (const actor of visibleStationedResidents(game)) {
+            const visual = playerAppearance(actor);
+            placeEntity(visual.char, visual.color, actor.x, actor.y, visual.interactive, monsterSemantic(actor, visual.char, hallucinating));
         }
 
         // Player (always visible)

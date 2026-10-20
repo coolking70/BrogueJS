@@ -1,3 +1,4 @@
+import { Monster } from '../../entities/Monster';
 import { knownPolymorphSpecies } from '../Combat/Polymorph';
 import { footprintOf } from '../Movement/CreatureSpatial';
 import { planRaidLoss } from './SettlementRaidPlan';
@@ -137,7 +138,7 @@ export function finishRaidEvents(g: Game): void {
     !g.world5.raidCamps.some((r) => r.event?.phase === 'active' && r.pauseFrom === null)
   )
     return;
-  const actors = residentActors(g);
+  const actors = residentActors(g).filter((a):a is Monster=>a instanceof Monster);
   for (const r of g.world5.raidCamps) {
     const e = r.event;
     if (e?.phase !== 'active' || r.pauseFrom !== null) continue;
@@ -526,7 +527,7 @@ export function settleCampRaid(
 export function validateRaidReferences(g: Game): void {
   const w = g.world5!,
     rt = g.extensionRuntime!,
-    actors = residentActors(g);
+    actors = residentActors(g).filter((a):a is Monster=>a instanceof Monster);
   for (const owner of rt.worldCampOwners())
     for (const c of rt.worldCampRecords(owner))
       if (rt.worldRaidRules(owner) && !campRaid(g, c.slot))
@@ -559,6 +560,7 @@ export function validateRaidReferences(g: Game): void {
       throw new World5Error('C5_BAD_REFERENCE', 'raidTime');
     const roster = [...rules.rosters].reverse().find(row => row.minDepth <= c.depth)!.ids;
     for (const row of e.actors) {
+      if(g.party?.stationed?.has(row.actorId)||g.party?.state.members.some(m=>m.actorId===row.actorId))throw new World5Error('C5_BAD_REFERENCE','raidActor');
       const id = row.actorId, a = actors.find(a => a.id === id), atDepth = a && raidActorDepth(g, a);
       if (!roster.includes(row.birthTypeId) ||
           !(knownPolymorphSpecies(row.currentTypeId) || rt.nativeForms().some(form => form.id === row.currentTypeId)) ||
@@ -626,7 +628,7 @@ export function recordRaidLevelEntry(g: Game, a: import('../../entities/Monster'
 /** Derived permission stays narrower than lifecycle membership: no traveller or multi-part source. */
 export function frozenRaidActors(g: Game): number[] {
   if (!g.world5 || !g.extensionRuntime || !g.world5.raidCamps.some(r => r.pauseFrom !== null && r.event?.phase === 'active')) return [];
-  const actors = residentActors(g);
+  const actors = residentActors(g).filter((a):a is Monster=>a instanceof Monster);
   return g.world5.raidCamps.flatMap(r => {
     if (r.pauseFrom === null || r.event?.phase !== 'active') return [];
     const c = g.extensionRuntime!.worldCampRecords(r.owner).find(c => c.regionId === r.campId);
