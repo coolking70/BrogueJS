@@ -1,9 +1,10 @@
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { hash } from '../../scripts/ext-perf-common.mjs';
 import { it, expect } from 'vitest';
-import { parseOptions, validateWindowMeasurement, validateAiMeasurement } from '../../scripts/run-party-window-perf.mjs';
+import { parseOptions, validateWindowMeasurement, validateAiMeasurement, measurementTimeoutMs } from '../../scripts/run-party-window-perf.mjs';
 import { merge, readShard } from '../../scripts/merge-party-window-perf.mjs';
 const h = 'a'.repeat(64),
   stat = { n: 1, p50: 1, p95: 1, p99: 1, max: 1, total: 1 };
@@ -161,5 +162,38 @@ it('keeps AI calibration distinct and rejects A/B or mixed identities',()=>{
   expect(()=>parseOptions(['--head','b','--out','x','--scene','ai','--base','a'])).toThrow();
   const mixed=aiReports();mixed[0].runs[0].measurement.identity='party-window-v1';expect(()=>merge(mixed)).toThrow();
   expect(()=>validateWindowMeasurement(aiReports()[0].runs[0].measurement)).toThrow();
+});
+it('budgets four-member AI lifecycle verification within the workflow without changing measurement length', () => {
+  expect([1, 2, 4].map(n => measurementTimeoutMs('ai', n))).toEqual([1200000, 1200000, 2400000]);
+  expect(measurementTimeoutMs('windows', 4)).toBe(1200000);
+  expect(parseOptions(['--head', 'b', '--out', 'x', '--scene', 'ai']).steps).toBe(2049);
+  // Six serial children plus setup stay below the 360-minute shard job cap.
+  expect(6 * measurementTimeoutMs('ai', 4)).toBeLessThan(360 * 60000);
+});
+it('keeps a failed AI shard fatal and identifies its original timeout', () => {
+  const rows = aiReports();
+  rows[2].status = 'failed'; rows[2].options.shard = 'all-prefix';
+  rows[2].error = 'Failed 1-4-party-only.json: ETIMEDOUT';
+  expect(() => merge(rows)).toThrow('Shard all-prefix failed: Failed 1-4-party-only.json: ETIMEDOUT');
+});
+it('publishes the actual aggregate failure instead of the workflow setup fallback', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ai-perf-failure-'));
+  try {
+    const rows = aiReports(), files = rows.map((row, i) => {
+      row.runs = [];
+      if (i === 2) {
+        row.status = 'failed'; row.options.shard = 'all-prefix';
+        row.error = 'Failed 1-4-party-only.json: ETIMEDOUT';
+      }
+      const file = join(dir, `${i}.json`); writeFileSync(file, JSON.stringify(row)); return file;
+    });
+    const out = join(dir, 'merged');
+    const child = spawnSync(process.execPath, ['scripts/merge-party-window-perf.mjs', out, ...files], { encoding: 'utf8' });
+    expect(child.status).toBe(1);
+    const result = JSON.parse(readFileSync(join(out, 'result.json'), 'utf8'));
+    expect(result.status).toBe('failed'); expect(result.hard).toBe('failed');
+    expect(result.error).toContain('Shard all-prefix failed: Failed 1-4-party-only.json: ETIMEDOUT');
+    expect(readFileSync(join(out, 'summary.md'), 'utf8')).toContain('ETIMEDOUT');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 it.each(['calls','acceptedDecisions','nodes'])('rejects absent AI work counter %s',key=>{const row=aiReports()[0].runs[0].measurement;delete row.aiCounters[key];expect(()=>validateAiMeasurement(row)).toThrow();});

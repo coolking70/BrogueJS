@@ -28,6 +28,14 @@ export function parseOptions(args) {
   return o;
 }
 export function validateWindowMeasurement(row) {return validateMeasurement(row,'party-window-v1');}
+// Includes measurement AND full save/load/seed replay verification. Cloud AI
+// two-member runs take 759–839s; four members exceed the old 1200s process cap.
+// This is an execution budget, never a performance acceptance threshold.
+export function measurementTimeoutMs(scene, actors) {
+  assert.ok(['single', 'windows', 'fixed-ticks', 'ai'].includes(scene));
+  assert.ok([1, 2, 4].includes(actors));
+  return scene === 'ai' ? Math.max(1200000, actors * 600000) : 1200000;
+}
 export function validateAiMeasurement(row) {assert.equal(row.scene,'ai');assert.ok(row.aiCounters.calls>0);assert.ok(row.aiCounters.nodes>=0);assert.ok(row.aiCounters.acceptedDecisions>0);return validateMeasurement(row,'party-ai-v1');}
 function validateMeasurement(row, identity) {
   assert.equal(row.identity, identity);
@@ -127,6 +135,7 @@ export async function run(args) {
         for (const side of o.base ? (round % 2 ? ['A', 'B'] : ['B', 'A']) : ['B']) {
           const artifact = `${round}-${o.base ? side + '-' : ''}${actors}-${mode}.json`,
             file = resolve(out, artifact),
+            timeoutMs = measurementTimeoutMs(o.scene, actors),
             childStarted = performance.now(),
             child = spawnSync(
               process.execPath,
@@ -143,15 +152,15 @@ export async function run(args) {
                 env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=3072' },
                 encoding: 'utf8',
                 maxBuffer: 16 * 1024 * 1024,
-                timeout: 1200000
+                timeout: timeoutMs
               }
             );
           write(resolve(out, artifact + '.log.json'), {
-            exit: child.status, signal: child.signal, error: child.error ? {code:child.error.code??null,message:child.error.message}:null, elapsedMs:performance.now()-childStarted, timeoutMs:1200000,
+            exit: child.status, signal: child.signal, error: child.error ? {code:child.error.code??null,message:child.error.message}:null, elapsedMs:performance.now()-childStarted, timeoutMs,
             stdout: child.stdout,
             stderr: child.stderr
           });
-          assert.equal(child.status, 0, `Failed ${artifact}: ${child.stderr}`);
+          assert.equal(child.status, 0, `Failed ${artifact}: exit=${child.status}, signal=${child.signal}, error=${child.error?.code ?? 'none'}, timeoutMs=${timeoutMs}; ${child.stderr}`);
           const row = (o.scene==='ai'?validateAiMeasurement:validateWindowMeasurement)(JSON.parse(readFileSync(file, 'utf8')));
           assert.equal(row.sourceHash, sources[side].sourceHash);
           const old = result.runs.find(

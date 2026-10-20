@@ -16,7 +16,8 @@ export function merge(reports) {
     assert.equal(report.identity, first.identity);
     assert.equal(report.mode, first.mode);
     assert.deepEqual(report.sources, first.sources);
-    assert.ok(['smoke-only', 'measured-no-budget'].includes(report.status));
+    assert.ok(['smoke-only', 'measured-no-budget'].includes(report.status),
+      `Shard ${report.options?.shard ?? 'unknown'} ${report.status}: ${report.error ?? 'measurement incomplete'}`);
     assert.deepEqual(report.source, first.source);
     assert.deepEqual(report.tools, first.tools);
     for (const k of ['rounds', 'steps', 'scene']) assert.equal(report.options[k], first.options[k]);
@@ -105,16 +106,22 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const args = process.argv.slice(2),
     out = args.shift();
   assert.ok(out && args.length === 3, 'output + three result.json files');
-  const result = merge(args.map(readShard));
   mkdirSync(out, { recursive: true });
-  args.forEach((file, i) =>
-    cpSync(dirname(resolve(file)), resolve(out, ['classic', 'all-full', 'all-prefix'][i]), {
-      recursive: true
-    })
-  );
-  write(resolve(out, 'result.json'), result);
-  writeFileSync(
-    resolve(out, 'summary.md'),
-    `# Party window ${result.status}\n\n${result.runs.length} measurements. ${result.note}\n`
-  );
+  try {
+    const result = merge(args.map(readShard));
+    args.forEach((file, i) =>
+      cpSync(dirname(resolve(file)), resolve(out, ['classic', 'all-full', 'all-prefix'][i]), {
+        recursive: true
+      })
+    );
+    write(resolve(out, 'result.json'), result);
+    writeFileSync(
+      resolve(out, 'summary.md'),
+      `# Party window ${result.status}\n\n${result.runs.length} measurements. ${result.note}\n`
+    );
+  } catch (error) {
+    write(resolve(out, 'result.json'), { status: 'failed', hard: 'failed', error: String(error), shards: args });
+    writeFileSync(resolve(out, 'summary.md'), `# Party calibration failed\n\n${String(error)}\n\nNo performance verdict or budget. Inspect the original shard artifacts.\n`);
+    throw error;
+  }
 }

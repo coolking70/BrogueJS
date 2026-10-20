@@ -1,5 +1,7 @@
 # Party P1c 实施报告
 
+最新性能追查（2026-10-20）：P1c已提交 `006cd7d`、未发布。本次工具修复及限定测试完成，party/window云端校准已登记；AI仅完成修复后短冒烟，非party all/full回退仍未关闭。本地存在系统休眠污染，详见“性能与维护者派发”最新节。以下功能实施/审查记录保留当时身份与状态，其中“未提交/待云端”措辞不代表最新性能状态。
+
 2026-10-20；维护者 C1–C7 于 **2026-10-18 全部按推荐批准**，已先回填任务单。开工为 `ext/party-p1a` / `075b7eb` 干净工作树。本次不 commit、不 push、不派发云端。候选仍是未提交差量，不能把 HEAD 当作可检出的 P1c 源码。
 
 状态：初次实施的功能代码、限定自动门禁、历史内部 R1/R2 修复及本地 party 三套工具冒烟已完成。2026-10-20 第1轮独立审查另报 N1–N3，作者处理与本轮证据见“审查发现处理”；独立复审尚未执行。正式云端三轮、浏览器/真机、发布分别待维护者；旧party/window跨格式A/B适配器及AI正式计时的无路预算/受命同伴场景尚缺；额外本地phase6冒烟被原Node24守卫拒绝，均未冒称通过。
@@ -135,6 +137,116 @@ NODE_OPTIONS=--max-old-space-size=3072 npm run build
 | C-A13 | R1→修复→R2已闭环；本地分层/rounds1冒烟另列；正式云端、跨格式A/B、浏览器、发布均不混作通过 |
 
 ## 性能与维护者派发
+
+### 云端结果复核与工具修复（2026-10-20，开工 HEAD 006cd7d）
+
+本节覆盖下方首次实施时的“云端未派发”状态。分支 `ext/party-p1a`，开工完整 SHA `006cd7d7ef357c15572af1f7daa2588dd826963d`；本次不 commit/push，不改 D6 或冻结预算。原始下载在 `/private/tmp/perfci-{runId}/`，本地追加证据在 `/private/tmp/p1c-perf-followup/`，均不提交。
+
+#### 非 party phase6：工作量相同，原 regression 保留
+
+[run 39338476889](https://github.com/coolking70/BrogueJS/actions/runs/39338476889)，A=`72aa412c0c2a20dba316df01b33993cd6f88976d` → B=`006cd7d7ef357c15572af1f7daa2588dd826963d`，双方 benchmark identity=`6c4`。三分片硬检查 pass；classic/full 0/3、all/full **3/3**、all/prefix 0/3。all/full 分片与 aggregate exit 1 是现行 D6 的正确结果，不能按 report-only 关闭。
+
+逐轮复核 all/full 原始 summary/rounds/输入（A/B完整录像JSON逐字段相等，含recordedAt及snapshots）：A/B 各 **2423 events / 2549 blocks / 2549 objective rounds / 253375 roundTicks**；16 项 segment 调用数、stats hits=3557870/misses=2784487、最大 footprint=83/body members=9 完全一致。完整 semantic 对象也相同（state/event/full-domain/rows hash、双 RNG 及调用次数）；不是只比较最终摘要。主要计数：transaction=5000、collectExtensionComponents=settle=4794、recordingEventDigest=2423、snapshot=2433、checkpointCombatFactWorld=148、checkpointResidentWorld=145。all/prefix 恰好也覆盖这 **2423 条完整输入**，其三组 A/B 同样工作量/语义相等。核对摘要见仓外 `cloud-workload-audit.json`。
+
+`evaluateGates` 只有 all/full 的事件/块/round 数不同时才降为 report-only；本次 `workloadChanged=false`。以下是实际触线项（ms），任一项触线计该轮失败，三轮至少两轮判 regression；不存在“不同指标不能累计轮数”的例外。
+
+| 轮次 | 触线指标 | A → B | 门限 |
+| --- | --- | --- | --- |
+| 1 | D20 command max | 2112.725 → 2731.560 | +25% |
+| 2 | objective P99 / D20 objective P99 | 442.121 → 592.113 / 180.141 → 251.560 | +25% |
+| 3 | objective P99 / D20 objective P99 | 372.787 → 591.914 / 181.778 → 253.325 | +25% |
+
+三轮 command P95（A→B）707.984→694.862、676.745→693.517、693.729→697.751；elapsed 760289→743151、735698→740679、733975→742393，均未触线。D20 尾部尖峰所处指令随轮次/侧变化，而 all/prefix 同输入的总 P99 全部未触线，这支持运行时/GC 抖动的可能性；原云端没有 GC trace，不能将其确证为唯一原因，更不能据此改判。
+
+本地诊断使用原 `profile-ext-perf.mjs`、同一份云端A输入、Node **v25.2.1 / Apple M5 / heap3072MB**，依次在仓外A=`72aa412`与当前B=`006cd7d`执行 `--cpu`；不是绕过Node24正式runner来出D6结论。两侧均完整2423事件、零OOS，semantic与上述云端对象相同，16项调用计数相同。采样热点如下，单位秒，为V8 self采样估算，不能与包含它们的分段墙钟相加：
+
+| 热点 | A | B |
+| --- | ---: | ---: |
+| structuredClone（js_transferable） | 255.584 | 253.542 |
+| WorldCheckpoint.capture | 83.977 | 87.704 |
+| GC | 53.322 | 56.054 |
+| isStatJson | 47.546 | 47.147 |
+| runtime.collect | 40.983 | 39.395 |
+
+V8采样时钟跨度936.799→937.248秒（约+0.048%），`PartyAi.ts`/`partyAi.ts`没有self样本；主要热点的生产实现未在P1c改变。逐项审计新增调用：视图/策略/AI事务都受party状态约束；无party怪物路径新增的是party条件检查，拾取路径的成员查找也由可选链短路。**未定位到可归因于P1c的新增重活；本次没有生产修复，不能声称已完成“修复后的有效本地配对证明”。** 采样零命中也不等于证明所有新增检查绝对零成本。
+
+本地测量有明确环境限制：上述CPU运行的墙钟elapsed为960.783/1087.149秒，与采样时钟分别相差约24/150秒；`benchmark-sleep-events.txt`、`power-events.txt`记录测量期间多次 **Maintenance Sleep / DarkWake**。随后未启用采样器的A-wall也受同一睡眠循环污染，在2300条进度之后中断，未产出完整summary，队列exit130；B-wall及原排队的完整AI运行未启动。临时caffeinate的idle/display/user-active断言也未阻止该状态，已向维护者请求保持本机唤醒。这些墙钟不能证明性能改善或回退，不能择取部分较快区段代替完整配对；两份CPU文件只用于热点诊断和语义/计数核对。日志、完整cpuprofile、分析JSON及原中断记录都在仓外证据目录。
+
+临时环境清理：由工具会话启动的idle断言已终止；另一个限时 `caffeinate -d -i -u -t 10800`（PID86530）清理时被沙箱以EPERM拒绝，约2026-10-20 13:06（Asia/Shanghai）自动到期。维护者可在本机终端执行 `kill 86530` 提前结束；未修改系统电源设置。
+
+因此优先级1仅完成工作量审计与本地热点诊断，**all/full回退仍未关闭**；仍需在持续唤醒的环境完成有效配对/归因，或维护者按下方命令复跑Node24正式证据。本次未改工具的D6判定、原回退结果、生产代码或字节夹具。
+
+#### party-ai：原因为 4 人子进程超时，汇总只是在严格拒绝失败分片
+
+[run 39338464217](https://github.com/coolking70/BrogueJS/actions/runs/39338464217) 的 classic(1人)、all-full(2人) 各完成6项；all-prefix(4人) 在首项 `1-4-party-only.json` 失败。原 `.log.json` 为 **exit=null / signal=SIGTERM / error.code=ETIMEDOUT / elapsedMs=1200219.451 / timeoutMs=1200000**，stderr 为空。并非摘要/OOS错误或 aggregate 安装失败：汇总的 `merge` 拒绝 `status=failed`，没有写出 summary，workflow 最后才用通用文字 “Aggregate setup failed” 兜底。
+
+已完成的2人测量连同存读档和完整seed replay耗时759–839秒；首轮only测量356.885秒、验证396.656秒，主耗时不只是计时循环。旧20分钟子进程上限没有容纳4人负载。修复限定工具：AI按人数设置执行预算 `max(1200000, actors×600000)` ms，即1/2人20分钟、4人40分钟；其它场景仍20分钟，6个4人子进程最多240分钟，留在360分钟job上限内。保留默认2049输入、完整生命周期验证、硬拒绝和预算null；执行上限不是性能验收阈值。子进程错误现在包含exit/signal/error/timeout；merge失败仍exit1，同时生成带原始分片错误的result/summary，不再把已知测量失败混作setup失败。不自动重试，不丢弃慢轮，不调整D6。
+
+本地因上述睡眠限制，改跑 **rounds=1、steps=24** 的三分片功能冒烟（显式短步，不冒称默认2049输入已跑通）：classic=1人、all-full=2人、all-prefix=4人，各only/all；三个run及merge均exit0，汇总6/6、`smoke-only`、budget=null。每场24条输入=19个100tick窗口+5条零时控制，共1900tick；1/2/4人真实AI调用与接受决策分别19/38/76，only/all展开节点分别534/581、391/448、701/732；全部完整save/load及该24输入录像的seed replay零OOS、预演污染0，cacheHits/budgetFallbacks均0。merge重新核对measurement及save/recording原工件hash。
+
+运行时候选hashCandidate=`7f982ba129dfeb86300e46f7d14a4fc4e7fe4c4463be624098cbb2394b7ca703`（包含当时工具/测试及报告更新前文档；生产源码仍006cd7d），三分片开始/结束身份守卫通过。工具hash、全部命令及退出码见仓外 `ai-smoke-merged/result.json`、`ai-smoke-steps.json`；三分片各耗时51.306/33.266/52.899秒，merge0.443秒，这些受本机睡眠影响的时间仅作执行记录。4人子进程日志的timeoutMs=2400000，1/2人为1200000；短冒烟没有实际触及超时边界。**默认2049输入完整本地复跑未完成**，新增上限能否覆盖正式云端负载仍需下方party-ai重跑确认。
+
+原云端三分片另用新merge重算到 `cloud-ai-remerged/`，仍exit1，summary明确为 `Shard all-prefix failed: ... Failed 1-4-party-only.json`；旧run.error本身没有ETIMEDOUT，详细原因由原子进程日志提供。没有把失败工件补写成成功。
+
+#### party / party-window：完整校准，仅报告
+
+[party run 39338438938](https://github.com/coolking70/BrogueJS/actions/runs/39338438938) 与 [window run 39338451392](https://github.com/coolking70/BrogueJS/actions/runs/39338451392) 均为B=`006cd7d`、Node24云端、1/2/4人×only/all×3轮，每项2049输入、各18项，`measured-no-budget`。party汇总另产出 `party-perf-budget.suggested.json`（suggested-only，未采纳/未冻结、没有独立第四轮验证）；window的budget=null。每场OOS=0；window预演污染=0。以下每格按原轮序列出，单位ms，不取最好值，不跨机器比较绝对耗时；party的step与window的input-to-ready计时口径分别保留。
+
+**party step**
+
+| 场景 | P95（1 / 2 / 3轮） | P99（1 / 2 / 3轮） | max（1 / 2 / 3轮） |
+| --- | --- | --- | --- |
+| 1 party-only | 136.40 / 134.45 / 136.17 | 150.60 / 155.36 / 151.51 | 193.07 / 193.42 / 181.07 |
+| 1 party-all | 107.26 / 106.70 / 105.75 | 140.27 / 141.19 / 140.29 | 199.58 / 221.66 / 188.39 |
+| 2 party-only | 66.57 / 66.52 / 67.63 | 83.16 / 82.45 / 82.85 | 117.50 / 105.78 / 102.71 |
+| 2 party-all | 74.53 / 75.74 / 77.94 | 96.84 / 97.75 / 101.45 | 132.39 / 141.90 / 144.92 |
+| 4 party-only | 51.43 / 49.87 / 51.80 | 72.30 / 66.51 / 68.69 | 115.45 / 83.40 / 106.06 |
+| 4 party-all | 60.41 / 62.69 / 58.80 | 80.21 / 77.90 / 73.36 | 144.81 / 110.99 / 143.99 |
+
+**window input-to-ready**
+
+| 场景 | P95（1 / 2 / 3轮） | P99（1 / 2 / 3轮） | max（1 / 2 / 3轮） |
+| --- | --- | --- | --- |
+| 1 party-only | 155.23 / 154.35 / 154.13 | 201.80 / 200.92 / 202.80 | 325.85 / 322.95 / 319.58 |
+| 1 party-all | 244.38 / 240.44 / 237.18 | 772.55 / 719.20 / 709.86 | 1018.26 / 939.31 / 884.47 |
+| 2 party-only | 95.28 / 96.00 / 96.49 | 223.23 / 225.61 / 243.98 | 1332.49 / 1358.47 / 1321.30 |
+| 2 party-all | 108.44 / 111.19 / 111.92 | 255.64 / 256.00 / 260.67 | 1472.38 / 1464.06 / 1404.84 |
+| 4 party-only | 60.47 / 62.32 / 63.26 | 135.68 / 136.94 / 148.31 | 634.99 / 628.58 / 649.61 |
+| 4 party-all | 67.97 / 73.88 / 73.69 | 218.65 / 239.09 / 224.36 | 1528.98 / 1655.18 / 1614.02 |
+
+window三轮各配置总tick稳定：only1=205200、all1=248480、only2=106900、all2=109000、only4=52800、all4=60600；人数间推进工作量不同，不能据单输入P95下降声称多人更快。
+
+#### 本次限定验收
+
+- `node node_modules/vitest/vitest.mjs run src/test/party_window_perf_tools.test.mjs src/test/party_perf_tools.test.mjs src/test/ext_party_inert.test.ts --maxWorkers=1 --no-file-parallelism`：**3文件45项通过，exit0**，18.70秒；包括原五配置无party存档/录像/消息/RNG/自有键字节夹具，未重录。日志 `targeted-tests.log`。
+- `node scripts/test-ext-perf-ab.mjs`：exit0，原P99/工作量、1ms容差、2-of-3及冻结资格正负例保持。`node scripts/check-test-dependencies.mjs`：exit0。日志 `d6-tests.log` / `test-dependencies.log`。
+- 新增测试覆盖4人AI有限执行预算和默认2049输入保持、失败分片继续拒绝、真实merge CLI exit1且写出原始错误报告。旧断言未放宽；没有生产文件回退/基线重录或守卫前提修订。
+- 原party/window下载的三分片分别重新合并，均exit0（`cloud-party-remerged/`、`cloud-window-remerged/`）；校验原始measurement身份/hash和重复轮稳定性，window另校验save/recording工件hash。party预算建议仍只是原有suggested-only产物，未采纳。
+- 本次只改性能工具、其测试和本报告；无生产代码改动，因此未新增boundary/vue-tsc/build，也未跑完整npm/test:full/drift。所有原始证据留仓外；未commit/push/派发。
+
+#### 维护者提交后需要重跑的精确命令
+
+仅需重跑 **party-ai完整校准**及**phase6正式A/B**。本次不改party/window测量内容与生产源码时，以上两套成功校准可以保留，不要求为文档/超时诊断重复派发。令 `P1C_SHA` 为维护者提交、推送本修复后的完整40位SHA；不能填旧006cd7d。`PERF_TOOLS_REF` 必须指向包含本工具修复的同一提交（workflow dispatch用远端分支/标签）。先核对远端ref，下面每条单独执行；本地不派发。
+
+```sh
+set -eu
+: "${P1C_SHA:?设置为维护者提交并推送本修复后的40位SHA}"
+: "${PERF_TOOLS_REF:?设置为指向该SHA的远端分支或标签，例如ext/party-p1a}"
+test "$(gh api "repos/coolking70/BrogueJS/commits/$PERF_TOOLS_REF" --jq .sha)" = "$P1C_SHA"
+
+gh workflow run ext-perf.yml --repo coolking70/BrogueJS --ref "$PERF_TOOLS_REF" \
+  -f suite=party-ai -f mode=calibration-only -f head_ref="$P1C_SHA" -f rounds=3
+
+gh workflow run ext-perf.yml --repo coolking70/BrogueJS --ref "$PERF_TOOLS_REF" \
+  -f suite=phase6 -f mode=ab \
+  -f base_ref=72aa412c0c2a20dba316df01b33993cd6f88976d \
+  -f head_ref="$P1C_SHA" -f base_identity=6c4 -f head_identity=6c4 -f rounds=3
+```
+
+需要下载三分片及aggregate，复核工具/源码身份、输入/原始工件hash与退出码；本地诊断不能替代Node24正式D6。party-ai成功后仍只校准/report-only，不自动冻结；phase6原回退只有新的完整证据和维护者裁定才能关闭。
+
+### 首次实施时的性能说明与派发方案（历史）
+
 
 原party-v1/party-window-v1输入身份不冒用；新增party-ai-v1。AI场景为seed42 wizard受控计时，1/2/4人×only/all，含有限窗口、跟随/探索、设置、取消/恢复目标、永久切换与本窗AI。策略与视图、验证/事务捕获、模拟、主线程录制、Worker等待、预演、摘要/编码分别计时，包含关系不相加。calls/nodes只计真实模拟，acceptedDecisions取权威ordinal差量；cacheHits=0（未引入共享路径缓存）。预算4096及原生同伴负载有功能专项，尚未组成完整独立云端性能场景；不得把自然演示或纯策略探针说成这两类正式计时。
 
