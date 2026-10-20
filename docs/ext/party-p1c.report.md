@@ -1,6 +1,8 @@
 # Party P1c 实施报告
 
-最新性能追查（2026-10-20）：P1c已提交 `006cd7d`、未发布。本次工具修复及限定测试完成，party/window云端校准已登记；AI仅完成修复后短冒烟，非party all/full回退仍未关闭。本地存在系统休眠污染，详见“性能与维护者派发”最新节。以下功能实施/审查记录保留当时身份与状态，其中“未提交/待云端”措辞不代表最新性能状态。
+最新补录（2026-10-20，开工 HEAD `e72cd62`）：维护者确认 P1a/P1b/P1c 已发布到 `ext/foundation`。phase6 [run 39361213080](https://github.com/coolking70/BrogueJS/actions/runs/39361213080) 原 Aggregate 因跨分片 Node 不同误拒；本次仅修汇总工具及测试，原工件离线重算正式 **D6 pass / hard pass**，classic 0/3、all/full 1/3、all/prefix 0/3，见下节。历史 run 39338476889 的 regression、原 CI Aggregate failed 和本地休眠污染证据保留，不改写为当时通过。本次没有重新测量或派发云端，也不凭 phase6 结果关闭 party/AI/跨格式比较及浏览器留项。
+
+上轮性能追查（历史，2026-10-20）：当时 P1c 已提交 `006cd7d`、未发布；party/window 云端校准已登记，AI 仅完成修复后短冒烟，非 party all/full 回退待新证据。以下功能实施/审查记录保留各自当时身份与状态，其中“未提交/待云端”措辞不代表最新状态。
 
 2026-10-20；维护者 C1–C7 于 **2026-10-18 全部按推荐批准**，已先回填任务单。开工为 `ext/party-p1a` / `075b7eb` 干净工作树。本次不 commit、不 push、不派发云端。候选仍是未提交差量，不能把 HEAD 当作可检出的 P1c 源码。
 
@@ -137,6 +139,56 @@ NODE_OPTIONS=--max-old-space-size=3072 npm run build
 | C-A13 | R1→修复→R2已闭环；本地分层/rounds1冒烟另列；正式云端、跨格式A/B、浏览器、发布均不混作通过 |
 
 ## 性能与维护者派发
+
+### phase6 run 39361213080 离线正式重算（2026-10-20）
+
+本次在 `ext/party-p1a` / `e72cd6256daf810f89e520f1673b197d6ba6097d` 执行，仅修改 `scripts/merge-ext-perf-ab.mjs`、`scripts/test-ext-perf-split.mjs` 及文档；无游戏代码、预算、workflow 改动，无 commit/push。原始工件目录 `/private/tmp/perfci-39361213080/` 保持原样；新证据 `/private/tmp/p1d-perf-fix/`，不提交原始大工件。
+
+**归因与修复。** 三分片原 `hard=pass`，局部 gates 都 pass；分片顶层 `status=incomplete` 是等待三片合并的正常语义。classic 使用 Node v24.22.0 / AMD EPYC 7763，all/full 使用 v24.22.0 / AMD EPYC 9V45，all/prefix 使用 v24.21.0 / AMD EPYC 7763；均 linux/x64、4 vCPU、heap3072MiB，同 run/attempt=1，各有独立 invocation。原 Aggregate 的直接异常是 `Mixed runner node`（24.21.0 对 24.22.0），不是 CPU 相等断言；跨分片 CPU 原已允许不同。
+
+删除跨分片 Node 相等要求，继续要求同 runId/attempt/heap、源/工具/输入身份一致和 invocation 唯一；每份原始 summary 新增与所属 shard runner 的 Node/CPU/platform/arch 绑定。原 A1/B1/A2/B2/A3/B3 顺序、A/B 同机、同侧跨轮稳定及完整第四轮 B 校验不变。D6 从不比较不同分片的绝对时间，也不汇总跨 CPU 的毫秒均值。
+
+原工具哈希不能直接冒充修后版本。新增显式 `--original-merge FILE` 离线入口：核验给定旧脚本与各分片登记 hash 完全相同，保存旧脚本副本和旧/新汇总 hash；只允许替换 merger，其他工具逐项必须与原工件一致。默认入口仍拒绝工具漂移，原始 `toolHashes` 不改写，重算记录同时进入 result 和建议 manifest。此次旧脚本取自 control 提交 e72cd62。
+
+**实际计时身份**（与本次工具修改身份分开）：
+
+| 角色 | SHA |
+| --- | --- |
+| A | `72aa412c0c2a20dba316df01b33993cd6f88976d` |
+| B | `006cd7d7ef357c15572af1f7daa2588dd826963d` |
+| 原 control | `e72cd6256daf810f89e520f1673b197d6ba6097d` |
+| 原 merge SHA-256 | `131a0da385114b55c759de2c2958ceda475f444b35ea88e1bae2fca390bb86d4` |
+| 修后 merge SHA-256 | `54f93a80b685e8714a3ee274506d04e454d3341b1a5f3e59dde5c57204bc8d21` |
+
+**正式结果：D6-2026-10-16 `status=pass / hard=pass`，重算命令 exit0。** 三轮完整 A/B 共18次，加 classic/all-full 各一次独立 held-out B，共20次；重验原 summary/rounds、输入/完整状态/摘要/RNG/工作量、来源与逐工具 hash，所有复制的原始分片文件逐字节保持。
+
+| Gate | 每侧事件 / blocks / rounds（三轮一致） | 越线轮数 | 判定 |
+| --- | --- | --- | --- |
+| classic/full | 2208 / 2431 / 2431 | 0/3 | pass |
+| all/full | 2423 / 2549 / 2549 | 1/3 | pass |
+| all/prefix | 2423 / 2549 / 2549 | 0/3 | pass |
+
+本次 all/full 工作量相同，因此参与 D6 判定，不使用“工作量不同仅报告”豁免。唯一越线是 all/full 第2轮 `depth.20.max`：A=2316.518ms、B=2909.473ms，阈值2895.648ms；只有一轮，未达到至少两轮退化条件。其余全程/D20 判定指标均未越线；prefix 本次等长于完整输入，但仍独立复核完整 D20 证据，未用短跑代替。
+
+前三轮 B full 生成新的候选/建议 manifest，classic/all 的独立第四轮在各自原 runner 采集，离线冻结后检查 `hard=pass`。这是 **held-out replay**，不是离线冻结后再开一次云端采样（`independentPostFreezeReplay=false`）；其逐层绝对计时仍 report-only，保留 classic 8 项、all 3 项场景 warning，全程 command P95/max warning 均 false。`ext-perf-6c4-budget.suggested.json` 仅新证据目录内建议，未覆盖仓库预算或自动采用。新完整 run 给出本次无 party 正式 pass，不抹去先前 regression，也不把结果转成其他 suite 的性能通过。
+
+可复算命令（输出目录必须尚不存在；以下为本次实际输出位置）：
+
+```sh
+git show e72cd6256daf810f89e520f1673b197d6ba6097d:scripts/merge-ext-perf-ab.mjs \
+  > /private/tmp/p1d-perf-fix/original-merge-ext-perf-ab.mjs
+node scripts/merge-ext-perf-ab.mjs /private/tmp/p1d-perf-fix/recalculated-39361213080 \
+  /private/tmp/perfci-39361213080/ext-perf-39361213080-1-classic \
+  /private/tmp/perfci-39361213080/ext-perf-39361213080-1-all-full \
+  /private/tmp/perfci-39361213080/ext-perf-39361213080-1-all-prefix \
+  --original-merge /private/tmp/p1d-perf-fix/original-merge-ext-perf-ab.mjs
+```
+
+新 `result.json` SHA-256：`37204685a42112f97e518a332dc6c24e4aa3d120ce7027f4f157ef48d08cc7dc`。原三片 result SHA-256 按 classic/all-full/all-prefix 分别为 `c5ca039bd12b56311a97f6d4cb89feab0a16271a68510f4c7c683939966bc508`、`a8fc9a6685280188d5a0ddbdf259453ca1c165fe17abd5f875410bde481b19b7`、`91adcc2a476517cd0c7c61703f4f1c2b238e2ffed5798aa273f50f370589136d`；新 result 的 shards 和 recalculation 字段可逐项核查。
+
+**脚本回归。** Node v25.2.1 仅作本地离线检查/合成测试，不充当云端计时环境。扩展原 split 脚本夹具使跨分片 Node 补丁/CPU 不同；隔离副本只换回旧生产 merger，原样新测试首个合法 merge 复现 `Mixed runner node`、exit1（`split-before.log`）。修后 `test-ext-perf-split.mjs` exit0（`split-after.log`）：合法混合分片三轮/冻结/held-out、显式离线来源、A/B/跨轮/第四轮 Node 或 CPU 漂移、runId/attempt/heap/工具漂移、缺片/缺轮/顺序错误、短跑 incomplete、真实 regression 等均通过。没有改旧断言语义、D6 容差或策略文件。
+
+补充 `node scripts/test-ext-perf-ab.mjs`、`node scripts/test-ext-perf-selection.mjs`、`node scripts/check-test-dependencies.mjs` 均 exit0（依赖检查 errors=[]），`git diff --check` 通过；新增任务单本地文档链接有效、四个改动文件均 LF。本次仅脚本/文档修复，未重跑游戏测试、types/build、全量或浏览器，不把历史门禁算作本次执行。
 
 ### 云端结果复核与工具修复（2026-10-20，开工 HEAD 006cd7d）
 

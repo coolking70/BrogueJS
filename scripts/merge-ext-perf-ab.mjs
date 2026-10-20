@@ -1,5 +1,7 @@
 /** Merge three same-runner shards. Never compare timings between runners.
- * node scripts/merge-ext-perf-ab.mjs NEW_OUT CLASSIC_DIR ALL_FULL_DIR ALL_PREFIX_DIR
+ * node scripts/merge-ext-perf-ab.mjs NEW_OUT CLASSIC_DIR ALL_FULL_DIR ALL_PREFIX_DIR [--original-merge FILE]
+ * Offline recalculation may replace only this merger; FILE must match the
+ * original recorded merger hash. All other tool hashes remain strict.
  * Raw artifacts are copied into the portable aggregate; failures still publish.
  */
 import assert from 'node:assert/strict';
@@ -11,9 +13,11 @@ import {hash,write} from './ext-perf-common.mjs';
 import {comparablePrefix,pendingPerfBaseline,perfIdentity} from './ext-perf-selection.mjs';
 import {parseOptions,kindsFor,validateRun,withObjectiveP99,evaluateGates,overallStatus,policyVersion,timingPolicy} from './ext-perf-ab-policy.mjs';
 
-const [output,...inputs]=process.argv.slice(2);
+const [output,...args]=process.argv.slice(2),inputs=args.slice(0,3),extra=args.slice(3);
+assert.ok(extra.length===0||extra.length===2&&extra[0]==='--original-merge'&&extra[1],'Expected optional --original-merge FILE');
+const originalMerge=extra[1];
 assert.ok(output&&inputs.length===3,'Expected NEW_OUT CLASSIC_DIR ALL_FULL_DIR ALL_PREFIX_DIR');
-if(inputs.some(path=>{try{return JSON.parse(readFileSync(resolve(path,'result.json'),'utf8')).identity==='party-v1';}catch{return false;}})){const {mergePartyAb}=await import('./merge-party-perf-ab.mjs');mergePartyAb(output,inputs);process.exit(0);}
+if(inputs.some(path=>{try{return JSON.parse(readFileSync(resolve(path,'result.json'),'utf8')).identity==='party-v1';}catch{return false;}})){assert.ok(!originalMerge,'Offline merger replacement is phase6 only');const {mergePartyAb}=await import('./merge-party-perf-ab.mjs');mergePartyAb(output,inputs);process.exit(0);}
 const out=resolve(output),root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 assert.ok(!existsSync(out),'Use a fresh output directory; never overwrite evidence');
 for(const input of inputs){const p=relative(resolve(input),out);assert.ok(p==='..'||p.startsWith('../'),'Output must be outside input artifacts');}
@@ -26,6 +30,11 @@ const cli=(label,script,args)=>{
  writeFileSync(resolve(out,label+'.log'),log);result.steps.push({label,status:'pass'});
 };
 try {
+ if(originalMerge){
+  const originalText=readFileSync(resolve(originalMerge),'utf8');
+  result.recalculation={originalMergeHash:hash(originalText),currentMergeHash:hash(readFileSync(fileURLToPath(import.meta.url),'utf8')),scope:'Merger-only offline recalculation; original artifacts and all other tool hashes unchanged.'};
+  writeFileSync(resolve(out,'original-merge-ext-perf-ab.mjs'),originalText);
+ }
  const metrics=read(resolve(root,'scripts/ext-perf-budget.json')).metrics;
  const observer=hash(['profile-ext-perf.mjs','ext-perf-common.mjs'].map(n=>readFileSync(resolve(root,'scripts',n),'utf8')).join('\0'));
  const first=new Map(),contracts={},sources={},dirs={},invocations=new Set();
@@ -44,12 +53,14 @@ try {
   assert.equal(original.instrumentationHash,observer,'Observer drift');
   assert.ok(original.runner.invocation&&!invocations.has(original.runner.invocation),'Duplicate runner invocation');invocations.add(original.runner.invocation);
   assert.equal(original.runner.shard,name);
-  for(const [tool,digest]of Object.entries(original.toolHashes))assert.equal(digest,hash(readFileSync(resolve(root,'scripts',tool),'utf8')),`Tool drift ${tool}`);
+  for(const [tool,digest]of Object.entries(original.toolHashes))assert.equal(digest,tool==='merge-ext-perf-ab.mjs'&&originalMerge?result.recalculation.originalMergeHash:hash(readFileSync(resolve(root,'scripts',tool),'utf8')),`Tool drift ${tool}`);
   assert.ok(original.toolHashes['merge-ext-perf-ab.mjs'],'Missing merge tool provenance');
   if(reference){
    for(const key of ['rounds','limit','baseIdentity','headIdentity'])assert.deepEqual(options[key],reference.options[key],`Mixed ${key}`);
    for(const key of ['identities','instrumentationHash','toolHashes'])assert.deepEqual(original[key],reference[key],`Mixed ${key}`);
-   for(const key of ['runId','attempt','node','heapMiB'])assert.deepEqual(original.runner[key],reference.runner[key],`Mixed runner ${key}`);
+   // Jobs may receive different CPUs and Node patch versions. No timing is
+   // compared across shards; each raw sample is bound to its own runner below.
+   for(const key of ['runId','attempt','heapMiB'])assert.deepEqual(original.runner[key],reference.runner[key],`Mixed runner ${key}`);
   }else {reference=original;result.options={...options,cases:['classic','all']};delete result.options.shard;result.identities=original.identities;result.instrumentationHash=observer;result.toolHashes=original.toolHashes;}
   result.shards.push({name,runner:original.runner,resultSha256:hash(readFileSync(resolve(dir,'result.json'),'utf8')),status:original.status});
   const expected=[];
@@ -64,6 +75,8 @@ try {
    const key=`${r.side}-${r.id}-${r.kind}`,prefix=resolve(dir,`round-${r.round}`,key);
    const rounds=read(prefix+'.rounds.json'),summary=withObjectiveP99(read(prefix+'.summary.json'),rounds);
    assert.deepEqual(summary,r.summary,'Result/raw summary mismatch');
+   assert.equal(summary.node,original.runner.node,'Shard runner node mismatch');
+   for(const key of ['cpu','platform','arch'])assert.equal(summary.machine[key],original.runner[key],`Shard runner ${key} mismatch`);
    const input=read(resolve(dir,'inputs',key+'.json')),contract=original.inputs[key];
    assert.equal(hash(input),contract.recordingHash,'Input drift');assert.equal(input.events.length,contract.events);
    if(contracts[key])assert.deepEqual(contract.recordingHash,contracts[key].recordingHash,'Cross-shard input drift');
@@ -107,7 +120,7 @@ try {
   cli('freeze-candidate','ext-perf-budget.mjs',['freeze-split',candidate,...['classic','all'].map(id=>`${id}=${resolve(out,`${id}.source.json`)},${[1,2,3].map(round=>resolve(dirs[id==='classic'?'classic':'all-full'],`round-${round}`,`B-${id}-full`)).join(',')}`)]);
   const verification=result.runs.filter(r=>r.round==='verify');assert.deepEqual(verification.map(r=>r.id).sort(),['all','classic'],'Missing independent fourth B replay');
   cli('independent-frozen-check','ext-perf-budget.mjs',['check',candidate,...verification.map(r=>`${r.id}=${r.prefix}`)]);
-  const manifest=read(candidate);manifest.provenance={identities:result.identities,shards:result.shards,policyVersion,toolHashes:result.toolHashes,independentPostFreezeReplay:false,independentHeldOutReplay:true,calibration:'First three B full runs per case; independent fourth B on that same runner checked after aggregate freeze. No cross-runner timing comparisons.'};
+  const manifest=read(candidate);manifest.provenance={identities:result.identities,shards:result.shards,policyVersion,toolHashes:result.toolHashes,...(result.recalculation?{recalculation:result.recalculation}:{}),independentPostFreezeReplay:false,independentHeldOutReplay:true,calibration:'First three B full runs per case; independent fourth B on that same runner checked after aggregate freeze. No cross-runner timing comparisons.'};
   const name=`ext-perf-${result.options.headIdentity}-budget.suggested.json`;write(resolve(out,name),manifest);result.manifest=name;
  }
 } catch(error){result.status='failed';result.hard='failed';result.error=String(error.stack??error);console.error(result.error);}
@@ -121,6 +134,7 @@ const lines=['# ext phase6 split A/B',`Status: **${result.status}**; hard: **${r
  '', '| Gate | Crossed rounds | Verdict |', '| --- | --- | --- |',...result.gates.map(g=>`| ${g.id}/${g.kind} | ${g.exceededRounds}/${result.options.rounds} | ${g.status} |`),
  '', '| Pair / round | Metric | A ms | B ms | Crossed |', '| --- | --- | --- | --- | --- |',...result.gates.flatMap(g=>g.pairs.flatMap((pair,i)=>pair.map(v=>`| ${g.id}/${g.kind} / ${i+1} | ${v.metric} | ${v.a.toFixed(3)} | ${v.b.toFixed(3)} | ${v.exceeded} |`))),
  '',...result.shards.map(s=>`- [${s.name} raw summary](shards/${s.name}/summary.md), runner invocation ${s.runner.invocation}; ${s.runner.cpu}.`),
+ '',...(result.recalculation?[`Offline merger replacement: ${result.recalculation.originalMergeHash} → ${result.recalculation.currentMergeHash}. Original toolHashes retained; all other tools checked unchanged.`]:[]),
  '',result.manifest?`Suggested manifest: [${result.manifest}](${result.manifest}). First three full B runs; independent held-out fourth replay checked. Review before adopting.`:'No suggested manifest: incomplete, diagnostic, failed, regression or pending baseline acceptance. rounds=1/2 never pass D6.',
  result.error??''];
 writeFileSync(resolve(out,'summary.md'),lines.join('\n')+'\n');
