@@ -164,11 +164,14 @@ it('keeps AI calibration distinct, selects AI A/B and rejects mixed identities',
   expect(()=>validateWindowMeasurement(aiReports()[0].runs[0].measurement)).toThrow();
 });
 it('budgets four-member AI lifecycle verification within the workflow without changing measurement length', () => {
-  expect([1, 2, 4].map(n => measurementTimeoutMs('ai', n))).toEqual([1200000, 1200000, 2400000]);
-  expect(measurementTimeoutMs('windows', 4)).toBe(1200000);
+  expect([1, 2, 4].map(n => measurementTimeoutMs('ai', n))).toEqual([1800000, 1800000, 3600000]);
+  expect(measurementTimeoutMs('windows', 4)).toBe(1800000);
   expect(parseOptions(['--head', 'b', '--out', 'x', '--scene', 'ai']).steps).toBe(2049);
-  // Six serial children plus setup stay below the 360-minute shard job cap.
-  expect(6 * measurementTimeoutMs('ai', 4)).toBeLessThan(360 * 60000);
+  // Four A/B children and one semantic reference per hosted round, plus setup.
+  expect(5 * measurementTimeoutMs('ai', 4)).toBeLessThan(345 * 60000);
+  expect([1, 2, 4].map(n => measurementTimeoutMs('ai', n, true))).toEqual([1200000, 1200000, 2400000]);
+  expect(measurementTimeoutMs('windows', 4, true)).toBe(1200000);
+  expect(6 * measurementTimeoutMs('ai', 4, true)).toBeLessThan(345 * 60000);
 });
 it('keeps a failed AI shard fatal and identifies its original timeout', () => {
   const rows = aiReports();
@@ -235,8 +238,19 @@ it('rejects a shortened multi-round window run', () => {
 });
 import {verifyWindowTools} from '../../scripts/merge-party-window-perf.mjs';
 it('rechecks actual observer, runner, merger and adapter bytes before publishing a transported result',()=>{
- const tools=Object.fromEntries(['profile-party-window-perf.mjs','run-party-window-perf.mjs','merge-party-window-perf.mjs','ext-perf-common.mjs','party-perf-crossformat.mjs'].map(name=>[name,hash(readFileSync(`scripts/${name}`,'utf8'))]));
+ const tools=Object.fromEntries(['profile-party-window-perf.mjs','run-party-window-perf.mjs','merge-party-window-perf.mjs','ext-perf-common.mjs','party-perf-crossformat.mjs','party-perf-semantic.mjs','merge-party-rounds.mjs'].map(name=>[name,hash(readFileSync(`scripts/${name}`,'utf8'))]));
  expect(()=>verifyWindowTools(tools)).not.toThrow();
  tools['party-perf-crossformat.mjs']='a'.repeat(64);expect(()=>verifyWindowTools(tools)).toThrow('Tool drift');
  delete tools['party-perf-crossformat.mjs'];expect(()=>verifyWindowTools(tools)).toThrow('missing');
+});
+
+it('reports setup fallback and malformed observations without an iterable TypeError', () => {
+ const dir=mkdtempSync(join(tmpdir(),'party-fallback-'));
+ try {
+  const file=join(dir,'result.json');
+  writeFileSync(file,JSON.stringify({status:'failed',error:'No measurement report; inspect setup logs'}));
+  expect(()=>readShard(file)).toThrow('No measurement report; inspect setup logs');
+  writeFileSync(file,JSON.stringify({status:'smoke-only'}));
+  expect(()=>readShard(file)).toThrow('missing runs array');
+ }finally{rmSync(dir,{recursive:true,force:true});}
 });

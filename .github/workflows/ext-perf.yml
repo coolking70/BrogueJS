@@ -36,7 +36,7 @@ on:
         description: 'Party strict equality or reviewed P1c to P1d forward adapter (ab only)'
         type: choice
         default: strict
-        options: [strict, party-p1c-p1d-v1]
+        options: [strict, party-p1c-p1d-v2]
       rounds:
         description: 'Rounds: 1/2 diagnostic only; 3 required for D6 or party budget suggestions'
         required: true
@@ -53,7 +53,8 @@ jobs:
       fail-fast: false
       matrix:
         shard: [classic, all-full, all-prefix]
-    name: ${{ inputs.suite }} ${{ inputs.mode }} ${{ matrix.shard }}
+        round: ${{ fromJSON((inputs.suite == 'phase6' || inputs.mode == 'calibration-only') && '[0]' || inputs.rounds == '1' && '[1]' || inputs.rounds == '2' && '[1,2]' || '[1,2,3]') }}
+    name: ${{ inputs.suite }} ${{ inputs.mode }} ${{ matrix.shard }} round ${{ matrix.round }}
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     env:
@@ -144,6 +145,7 @@ jobs:
         run: |
           args=(--base "$GITHUB_WORKSPACE/base")
           if [ "$PERF_MODE" = calibration-only ]; then args=(--calibration-only); fi
+          if [ '${{ matrix.round }}' != 0 ]; then args+=(--round-index '${{ matrix.round }}'); fi
           node control/scripts/run-ext-perf-ab.mjs --party "${args[@]}" \
             --head "$GITHUB_WORKSPACE/head" --out "$RUNNER_TEMP/ext-perf" \
             --shard "$PERF_SHARD" --rounds "$PERF_ROUNDS" --comparison "$PERF_COMPARISON"
@@ -157,7 +159,10 @@ jobs:
         run: |
           args=()
           if [ '${{ inputs.suite }}' = party-ai ]; then args=(--scene ai); fi
-          if [ "$PERF_MODE" = ab ]; then args+=(--base "$GITHUB_WORKSPACE/base"); fi
+          if [ "$PERF_MODE" = ab ]; then
+            args+=(--base "$GITHUB_WORKSPACE/base")
+            args+=(--round-index '${{ matrix.round }}')
+          fi
           node control/scripts/run-party-window-perf.mjs "${args[@]}" \
             --head "$GITHUB_WORKSPACE/head" --out "$RUNNER_TEMP/ext-perf" \
             --shard "$PERF_SHARD" --rounds "$PERF_ROUNDS" --comparison "$PERF_COMPARISON"
@@ -185,15 +190,17 @@ jobs:
             cat "$RUNNER_TEMP/ext-perf/summary.md" >> "$GITHUB_STEP_SUMMARY"
           else
             mkdir -p "$RUNNER_TEMP/ext-perf"
-            printf '%s\n' '{"status":"failed","error":"No measurement report; inspect setup logs"}' > "$RUNNER_TEMP/ext-perf/result.json"
-            printf '%s\n' 'Measurement did not start; inspect setup logs. No performance verdict or manifest.' > "$RUNNER_TEMP/ext-perf/summary.md"
+            if ! test -f "$RUNNER_TEMP/ext-perf/result.json"; then
+              printf '%s\n' '{"status":"failed","error":"No measurement report; inspect setup logs"}' > "$RUNNER_TEMP/ext-perf/result.json"
+            fi
+            printf '%s\n' 'Measurement did not finish publishing a summary; inspect setup/timeout logs and the preserved partial result.json. No performance verdict or manifest.' > "$RUNNER_TEMP/ext-perf/summary.md"
             cat "$RUNNER_TEMP/ext-perf/summary.md" >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: Upload JSON, Markdown and raw evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ext-perf-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard }}
+          name: ext-perf-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard }}${{ matrix.round != 0 && format('-r{0}', matrix.round) || '' }}
           path: ${{ runner.temp }}/ext-perf/
           if-no-files-found: error
           retention-days: 7
@@ -222,7 +229,7 @@ jobs:
           pattern: ext-perf-${{ github.run_id }}-${{ github.run_attempt }}-*
           path: ${{ runner.temp }}/shards
       - name: Recheck evidence, adjudicate D6 and suggest budget
-        if: always() && inputs.suite != 'party-window' && inputs.suite != 'party-ai'
+        if: always() && (inputs.suite == 'phase6' || (inputs.suite == 'party' && inputs.mode == 'calibration-only'))
         env:
           ARTIFACT: ext-perf-${{ github.run_id }}-${{ github.run_attempt }}
         run: >-
@@ -231,8 +238,21 @@ jobs:
           "$RUNNER_TEMP/shards/$ARTIFACT-classic"
           "$RUNNER_TEMP/shards/$ARTIFACT-all-full"
           "$RUNNER_TEMP/shards/$ARTIFACT-all-prefix"
-      - name: Recheck party window calibration completeness
-        if: always() && (inputs.suite == 'party-window' || inputs.suite == 'party-ai')
+      - name: Recheck all party rounds and original shard failures
+        if: always() && inputs.suite != 'phase6' && inputs.mode == 'ab'
+        env:
+          ARTIFACT: ext-perf-${{ github.run_id }}-${{ github.run_attempt }}
+          PERF_ROUNDS: ${{ inputs.rounds }}
+        run: |
+          shards=()
+          for shard in classic all-full all-prefix; do
+            for ((round=1;round<=PERF_ROUNDS;round++)); do
+              shards+=("$RUNNER_TEMP/shards/$ARTIFACT-$shard-r$round")
+            done
+          done
+          node scripts/merge-party-rounds.mjs "$RUNNER_TEMP/ext-perf-aggregate" "${shards[@]}"
+      - name: Recheck unchanged B-only window or AI calibration
+        if: always() && inputs.mode == 'calibration-only' && (inputs.suite == 'party-window' || inputs.suite == 'party-ai')
         env:
           ARTIFACT: ext-perf-${{ github.run_id }}-${{ github.run_attempt }}
         run: >-

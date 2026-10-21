@@ -4,6 +4,8 @@
 
 **最新修订：第2轮独立复审已关闭F1–F3；新增F4及同类目标遗漏由作者复现修复，处理、入口清单和末轮验证见§10。审查轮次已用完，不启动第三轮；独立审查原文保持。**
 
+2026-10-21云端七运行的后续追查、比较身份v2、超时/汇总工具修复及维护者重跑命令见§6.1；下文首次实施阶段的日志和裁决作为历史证据保留。
+
 ## 1 实现与边界
 
 - 正式 `party:roster` schema1 输入：严格 local:0/revision/actor/层/邻接/安全规划边界，零 tick 的 join/station。原生 NPC 的已支付行动间隔保留，scheduler busy/未决/未完成窗口拒绝。
@@ -109,6 +111,111 @@ PD1主实体/死亡槽、PD2来源/最低初始化、PD3当面空闲零tick、PD
 | PD-A12 审查交付 | R1/R2原发现及回读留档；最终源/build身份、报告/人工清单交付；R2后集成修复未冒称第三轮独立审查，已知限制待裁定 |
 
 ## 6 性能与维护者命令
+
+### 6.1 云端七运行追查（2026-10-21，本轮）
+
+本节覆盖下方§6.2的旧“正式云端待派发”状态。开工/计时 B 为 `94813cf8446fafb32074c70232560d2e99ac5421`，A 为 `e72cd6256daf810f89e520f1673b197d6ba6097d`。本轮仅改性能工具、workflow、工具测试和报告；没有修改游戏生产代码、原始录像、黄金夹具、D6 政策或冻结预算，没有 commit/push/云端派发。原始七运行保留在 `/private/tmp/perfci-<runId>/`；新增证据统一在 `/private/tmp/p1d-perf-fix/investigation-20261021/`，计时源码副本为上级目录的 `A/`、`B/`（从上述 Git 对象导出，非新的提交）。
+
+| 云端运行 | 原结果与本轮处理 |
+|---|---|
+| phase6 `39434786774` | hard pass、D6 regression 原样保留；all/full 2/3、all/prefix 2/3，仅尾部越线，P95/墙钟无越线。下文是诊断，不改判。 |
+| party calibration `39434802284` | success；无游戏改动，本次无需为了修比较工具重新校准。 |
+| party-window calibration `39434833316` | success，仍是独立 B/report-only。 |
+| party-ai calibration `39434873637` | success，仍是独立 B/report-only。 |
+| party A/B `39434818060` | 2 人 all 首差异 458；另有 4 人 all 首差异 896。均仅 extensions 域。 |
+| party-window A/B `39434852901` | 2 人 all 首差异 324；4 人 all 首差异 569；classic 的 B-all 子进程另超时。 |
+| party-ai A/B `39434887631` | 2 人 A-only 子进程超过 1200s；4 人完成9份原始测量后串行作业超出总时限，fallback 丢掉结果结构（原始4人all另有首差异342，仅extensions域）；aggregate 的 iterable 异常掩盖原始失败。 |
+
+**机械差异：已登记的原生攻击所有权修复。** 用两侧云端原生 `.recording.json` 在各自源码上重放，导出首差异前一帧与当帧的完整 world/input。party 的第458条是整份录像的第461个事件（0基 index460，前三条为创建），actor42 提交 wait，tick22900；window 第324条（整份录像第327个事件，actor1 wait）也到达同一 tick22900。狗头人 #47 在(38,24)攻击非主队员 #42（38,25）。两条路线 A 经既有格式提升后，native、random、party、knowledge、world5、actorActions 六域与 B 一致；B 的 `extensions.modules.combat.actors` 新增 #42 的资源行，profile=`combat.second-profile`、stamina24、poise10、poiseRecoveryDelayRemaining40，其余恢复/防御字段为初始值。party combat revision 466→467，window 634→635；原有其他 actor 行不变。分歧前一帧经格式提升后完整相等。
+
+根因是 `NativeAttackTransaction.owns()`：P1c 只承认主玩家和 monsters，漏掉非主队员，导致原生命中后的 `settleNativeMeleePoise` 所有权校验提前返回。P1d 将当前层活的 `nativeAllyActors` 纳入，因此 `applyActorPoiseDamage` 正确把隐式满韧性12减为10，登记40tick恢复延迟并递增revision。这是 [P1d source audit](party-p1d.source-audit.md) 已明确记录的“世界所有权同时纳入真实在场party盟友，以保留stamina/parry/poise守卫”；不是招募命令、F4闪电穿透、随机数或未知玩法回退。既有 combat 资源定义本来就要求 nativePoiseDamage2/poiseCapacity12/recoveryDelay40，不应为比较成功撤销修复。
+
+单变量反事实：仅在仓外 B 副本将该行恢复为 P1c 的 `actor === game.player || monsters.includes(actor)` 等价原表达式，同 seed42/2人/all/458输入重新执行并通过自身存读/seed replay，combat 完整状态精确复现 A（`counterfactual-party.json*`）；随后将副本恢复为 HEAD 原字节。所有原始失败和前后状态均保留。另逐帧检查云端已有的20份完整all配对，每份2050帧；多成员均只在上述首差异后出现extensions域差异，其余六域全程一致，一人成对结果全程一致（`cloud-complete-domain-audit.json`）。这些配对的最终存档经提升后，extensions差量也仅为combat revision和新增非主队员资源行；原有actor行及相对顺序、其他module/components均一致（`cloud-final-extension-audit.json`）。这不代替逐输入的单变量归因；4人额外报错以及2049输入完整反事实验证见本轮运行记录。
+
+**比较身份改为 `party-p1c-p1d-v2`。** v1 只覆盖格式变化，不能继续拿它冒称机械等价。v2 保留 A/B 原生计时、每输入全域摘要和各自完整 save/load/seed replay/seek；多成员 party-all 另建一次 B 的隔离诊断副本，唯一允许变化是上述 `owns` 一行。完整原文件 SHA-256 必须为 `35085cc348d972dbfe389371df56e4c58a7e0b913469972a89f322bff32d2c6c`，回退后为 `ddbbbde62071ac55172fb1024b515fa16fec5d8e0cb4e222b75bd74466bd06de`，逐文件清单断言除此之外无任何差量；副本也独立运行原生生命周期。A 经原格式提升后的**每个完整域**必须精确等于该副本，B原生与副本的输入、HP/位置等工作行、随机数、ticks、AI计数等仍须相等。未知其他差异继续失败，没有删 combat 域、忽略revision/资源字段或重写原生检查点。全部原生配对结束后才执行参考，不在BA两侧之间插入额外负载；参考执行的时间不进入 A/B 比率；参考原始measurement/save/recording及hash随工件交付并在merge重验。此协议说明“除审核过的所有权修复外等价”，不是声称原生 A/B 机械摘要相等。
+
+**超时及汇总。** calibration 的 one-actor party 最慢约450s，而加入逐输入两次 full oracle 的 cross-format 已到1142s；window one-actor all 的 A 为1187s、B在1200s被杀。AI四人 cross-format 单子进程已到2358s，12个原生A/B子进程即可能超过360分钟，单独提高子进程timeout不能解决。现在 A/B 的 party/window 每个进程给30分钟，AI按1/2/4人给30/30/60分钟，包含SSR、计时、proof及完整生命周期，均不是性能阈值。
+
+party三个suite的A/B按人数×轮次拆作业（B-only校准保留原同机三轮）；每一对 A/B 仍同机同Node，global round1/2/3保持AB/BA/AB，不能把每个slice误作round1。每job最多4个原生子进程加1个参考子进程，最坏5×60=300分钟，留出原360分钟job预算内的余量。B-only window/AI没有跨格式oracle，保持原20分钟及20/20/40分钟子进程预算，六个四人AI子进程最多240分钟，同样低于345分钟step上限。合并要求三人数×全部请求轮数、每个slice完整结束、原始hash/生命周期、工具/源码身份及逐对工作量全部通过。不同轮可来自不同runner，逐轮node/CPU绑定保留；只在显式round-sharded协议下免除跨轮机器相等，旧未拆轮入口仍保留原守卫。不得将不同runner的绝对耗时直接作A/B对比；拆轮A/B中的B绝对耗时及预算建议也只作带环境信息的诊断，不能替代同机B-only calibration后批准的预算。该拆分只用于report-only party，phase6/D6的同机多轮流程不变。
+
+`readShard` 在遍历前验证status和runs数组，优先报告已有error或running等未完成状态，缺数组单独说明；整job被取消而未留下error时，仍须结合job timeout日志。workflow不再用fallback覆盖已有partial result。缺片、缺轮或原生错误都仍失败，不能因“健壮性”变成空样本通过。
+
+工具测试的旧前提另做单变量反事实：保持HEAD三个旧测试文件原字节，配新工具为80过/3失败；仅回退工具/workflow后83/83通过（`guard-old-tests-{new,old}-tools.log`，旧测试hash见`guard-old-test-identities.json`）。三处是本任务授权调整的子进程timeout数值、AI单job预算和新增工具的精确provenance清单；超时必须失败/保留诊断、总预算不得超过job上限、缺工具或字节漂移必须拒绝等断言语义均保留。新增语义参考/缺轮/重复轮/身份漂移/不完整报告的负例另计。复验曾因workflow合并了两条参数追加语句触发原源码守卫，已拆回原语句形式，未改该守卫。
+
+**本地无party完整配对。** 同一份云端A的all/full录像，2423输入、2549客观回合、D20样本570；已核对云端all/prefix输入JSON与它完整相同，因此复用一个冻结输入进行诊断，未把它冒称两个独立样本。Apple M5 / Darwin arm64 / Node v24.19.0 / heap3072MiB，按AB、BA、AB串行执行，计时期间没有并行测试或本任务其他性能进程。使用原observer的仓外副本，仅增加命令/GC开始时刻和导出候选的sourceHash读取，新增时间戳排除在语义hash之外；首份启动后给队列加入SSR boot前的等待闸，用于在测量间隙执行脚本复验，故部分配对之间有间隔。等待不在任何计时区间内，测量区间和检查点不缩短、不抑制；差量及最终observer hash见`tail-observer.patch`、`tail-observer-identity.json`。源码A/B分别1530/1551文件与Git src tree逐字匹配（`candidate-src-identity.json`）；导出目录没有.git，原runner的commit字段为null，以该独立Git对象核对和measurement.sourceHash绑定，不伪造提交身份。
+
+| 轮次/执行顺序 | 墙钟B/A | command.P95 | round.P95 | round.P99 | D20 round.P99 | D20 command.max |
+|---|---:|---:|---:|---:|---:|---:|
+| 1 / AB | −0.34% | −0.15% | −1.45% | −15.57% | +0.42% | +0.60% |
+| 2 / BA | −2.73% | −4.22% | −2.52% | −12.42% | −4.54% | −3.97% |
+| 3 / AB | +0.52% | +0.35% | +0.31% | +48.93% | +57.50% | +28.48% |
+
+三轮A墙钟450.117/466.148/473.815秒，B为448.567/453.432/476.301秒。两侧均有随运行顺序的墙钟漂移，未采集温度/频率，因此仅解读轮内配对，不以跨轮绝对时长推出版本因果。全部配对的最终state、逐事件域/检查点域、双RNG、非计时工作行、253375客观ticks及所有计数一致；例如collectExtensionComponents4794次、objectiveTimeBlock2549次、combat checkpoint148次、resident checkpoint145次。完整数据见`tail-{1,2,3}-{A,B}.{summary,rows,rounds}.json`及`tail-analysis.json`。这是一条路线的三轮诊断，不是执行全部D6分片后的新正式裁决。
+
+第三轮本地也出现尾部越线，不能删除它只选前两轮。它展示了秩敏感性：D20相对固定的慢回合在输入1993/2285/2399；A3另有2094约391ms的一次尖峰，B3额外尖峰在2233/2344/2403，约420/404/407ms，使第6大从102.17ms移到160.92ms。全程P99由A3的输入453、244.47ms跳到B3的输入769、364.09ms（后者处在原有D10慢回合簇内）。同一输入769自身的A3/B3回合为360.2/364.1ms，仅约+1.1%，体现了P99取样秩跨簇的放大；D20最大命令则是B3输入2048的full checkpoint1661.10ms，A3的最大值1292.89ms。未经GC观测的wall运行不能把这些具体尖峰直接标成GC。
+
+**独立GC观测与结论。** 正常wall三轮结束后，再串行执行B、A两份`--gc`完整录像，未将观测耗时混进上述配对。A/B分别15103/15112个GC事件，major GC 53/52次；事件duration总和21.857/21.903秒，分别为测量墙钟的4.572%/4.577%，最大单事件280.07/257.40ms。这是事件时长比例，不是独占CPU占比，也不是分配字节数。八份完整运行的语义、工作量及关键调用计数均相同。
+
+按命令区间关联GC：B观测中D20输入2219/2281的客观慢回合约427/442ms，其所在命令与GC重叠约265/271ms；A的最后一条full checkpoint输入2423也达到1680.85ms，其中GC重叠300.60ms。GC位置在两侧及不同运行中移动。关联是命令级时间重叠，不能把多回合命令的全部GC独占归给某个客观回合，更不能从独立观测反推云端或wall第三轮的逐事件原因。原始`tail-gc-{A,B}.{gc,gc-overlap,summary}.json`和`tail-analysis.json`保留。`caffeinate`贯穿批次；05:23读取的当日pmset日志401条，无Sleep/Wake/DarkWake事件（`power-log-20261021.log`、`sleep-audit.json`），但这不证明其他后台进程完全没有争用。
+
+**判断：现有证据支持尾部波动/分位数秩效应主导，尚未定位到P1d在无party路线的稳定新增热路径。** 同一源码自身三轮的round.P99最大/最小，A为1.39倍、B为1.70倍；配对前两轮尾部下降，第三轮尾部单独跳升，而墙钟/P95稳定，独立GC总量近似。这与6C3及P1c首次/复测的历史相符，不能据此证明所有云端回退都是GC，也不能排除云端CPU特异性或小幅新增分配。F4相关静态复核中，`boltStoppedByDeath`无party直接走原死亡判断；`nativeAllyActors`返回原activeControlledActors路径，`ActorCombatResolution`无party不构造新增Set。TimeCoordinator等处仍有新增条件/空集合表达式，未宣称“零开销”。没有可重复归因支持新的生产优化，因此本轮不改生产；原云端D6 regression保持，待下列同输入云端复测。
+
+**完整 rounds=1 工具验收已完成。** 使用最终冻结工具和上述 A/B 源码，party、party-window、party-ai 各跑1/2/4人三个分片，全部2049输入；共36份原生执行、6份独立单行反事实执行、18组成对比较，每组包含初始帧及全部输入的2050帧。原生及参考的 save/load、seed replay、seek 全通过，三个suite各6组比较均成功汇总为 `smoke-only`，三个批次退出码均为0。没有 ETIMEDOUT、未知机械差异或 iterable 异常；rounds=1 仍不构成正式三轮性能通过或新预算。
+
+| 完整本地 all 路线 | 1人首差异 | 2人首差异 | 4人首差异 |
+|---|---|---:|---:|
+| party | 无 | 458 | 896 |
+| party-window | 无 | 324 | 569 |
+| party-ai | 无 | 303 | 342 |
+
+表中是A经格式提升与**原生B**的差异，未被覆盖；多成员全程差量均仅在extensions域，其余六域相同。六份完整参考分别仅回退已审核的所有权行后，与A提升后的所有域及root逐输入精确相等，覆盖了原云端未完成的AI双人路线。原始measurement/save/recording及hash通过正式merge重验。证据为 `full-{party,window,ai}-{classic,all-full,all-prefix}/`、`full-{party,window,ai}-merged/`、`full-final-audit.json` 和 `full-batch-exits.txt`；命令保存在 `full-party.sh`。最终13项工具/workflow哈希见 `final-tool-snapshot.json`，对应可运行控制工具副本为 `full-tools/`，验收结束时仓内工具字节仍与该快照一致。
+
+这三套工具验收在无party串行wall/GC批次结束后并行启动，suite内按分片串行；其耗时仅用于确认执行/超时/汇总链路，不进入无party性能结论。早期 `smoke-*` 的steps=2结果仅保留作工具调试证据，不替代本次完整路线。最终三个脚本测试文件 **88/88通过**（`tools-final-calibration.log`），测试依赖检查717文件、errors=[]（`dependencies-final-calibration.log`）；workflow通过PyYAML解析，`git diff --check`通过。没有修改游戏生产代码，因此按本任务限定未扩跑boundary/vue-tsc/build或重录无party字节夹具。
+
+**历史与尾部判定边界。** 本次云端 all/full 三轮的 command.P95 为 +0.47/+0.55/+0.29%，墙钟 +0.07/+0.51/+0.09%；round.P99 却为 +56.54/−16.90/+15.84%，D20 round.P99 为 +49.64/−4.31/−32.95%。all/prefix 的 round.P99 为 +32.96/+61.12/+10.75%。D20 只有570个客观回合，P99实际取第6大的样本；全程2549个回合则取第26大。full 的 D20 >500ms 回合数 A=0/3/2、B=2/2/1，尖峰位置有漂移，也有重复，不能把每次尖峰都先验认作随机或GC。
+
+[6C3报告§12](phase6c3.report.md) 的 `39028334751` 已出现 hard pass、P95/墙钟稳定而少量尾部移动的情形，接受的是明确的 known-tail-risk，不是自动改判；[P1c报告](party-p1c.report.md) 的首次 `39338476889` all/full 3/3越线，复测 `39361213080` 为1/3，重新按原D6汇总后通过。P1c历史A/B是72aa412→006cd7d，不能把它的绝对值当成本次e72cd62→94813cf的配对基线；其受Maintenance Sleep污染的本地剖析也不复用作有效计时。本次原始尾部位置/分位数整理在 `cloud-tail-audit.json`。
+
+更稳健的后续口径建议：保留当前D6原裁决，附报每轮配对比率、分位数实际秩、超过固定时长的样本数及输入位置；对尾部独占的回归追加一批独立三轮配对，两个批次各自保留原D6裁决，并按整轮/连续区块评估不确定性，避免把同一录像的相关回合当独立样本。供另行批准的候选规则是要求同一尾部指标跨独立批次重复越线，并结合经同版本复测校准的绝对毫秒差下限；应区分同指标持续变慢与不同尾部指标轮流触发，正式门禁的数值和批次数均不在本轮擅定。若需要提高D20样本量，应另立更长路线身份及预算，不能拼接现有轮次后改算P99，或悄悄提高当前阈值。这些仅是待批准建议，本轮未修改D6算法、阈值或历史结论。
+
+**维护者需重跑的精确命令。** 仅四个失败/待复核suite；三个已有success的B校准保留为旧HEAD/sourceHash的原始证据，不改署名为新提交的校准或预算。以下 SHA 是维护者提交并推送**本轮工具修改之后**的真实 HEAD，不能用开工94813cf代替，或把未提交工作区当远端head。control与head均取该提交；先校验远端branch/tag解析值，期间若ref移动应停止重新固定。
+
+```bash
+P1C_A=e72cd6256daf810f89e520f1673b197d6ba6097d
+: "${P1D_SHA:?填写维护者提交并推送本轮修改后的完整40位SHA}"
+: "${P1D_REF:?填写指向该SHA的已推送branch或tag}"
+[[ "$P1D_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+P1D_REF_URL=$(node -e 'process.stdout.write(encodeURIComponent(process.argv[1]))' "$P1D_REF")
+[[ "$(gh api "repos/coolking70/BrogueJS/commits/$P1D_REF_URL" --jq .sha)" == "$P1D_SHA" ]] || exit 1
+
+gh workflow run ext-perf.yml --repo coolking70/BrogueJS --ref "$P1D_REF" \
+  -f suite=phase6 -f mode=ab -f base_ref="$P1C_A" -f head_ref="$P1D_SHA" \
+  -f base_identity=6c4 -f head_identity=6c4 -f comparison=strict -f rounds=3
+for suite in party party-window party-ai; do
+  gh workflow run ext-perf.yml --repo coolking70/BrogueJS --ref "$P1D_REF" \
+    -f suite="$suite" -f mode=ab -f base_ref="$P1C_A" -f head_ref="$P1D_SHA" \
+    -f comparison=party-p1c-p1d-v2 -f rounds=3
+done
+```
+
+新party工件为 `ext-perf-<runId>-<attempt>-<classic|all-full|all-prefix>-r<1|2|3>`；aggregate统一调用 `merge-party-rounds.mjs` 后再执行原专用merge，不再把其中三份当完整三轮。phase6工件名称和merge保持原样。派发后的本地复核例（每个suite分别填其run ID、使用全新输出目录）：
+
+```bash
+: "${RUN_ID:?填写某一个party suite的运行ID}"
+ATTEMPT=$(gh api "repos/coolking70/BrogueJS/actions/runs/$RUN_ID" --jq .run_attempt)
+gh run download "$RUN_ID" --repo coolking70/BrogueJS --dir "/private/tmp/perfci-$RUN_ID-recheck"
+parts=()
+for shard in classic all-full all-prefix; do
+  for round in 1 2 3; do
+    parts+=("/private/tmp/perfci-$RUN_ID-recheck/ext-perf-$RUN_ID-$ATTEMPT-$shard-r$round")
+  done
+done
+node scripts/merge-party-rounds.mjs "/private/tmp/perfci-$RUN_ID-verified" "${parts[@]}"
+```
+
+### 6.2 首次实施阶段性能（历史证据，保留）
+
+本节数值、协议v1和派发命令均为历史记录；本轮重跑使用§6.1的v2命令。
 
 本地性能已完成；正式云端派发仍由维护者执行。本节所有数值是 Apple M5 / Darwin arm64 / Node v24.19.0、heap 3072 MiB 的单机诊断与短路线工具烟测，未设新硬预算，未宣称完整 D6 或稳定云端回归结论。全部原始 JSON/日志位于 `/private/tmp/party-p1d/perf/`。
 

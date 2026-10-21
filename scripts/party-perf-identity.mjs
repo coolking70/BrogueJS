@@ -6,9 +6,9 @@ export function partyShardActors(shard){assert.ok(PARTY_PERF_POLICY.shards.inclu
 export function parsePartyPerfOptions(args){
  const options={rounds:3,steps:PARTY_PERF_POLICY.steps,calibrationOnly:false,comparison:'strict'},seen=new Set();
  for(let i=0;i<args.length;i++){
-  const key=args[i];assert.ok(['--base','--head','--out','--rounds','--steps','--shard','--calibration-only','--comparison'].includes(key)&&!seen.has(key),'Unknown/duplicate party option');seen.add(key);
+  const key=args[i];assert.ok(['--base','--head','--out','--rounds','--steps','--shard','--calibration-only','--comparison','--round-index'].includes(key)&&!seen.has(key),'Unknown/duplicate party option');seen.add(key);
   if(key==='--calibration-only'){options.calibrationOnly=true;continue;}
-  const value=args[++i];assert.ok(value&&!value.startsWith('--'),`Missing ${key}`);options[key.slice(2)]=['--rounds','--steps'].includes(key)?Number(value):value;
+  const value=args[++i];assert.ok(value&&!value.startsWith('--'),`Missing ${key}`);options[key==='--round-index'?'roundIndex':key.slice(2)]=['--rounds','--steps','--round-index'].includes(key)?Number(value):value;
  }
  assert.ok(options.head&&options.out,'Expected --head --out');
  assert.ok(options.calibrationOnly?!seen.has('--base'):!!options.base,'A/B requires --base; calibration-only must omit --base');
@@ -16,12 +16,13 @@ export function parsePartyPerfOptions(args){
  if(options.steps!==PARTY_PERF_POLICY.steps)assert.equal(options.rounds,1,'Short runs are smoke-only');
  assert.ok(['strict',CROSSFORMAT_ID].includes(options.comparison),'Unknown comparison identity');
  if(options.comparison!== 'strict')assert.ok(!options.calibrationOnly,'Cross-format proof requires A/B');
+ if(options.roundIndex!==undefined){assert.ok(Number.isSafeInteger(options.roundIndex)&&options.roundIndex>=1&&options.roundIndex<=options.rounds);assert.ok(options.shard,'Round splitting requires an actor shard');}
  if(options.shard)partyShardActors(options.shard);
  return options;
 }
-export function assertStablePartyMeasurement(row,previous){
+export function assertStablePartyMeasurement(row,previous,{acrossRunners=false}={}){
  assertStableCrossformat(row,previous);
- for(const key of ['rowsHash','rngHash','fullDigest','input','zeroTicks','node','machine','sourceHash'])assert.deepEqual(row[key],previous[key],`Unstable party ${key} across rounds`);
+ for(const key of ['rowsHash','rngHash','fullDigest','input','zeroTicks',...(acrossRunners?[]:['node','machine']),'sourceHash'])assert.deepEqual(row[key],previous[key],`Unstable party ${key} across rounds`);
 }
 export function validatePartyMeasurement(row,{actors,mode,steps}){
  assert.equal(row.identity,PARTY_PERF_ID);assert.equal(row.actors,actors);assert.equal(row.mode,mode);assert.equal(row.steps,steps);assert.equal(row.step.n,steps);assert.equal(row.oos,0);

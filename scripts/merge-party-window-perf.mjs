@@ -1,3 +1,5 @@
+import {verifyRoundEnvironments} from './merge-party-rounds.mjs';
+import {verifySemanticArtifact} from './party-perf-semantic.mjs';
 import assert from 'node:assert/strict';
 import {assertStableCrossformat} from './party-perf-crossformat.mjs';
 import { readFileSync, mkdirSync, writeFileSync, cpSync } from 'node:fs';
@@ -8,12 +10,14 @@ import { validateWindowMeasurement, validateAiMeasurement, compareWindowPair, co
 export function merge(reports) {
   assert.equal(reports.length, 3, 'Require all three shards');
   const first = reports[0];
-  if(first.options?.comparison==='party-p1c-p1d-v1')assert.ok(first.tools?.['party-perf-crossformat.mjs'],'Missing adapter provenance');
+  if(first.options?.comparison==='party-p1c-p1d-v2')assert.ok(first.tools?.['party-perf-crossformat.mjs'],'Missing adapter provenance');
   assert.ok(['party-window-v1','party-ai-v1'].includes(first.identity));
   const
     runs = [], sides = first.mode === 'ab' ? ['A', 'B'] : ['B'];
   assert.ok(['ab', 'calibration-only'].includes(first.mode));
   for (const report of reports) {
+    verifyRoundEnvironments(report);
+    assert.equal(report.roundSharded,first.roundSharded);
     assert.equal(report.identity, first.identity);
     assert.equal(report.mode, first.mode);
     assert.deepEqual(report.sources, first.sources);
@@ -55,8 +59,7 @@ export function merge(reports) {
           'fullDigest',
           'fullDomains',
           ...(first.identity === 'party-ai-v1' ? ['aiCounters'] : []),
-          'node',
-          'machine',
+          ...(first.roundSharded?[]:['node','machine']),
           'sourceHash',
           'ticks',
           'zeroTicks'
@@ -86,14 +89,17 @@ export function merge(reports) {
   };
 }
 export function verifyWindowTools(tools) {
-  const names=['profile-party-window-perf.mjs','run-party-window-perf.mjs','merge-party-window-perf.mjs','ext-perf-common.mjs','party-perf-crossformat.mjs'];
+  const names=['profile-party-window-perf.mjs','run-party-window-perf.mjs','merge-party-window-perf.mjs','ext-perf-common.mjs','party-perf-crossformat.mjs','party-perf-semantic.mjs','merge-party-rounds.mjs'];
   assert.deepEqual(Object.keys(tools).sort(),names.sort(),'Unknown or missing measurement tool');
   for(const name of names)assert.equal(hash(readFileSync(new URL(name,import.meta.url),'utf8')),tools[name],`Tool drift ${name}`);
 }
 /** Artifact transport is checked independently of the in-memory aggregation. */
 export function readShard(file) {
   const report = JSON.parse(readFileSync(file, 'utf8'));
+  assert.ok(['smoke-only','measured-no-budget'].includes(report.status), `Shard ${report.options?.shard ?? file} ${report.status}: ${report.error ?? 'measurement incomplete'}`);
+  assert.ok(Array.isArray(report.runs), `Shard ${file}: missing runs array`);
   for (const run of report.runs) {
+    verifySemanticArtifact(run.measurement,dirname(file));
     assert.match(run.artifact, /^[1-3]-(?:[AB]-)?[124]-party-(only|all)\.json$/);
     const path = resolve(dirname(file), run.artifact),
       raw = readFileSync(path, 'utf8');

@@ -1,3 +1,4 @@
+import {captureSemanticReference} from './party-perf-semantic.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync, mkdirSync, existsSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
@@ -12,13 +13,13 @@ export function parseOptions(args) {
   for (let i = 0; i < args.length; i++) {
     const k = args[i];
     assert.ok(
-      ['--base', '--head', '--out', '--rounds', '--steps', '--shard', '--scene', '--comparison'].includes(k) && !seen.has(k),
+      ['--base', '--head', '--out', '--rounds', '--steps', '--shard', '--scene', '--comparison', '--round-index'].includes(k) && !seen.has(k),
       'Unknown/duplicate option'
     );
     seen.add(k);
     const v = args[++i];
     assert.ok(v && !v.startsWith('--'));
-    o[k.slice(2)] = ['--rounds', '--steps'].includes(k) ? Number(v) : v;
+    o[k==='--round-index'?'roundIndex':k.slice(2)] = ['--rounds', '--steps', '--round-index'].includes(k) ? Number(v) : v;
   }
   assert.ok(o.head && o.out);
   assert.ok([1, 2, 3].includes(o.rounds));
@@ -27,17 +28,23 @@ export function parseOptions(args) {
   if (o.shard) assert.ok(['classic', 'all-full', 'all-prefix'].includes(o.shard));
   assert.ok(['strict', CROSSFORMAT_ID].includes(o.comparison), 'Unknown comparison identity');
   if (o.comparison !== 'strict') assert.ok(o.base, 'Cross-format proof requires A/B');
+  if(o.roundIndex!==undefined){assert.ok(Number.isSafeInteger(o.roundIndex)&&o.roundIndex>=1&&o.roundIndex<=o.rounds);assert.ok(o.shard,'Round splitting requires an actor shard');}
   if (o.steps !== 2049) assert.equal(o.rounds, 1, 'Short runs are smoke-only');
   return o;
 }
 export function validateWindowMeasurement(row) {return validateMeasurement(row,'party-window-v1');}
 // Includes measurement AND full save/load/seed replay verification. Cloud AI
-// two-member runs take 759–839s; four members exceed the old 1200s process cap.
+// cross-format two-member runs exceed 1200s and four members reach 2358s.
+// A single hosted round has at most five children including the semantic
+// reference: 5 * 60min leaves 45min under the measurement/job ceiling.
 // This is an execution budget, never a performance acceptance threshold.
-export function measurementTimeoutMs(scene, actors) {
+export function measurementTimeoutMs(scene, actors, calibrationOnly = false) {
   assert.ok(['single', 'windows', 'fixed-ticks', 'ai'].includes(scene));
   assert.ok([1, 2, 4].includes(actors));
-  return scene === 'ai' ? Math.max(1200000, actors * 600000) : 1200000;
+  // B-only calibration has no cross-format oracle and retains its original
+  // budget: six children must also fit the unsplit 345-minute step.
+  if (calibrationOnly) return scene === 'ai' ? Math.max(1200000, actors * 600000) : 1200000;
+  return scene === 'ai' ? Math.max(1800000, actors * 900000) : 1800000;
 }
 export function validateAiMeasurement(row) {
   assert.equal(row.scene, 'ai');
@@ -122,7 +129,7 @@ export async function run(args) {
       'profile-party-window-perf.mjs',
       'run-party-window-perf.mjs',
       'merge-party-window-perf.mjs',
-      'ext-perf-common.mjs', 'party-perf-crossformat.mjs'
+      'ext-perf-common.mjs', 'party-perf-crossformat.mjs', 'party-perf-semantic.mjs', 'merge-party-rounds.mjs'
     ],
     tools = Object.fromEntries(
       toolNames.map((n) => [n, hash(readFileSync(resolve(control, 'scripts', n), 'utf8'))])
@@ -143,6 +150,7 @@ export async function run(args) {
   try {
     if (o.comparison === CROSSFORMAT_ID) crossTarget = prepareCrossformatTarget(root, out);
     for (let round = 1; round <= o.rounds; round++) {
+      if(o.roundIndex&&round!==o.roundIndex)continue;
       const rotation = [
           [1, 2, 4],
           [2, 4, 1],
@@ -156,7 +164,7 @@ export async function run(args) {
         for (const side of o.base ? (round % 2 ? ['A', 'B'] : ['B', 'A']) : ['B']) {
           const artifact = `${round}-${o.base ? side + '-' : ''}${actors}-${mode}.json`,
             file = resolve(out, artifact),
-            timeoutMs = measurementTimeoutMs(o.scene, actors),
+            timeoutMs = measurementTimeoutMs(o.scene, actors, !o.base),
             childStarted = performance.now(),
             child = spawnSync(
               process.execPath,
@@ -216,11 +224,15 @@ export async function run(args) {
     for (const side of Object.keys(roots)) assert.equal(hashCandidate(roots[side]).sha256, sources[side].sourceHash, 'Candidate changed');
     if (o.base) for (const a of result.runs.filter(r => r.side === 'A')) {
       const b = result.runs.find(r => r.side === 'B' && r.round === a.round && r.measurement.actors === a.measurement.actors && r.measurement.mode === a.measurement.mode);
+      // Keep native AB/BA pairs adjacent; reference time is never an A/B sample.
+      const file=resolve(out,b.artifact);
+      captureSemanticReference({control,root:roots.B,file,row:b.measurement,crossTarget,timeoutMs:measurementTimeoutMs(o.scene,b.measurement.actors)});
+      b.artifactHash=hash(readFileSync(file,'utf8'));write(resolve(out,'result.json'),result);
       result.comparisons.push({ round: a.round, actors: a.measurement.actors, mode: a.measurement.mode,
         ...(o.scene === 'ai' ? compareAiPair : compareWindowPair)(a.measurement, b.measurement, o.comparison) });
     }
     for (const [name, digest] of Object.entries(tools)) assert.equal(hash(readFileSync(resolve(control, 'scripts', name), 'utf8')), digest, `Tool changed ${name}`);
-    result.status = o.rounds === 3 && o.steps === 2049 ? 'measured-no-budget' : 'smoke-only';
+    result.status = o.roundIndex ? 'round-complete' : o.rounds === 3 && o.steps === 2049 ? 'measured-no-budget' : 'smoke-only';
   } catch (error) {
     result.status = 'failed';
     result.error = String(error);

@@ -29,7 +29,7 @@ it('keeps process timeouts and termination diagnostics distinct from semantic fa
   const file=resolve(root,'measurement.json'),args={control:process.cwd(),root,file,mode:'party-only',actors:1,steps:2049};
   const invoke=(code,overrides={})=>(exe,argv,options)=>{
    expect(argv.slice(-3)).toEqual(['party-only','1','2049']);
-   expect(options.timeout).toBe(1200000);
+   expect(options.timeout).toBe(1800000);
    return spawnSync(exe,['-e',code],{...options,...overrides});
   };
   expect(()=>runPartyProfile(args,invoke('setInterval(()=>{},1000)',{timeout:50}))).toThrow('error=ETIMEDOUT');

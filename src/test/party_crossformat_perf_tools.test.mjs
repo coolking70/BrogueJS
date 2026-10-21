@@ -146,3 +146,41 @@ it('observes actual economic work only in the diagnostic hook scope and fails on
  globalThis[Symbol.for(ROSTER_WORK_HOOK)]('settleCalls',2);globalThis[Symbol.for(ROSTER_WORK_HOOK)]('residentInputRows',3);
  const counts=stop();expect(counts.settleCalls).toBe(2);expect(counts.residentInputRows).toBe(3);expect(Object.keys(counts)).toEqual(Object.keys(ROSTER_WORK_UNITS));expect(globalThis[Symbol.for(ROSTER_WORK_HOOK)]).toBeUndefined();
 });
+
+import {SEMANTIC_ID,SEMANTIC_FILE,SEMANTIC_BEFORE_SHA,semanticReferenceSource} from '../../scripts/party-perf-semantic.mjs';
+import {combineRoundReports} from '../../scripts/merge-party-rounds.mjs';
+it('pins the exact native ownership change, preserving every other source byte',()=>{
+ const source=readFileSync(SEMANTIC_FILE,'utf8'),patched=semanticReferenceSource(source);
+ expect(hash(source)).toBe(SEMANTIC_BEFORE_SHA);
+ expect(patched.replace('return actor === game.player || game.monsters.some(candidate => candidate === actor);','return (game.party?game.nativeAllyActors.some(candidate=>candidate===actor):actor===game.player) || game.monsters.some(candidate => candidate === actor);')).toBe(source);
+ expect(()=>semanticReferenceSource(source+'\n')).toThrow('Unreviewed');
+});
+it('requires an independent full reference and native lifecycle for the reviewed multi-member combat delta',()=>{
+ const {a,b}=paired();
+ a.mode=b.mode='party-all';
+ const manifests=a.crossformat.target.manifests;manifests['2/party-all']=manifests['2/party-only'];delete manifests['2/party-only'];
+ expect(()=>compareCrossformatProof(a,b)).toThrow('Missing reviewed semantic reference');
+ const measurement=structuredClone(b);measurement.sourceHash='d'.repeat(64);
+ b.crossformat.semanticReference={identity:SEMANTIC_ID,file:SEMANTIC_FILE,beforeHash:SEMANTIC_BEFORE_SHA,afterHash:hash(semanticReferenceSource(readFileSync(SEMANTIC_FILE,'utf8'))),nativeSourceHash:b.sourceHash,sourceHash:measurement.sourceHash,artifact:'1-B-2-party-all.json.semantic.json',measurement};
+ measurement.oos=0;
+ expect(compareCrossformatProof(a,b).status).toBe('equivalent-under-explicit-adapter');
+ const mislabeled=structuredClone(b);mislabeled.crossformat.frames[0].side='A';expect(()=>compareCrossformatProof(a,mislabeled)).toThrow();
+ for(const mutate of [r=>r.measurement.crossformat.frames[1].nativeDomains.extensions='f'.repeat(64),r=>r.measurement.crossformat.lifecycle.seek=false,r=>r.beforeHash='e'.repeat(64),r=>r.nativeSourceHash='e'.repeat(64),r=>r.measurement.rngHash='e'.repeat(64)]){
+  const bad=structuredClone(b);mutate(bad.crossformat.semanticReference);expect(()=>compareCrossformatProof(a,bad)).toThrow();
+ }
+});
+it('coalesces complete round slices and rejects failed, missing, duplicated or drifting rounds',()=>{
+ const reports=[1,2,3].map(round=>({identity:'party-v1',status:'round-complete',options:{rounds:3,steps:2049,shard:'all-full',roundIndex:round,out:`out-${round}`},sources:{A:'a',B:'b'},tools:{p:'hash'},runs:[{round,measurement:{node:`v24.${round}.0`,machine:{cpu:`cpu-${round}`}}}],comparisons:[]}));
+ expect(combineRoundReports(reports).runs.map(r=>r.round)).toEqual([1,2,3]);
+ expect(combineRoundReports(reports).options.roundIndex).toBeUndefined();
+ for(const mutate of [r=>r.pop(),r=>r[2].options.roundIndex=2,r=>r[2].sources.B='other',r=>r[2].runs[0].round=1,r=>r[2].status='failed']){
+  const bad=structuredClone(reports);mutate(bad);expect(()=>combineRoundReports(bad)).toThrow();
+ }
+});
+it('accepts only bounded round slices and preserves the global AB/BA/AB round number',()=>{
+ for(const parse of [parseOptions,parsePartyPerfOptions]){
+  const args=['--base','a','--head','b','--out','o','--rounds','3','--shard','all-full'];
+  expect(parse([...args,'--round-index','2']).roundIndex).toBe(2);
+  for(const n of ['0','4','NaN','1.5'])expect(()=>parse([...args,'--round-index',n])).toThrow();
+ }
+});

@@ -1,3 +1,4 @@
+import {validateSemanticReference} from './party-perf-semantic.mjs';
 /** P1c -> P1d is an explicit, directional proof, never strict digest equality.
  * The only permitted changes are listed below. Every other mechanical leaf is
  * retained in the full oracle. This adapter supports unchanged creation routes;
@@ -10,8 +11,9 @@ import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {boot, hash, write} from './ext-perf-common.mjs';
 import {hashCandidate} from './check-module-removal.mjs';
-export const CROSSFORMAT_ID = 'party-p1c-p1d-v1';
+export const CROSSFORMAT_ID = 'party-p1c-p1d-v2';
 export const CROSSFORMAT_DELTAS = Object.freeze([
+ 'native attack ownership: P1d includes active non-primary members; complete B-minus-reviewed-line reference, native timings/lifecycle retained',
  'version:10->11', 'schema:brogue-web-whole-run-v10->v11',
  'recording:7->8 and origin:5->6 (native lifecycle, never patched)',
  'full-root codec tuple:[v10,10,23,5]->[v11,11,24,6]',
@@ -133,6 +135,11 @@ export function crossformatFrame(snapshot,inputState,targetManifest,mechanicalDi
 export function assertStableCrossformat(a,b) {
  if (!a.crossformat && !b.crossformat) return;
  assert.ok(a.crossformat && b.crossformat, 'Cross-format proof disappeared between rounds');
+ if(a.crossformat.semanticReference||b.crossformat.semanticReference){
+  const x=validateSemanticReference(a),y=validateSemanticReference(b);
+  assertStableCrossformat(x,y);
+  for(const key of ['sourceHash','fullDigest','rowsHash','rngHash'])assert.deepEqual(x[key],y[key]);
+ }
  for (const key of ['identity','allowedDeltas','target','nativeCodec','frames','lifecycle'])
   assert.deepEqual(a.crossformat[key],b.crossformat[key],`Unstable cross-format ${key}`);
 }
@@ -140,6 +147,7 @@ export function compareCrossformatProof(a,b) {
  const x=a.crossformat,y=b.crossformat;
  assert.deepEqual({...a.input,manifest:undefined},{...b.input,manifest:undefined},'Cross-format input drift');
  assert.ok(x&&y,'Missing cross-format proof; strict digest mismatch cannot be waived');
+ const reference=validateSemanticReference(b), comparisonFrames=reference.crossformat.frames;
  for(const proof of [x,y]) {
   assert.equal(proof.identity,CROSSFORMAT_ID);assert.deepEqual(proof.allowedDeltas,CROSSFORMAT_DELTAS);
   assert.equal(proof.frames.length,a.steps+1,'Require initial and every accepted input oracle');
@@ -148,6 +156,9 @@ export function compareCrossformatProof(a,b) {
  assert.deepEqual(x.nativeCodec,{foundation:23,wholeRun:10,recording:7,origin:5,state:3});
  assert.deepEqual(y.nativeCodec,{foundation:24,wholeRun:11,recording:8,origin:6,state:4});
  assert.deepEqual(x.target,y.target);
+ assert.deepEqual(reference.crossformat.target,y.target);
+ assert.equal(reference.crossformat.identity,CROSSFORMAT_ID);
+ assert.deepEqual(reference.crossformat.allowedDeltas,CROSSFORMAT_DELTAS);
  assert.equal(b.input.manifest.foundation,24);assert.equal(partyEntry(b.input.manifest).version,'0.4.0');
  assert.deepEqual(b.input.manifest,y.target.manifests[`${b.actors}/${b.mode}`]);
  const manifest=structuredClone(a.input.manifest);
@@ -157,20 +168,26 @@ export function compareCrossformatProof(a,b) {
  manifest.modules[manifest.modules.findIndex(m=>m.id==='party')]=structuredClone(targetEntry);
  assert.deepEqual(manifest,b.input.manifest,'Unknown A/B manifest difference');assert.equal(y.target.sourceHash,b.sourceHash);
  for(let i=0;i<x.frames.length;i++) {
-  const p=x.frames[i],q=y.frames[i];
-  for(const frame of [p,q]) {
+  const p=x.frames[i],q=comparisonFrames[i];
+  for(const frame of [p,q,y.frames[i]]) {
    assert.match(frame.nativeRoot,/^[a-f0-9]{64}$/);assert.match(frame.adaptedRoot,/^[a-f0-9]{64}$/);
    for(const field of ['nativeDomains','adaptedDomains']) {assert.deepEqual(Object.keys(frame[field]).sort(),[...DOMAINS].sort());for(const value of Object.values(frame[field]))assert.match(value,/^[a-f0-9]{64}$/);}
   }
   assert.equal(p.index,i);assert.equal(q.index,i);assert.equal(p.side,'A');assert.equal(q.side,'B');
+  assert.equal(y.frames[i].index,i);assert.equal(y.frames[i].side,'B');
+  assert.deepEqual(y.frames[i].adaptedDomains,y.frames[i].nativeDomains,'Native B oracle changed during identity copy');
+  assert.equal(y.frames[i].adaptedRoot,y.frames[i].nativeRoot);
   assert.deepEqual(p.adaptedDomains,q.nativeDomains,`Unknown mechanical difference at input ${i}`);
   assert.equal(p.adaptedRoot,q.nativeRoot,`Unknown root difference at input ${i}`);
  }
  if (a.fullDomains) assert.deepEqual(x.frames.at(-1).nativeDomains,a.fullDomains);
  if (b.fullDomains) assert.deepEqual(y.frames.at(-1).nativeDomains,b.fullDomains);
  assert.equal(x.frames.at(-1).nativeRoot,a.fullDigest);assert.equal(y.frames.at(-1).nativeRoot,b.fullDigest);
+ assert.equal(comparisonFrames.at(-1).nativeRoot,reference.fullDigest);
+ assert.equal(comparisonFrames.length,y.frames.length);
+ if(reference.fullDomains)assert.deepEqual(comparisonFrames.at(-1).nativeDomains,reference.fullDomains);
  return {identity:CROSSFORMAT_ID,frames:x.frames.length,allowedDeltas:CROSSFORMAT_DELTAS,
-  nativeDigests:{A:a.fullDigest,B:b.fullDigest},adaptedDigest:x.frames.at(-1).adaptedRoot,status:'equivalent-under-explicit-adapter'};
+  nativeDigests:{A:a.fullDigest,B:b.fullDigest},comparisonScope:reference===b?'format-lift-only':'A format lift equals complete B-minus-reviewed-ownership execution; native B intentionally differs',semanticReference:reference===b?null:{identity:y.semanticReference.identity,artifactHash:y.semanticReference.artifactHash},adaptedDigest:x.frames.at(-1).adaptedRoot,status:'equivalent-under-explicit-adapter'};
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
  assert.equal(process.argv[2],'--capture');assert.ok(process.argv[3]);
