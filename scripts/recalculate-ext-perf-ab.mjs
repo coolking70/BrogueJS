@@ -3,11 +3,11 @@
  * Freeze reuses the first three full B runs, NOT an independent fourth replay. */
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync,mkdirSync,writeFileSync} from 'node:fs';
-import {resolve,dirname} from 'node:path';
+import {resolve,dirname,relative} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {hash,write} from './ext-perf-common.mjs';
-import {validateRun,withObjectiveP99,evaluateGates,overallStatus,policyVersion,timingPolicy} from './ext-perf-ab-policy.mjs';
+import {validateRun,withObjectiveP99,evaluateGates,overallStatus,policyVersion,timingPolicy,decisionMarkdown} from './ext-perf-ab-policy.mjs';
 
 const [input,output,flag,...extra]=process.argv.slice(2);
 assert.ok(input&&output&&!extra.length&&(flag===undefined||flag==='--freeze'),'Expected RESULT_JSON OUTPUT_DIR [--freeze]');
@@ -21,19 +21,41 @@ assert.ok(original.steps.length>0&&original.steps.every(s=>s.status==='pass'),'F
 assert.ok(Number.isInteger(original.options.rounds)&&original.options.rounds>=1&&original.options.rounds<=3);
 assert.ok(original.options.cases.length>0&&new Set(original.options.cases).size===original.options.cases.length&&original.options.cases.every(id=>['classic','all'].includes(id)));
 assert.equal(original.instrumentationHash,hash(['profile-ext-perf.mjs','ext-perf-common.mjs'].map(n=>readFileSync(resolve(root,'scripts',n),'utf8')).join('\0')),'Observer drift');
-const runs=[],evidence=[],first=new Map();
+const runs=[],evidence=[],first=new Map(),shards=new Map();
+for(const shard of original.shards??[]) {
+ assert.ok(['classic','all-full','all-prefix'].includes(shard.name)&&!shards.has(shard.name),'Unknown/duplicate shard');
+ const file=resolve(artifact,'shards',shard.name,'result.json'),raw=readFileSync(file,'utf8'),report=JSON.parse(raw);
+ assert.equal(hash(raw),shard.resultSha256,'Shard result hash mismatch');
+ assert.equal(report.hard,'pass');assert.ok(report.finishedAt&&report.steps.every(s=>s.status==='pass'));
+ assert.deepEqual(report.runner,shard.runner);assert.deepEqual(report.identities,original.identities);
+ assert.deepEqual(report.toolHashes,original.toolHashes);assert.equal(report.instrumentationHash,original.instrumentationHash);
+ shards.set(shard.name,report);
+}
+if(original.shards)assert.deepEqual([...shards.keys()].sort(),['all-full','all-prefix','classic']);
 // Enumerate expected slots, not whatever rows happen to remain in the artifact.
 for(let round=1;round<=original.options.rounds;round++)for(const id of original.options.cases)for(const side of ['A','B'])for(const kind of id==='all'?['full','prefix']:['full']){
  const rows=original.runs.filter(r=>r.round===round&&r.id===id&&r.side===side&&r.kind===kind);
  assert.equal(rows.length,1,'Missing/duplicate artifact run');
- const key=`${side}-${id}-${kind}`,prefix=resolve(artifact,`round-${round}`,key);
+ const key=`${side}-${id}-${kind}`,shard=id==='classic'?'classic':`all-${kind}`;
+ const directory=shards.size?resolve(artifact,'shards',shard):artifact;
+ const prefix=resolve(directory,`round-${round}`,key),report=shards.get(shard)??original;
+ if(shards.size){
+  assert.equal(rows[0].prefix,relative(artifact,prefix),'Unexpected aggregate raw path');
+  const shardRows=report.runs.filter(r=>r.round===round&&r.id===id&&r.side===side&&r.kind===kind);
+  assert.equal(shardRows.length,1,'Missing/duplicate shard run');
+  assert.deepEqual(shardRows[0].summary,rows[0].summary,'Shard/aggregate summary mismatch');
+ }
  const raw=read(prefix+'.summary.json'),rounds=read(prefix+'.rounds.json');
  const summary=withObjectiveP99(raw,rounds);
  assert.deepEqual(summary,withObjectiveP99(rows[0].summary,rounds),'Result/summary mismatch');
- const recording=read(resolve(artifact,'inputs',key+'.json'));
- const contract=original.inputs[key];
+ const recording=read(resolve(directory,'inputs',key+'.json'));
+ const contract=report.inputs[key];
  assert.equal(hash(recording),contract.recordingHash,'Artifact input drift');
  assert.equal(recording.events.length,contract.events);
+ if(shards.size){
+  assert.equal(summary.node,report.runner.node,'Shard runner node mismatch');
+  for(const k of ['cpu','platform','arch'])assert.equal(summary.machine[k],report.runner[k],`Shard runner ${k} mismatch`);
+ }
  validateRun(summary,{...contract,metrics,previous:first.get(key)});
  first.set(key,summary);
  runs.push({...rows[0],prefix,summary});
@@ -41,7 +63,7 @@ for(let round=1;round<=original.options.rounds;round++)for(const id of original.
 }
 const gates=evaluateGates(runs,original.options);
 const result={...original,runs,gates,policyVersion,policy:timingPolicy,
- recalculation:{at:new Date().toISOString(),originalStatus:original.status,originalResultSha256:hash(readFileSync(input,'utf8')),policyHash:hash(readFileSync(new URL('./ext-perf-ab-policy.mjs',import.meta.url),'utf8')),evidence,independentPostFreezeReplay:false}};
+ recalculation:{at:new Date().toISOString(),historicalVerdictUnchanged:true,originalPolicyVersion:original.policyVersion,originalStatus:original.status,originalResultSha256:hash(readFileSync(input,'utf8')),policyHash:hash(readFileSync(new URL('./ext-perf-ab-policy.mjs',import.meta.url),'utf8')),evidence,independentPostFreezeReplay:false}};
 delete result.manifest;
 result.status=overallStatus(result);
 mkdirSync(out,{recursive:true});
@@ -68,15 +90,15 @@ if(flag==='--freeze'){
  result.manifest=manifest;
 }
 write(resolve(out,'result.json'),result);
-const lines=['# 6B4 offline D6 adjudication',`Status: **${result.status}**; original: **${original.status}**; hard: **${result.hard}** (original completed run, summary/input stability rechecked offline).`,timingPolicy,
- `Source run: ${result.runner.runId}, attempt ${result.runner.attempt}; result SHA256: \`${result.recalculation.originalResultSha256}\`.`,
+const runner=original.runner??original.shards[0].runner;
+const lines=['# Offline D6 v3 comparison (historical verdict unchanged)',`Status: **${result.status}**; original: **${original.status}**; hard: **${result.hard}** (original completed run, summary/input stability rechecked offline).`,timingPolicy,
+ `Source run: ${runner.runId}, attempt ${runner.attempt}; result SHA256: \`${result.recalculation.originalResultSha256}\`.`,
  'P99 = nearest rank ceil(n × .99), from unchanged observer .rounds.json; objective max remains in raw evidence only.',
- '', '| Gate | Crossed rounds | Verdict | Timing-only verdict |', '| --- | --- | --- | --- |',
- ...gates.map(g=>`| ${g.id}/${g.kind} | ${g.exceededRounds}/${result.options.rounds} | ${g.status} | ${g.timingStatus} |`),
+ ...decisionMarkdown(gates,result.options.rounds),
  '', '| Gate / round | Metric | A ms | B ms | Crossed |', '| --- | --- | --- | --- | --- |',
  ...gates.flatMap(g=>g.pairs.flatMap((p,i)=>p.map(v=>`| ${g.id}/${g.kind} / ${i+1} | ${v.metric} | ${v.a.toFixed(6)} | ${v.b.toFixed(6)} | ${v.exceeded} |`))),
  '', result.manifest?'Frozen manifest generated from original B rounds 1/2/3; all three offline budget checks passed. These are calibration-data rechecks, NOT an independent post-freeze replay.':'No manifest generated.',
  'No engine replay or new performance measurement executed. Original artifact and regression verdict preserved.'];
 writeFileSync(resolve(out,'summary.md'),lines.join('\n')+'\n');
-console.log(JSON.stringify({status:result.status,gates:gates.map(({id,kind,status,exceededRounds})=>({id,kind,status,exceededRounds})),manifest:result.manifest??null}));
+console.log(JSON.stringify({status:result.status,gates:gates.map(({id,kind,status,exceededRounds,sustainedExceededRounds,tailExceeded})=>({id,kind,status,exceededRounds,sustainedExceededRounds,tailExceeded})),manifest:result.manifest??null}));
 if(result.status!=='pass')process.exitCode=1;

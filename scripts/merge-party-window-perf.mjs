@@ -2,7 +2,7 @@ import {verifyRoundEnvironments} from './merge-party-rounds.mjs';
 import {verifySemanticArtifact} from './party-perf-semantic.mjs';
 import assert from 'node:assert/strict';
 import {assertStableCrossformat} from './party-perf-crossformat.mjs';
-import { readFileSync, mkdirSync, writeFileSync, cpSync } from 'node:fs';
+import { readFileSync, mkdirSync, writeFileSync, cpSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { write, hash } from './ext-perf-common.mjs';
@@ -88,15 +88,32 @@ export function merge(reports) {
     note: 'Numbers/metric grades need maintainer review, then a separate complete validation. No automatic freeze; no D6 verdict.'
   };
 }
-export function verifyWindowTools(tools) {
+// Final reports reference the already verified raw files instead of embedding
+// every sample/oracle again. The observer and its byte hashes stay unchanged.
+export function externalizeWindowMeasurements(result,artifactPath) {
+ return {...result,evidenceLayout:'external-measurements-v1',runs:result.runs.map(({measurement,...run})=>{
+  const {samples,crossformat,...summary}=measurement;
+  return {...run,artifact:artifactPath(run,measurement),summary,
+   sampleCount:samples.length,oracleFrames:crossformat?.frames.length??0};
+ })};
+}
+export function verifyWindowTools(tools,{originalTools}={}) {
   const names=['profile-party-window-perf.mjs','run-party-window-perf.mjs','merge-party-window-perf.mjs','ext-perf-common.mjs','party-perf-crossformat.mjs','party-perf-semantic.mjs','merge-party-rounds.mjs'];
   assert.deepEqual(Object.keys(tools).sort(),names.sort(),'Unknown or missing measurement tool');
-  for(const name of names)assert.equal(hash(readFileSync(new URL(name,import.meta.url),'utf8')),tools[name],`Tool drift ${name}`);
+  const replacements={};
+  for(const name of names){
+    const current=hash(readFileSync(new URL(name,import.meta.url),'utf8'));
+    const replace=originalTools&&['merge-party-window-perf.mjs','merge-party-rounds.mjs'].includes(name);
+    const expected=replace?hash(readFileSync(resolve(originalTools,name),'utf8')):current;
+    assert.equal(expected,tools[name],`Tool drift ${name}`);
+    if(replace)replacements[name]={original:expected,current};
+  }
+  return replacements;
 }
 /** Artifact transport is checked independently of the in-memory aggregation. */
-export function readShard(file) {
+export function readShard(file,{roundShard=false}={}) {
   const report = JSON.parse(readFileSync(file, 'utf8'));
-  assert.ok(['smoke-only','measured-no-budget'].includes(report.status), `Shard ${report.options?.shard ?? file} ${report.status}: ${report.error ?? 'measurement incomplete'}`);
+  assert.ok((roundShard?['round-complete']:['smoke-only','measured-no-budget']).includes(report.status), `Shard ${report.options?.shard ?? file} ${report.status}: ${report.error ?? 'measurement incomplete'}`);
   assert.ok(Array.isArray(report.runs), `Shard ${file}: missing runs array`);
   for (const run of report.runs) {
     verifySemanticArtifact(run.measurement,dirname(file));
@@ -120,16 +137,18 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const args = process.argv.slice(2),
     out = args.shift();
   assert.ok(out && args.length === 3, 'output + three result.json files');
+  assert.ok(!existsSync(out),'Fresh aggregate directory required');
   mkdirSync(out, { recursive: true });
   try {
-    const result = merge(args.map(readShard));
+    const reports=args.map(file=>readShard(file)), result = merge(reports);
+    const paths=new Map(reports.flatMap((report,i)=>report.runs.map(run=>[run.artifact,`${['classic','all-full','all-prefix'][i]}/${run.artifact}`])));
     verifyWindowTools(result.tools);
     args.forEach((file, i) =>
       cpSync(dirname(resolve(file)), resolve(out, ['classic', 'all-full', 'all-prefix'][i]), {
         recursive: true
       })
     );
-    write(resolve(out, 'result.json'), result);
+    write(resolve(out, 'result.json'), externalizeWindowMeasurements(result, run=>paths.get(run.artifact)));
     writeFileSync(
       resolve(out, 'summary.md'),
       `# ${result.identity} ${result.status}\n\n${result.runs.length} measurements. ${result.note}\n`

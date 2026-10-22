@@ -107,12 +107,110 @@ PD1主实体/死亡槽、PD2来源/最低初始化、PD3当面空闲零tick、PD
 | PD-A08 Worker | 通过：生产Worker六边界原用例；新增256/257加入及512/513派驻的扣留/逆序/重复旧响应联合测试，逐域与链/活根保持；通用降级测试另过 |
 | PD-A09 UI | 自动通过：UI8与13行真MainMenu所在19项；桌面/320/390视觉、触摸及真机待人工 |
 | PD-A10 无party/删除 | 通过：五原字节配置、九模块实体全删、classic/extended空生命周期和真实缺包拒绝 |
-| PD-A11 性能 | 已完成固定B本地分层、三套rounds1工具烟测、AI负载及九转换；report-only，正式云端由维护者派发 |
+| PD-A11 性能 | 最新见§6.0：三套v2 A/B完整证据齐，window/AI汇总已离线修复；均report-only。phase6 v3仍regression，待独立三轮复测 |
 | PD-A12 审查交付 | R1/R2原发现及回读留档；最终源/build身份、报告/人工清单交付；R2后集成修复未冒称第三轮独立审查，已知限制待裁定 |
 
 ## 6 性能与维护者命令
 
-### 6.1 云端七运行追查（2026-10-21，本轮）
+### 6.0 2026-10-23 汇总修复与 D6 v3
+
+本节为性能最新结论，覆盖下方旧“需重跑四个 suite”安排。开工 HEAD/control 与本次四个云端 run 的 B 均为 `9a05080375136fb214975157b52de82f128fe93d`，A 为 `e72cd6256daf810f89e520f1673b197d6ba6097d`。本轮只改脚本、脚本测试和文档；不改游戏代码、observer、原始 artifact、冻结预算；未 commit/push、未派发云端、未新增游戏回放或性能采样。完整本地重算证据在 `/private/tmp/p1d-d6-v3/`，小型汇总见 [party-p1d.perf-v3-summary.json](party-p1d.perf-v3-summary.json)。
+
+**汇总器根因与修复。** `39530321117`、`39530343859` 的 `failed-log.txt` 完整错误都是 `RangeError: Invalid string length → JSON.stringify → ext-perf-common.mjs:6 → merge-party-window-perf.mjs`；外层才包装为 `AssertionError: Round aggregate failed`。36 份测量及逐输入双 oracle/语义参考在最终结果里重复嵌入，三轮累计超过 V8 单字符串上限；不是 OOS、工作量不符或性能越线。最终汇总使用 `external-measurements-v1`：保留所有指标 summary、比较结论及原始测量相对路径/SHA256，samples、完整 crossformat 帧和参考执行继续保存在原始文件。先完整校验原始 hash、save/recording、语义参考和逐帧 proof，再生成引用式报告；外层补 `verified/` 相对路径，下载后可解析。`ext-perf-common.mjs` 字节不动，避免改变冻结 observer 身份。不是捕获异常后返回成功，也没有删掉语义守卫。
+
+离线入口 `recalculate-party-window-perf.mjs` 接收九份原 round shard，使用原读取/比较/稳定性校验链；只有两份汇总脚本允许显式提供历史字节，且其 SHA 必须等于 artifact 记录值。其余五份工具必须逐字节保持，所有原工具 hash 留存；输出另记新旧 merger hash。离线报告引用原 artifact 的绝对路径，不复制数 GB 证据，也不覆盖旧失败。新云端输出则仍复制完整原始文件、使用可搬运的相对路径。
+
+| suite / run | 云端原结果 | 本次结论 |
+| --- | --- | --- |
+| party A/B v2 `39530312282` | success | 原完整 aggregate：18 对比较均 report-only，`measured-no-budget`，budget=null；无需重跑 |
+| party-window A/B v2 `39530321117` | 汇总序列化失败 | 九份 shard、36 份测量、18 对 A/B、每对 2050 帧全部离线复验通过；`measured-no-budget`，budget=null |
+| party-ai A/B v2 `39530343859` | 同上 | 九份 shard、36 份测量、18 对 A/B、每对 2050 帧及 AI 工作计数全部离线复验通过；`measured-no-budget`，budget=null |
+| phase6 `39530302391` | hard pass / D6 regression | 原始 summary/rounds/input 与 shard hash、runner/身份、稳定计数复验；v3 **仍 regression**，all/prefix 回合 P99 中位数 +30.35% |
+
+三套 party 均为 `party-p1c-p1d-v2`，A sourceHash=`fbb895e04212df9cc76cc983dc288eb43d21a095954ced690e18857cc1f92827`，B=`97306f6576157caa18a1fe9a0a8516670056f55079fa1af7a07a9d7ca53ea5ed`。v2 的 B-minus-reviewed-ownership 参考用于证明已登记行为差量；原生 B 的时间与生命周期保持，不拿参考时间代替 B。
+
+各 suite 的18个**轮内**命令 P95 比率范围：party `0.98277–1.04247`，window `0.95906–1.05794`，AI `0.95346–1.06622`。window 长窗口 max 比率 `0.9478–1.0613`；AI 无该窗口标签，`longWindowMaxRatio=null` 是不适用，不能写成零成本。不同轮在不同 runner 上，只报告成对比率，不对它们的绝对时间取中位数判 D6。这些结果证明比较链完成，不代表新硬预算获批、浏览器/手机性能通过；云端两个 failure 状态仍保留。
+
+**D6 v3。** 维护者 2026-10-23 裁定，身份 `D6-v3-2026-10-23`；详见 [统一口径](perf-d6.md)。P95/墙钟仍 +10%、最少1ms、逐轮任一越线且至少2/3判退。command.max、depth.20.max、round.p99、roundDepth.20.p99 分别取 A 三轮中位数和 B 三轮中位数，再用原 +25%/1ms 严格 `>` 阈值；单轮尾部越线只记录，不能与另一轮 P95 越线凑2/3。不是比率中位数或合并样本P99；原客观回合max仍只报告。完整工作量/前缀、runner与硬门禁均保持。
+
+**历史 run 不追溯改判**。以下是同一批数据的新旧口径对照，不更改 GitHub 结论或6C3的 `known-tail-risk` 采纳记录，也不生成新预算：
+
+| run / gate | 原 D6 越线轮数与判定 | v3 P95/墙钟越线轮数 | v3 尾部中位数越线项 | v3 对照 |
+| --- | --- | --- | --- | --- |
+| P1d `39530302391` classic/full | 1/3 pass | 1/3 | 无 | pass |
+| 同上 all/full | 2/3 regression | 0/3 | 无 | **pass** |
+| 同上 all/prefix | 2/3 regression | 0/3 | round.p99 **+30.35%** | regression |
+| 6C3 `39028334751` classic/full | 0/3 pass | 0/3 | 无 | pass |
+| 同上 all/full | 2/3 regression | 0/3 | roundDepth.20.p99 **+35.07%** | regression |
+| 同上 all/prefix | 1/3 pass | 0/3 | 无 | pass |
+| P1c首轮 `39338476889` classic/full | 0/3 pass | 0/3 | 无 | pass |
+| 同上 all/full | 3/3 regression | 0/3 | round.p99 **+33.88%**；roundDepth.20.p99 **+38.39%** | regression |
+| 同上 all/prefix | 0/3 pass | 0/3 | 无 | pass |
+
+三批总判定均为 **regression → regression**。阻断的精确中位数（ms）：P1d prefix round.p99 `467.323738 → 609.157737`，阈值 `584.154673`；6C3 D20 round.p99 `190.074612 → 256.728573`，阈值 `237.593265`；P1c full round.p99 `442.120502 → 591.913658`、D20 `181.777705 → 251.560263`。P1d all/full 的中位数增幅分别为 command.max −1.23%、round.p99 +2.86%、depth.20.max +7.17%、roundDepth.20.p99 +19.55%，所以退出阻断；classic 原 r1 D20 P95 +14% 仍算1轮，规则未放宽。
+
+**证据层级。** P1d/P1c 使用原 aggregate 下全部三轮原始 summary/rounds/input 重算，保留原 hard pass，不声称重新执行逐域/终态游戏回放。6C3 的 `/private/tmp/perfci-39028334751/` 本次检查只剩空目录；GitHub connector 确认 aggregate `12104508508` 未过期并提供下载，但本机 gh 网络不可达、无可用浏览器，未能恢复到本地。本次改用仓库 [既有证据](evidence/phase6c3-c4-perf-review.json) `runs.6c3.gates[].pairs` 的三轮完整精度 A/B 数值重算；其登记的原 result SHA256 为 `a24c4a0ebfc21e3e5bec121b4d81ba579215623b5302154835b9e6fa8c1f0a82`。该行是**留存指标重算，未新做原始硬门禁复验**，不是补造原 artifact；结论与精确输入均保存在本次小型汇总。
+
+离线复现（输出须全新；v3 regression 正常退出1，结果JSON/Markdown仍生成）：
+
+```bash
+PERF_V3_OUT=$(mktemp -d /private/tmp/p1d-v3-recheck.XXXXXX)
+mkdir "$PERF_V3_OUT/original-tools"
+for name in merge-party-window-perf.mjs merge-party-rounds.mjs; do
+  git show "9a05080375136fb214975157b52de82f128fe93d:scripts/$name" > "$PERF_V3_OUT/original-tools/$name"
+done
+for run in 39530321117 39530343859; do
+  node --max-old-space-size=4096 scripts/recalculate-party-window-perf.mjs \
+    "$PERF_V3_OUT/$run" "$PERF_V3_OUT/original-tools" /private/tmp/perfci-$run/*-r*/result.json
+done
+for run in 39530302391 39338476889; do
+  node scripts/recalculate-ext-perf-ab.mjs \
+    "/private/tmp/perfci-$run/ext-perf-$run-1-aggregate/result.json" "$PERF_V3_OUT/$run"
+done
+# 6C3：只计算已登记的完整指标，明确不做原始 artifact 校验。
+node --input-type=module - <<'JS'
+import {readFileSync} from 'node:fs';
+import {decide} from './scripts/ext-perf-ab-policy.mjs';
+const r=JSON.parse(readFileSync('docs/ext/evidence/phase6c3-c4-perf-review.json')).runs['6c3'];
+console.log(JSON.stringify({run:r.run,scope:'recorded gate pairs only; historical verdict unchanged',
+  gates:r.gates.map(g=>({id:g.id,kind:g.kind,original:g.status,...decide(g.pairs)}))},null,2));
+JS
+```
+
+**仍需重跑与精确 gh 命令。** phase6 仍阻断；需要独立完整三轮验证v3下是否持续回退，不能引用本次 party success 代替，也不能把重复离线重算算作新样本。party/window/AI 的完整 v2 A/B 证据现在均已齐，不必为恢复结论再计时。若要取得“修复后 hosted aggregate 成功”的 CI 证据，window/AI 可选再派发；该云端验证本次未执行。`gh run rerun --failed` 会复用旧 control，仍含旧汇总器，不能验证修复。无需重跑已有 party success 或已有 B-only 校准，不额外追溯重跑6C3/P1c。
+
+本次没有 commit，无法虚构新工具SHA。维护者提交/推送本轮脚本后固定一个 control ref；**A/B 测量对象继续固定原 SHA**，新 control 仅提供修复后的汇总与v3策略：
+
+```bash
+P1C_A=e72cd6256daf810f89e520f1673b197d6ba6097d
+P1D_B=9a05080375136fb214975157b52de82f128fe93d
+: "${CONTROL_SHA:?填写包含本轮汇总修复与D6-v3的已推送完整40位SHA}"
+: "${CONTROL_REF:?填写指向该SHA的已推送branch或tag}"
+[[ "$CONTROL_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+CONTROL_REF_URL=$(node -e 'process.stdout.write(encodeURIComponent(process.argv[1]))' "$CONTROL_REF")
+[[ "$(gh api "repos/coolking70/BrogueJS/commits/$CONTROL_REF_URL" --jq .sha)" == "$CONTROL_SHA" ]] || exit 1
+
+gh workflow run ext-perf.yml --repo coolking70/BrogueJS --ref "$CONTROL_REF" \
+  -f suite=phase6 -f mode=ab -f base_ref="$P1C_A" -f head_ref="$P1D_B" \
+  -f base_identity=6c4 -f head_identity=6c4 -f comparison=strict -f rounds=3
+
+# 可选：仅验证两套修复后的云端汇总发布，不是补缺 A/B 数据。
+for suite in party-window party-ai; do
+  gh workflow run ext-perf.yml --repo coolking70/BrogueJS --ref "$CONTROL_REF" \
+    -f suite="$suite" -f mode=ab -f base_ref="$P1C_A" -f head_ref="$P1D_B" \
+    -f comparison=party-p1c-p1d-v2 -f rounds=3
+done
+
+# 6C3 原始文件恢复后可补全原始证据复验，无需重测游戏：
+C3_OUT=$(mktemp -d /private/tmp/c3-v3-raw.XXXXXX)
+gh run download 39028334751 --repo coolking70/BrogueJS \
+  --name ext-perf-39028334751-1-aggregate --dir "$C3_OUT/original"
+node scripts/recalculate-ext-perf-ab.mjs "$C3_OUT/original/result.json" "$C3_OUT/recalculated"
+```
+
+**限定验收。** 原测试断言未修改；新增中位数/比率区分、单轮尖峰、不同尾部轮流越线、P95/尾部不混计、1ms/等号、缺轮/缺指标/伪造越线、分片离线校验与篡改拒绝、原merger字节准入、最终JSON不遍历大payload、真实两级CLI相对路径等用例。`node scripts/test-ext-perf-ab.mjs`、`node scripts/test-ext-perf-split.mjs` 与三个 party 工具测试文件 **91/91通过**（均exit0）；测试依赖检查717文件、errors=[]。原失败日志保留；本轮无游戏旧测试前提修订、基线重录或预算修改。完整命令与结果见 `/private/tmp/p1d-d6-v3/test-*.log`；仅运行相关脚本测试和测试依赖检查，未扩跑游戏测试、types/build、drift或全量。
+
+### 6.1 云端七运行追查（2026-10-21，历史）
 
 本节覆盖下方§6.2的旧“正式云端待派发”状态。开工/计时 B 为 `94813cf8446fafb32074c70232560d2e99ac5421`，A 为 `e72cd6256daf810f89e520f1673b197d6ba6097d`。本轮仅改性能工具、workflow、工具测试和报告；没有修改游戏生产代码、原始录像、黄金夹具、D6 政策或冻结预算，没有 commit/push/云端派发。原始七运行保留在 `/private/tmp/perfci-<runId>/`；新增证据统一在 `/private/tmp/p1d-perf-fix/investigation-20261021/`，计时源码副本为上级目录的 `A/`、`B/`（从上述 Git 对象导出，非新的提交）。
 

@@ -50,6 +50,16 @@ try {
  };
  const good=merge();assert.equal(good.run.status,0,good.run.stderr);assert.equal(good.result.status,'pass');assert.ok(existsSync(resolve(good.out,good.result.manifest)));assert.equal(read(resolve(good.out,good.result.manifest)).provenance.independentHeldOutReplay,true);
  assert.ok(good.result.runs.every(r=>!r.prefix.startsWith('/')),'Aggregate paths are portable');
+ const recalculated=spawn('recalculate-ext-perf-ab.mjs',[resolve(good.out,'result.json'),resolve(dir,'recalculated')]);
+ assert.equal(recalculated.status,0,recalculated.stderr);
+ const recalculatedResult=read(resolve(dir,'recalculated/result.json'));
+ assert.equal(recalculatedResult.status,'pass');assert.equal(recalculatedResult.recalculation.historicalVerdictUnchanged,true);
+ assert.equal(recalculatedResult.manifest,undefined,'Offline policy comparison never adopts a budget');
+ const shardFile=resolve(good.out,'shards/classic/result.json'),savedShard=readFileSync(shardFile);
+ write(shardFile,{...read(shardFile),hard:'failed'});
+ const tampered=spawn('recalculate-ext-perf-ab.mjs',[resolve(good.out,'result.json'),resolve(dir,'tampered')]);
+ assert.notEqual(tampered.status,0);assert.match(tampered.stderr,/Shard result hash mismatch/);writeFileSync(shardFile,savedShard);
+
  assert.equal(new Set(good.result.shards.map(s=>s.runner.node)).size,2,'Different Node patches across shards remain valid');
  assert.equal(new Set(good.result.shards.map(s=>s.runner.cpu)).size,3,'Different CPUs across shards remain valid');
  // Explicit offline replacement preserves old provenance, never skips other tools.

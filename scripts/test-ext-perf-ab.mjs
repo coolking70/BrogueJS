@@ -49,6 +49,32 @@ for(const scene of ['round','roundDepth']){
  delete target.p99;assert.throws(()=>compareTiming(baseline,tail),/p99/);
 }
 const max=sample();max.command.max=25.001;assert.ok(compareTiming(baseline,max).some(v=>v.metric==='command.max'&&v.exceeded));
+// D6 v3: tail medians are separate A/B medians, never a median of ratios.
+const tailPair=(a,b,metric='round.p99')=>{
+ const left=sample(),right=sample();
+ const set=(s,value)=>{const path=metric.split('.');let target=s;for(const k of path.slice(0,-1))target=target[k];target[path.at(-1)]=value;};
+ set(left,a);set(right,b);return compareTiming(left,right);
+};
+for(const metric of ['round.p99','roundDepth.20.p99','depth.20.max','command.max']){
+ const once=tailPair(20,100,metric),steady=tailPair(20,20,metric);
+ assert.equal(decide([once,steady,steady]).status,'pass');
+ assert.equal(decide([once,once,steady]).status,'regression');
+ assert.equal(decide([once,once]).status,'incomplete','Two tail samples cannot form a three-round median');
+ assert.equal(decide([tailPair(20,25,metric),tailPair(20,25,metric),once]).status,'pass','Strict equality is not crossing');
+ assert.equal(decide([tailPair(0,1,metric),tailPair(0,1,metric),once]).status,'pass','Tail medians retain 1ms floor');
+ assert.equal(decide([tailPair(.1,1.101,metric),tailPair(.1,1.101,metric),steady]).status,'regression');
+}
+const alternating=decide([tailPair(20,100),tailPair(20,100,'command.max'),pass]);
+assert.equal(alternating.exceededRounds,2);assert.equal(alternating.sustainedExceededRounds,0);
+assert.equal(alternating.status,'pass','Different isolated tails must not combine into two gating rounds');
+const separate=decide([tailPair(10,20),tailPair(100,130),tailPair(1000,100)]);
+assert.equal(separate.tailMedians.find(v=>v.metric==='round.p99').a,100);
+assert.equal(separate.tailMedians.find(v=>v.metric==='round.p99').b,100);
+assert.equal(separate.status,'pass','Median ratios would incorrectly regress this example');
+assert.equal(decide([tailPair(20,100),fail,pass]).status,'pass','One tail spike plus one P95 crossing is still only one sustained round');
+assert.throws(()=>decide([pass,pass.slice(1),pass]),/metric set/);
+assert.throws(()=>decide([pass,pass.map(v=>({...v,a:NaN})),pass]),/invalid/);
+assert.throws(()=>decide([pass,pass.map(v=>({...v,exceeded:true})),pass]),/Invalid timing/);
 const rawRounds=Array.from({length:100},(_,i)=>({depth:20,ms:i+1}));
 const raw={semantic:{rounds:100},round:stats(rawRounds.map(r=>r.ms)),roundDepth:{20:stats(rawRounds.map(r=>r.ms))}};
 const enriched=withObjectiveP99(raw,rawRounds);

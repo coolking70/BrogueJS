@@ -11,7 +11,7 @@ import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {hash,write} from './ext-perf-common.mjs';
 import {comparablePrefix,pendingPerfBaseline,perfIdentity} from './ext-perf-selection.mjs';
-import {parseOptions,kindsFor,validateRun,withObjectiveP99,evaluateGates,overallStatus,policyVersion,timingPolicy} from './ext-perf-ab-policy.mjs';
+import {parseOptions,kindsFor,validateRun,withObjectiveP99,evaluateGates,overallStatus,policyVersion,timingPolicy,decisionMarkdown} from './ext-perf-ab-policy.mjs';
 
 const [output,...args]=process.argv.slice(2),inputs=args.slice(0,3),extra=args.slice(3);
 assert.ok(extra.length===0||extra.length===2&&extra[0]==='--original-merge'&&extra[1],'Expected optional --original-merge FILE');
@@ -131,7 +131,7 @@ write(resolve(out,'result.json'),result);
 const lines=['# ext phase6 split A/B',`Status: **${result.status}**; hard: **${result.hard}**.`,timingPolicy,
  'Each A/B pair and all three repeats stay on one shard runner. Absolute timings from different shards are never compared.',
  ...Object.entries(result.identities??{}).map(([side,v])=>`${side}: ${v.commit}; src tree ${v.srcTree}; dirty hash ${v.sourceHash}.`),
- '', '| Gate | Crossed rounds | Verdict |', '| --- | --- | --- |',...result.gates.map(g=>`| ${g.id}/${g.kind} | ${g.exceededRounds}/${result.options.rounds} | ${g.status} |`),
+ ...decisionMarkdown(result.gates,result.options.rounds),
  '', '| Pair / round | Metric | A ms | B ms | Crossed |', '| --- | --- | --- | --- | --- |',...result.gates.flatMap(g=>g.pairs.flatMap((pair,i)=>pair.map(v=>`| ${g.id}/${g.kind} / ${i+1} | ${v.metric} | ${v.a.toFixed(3)} | ${v.b.toFixed(3)} | ${v.exceeded} |`))),
  '',...result.shards.map(s=>`- [${s.name} raw summary](shards/${s.name}/summary.md), runner invocation ${s.runner.invocation}; ${s.runner.cpu}.`),
  '',...(result.recalculation?[`Offline merger replacement: ${result.recalculation.originalMergeHash} → ${result.recalculation.currentMergeHash}. Original toolHashes retained; all other tools checked unchanged.`]:[]),

@@ -1,11 +1,11 @@
-import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { hash } from '../../scripts/ext-perf-common.mjs';
 import { it, expect } from 'vitest';
 import { parseOptions, validateWindowMeasurement, validateAiMeasurement, measurementTimeoutMs } from '../../scripts/run-party-window-perf.mjs';
-import { merge, readShard } from '../../scripts/merge-party-window-perf.mjs';
+import { merge, readShard, externalizeWindowMeasurements } from '../../scripts/merge-party-window-perf.mjs';
 const h = 'a'.repeat(64),
   stat = { n: 1, p50: 1, p95: 1, p99: 1, max: 1, total: 1 };
 function measurement(actors, mode) {
@@ -252,5 +252,80 @@ it('reports setup fallback and malformed observations without an iterable TypeEr
   expect(()=>readShard(file)).toThrow('No measurement report; inspect setup logs');
   writeFileSync(file,JSON.stringify({status:'smoke-only'}));
   expect(()=>readShard(file)).toThrow('missing runs array');
+ }finally{rmSync(dir,{recursive:true,force:true});}
+});
+
+it('keeps all metric summaries and raw references without serializing repeated sample/oracle payloads',()=>{
+ const result=merge(abReports());
+ for(const run of result.runs){
+  run.artifact=`${run.round}-${run.side}-${run.measurement.actors}-${run.measurement.mode}.json`;
+  run.artifactHash=h;
+  // If aggregation traverses these payloads, the old giant-JSON failure returns.
+  run.measurement.samples.toJSON=()=>{throw new RangeError('Invalid string length');};
+  run.measurement.crossformat={frames:Array(2).fill({}),toJSON(){throw new RangeError('Invalid string length');}};
+ }
+ expect(()=>JSON.stringify(result)).toThrow('Invalid string length');
+ const compact=externalizeWindowMeasurements(result,(run,m)=>`${m.actors}/${run.artifact}`);
+ const parsed=JSON.parse(JSON.stringify(compact));
+ expect(parsed.runs).toHaveLength(36);expect(parsed.comparisons).toEqual(result.comparisons);
+ for(const [i,run]of parsed.runs.entries()){
+  expect(run.artifactHash).toBe(h);expect(run.artifact).toContain('/');
+  expect(run.sampleCount).toBe(1);expect(run.oracleFrames).toBe(2);
+  expect(run.summary.inputToReady).toEqual(result.runs[i].measurement.inputToReady);
+  expect(run.summary.samples).toBeUndefined();expect(run.measurement).toBeUndefined();
+ }
+ expect(result.runs[0].measurement.samples).toHaveLength(1);
+});
+it('allows only explicitly supplied original merger bytes in offline tool rechecks',()=>{
+ const dir=mkdtempSync(join(tmpdir(),'window-original-tools-'));
+ try {
+  const names=['profile-party-window-perf.mjs','run-party-window-perf.mjs','merge-party-window-perf.mjs','ext-perf-common.mjs','party-perf-crossformat.mjs','party-perf-semantic.mjs','merge-party-rounds.mjs'];
+  const tools=Object.fromEntries(names.map(n=>[n,hash(readFileSync(`scripts/${n}`,'utf8'))]));
+  for(const name of ['merge-party-window-perf.mjs','merge-party-rounds.mjs']){
+   const old=`// original ${name}\n`;writeFileSync(join(dir,name),old);tools[name]=hash(old);
+  }
+  expect(()=>verifyWindowTools(tools)).toThrow('Tool drift');
+  const replacement=verifyWindowTools(tools,{originalTools:dir});
+  expect(Object.keys(replacement)).toHaveLength(2);
+  expect(replacement['merge-party-window-perf.mjs'].original).toBe(tools['merge-party-window-perf.mjs']);
+  tools['profile-party-window-perf.mjs']=h;
+  expect(()=>verifyWindowTools(tools,{originalTools:dir})).toThrow('Tool drift profile-party-window-perf');
+  tools['profile-party-window-perf.mjs']=hash(readFileSync('scripts/profile-party-window-perf.mjs','utf8'));
+  writeFileSync(join(dir,'merge-party-window-perf.mjs'),'wrong original');
+  expect(()=>verifyWindowTools(tools,{originalTools:dir})).toThrow('Tool drift merge-party-window-perf');
+ }finally{rmSync(dir,{recursive:true,force:true});}
+});
+
+it('publishes portable referenced evidence through the actual round and window merger CLIs',()=>{
+ const dir=mkdtempSync(join(tmpdir(),'window-round-cli-'));
+ try {
+  const names=['profile-party-window-perf.mjs','run-party-window-perf.mjs','merge-party-window-perf.mjs','ext-perf-common.mjs','party-perf-crossformat.mjs','party-perf-semantic.mjs','merge-party-rounds.mjs'];
+  const tools=Object.fromEntries(names.map(n=>[n,hash(readFileSync(`scripts/${n}`,'utf8'))]));
+  const inputs=[];
+  for(const [i,report]of abReports().entries())for(const round of [1,2,3]){
+   const path=join(dir,`${i}-${round}`);mkdirSync(path);inputs.push(path);
+   const shard=['classic','all-full','all-prefix'][i];
+   const runs=report.runs.filter(r=>r.round===round).map(run=>{
+    const measurement={...run.measurement,node:`v24.${round}.0`,machine:{cpu:`runner-${i}-${round}`}};
+    const save={save:true},recording={recording:true};
+    measurement.artifactDigests={save:hash(save),recording:hash(recording)};
+    const artifact=`${round}-${run.side}-${measurement.actors}-${measurement.mode}.json`,raw=JSON.stringify(measurement);
+    writeFileSync(join(path,artifact),raw);
+    writeFileSync(join(path,artifact+'.save.json'),JSON.stringify(save));
+    writeFileSync(join(path,artifact+'.recording.json'),JSON.stringify(recording));
+    return {...run,measurement,artifact,artifactHash:hash(raw)};
+   });
+   writeFileSync(join(path,'result.json'),JSON.stringify({...report,tools,status:'round-complete',options:{...report.options,roundIndex:round,shard,out:path},runs,comparisons:[]}));
+  }
+  const out=join(dir,'out'),child=spawnSync(process.execPath,['scripts/merge-party-rounds.mjs',out,...inputs],{encoding:'utf8'});
+  expect(child.status,child.stderr).toBe(0);
+  const result=JSON.parse(readFileSync(join(out,'result.json'),'utf8'));
+  expect(result.status).toBe('smoke-only');expect(result.runs).toHaveLength(36);expect(result.comparisons).toHaveLength(18);
+  expect(result.evidenceLayout).toBe('external-measurements-v1');
+  for(const run of result.runs){
+   expect(run.artifact.startsWith('verified/')).toBe(true);
+   const raw=readFileSync(join(out,run.artifact),'utf8');expect(hash(raw)).toBe(run.artifactHash);
+   expect(JSON.parse(raw).inputToReady).toEqual(run.summary.inputToReady);
+  }
  }finally{rmSync(dir,{recursive:true,force:true});}
 });

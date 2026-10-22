@@ -72,6 +72,7 @@ export function mergeRoundArtifacts(out,inputs) {
   const child=spawnSync(process.execPath,[fileURLToPath(new URL(script,import.meta.url)),target,...paths.map(p=>party?p:resolve(p,'result.json'))],{encoding:'utf8',maxBuffer:16*1024*1024});
   assert.equal(child.status,0,`Round aggregate failed: ${child.stderr}`);
   const result=JSON.parse(readFileSync(resolve(target,'result.json'),'utf8'));
+  if(result.evidenceLayout==='external-measurements-v1')for(const run of result.runs)run.artifact='verified/'+run.artifact;
   result.roundExecution={identity:'independent-round-pairs-v1',environments:Object.fromEntries(paths.map(p=>{const r=JSON.parse(readFileSync(resolve(p,'result.json'),'utf8'));return [r.options.shard,r.roundEnvironments];}))};
   write(resolve(out,'result.json'),result);
   writeFileSync(resolve(out,'summary.md'),readFileSync(resolve(target,'summary.md'),'utf8')+'\nA/B pairs share one runner. Rounds are independent jobs; compare paired ratios, not absolute times across runners. Original round shards and verified combined evidence are retained.\n');

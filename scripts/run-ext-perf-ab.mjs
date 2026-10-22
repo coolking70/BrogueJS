@@ -12,7 +12,7 @@ import {randomUUID} from 'node:crypto';
 import {cpus,totalmem,platform,arch} from 'node:os';
 import {hash,write} from './ext-perf-common.mjs';
 import {perfIdentity,loadPerfIdentity,comparablePrefix,pendingPerfBaseline} from './ext-perf-selection.mjs';
-import {parseOptions,kindsFor,validateRun,withObjectiveP99,evaluateGates,overallStatus,policyVersion,timingPolicy} from './ext-perf-ab-policy.mjs';
+import {parseOptions,kindsFor,validateRun,withObjectiveP99,evaluateGates,overallStatus,policyVersion,timingPolicy,decisionMarkdown} from './ext-perf-ab-policy.mjs';
 
 if(process.argv.includes('--party')){const {runPartyAb}=await import('./run-party-perf-ab.mjs');await runPartyAb(process.argv.slice(2).filter(a=>a!=='--party'));process.exit(0);}
 const options=parseOptions(process.argv.slice(2));
@@ -45,8 +45,7 @@ function publish(){
  lines.push('', 'Stable counts (all 17 counters, semantic hashes and RNG retained in JSON):', '',
   '| Round / case / stream | collect / transaction | blocks / ticks |', '| --- | --- | --- |');
  for(const r of result.runs){const s=r.summary;lines.push(`| ${r.round} / ${r.id} / ${r.side}-${r.kind} | ${s.segments.collectExtensionComponents?.calls??0} / ${s.segments['extension.transaction']?.calls??0} | ${s.semantic.blocks} / ${s.semantic.roundTicks} |`);}
- lines.push('', '| Gate | Crossed rounds | Verdict |', '| --- | --- | --- |');
- for(const g of result.gates)lines.push(`| ${g.id} / ${g.kind} | ${g.exceededRounds} / ${options.rounds} | ${g.status} |`);
+ lines.push(...decisionMarkdown(result.gates,options.rounds));
  lines.push('', '| Pair / round | Metric | A → B (ms) | Relative | Crossed |', '| --- | --- | --- | --- | --- |');
  for(const g of result.gates)for(const [i,pair]of g.pairs.entries())for(const v of pair)
   lines.push(`| ${g.id}/${g.kind} / ${i+1} | ${v.metric} | ${fmt(v.a)} → ${fmt(v.b)} | ${v.relative===null?'n/a':fmt(v.relative*100)+'%'} | ${v.exceeded?'yes':'no'} |`);

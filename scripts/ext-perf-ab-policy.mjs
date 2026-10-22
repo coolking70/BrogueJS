@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import {perfIdentity,pendingPerfBaseline} from './ext-perf-selection.mjs';
 import {stats} from './ext-perf-common.mjs';
 
-export const policyVersion='D6-2026-10-16';
-export const timingPolicy='Same runner only; P95 +10%, objective-round P99 / command max +25%, elapsed +10%, minimum 1ms. Any metric crossing in >=2 of 3 comparable rounds means regression. Full routes with different event/objective-block counts are report-only; the identical input prefix decides. Absolute times report only.';
+export const policyVersion='D6-v3-2026-10-23';
+export const timingPolicy='D6 v3 effective 2026-10-23; historical verdicts unchanged. Same runner only. P95 and elapsed +10%: any crossing in >=2 of 3 rounds means regression. Tail metrics (objective P99 / command max) +25%: compare the separate A and B medians of three rounds; individual tail crossings are report-only. Strict B > A + max(1ms, A * fraction). Full routes with different event/objective-block counts are report-only; the identical input prefix decides. Absolute times report only.';
 
 // Post-process the unchanged observer output: never change instrumentation or
 // substitute P95/max when old summaries lack P99. Nearest-rank, as for P95.
@@ -77,17 +77,47 @@ export function compareTiming(a,b,{complete=true}={}) {
   for(const [metric,fraction]of [['p95',.1],[tail,.25]])values.push({metric:`${scene}.${metric}`,a:get(a)?.[metric],b:get(b)?.[metric],fraction});
  }
  values.push({metric:'elapsed',a:a.elapsed,b:b.elapsed,fraction:.1});
- return values.map(v=>{
-  assert.ok(Number.isFinite(v.a)&&v.a>=0&&Number.isFinite(v.b)&&v.b>=0,`Missing/invalid ${v.metric}`);
-  const threshold=v.a+Math.max(1,v.a*v.fraction);
-  return {...v,delta:v.b-v.a,relative:v.a===0?null:v.b/v.a-1,threshold,exceeded:v.b>threshold};
- });
+ return values.map(compareMetric);
 }
 
+function compareMetric(v) {
+ assert.ok(Number.isFinite(v.a)&&v.a>=0&&Number.isFinite(v.b)&&v.b>=0,`Missing/invalid ${v.metric}`);
+ const threshold=v.a+Math.max(1,v.a*v.fraction);
+ return {...v,delta:v.b-v.a,relative:v.a===0?null:v.b/v.a-1,threshold,exceeded:v.b>threshold};
+}
+export const isTailMetric=metric=>/\.(p99|max)$/.test(metric);
 export function decide(pairs) {
  assert.ok(pairs.length>=1&&pairs.length<=3);
+ const metrics=pairs[0].map(v=>v.metric);
+ assert.ok(metrics.length>0&&new Set(metrics).size===metrics.length,'Missing/duplicate timing metric');
+ for(const pair of pairs){
+  assert.deepEqual(pair.map(v=>v.metric),metrics,'Timing metric set drift');
+  for(const [i,v]of pair.entries()){
+   assert.equal(v.fraction,pairs[0][i].fraction,'Timing threshold drift');
+   assert.deepEqual(v,compareMetric(v),'Invalid timing comparison');
+  }
+ }
+ // Keep the old all-metric crossing count as diagnostics, not a v3 decision.
  const exceededRounds=pairs.filter(p=>p.some(v=>v.exceeded)).length;
- return {exceededRounds,status:exceededRounds>=2?'regression':pairs.length===3?'pass':'incomplete'};
+ const sustainedExceededRounds=pairs.filter(p=>p.some(v=>!isTailMetric(v.metric)&&v.exceeded)).length;
+ const tailMedians=pairs.length===3?pairs[0].filter(v=>isTailMetric(v.metric)).map(v=>{
+  const rows=pairs.map(p=>p.find(r=>r.metric===v.metric));
+  const median=side=>rows.map(r=>r[side]).sort((a,b)=>a-b)[1];
+  return compareMetric({metric:v.metric,a:median('a'),b:median('b'),fraction:v.fraction});
+ }):[];
+ const tailExceeded=tailMedians.some(v=>v.exceeded);
+ return {exceededRounds,sustainedExceededRounds,tailMedians,tailExceeded,
+  status:sustainedExceededRounds>=2||tailExceeded?'regression':pairs.length===3?'pass':'incomplete'};
+}
+
+// Shared output prevents per-round tail diagnostics being mistaken for gates.
+export function decisionMarkdown(gates,rounds) {
+ return ['', '| Gate | P95/wall crossed rounds | Tail medians crossed | Verdict |',
+  '| --- | --- | --- | --- |',
+  ...gates.map(g=>`| ${g.id}/${g.kind} | ${g.sustainedExceededRounds}/${rounds} | ${g.tailMedians.filter(v=>v.exceeded).map(v=>v.metric).join(', ')||'none'} | ${g.status} |`),
+  '', 'Per-round tail crossings below are diagnostics only. Tail decision (separate A/B medians; no pooled samples or median ratios):',
+  '', '| Gate | Tail metric | A median ms | B median ms | Threshold ms | Crossed |', '| --- | --- | --- | --- | --- | --- |',
+  ...gates.flatMap(g=>g.tailMedians.map(v=>`| ${g.id}/${g.kind} | ${v.metric} | ${v.a.toFixed(6)} | ${v.b.toFixed(6)} | ${v.threshold.toFixed(6)} | ${v.exceeded} |`))];
 }
 
 export function canFreeze({options,gates,hard}) {
