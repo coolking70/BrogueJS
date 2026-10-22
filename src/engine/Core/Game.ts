@@ -513,7 +513,7 @@ export class Game {
     public get controlledActors(): readonly Player[] { return this.party ? [this.player,...this.party.actors.values()] : [this.player]; }
     private partyDropCredit(id:number|null|undefined):number {return this.party&&id&&this.controlledActors.some(a=>a.id===id)?id:this.player.id;}
     private get partyModalActor():Player|undefined {return this.party?this.controlledActors.find(a=>this.party!.native[a.id]?.modal):undefined;}
-    public get nativeAllyActors():readonly ControlledActor[]{return this.party?[...this.activeControlledActors,...this.activeStationedResidents]:this.activeControlledActors;}
+    public get nativeAllyActors():readonly ControlledActor[]{return this.party?[...this.activeControlledActors,...this.activeStationedResidents]:[this.player];}
     private get activeStationedResidents():ControlledActor[]{
         if(!this.party?.stationed.size)return [];
         return [...this.party.stationed.values()].filter(actor=>actor.hp>0&&!this.party!.state.retired.some(row=>row.actorId===actor.id)&&this.world5?.residents.some(row=>row.actorId===actor.id&&row.levelRef.kind==='dungeon'&&row.levelRef.depth===this.depth));
@@ -3689,7 +3689,10 @@ export class Game {
 
     /** CE getFOVMask 的 HAS_MONSTER|HAS_PLAYER 遮挡谓词（Light.c:85）。 */
     private hasCreatureAtForLight(x: number, y: number): boolean {
-        if (this.nativeAllyActors.some(a=>footprintContains(a,{x,y}))) return true;
+        // This predicate runs for every light ray cell. Without party there is
+        // exactly one controlled occupant; avoid the roster view and its array.
+        if (this.party ? this.nativeAllyActors.some(a=>footprintContains(a,{x,y}))
+            : footprintContains(this.player,{x,y})) return true;
         return !!monsterAt(this.monsters, x, y, true);
     }
 
@@ -5135,9 +5138,11 @@ export class Game {
             const primary = this.monsters.find(monster => monster.id === target.id)!;
             const contact = primary.spatial ? this.publicMeleeContact(primary)! : nearestContact(this.commandActor, primary);
             const dx = contact.to.x - contact.from.x, dy = contact.to.y - contact.from.y;
-            const flags = [...(this.commandActor.equippedWeapon?.flags??[]),...((this.commandActor as PartyMember).partyProfile?.penetrate?['ITEM_ATTACKS_PENETRATE']:[])];
-            const whip = flags.includes('ITEM_ATTACKS_EXTEND') ? this.preparePlayerWhipAttack(dx, dy) : null;
-            const spear = !whip && flags.includes('ITEM_ATTACKS_PENETRATE') ? this.preparePlayerSpearAttack(dx, dy) : null;
+            const flags = (this.commandActor as PartyMember).partyProfile?.penetrate
+                ? [...(this.commandActor.equippedWeapon?.flags??[]),'ITEM_ATTACKS_PENETRATE']
+                : this.commandActor.equippedWeapon?.flags;
+            const whip = flags?.includes('ITEM_ATTACKS_EXTEND') ? this.preparePlayerWhipAttack(dx, dy) : null;
+            const spear = !whip && flags?.includes('ITEM_ATTACKS_PENETRATE') ? this.preparePlayerSpearAttack(dx, dy) : null;
             const hitList = whip ? [whip] : spear ?? this.buildPlayerMeleeHitList(primary);
             if (!hitList.some(monster => monster.id === target.id)) return [];
             return this.preparePlayerAttackRisks(hitList);
@@ -10892,7 +10897,7 @@ export class Game {
                 logger.log(i18next.t('status.monster.lifespan_off', { name: this.monsterDisplayName(m), defaultValue: 'The {{name}} dissipates into thin air.' }), '#cccccc');
             }
         }
-        for(const actor of this.activeStationedResidents)withPartyActor(this,actor,()=>{
+        if(this.party)for(const actor of this.activeStationedResidents)withPartyActor(this,actor,()=>{
             this.resolveBurningDamage(actor);this.resolvePoisonDamage(actor);
             if(actor.hp<=0)return;
             // Camp economy owns food; native HP recovery and status clocks still advance.
@@ -10967,7 +10972,9 @@ export class Game {
      * X3-U1 在调用方对名单做酸性怪确认；hitList 顺序：突进目标占首、连枷随后（CE 同）。
      */
     private buildLungeFlailHitList(dx: number, dy: number, newX: number, newY: number): Monster[] {
-        const flags = [...(this.commandActor.equippedWeapon?.flags??[]),...((this.commandActor as PartyMember).partyProfile?.penetrate?['ITEM_ATTACKS_PENETRATE']:[])];
+        const flags = (this.commandActor as PartyMember).partyProfile?.penetrate
+            ? [...(this.commandActor.equippedWeapon?.flags??[]),'ITEM_ATTACKS_PENETRATE']
+            : this.commandActor.equippedWeapon?.flags;
         if (!flags?.length) return [];
         const ux = Math.sign(dx);
         const uy = Math.sign(dy);
@@ -11051,7 +11058,9 @@ export class Game {
      * 近战分支（buildHitList sweep）。dx/dy 统一取符号归一成 8 向单位步。
      */
     private *tryPlayerWeaponGeometryAttackStages(dx: number, dy: number, control?: ControlledPlayerAction): CommandStages<boolean | 'aborted'> {
-        const flags = [...(this.commandActor.equippedWeapon?.flags??[]),...((this.commandActor as PartyMember).partyProfile?.penetrate?['ITEM_ATTACKS_PENETRATE']:[])];
+        const flags = (this.commandActor as PartyMember).partyProfile?.penetrate
+            ? [...(this.commandActor.equippedWeapon?.flags??[]),'ITEM_ATTACKS_PENETRATE']
+            : this.commandActor.equippedWeapon?.flags;
         if (!flags?.length) return false;
         const ux = Math.sign(dx);
         const uy = Math.sign(dy);
@@ -12899,7 +12908,7 @@ export class Game {
                 objectiveTimeBlock: () => game.objectiveTimeBlock(),
                 beginObjectiveTime: game.extensionRuntime?.hasHook('objectiveTime') ? () => {
                     const runtime = game.extensionRuntime!;
-                    const actorIds = [...game.activeControlledActors, ...game.activeStationedResidents, ...game.monsters].filter(actor => actor.hp > 0).map(actor => actor.id);
+                    const actorIds = [...game.nativeAllyActors, ...game.monsters].filter(actor => actor.hp > 0).map(actor => actor.id);
                     return () => {
                         runtime.emit('objectiveTime', { ticks: 100, mode: 'realtime', actorIds });
                         // A timed stealth modifier may expire midway through a slow native action.
@@ -12944,8 +12953,8 @@ export class Game {
                     }else decision();
                 },
                 updateEnvironment: () => game.updateEnvironment(),
-                tickArcanaResources: () => {for(const actor of [...game.activeControlledActors,...game.activeStationedResidents])withPartyActor(game,actor,()=>game.tickArcanaResources());},
-                processIncrementalAutoID: () => {for(const actor of [...game.activeControlledActors,...game.activeStationedResidents])withPartyActor(game,actor,()=>game.processIncrementalAutoID());},
+                tickArcanaResources: () => {for(const actor of game.nativeAllyActors)withPartyActor(game,actor,()=>game.tickArcanaResources());},
+                processIncrementalAutoID: () => {for(const actor of game.nativeAllyActors)withPartyActor(game,actor,()=>game.processIncrementalAutoID());},
                 spawnPeriodicHorde: () => game.spawnPeriodicHorde(),
                 applyEnvironmentalEffects: (target, objective) => game.applyEnvironmentalEffects(target, objective),
                 tickCreatureStatuses: () => game.tickCreatureStatuses(),
@@ -14526,7 +14535,7 @@ export class Game {
             checkEntity(instantTarget, instantTarget.name);
             return;
         }
-        for(const actor of [...this.activeControlledActors,...this.activeStationedResidents])withPartyActor(this,actor,()=>this.runicEffectTransaction(this.party&&actor.equippedArmor?.moduleData&&!actor.equippedArmor.runicKnown&&['respiration','dampening'].includes(actor.equippedArmor.runicType??'')?actor.equippedArmor:null,()=>checkEntity(actor,actor.name)));
+        for(const actor of this.nativeAllyActors)withPartyActor(this,actor,()=>this.runicEffectTransaction(this.party&&actor.equippedArmor?.moduleData&&!actor.equippedArmor.runicKnown&&['respiration','dampening'].includes(actor.equippedArmor.runicType??'')?actor.equippedArmor:null,()=>checkEntity(actor,actor.name)));
         for (const m of [...this.monsters]) {
             checkEntity(m, m.name);
         }

@@ -1,0 +1,1578 @@
+{
+  "status": "performance-validation-blocked-by-external-load",
+  "policy": "D6-v3-2026-10-23",
+  "strictTarget": "Separate three-round objective P99 medians, B/A <= 1.10; not yet demonstrated",
+  "base": "e72cd6256daf810f89e520f1673b197d6ba6097d",
+  "originalHead": "93a5e222332bf525566136870b9133d7bd34ee09",
+  "rawEvidence": "/private/tmp/p1d-tail-20261023",
+  "input": [
+    {
+      "path": "/private/tmp/perfci-39434786774/ext-perf-39434786774-1-all-prefix/inputs/A-all-prefix.json",
+      "sha256": "fb217d658dd7c2d5d6ac7d2de29a700dbf8bebe733767a10604952d0a26360cf",
+      "events": 2423,
+      "eventHash": "f20d89b10ee59914a8dfed3ea1cb0e3d99513eb83331588428176db90de8b376"
+    },
+    {
+      "path": "/private/tmp/perfci-39434786774/ext-perf-39434786774-1-all-prefix/inputs/B-all-prefix.json",
+      "sha256": "fb217d658dd7c2d5d6ac7d2de29a700dbf8bebe733767a10604952d0a26360cf",
+      "events": 2423,
+      "eventHash": "f20d89b10ee59914a8dfed3ea1cb0e3d99513eb83331588428176db90de8b376"
+    },
+    {
+      "path": "/private/tmp/perfci-39530302391/ext-perf-39530302391-1-aggregate/shards/all-prefix/inputs/A-all-prefix.json",
+      "sha256": "fb217d658dd7c2d5d6ac7d2de29a700dbf8bebe733767a10604952d0a26360cf",
+      "events": 2423,
+      "eventHash": "f20d89b10ee59914a8dfed3ea1cb0e3d99513eb83331588428176db90de8b376"
+    }
+  ],
+  "sourceIdentity": {
+    "A": {
+      "ref": "e72cd6256daf810f89e520f1673b197d6ba6097d",
+      "srcTree": "9bf4d13fea7dad24253ef82d71a0fa7192cdc0d7",
+      "verifiedFiles": 1530
+    },
+    "B0": {
+      "ref": "93a5e222332bf525566136870b9133d7bd34ee09",
+      "srcTree": "636d4bad770992d03cb0d54deb05b939217e5f64",
+      "verifiedFiles": 1551
+    }
+  },
+  "beforeDiagnosticMedian": {
+    "A": 230.79208299999664,
+    "B0": 358.45537499999773,
+    "relative": 0.5531528219709467,
+    "qualification": "Known Unity batch overlap in round 3; not an uncontaminated baseline"
+  },
+  "fixedAcceptanceMedian": null,
+  "runs": [
+    {
+      "run": "1-A",
+      "sourceHash": "4511fa6024bf25020427e4df07a7b3849af82986a4160aa5607a2a8a52a53212",
+      "p99": 230.79208299999664,
+      "roundP95": 98.65245899997535,
+      "commandP95": 449.41679199999635,
+      "elapsed": 474038.290292,
+      "events": 2423,
+      "blocks": 2549,
+      "oos": 0,
+      "semantic": {
+        "stateHash": "40a3cc95461671bb70bbb60c28b8735119b1c9f28bcfcad8333cb751c6b45c68",
+        "eventDomainsHash": "c375ea1f83482002382061530649bc6c5a4330d14af927f2ff463880292794d1",
+        "verifiedFullDomainsHash": "acf208ea5ce7dc39b8b6d559d5bc43ed85f7b1e2189ce6e934b114dd136b6bed",
+        "rng": {
+          "version": 2,
+          "algorithm": "brogue-web-ranval32-uint64-level-v2",
+          "streams": [
+            {
+              "a": 2549604079,
+              "b": 2060452983,
+              "c": 1743037916,
+              "d": 3382033924
+            },
+            {
+              "a": 3362814670,
+              "b": 1582507782,
+              "c": 2269951668,
+              "d": 2911758098
+            }
+          ],
+          "currentRNG": 0,
+          "randomNumbersGenerated": 5898913,
+          "cosmeticNumbersGenerated": 1088
+        },
+        "rowsHash": "7d0ecbf759d7e983b721122c468d3b058fb2be4694591c20972141f9d7b35ca1",
+        "blocks": 2549,
+        "rounds": 2549,
+        "roundTicks": 253375
+      }
+    },
+    {
+      "run": "1-B0",
+      "sourceHash": "a19511fbfd3fa4216de0e63b0187b11d3153fdbf5b2f4a9eea1a00e79d19c695",
+      "p99": 248.11912499999744,
+      "roundP95": 100.61666600004537,
+      "commandP95": 448.1906670000026,
+      "elapsed": 473538.984166,
+      "events": 2423,
+      "blocks": 2549,
+      "oos": 0,
+      "semantic": {
+        "stateHash": "40a3cc95461671bb70bbb60c28b8735119b1c9f28bcfcad8333cb751c6b45c68",
+        "eventDomainsHash": "c375ea1f83482002382061530649bc6c5a4330d14af927f2ff463880292794d1",
+        "verifiedFullDomainsHash": "acf208ea5ce7dc39b8b6d559d5bc43ed85f7b1e2189ce6e934b114dd136b6bed",
+        "rng": {
+          "version": 2,
+          "algorithm": "brogue-web-ranval32-uint64-level-v2",
+          "streams": [
+            {
+              "a": 2549604079,
+              "b": 2060452983,
+              "c": 1743037916,
+              "d": 3382033924
+            },
+            {
+              "a": 3362814670,
+              "b": 1582507782,
+              "c": 2269951668,
+              "d": 2911758098
+            }
+          ],
+          "currentRNG": 0,
+          "randomNumbersGenerated": 5898913,
+          "cosmeticNumbersGenerated": 1088
+        },
+        "rowsHash": "7d0ecbf759d7e983b721122c468d3b058fb2be4694591c20972141f9d7b35ca1",
+        "blocks": 2549,
+        "rounds": 2549,
+        "roundTicks": 253375
+      }
+    },
+    {
+      "run": "2-A",
+      "sourceHash": "4511fa6024bf25020427e4df07a7b3849af82986a4160aa5607a2a8a52a53212",
+      "p99": 229.270873999998,
+      "roundP95": 101.44966599997133,
+      "commandP95": 445.3495000000112,
+      "elapsed": 481219.719959,
+      "events": 2423,
+      "blocks": 2549,
+      "oos": 0,
+      "semantic": {
+        "stateHash": "40a3cc95461671bb70bbb60c28b8735119b1c9f28bcfcad8333cb751c6b45c68",
+        "eventDomainsHash": "c375ea1f83482002382061530649bc6c5a4330d14af927f2ff463880292794d1",
+        "verifiedFullDomainsHash": "acf208ea5ce7dc39b8b6d559d5bc43ed85f7b1e2189ce6e934b114dd136b6bed",
+        "rng": {
+          "version": 2,
+          "algorithm": "brogue-web-ranval32-uint64-level-v2",
+          "streams": [
+            {
+              "a": 2549604079,
+              "b": 2060452983,
+              "c": 1743037916,
+              "d": 3382033924
+            },
+            {
+              "a": 3362814670,
+              "b": 1582507782,
+              "c": 2269951668,
+              "d": 2911758098
+            }
+          ],
+          "currentRNG": 0,
+          "randomNumbersGenerated": 5898913,
+          "cosmeticNumbersGenerated": 1088
+        },
+        "rowsHash": "7d0ecbf759d7e983b721122c468d3b058fb2be4694591c20972141f9d7b35ca1",
+        "blocks": 2549,
+        "rounds": 2549,
+        "roundTicks": 253375
+      }
+    },
+    {
+      "run": "2-B0",
+      "sourceHash": "a19511fbfd3fa4216de0e63b0187b11d3153fdbf5b2f4a9eea1a00e79d19c695",
+      "p99": 358.45537499999773,
+      "roundP95": 98.32299999997485,
+      "commandP95": 442.70974999998,
+      "elapsed": 472606.781333,
+      "events": 2423,
+      "blocks": 2549,
+      "oos": 0,
+      "semantic": {
+        "stateHash": "40a3cc95461671bb70bbb60c28b8735119b1c9f28bcfcad8333cb751c6b45c68",
+        "eventDomainsHash": "c375ea1f83482002382061530649bc6c5a4330d14af927f2ff463880292794d1",
+        "verifiedFullDomainsHash": "acf208ea5ce7dc39b8b6d559d5bc43ed85f7b1e2189ce6e934b114dd136b6bed",
+        "rng": {
+          "version": 2,
+          "algorithm": "brogue-web-ranval32-uint64-level-v2",
+          "streams": [
+            {
+              "a": 2549604079,
+              "b": 2060452983,
+              "c": 1743037916,
+              "d": 3382033924
+            },
+            {
+              "a": 3362814670,
+              "b": 1582507782,
+              "c": 2269951668,
+              "d": 2911758098
+            }
+          ],
+          "currentRNG": 0,
+          "randomNumbersGenerated": 5898913,
+          "cosmeticNumbersGenerated": 1088
+        },
+        "rowsHash": "7d0ecbf759d7e983b721122c468d3b058fb2be4694591c20972141f9d7b35ca1",
+        "blocks": 2549,
+        "rounds": 2549,
+        "roundTicks": 253375
+      }
+    },
+    {
+      "run": "3-A",
+      "sourceHash": "4511fa6024bf25020427e4df07a7b3849af82986a4160aa5607a2a8a52a53212",
+      "p99": 376.97258399999555,
+      "roundP95": 178.8667500000447,
+      "commandP95": 962.6604170000064,
+      "elapsed": 595211.371833,
+      "events": 2423,
+      "blocks": 2549,
+      "oos": 0,
+      "semantic": {
+        "stateHash": "40a3cc95461671bb70bbb60c28b8735119b1c9f28bcfcad8333cb751c6b45c68",
+        "eventDomainsHash": "c375ea1f83482002382061530649bc6c5a4330d14af927f2ff463880292794d1",
+        "verifiedFullDomainsHash": "acf208ea5ce7dc39b8b6d559d5bc43ed85f7b1e2189ce6e934b114dd136b6bed",
+        "rng": {
+          "version": 2,
+          "algorithm": "brogue-web-ranval32-uint64-level-v2",
+          "streams": [
+            {
+              "a": 2549604079,
+              "b": 2060452983,
+              "c": 1743037916,
+              "d": 3382033924
+            },
+            {
+              "a": 3362814670,
+              "b": 1582507782,
+              "c": 2269951668,
+              "d": 2911758098
+            }
+          ],
+          "currentRNG": 0,
+          "randomNumbersGenerated": 5898913,
+          "cosmeticNumbersGenerated": 1088
+        },
+        "rowsHash": "7d0ecbf759d7e983b721122c468d3b058fb2be4694591c20972141f9d7b35ca1",
+        "blocks": 2549,
+        "rounds": 2549,
+        "roundTicks": 253375
+      }
+    },
+    {
+      "run": "3-B0",
+      "sourceHash": "a19511fbfd3fa4216de0e63b0187b11d3153fdbf5b2f4a9eea1a00e79d19c695",
+      "p99": 385.71337499999936,
+      "roundP95": 154.2477909999725,
+      "commandP95": 532.5568750000093,
+      "elapsed": 569449.9741669999,
+      "events": 2423,
+      "blocks": 2549,
+      "oos": 0,
+      "semantic": {
+        "stateHash": "40a3cc95461671bb70bbb60c28b8735119b1c9f28bcfcad8333cb751c6b45c68",
+        "eventDomainsHash": "c375ea1f83482002382061530649bc6c5a4330d14af927f2ff463880292794d1",
+        "verifiedFullDomainsHash": "acf208ea5ce7dc39b8b6d559d5bc43ed85f7b1e2189ce6e934b114dd136b6bed",
+        "rng": {
+          "version": 2,
+          "algorithm": "brogue-web-ranval32-uint64-level-v2",
+          "streams": [
+            {
+              "a": 2549604079,
+              "b": 2060452983,
+              "c": 1743037916,
+              "d": 3382033924
+            },
+            {
+              "a": 3362814670,
+              "b": 1582507782,
+              "c": 2269951668,
+              "d": 2911758098
+            }
+          ],
+          "currentRNG": 0,
+          "randomNumbersGenerated": 5898913,
+          "cosmeticNumbersGenerated": 1088
+        },
+        "rowsHash": "7d0ecbf759d7e983b721122c468d3b058fb2be4694591c20972141f9d7b35ca1",
+        "blocks": 2549,
+        "rounds": 2549,
+        "roundTicks": 253375
+      }
+    },
+    {
+      "run": "fixed1-A",
+      "sourceHash": "4511fa6024bf25020427e4df07a7b3849af82986a4160aa5607a2a8a52a53212",
+      "p99": 286.19866600004025,
+      "roundP95": 122.97949900000822,
+      "commandP95": 541.2849580000038,
+      "elapsed": 558447.135667,
+      "events": 2423,
+      "blocks": 2549,
+      "oos": 0,
+      "semantic": {
+        "stateHash": "40a3cc95461671bb70bbb60c28b8735119b1c9f28bcfcad8333cb751c6b45c68",
+        "eventDomainsHash": "c375ea1f83482002382061530649bc6c5a4330d14af927f2ff463880292794d1",
+        "verifiedFullDomainsHash": "acf208ea5ce7dc39b8b6d559d5bc43ed85f7b1e2189ce6e934b114dd136b6bed",
+        "rng": {
+          "version": 2,
+          "algorithm": "brogue-web-ranval32-uint64-level-v2",
+          "streams": [
+            {
+              "a": 2549604079,
+              "b": 2060452983,
+              "c": 1743037916,
+              "d": 3382033924
+            },
+            {
+              "a": 3362814670,
+              "b": 1582507782,
+              "c": 2269951668,
+              "d": 2911758098
+            }
+          ],
+          "currentRNG": 0,
+          "randomNumbersGenerated": 5898913,
+          "cosmeticNumbersGenerated": 1088
+        },
+        "rowsHash": "7d0ecbf759d7e983b721122c468d3b058fb2be4694591c20972141f9d7b35ca1",
+        "blocks": 2549,
+        "rounds": 2549,
+        "roundTicks": 253375
+      }
+    },
+    {
+      "run": "fixed1-B",
+      "sourceHash": "4f0f76a842b9b748678b11406944afc84e9b73a1d05462f5edb4b11eb73b556d",
+      "p99": 463.5984169999938,
+      "roundP95": 170.0305829999852,
+      "commandP95": 675.1604999999981,
+      "elapsed": 673467.9025419999,
+      "events": 2423,
+      "blocks": 2549,
+      "oos": 0,
+      "semantic": {
+        "stateHash": "40a3cc95461671bb70bbb60c28b8735119b1c9f28bcfcad8333cb751c6b45c68",
+        "eventDomainsHash": "c375ea1f83482002382061530649bc6c5a4330d14af927f2ff463880292794d1",
+        "verifiedFullDomainsHash": "acf208ea5ce7dc39b8b6d559d5bc43ed85f7b1e2189ce6e934b114dd136b6bed",
+        "rng": {
+          "version": 2,
+          "algorithm": "brogue-web-ranval32-uint64-level-v2",
+          "streams": [
+            {
+              "a": 2549604079,
+              "b": 2060452983,
+              "c": 1743037916,
+              "d": 3382033924
+            },
+            {
+              "a": 3362814670,
+              "b": 1582507782,
+              "c": 2269951668,
+              "d": 2911758098
+            }
+          ],
+          "currentRNG": 0,
+          "randomNumbersGenerated": 5898913,
+          "cosmeticNumbersGenerated": 1088
+        },
+        "rowsHash": "7d0ecbf759d7e983b721122c468d3b058fb2be4694591c20972141f9d7b35ca1",
+        "blocks": 2549,
+        "rounds": 2549,
+        "roundTicks": 253375
+      }
+    },
+    {
+      "run": "fixed2-B",
+      "sourceHash": "4f0f76a842b9b748678b11406944afc84e9b73a1d05462f5edb4b11eb73b556d",
+      "p99": 337.90741899999557,
+      "roundP95": 138.44320899999002,
+      "commandP95": 603.1669170000005,
+      "elapsed": 601716.98,
+      "events": 2423,
+      "blocks": 2549,
+      "oos": 0,
+      "semantic": {
+        "stateHash": "40a3cc95461671bb70bbb60c28b8735119b1c9f28bcfcad8333cb751c6b45c68",
+        "eventDomainsHash": "c375ea1f83482002382061530649bc6c5a4330d14af927f2ff463880292794d1",
+        "verifiedFullDomainsHash": "acf208ea5ce7dc39b8b6d559d5bc43ed85f7b1e2189ce6e934b114dd136b6bed",
+        "rng": {
+          "version": 2,
+          "algorithm": "brogue-web-ranval32-uint64-level-v2",
+          "streams": [
+            {
+              "a": 2549604079,
+              "b": 2060452983,
+              "c": 1743037916,
+              "d": 3382033924
+            },
+            {
+              "a": 3362814670,
+              "b": 1582507782,
+              "c": 2269951668,
+              "d": 2911758098
+            }
+          ],
+          "currentRNG": 0,
+          "randomNumbersGenerated": 5898913,
+          "cosmeticNumbersGenerated": 1088
+        },
+        "rowsHash": "7d0ecbf759d7e983b721122c468d3b058fb2be4694591c20972141f9d7b35ca1",
+        "blocks": 2549,
+        "rounds": 2549,
+        "roundTicks": 253375
+      },
+      "role": "unpaired contaminated diagnostic; not an acceptance median"
+    }
+  ],
+  "validation": {
+    "selectedFiles": 29,
+    "passed": 619,
+    "existingSkipped": 2,
+    "counterfactualNewContractsFailed": 2,
+    "boundary": 0,
+    "testDependencies": {
+      "files": 717,
+      "errors": []
+    },
+    "vueTsc": 0,
+    "build": 0,
+    "drift": {
+      "files": 8,
+      "passed": 16
+    },
+    "fixturesRewritten": false
+  },
+  "cpuExamples": {
+    "A": [
+      {
+        "block": 419,
+        "commands": [
+          420,
+          421
+        ],
+        "objectiveMs": 262.5846670000028,
+        "gcOverlapMs": 36.67549908161163,
+        "exampleStack": {
+          "selfMs": 62.749,
+          "chain": [
+            "(root)",
+            "processImmediate",
+            "runNextTicks",
+            "runMicrotasks",
+            "drain",
+            "tickAdvancement",
+            "stepAdvancement",
+            "advancementLoop",
+            "monsterTakeTurn",
+            "decision",
+            "takeNativeDecision",
+            "withNativeAttackAction",
+            "withCommittedFacts",
+            "commit",
+            "scoped",
+            "synchronous",
+            "takeNativeDecisionWithinAction",
+            "tryGeometryRayTo",
+            "performSpearAttack",
+            "withNativeAttackAction",
+            "synchronous",
+            "resolveGeometryAttackOn",
+            "withBodyAttackContact",
+            "resolveGeometryAttackAt",
+            "attack",
+            "attackAtContact",
+            "withOrigin",
+            "resolveAttackExtended",
+            "takeDamage",
+            "commit",
+            "takeDamage",
+            "commit",
+            "takeDamageCommitted",
+            "die",
+            "notifyMonsterDeath",
+            "killMonster",
+            "proto.<computed>",
+            "checkpointCombatFactWorld",
+            "checkpointGenerationWorld",
+            "capture"
+          ]
+        }
+      },
+      {
+        "block": 736,
+        "commands": [
+          735,
+          736
+        ],
+        "objectiveMs": 441.12016700000095,
+        "gcOverlapMs": 64.51208090782166,
+        "exampleStack": {
+          "selfMs": 121.70599999999999,
+          "chain": [
+            "(root)",
+            "processImmediate",
+            "runNextTicks",
+            "runMicrotasks",
+            "drain",
+            "tickAdvancement",
+            "stepAdvancement",
+            "advancementLoop",
+            "monsterTakeTurn",
+            "decision",
+            "takeNativeDecision",
+            "withNativeAttackAction",
+            "withCommittedFacts",
+            "commit",
+            "scoped",
+            "synchronous",
+            "takeNativeDecisionWithinAction",
+            "attack",
+            "attackAtContact",
+            "withOrigin",
+            "resolveAttackExtended",
+            "takeDamage",
+            "commit",
+            "takeDamage",
+            "takeDamageCommitted",
+            "die",
+            "notifyMonsterDeath",
+            "killMonster",
+            "proto.<computed>",
+            "checkpointCombatFactWorld",
+            "checkpointGenerationWorld",
+            "capture"
+          ]
+        }
+      },
+      {
+        "block": 769,
+        "commands": [
+          768,
+          769
+        ],
+        "objectiveMs": 435.8024590000059,
+        "gcOverlapMs": 66.45175206661224,
+        "exampleStack": {
+          "selfMs": 115.206,
+          "chain": [
+            "(root)",
+            "processImmediate",
+            "runNextTicks",
+            "runMicrotasks",
+            "drain",
+            "tickAdvancement",
+            "stepAdvancement",
+            "advancementLoop",
+            "objectiveTimeBlock",
+            "proto.<computed>",
+            "objectiveTimeBlock",
+            "tickCreatureStatuses",
+            "resolveBurningDamage",
+            "withOrigin",
+            "takeDamage",
+            "commit",
+            "takeDamage",
+            "takeDamageCommitted",
+            "die",
+            "notifyMonsterDeath",
+            "killMonster",
+            "proto.<computed>",
+            "checkpointCombatFactWorld",
+            "checkpointGenerationWorld",
+            "capture"
+          ]
+        }
+      },
+      {
+        "block": 1243,
+        "commands": [
+          1181
+        ],
+        "objectiveMs": 573.2564589999965,
+        "gcOverlapMs": 80.41975176334381,
+        "exampleStack": {
+          "selfMs": 150.209,
+          "chain": [
+            "(root)",
+            "processImmediate",
+            "runNextTicks",
+            "runMicrotasks",
+            "drain",
+            "tickAdvancement",
+            "stepAdvancement",
+            "advancementLoop",
+            "monsterTakeTurn",
+            "decision",
+            "takeNativeDecision",
+            "withNativeAttackAction",
+            "withCommittedFacts",
+            "commit",
+            "scoped",
+            "synchronous",
+            "takeNativeDecisionWithinAction",
+            "attack",
+            "attackAtContact",
+            "withOrigin",
+            "resolveAttackExtended",
+            "drainCurrentHp",
+            "takeDamage",
+            "commit",
+            "takeDamage",
+            "takeDamageCommitted",
+            "die",
+            "notifyMonsterDeath",
+            "killMonster",
+            "proto.<computed>",
+            "checkpointCombatFactWorld",
+            "checkpointGenerationWorld",
+            "capture"
+          ]
+        }
+      },
+      {
+        "block": 1634,
+        "commands": [
+          1600,
+          1601
+        ],
+        "objectiveMs": 847.1235409999499,
+        "gcOverlapMs": 110.05995535850525,
+        "exampleStack": {
+          "selfMs": 208.42200000000003,
+          "chain": [
+            "(root)",
+            "processImmediate",
+            "runNextTicks",
+            "runMicrotasks",
+            "drain",
+            "tickAdvancement",
+            "stepAdvancement",
+            "advancementLoop",
+            "monsterTakeTurn",
+            "decision",
+            "takeNativeDecision",
+            "withNativeAttackAction",
+            "withCommittedFacts",
+            "commit",
+            "scoped",
+            "synchronous",
+            "takeNativeDecisionWithinAction",
+            "tryUseBolt",
+            "proto.<computed>",
+            "castMonsterBolt",
+            "runicEffectTransaction",
+            "castMonsterBoltBody",
+            "traceBolt",
+            "onCell",
+            "withBodyAttackContact",
+            "withOrigin",
+            "proto.<computed>",
+            "applyMonsterBoltHit",
+            "takeDamage",
+            "commit",
+            "takeDamage",
+            "takeDamageCommitted",
+            "die",
+            "notifyMonsterDeath",
+            "killMonster",
+            "proto.<computed>",
+            "checkpointCombatFactWorld",
+            "checkpointGenerationWorld",
+            "capture"
+          ]
+        }
+      },
+      {
+        "block": 1650,
+        "commands": [
+          1613
+        ],
+        "objectiveMs": 975.0054169999785,
+        "gcOverlapMs": 137.50266766548157,
+        "exampleStack": {
+          "selfMs": 230.49499999999998,
+          "chain": [
+            "(root)",
+            "processImmediate",
+            "runNextTicks",
+            "runMicrotasks",
+            "drain",
+            "tickAdvancement",
+            "stepAdvancement",
+            "advancementLoop",
+            "objectiveTimeBlock",
+            "proto.<computed>",
+            "objectiveTimeBlock",
+            "tickCreatureStatuses",
+            "resolveBurningDamage",
+            "withOrigin",
+            "takeDamage",
+            "commit",
+            "takeDamage",
+            "takeDamageCommitted",
+            "die",
+            "notifyMonsterDeath",
+            "killMonster",
+            "proto.<computed>",
+            "checkpointCombatFactWorld",
+            "checkpointGenerationWorld",
+            "capture"
+          ]
+        }
+      },
+      {
+        "block": 1686,
+        "commands": [
+          1644
+        ],
+        "objectiveMs": 169.9726259999734,
+        "gcOverlapMs": 6.523458003997803,
+        "exampleStack": {
+          "selfMs": 9.957,
+          "chain": [
+            "(root)",
+            "processImmediate",
+            "runNextTicks",
+            "runMicrotasks",
+            "drain",
+            "tickAdvancement",
+            "stepAdvancement",
+            "advancementLoop",
+            "monsterTakeTurn",
+            "decision",
+            "takeNativeDecision",
+            "withNativeAttackAction",
+            "withCommittedFacts",
+            "commit",
+            "scoped",
+            "synchronous",
+            "takeNativeDecisionWithinAction",
+            "trySummon",
+            "summonMinionsFor",
+            "set",
+            "attachCreature",
+            "emit",
+            "dispatch",
+            "invoke",
+            "validateSources",
+            "rows",
+            "collect"
+          ]
+        }
+      },
+      {
+        "block": 1738,
+        "commands": [
+          1688,
+          1689
+        ],
+        "objectiveMs": 856.372417000006,
+        "gcOverlapMs": 210.89754116535187,
+        "exampleStack": {
+          "selfMs": 185.293,
+          "chain": [
+            "(root)",
+            "processImmediate",
+            "runNextTicks",
+            "runMicrotasks",
+            "drain",
+            "tickAdvancement",
+            "stepAdvancement",
+            "advancementLoop",
+            "monsterTakeTurn",
+            "decision",
+            "takeNativeDecision",
+            "withNativeAttackAction",
+            "withCommittedFacts",
+            "commit",
+            "scoped",
+            "synchronous",
+            "takeNativeDecisionWithinAction",
+            "tryUseBolt",
+            "proto.<computed>",
+            "castMonsterBolt",
+            "runicEffectTransaction",
+            "castMonsterBoltBody",
+            "traceBolt",
+            "onCell",
+            "withBodyAttackContact",
+            "withOrigin",
+            "proto.<computed>",
+            "applyMonsterBoltHit",
+            "attack",
+            "attackAtContact",
+            "withOrigin",
+            "resolveAttack",
+            "takeDamage",
+            "commit",
+            "takeDamage",
+            "takeDamageCommitted",
+            "die",
+            "notifyMonsterDeath",
+            "killMonster",
+            "proto.<computed>",
+            "checkpointCombatFactWorld",
+            "checkpointGenerationWorld",
+            "capture"
+          ]
+        }
+      },
+      {
+        "block": 1867,
+        "commands": [
+          1814,
+          1815
+        ],
+        "objectiveMs": 1007.6163320000051,
+        "gcOverlapMs": 282.66703844070435,
+        "exampleStack": {
+          "selfMs": 202.043,
+          "chain": [
+            "(root)",
+            "processImmediate",
+            "runNextTicks",
+            "runMicrotasks",
+            "drain",
+            "tickAdvancement",
+            "stepAdvancement",
+            "advancementLoop",
+            "objectiveTimeBlock",
+            "proto.<computed>",
+            "objectiveTimeBlock",
+            "applyEnvironmentalEffects",
+            "proto.<computed>",
+            "applyEnvironmentalEffects",
+            "runicEffectTransaction",
+            "applyEnvironmentalEffectsBody",
+            "checkEntity",
+            "takeDamage",
+            "commit",
+            "takeDamage",
+            "takeDamageCommitted",
+            "die",
+            "notifyMonsterDeath",
+            "killMonster",
+            "proto.<computed>",
+            "checkpointCombatFactWorld",
+            "checkpointGenerationWorld",
+            "capture"
+          ]
+        }
+      },
+      {
+        "block": 1868,
+        "commands": [
+          1815,
+          1816
+        ],
+        "objectiveMs": 979.3697499999544,
+        "gcOverlapMs": 157.4378341436386,
+        "exampleStack": {
+          "selfMs": 195.622,
+          "chain": [
+            "(root)",
+            "processImmediate",
+            "runNextTicks",
+            "runMicrotasks",
+            "drain",
+            "tickAdvancement",
+            "stepAdvancement",
+            "advancementLoop",
+            "objectiveTimeBlock",
+            "proto.<computed>",
+            "objectiveTimeBlock",
+            "applyEnvironmentalEffects",
+            "proto.<computed>",
+            "applyEnvironmentalEffects",
+            "runicEffectTransaction",
+            "applyEnvironmentalEffectsBody",
+            "checkEntity",
+            "takeDamage",
+            "commit",
+            "takeDamage",
+            "takeDamageCommitted",
+            "die",
+            "notifyMonsterDeath",
+            "killMonster",
+            "proto.<computed>",
+            "checkpointCombatFactWorld",
+            "checkpointGenerationWorld",
+            "capture"
+          ]
+        }
+      },
+      {
+        "block": 2354,
+        "commands": [
+          2284,
+          2285
+        ],
+        "objectiveMs": 215.73366600007284,
+        "gcOverlapMs": 8.047624111175537,
+        "exampleStack": {
+          "selfMs": 16.333000000000002,
+          "chain": [
+            "(root)",
+            "processImmediate",
+            "runNextTicks",
+            "runMicrotasks",
+            "drain",
+            "tickAdvancement",
+            "stepAdvancement",
+            "advancementLoop",
+            "objectiveTimeBlock",
+            "proto.<computed>",
+            "objectiveTimeBlock",
+            "spawnPeriodicHorde",
+            "spawnHordeAt",
+            "set",
+            "attachCreature",
+            "emit",
+            "dispatch",
+            "invoke",
+            "validateSources",
+            "rows",
+            "collect"
+          ]
+        }
+      }
+    ],
+    "B0": [
+      {
+        "block": 419,
+        "commands": [
+          420,
+          421
+        ],
+        "objectiveMs": 227.7808330000007,
+        "gcOverlapMs": 30.340205788612366,
+        "exampleStack": {
+          "selfMs": 55.167,
+          "chain": [
+            "(root)",
+            "processImmediate",
+            "runNextTicks",
+            "runMicrotasks",
+            "drain",
+            "tickAdvancement",
+            "stepAdvancement",
+            "advancementLoop",
+            "monsterTakeTurn",
+            "decision",
+            "takeNativeDecision",
+            "withNativeAttackAction",
+            "withCommittedFacts",
+            "commit",
+            "scoped",
+            "synchronous",
+            "takeNativeDecisionWithinAction",
+            "tryGeometryRayTo",
+            "performSpearAttack",
+            "withNativeAttackAction",
+            "synchronous",
+            "resolveGeometryAttackOn",
+            "withBodyAttackContact",
+            "resolveGeometryAttackAt",
+            "attack",
+            "attackAtContact",
+            "withOrigin",
+            "resolveAttackExtended",
+            "takeDamage",
+            "commit",
+            "takeDamage",
+            "commit",
+            "takeDamageCommitted",
+            "die",
+            "notifyMonsterDeath",
+            "killMonster",
+            "proto.<computed>",
+            "checkpointCombatFactWorld",
+            "checkpointGenerationWorld",
+            "capture"
+          ]
+        }
+      },
+      {
+        "block": 736,
+        "commands": [
+          735,
+          736
+        ],
+        "objectiveMs": 378.3085009999995,
+        "gcOverlapMs": 53.664501309394836,
+        "exampleStack": {
+          "selfMs": 96.50300000000001,
+          "chain": [
+            "(root)",
+            "processImmediate",
+            "runNextTicks",
+            "runMicrotasks",
+            "drain",
+            "tickAdvancement",
+            "stepAdvancement",
+            "advancementLoop",
+            "monsterTakeTurn",
+            "decision",
+            "takeNativeDecision",
+            "withNativeAttackAction",
+            "withCommittedFacts",
+            "commit",
+            "scoped",
+            "synchronous",
+            "takeNativeDecisionWithinAction",
+            "attack",
+            "attackAtContact",
+            "withOrigin",
+            "resolveAttackExtended",
+            "takeDamage",
+            "commit",
+            "takeDamage",
+            "takeDamageCommitted",
+            "die",
+            "notifyMonsterDeath",
+            "killMonster",
+            "proto.<computed>",
+            "checkpointCombatFactWorld",
+            "checkpointGenerationWorld",
+            "capture"
+          ]
+        }
+      },
+      {
+        "block": 769,
+        "commands": [
+          768,
+          769
+        ],
+        "objectiveMs": 368.3454999999958,
+        "gcOverlapMs": 53.18816375732422,
+        "exampleStack": {
+          "selfMs": 96.376,
+          "chain": [
+            "(root)",
+            "processImmediate",
+            "runNextTicks",
+            "runMicrotasks",
+            "drain",
+            "tickAdvancement",
+            "stepAdvancement",
+            "advancementLoop",
+            "objectiveTimeBlock",
+            "proto.<computed>",
+            "objectiveTimeBlock",
+            "tickCreatureStatuses",
+            "resolveBurningDamage",
+            "withOrigin",
+            "takeDamage",
+            "commit",
+            "takeDamage",
+            "takeDamageCommitted",
+            "die",
+            "notifyMonsterDeath",
+            "killMonster",
+            "proto.<computed>",
+            "checkpointCombatFactWorld",
+            "checkpointGenerationWorld",
+            "capture"
+          ]
+        }
+      },
+      {
+        "block": 1243,
+        "commands": [
+          1181
+        ],
+        "objectiveMs": 466.8248329999915,
+        "gcOverlapMs": 65.83129000663757,
+        "exampleStack": {
+          "selfMs": 122.584,
+          "chain": [
+            "(root)",
+            "processImmediate",
+            "runNextTicks",
+            "runMicrotasks",
+            "drain",
+            "tickAdvancement",
+            "stepAdvancement",
+            "advancementLoop",
+            "monsterTakeTurn",
+            "decision",
+            "takeNativeDecision",
+            "withNativeAttackAction",
+            "withCommittedFacts",
+            "commit",
+            "scoped",
+            "synchronous",
+            "takeNativeDecisionWithinAction",
+            "attack",
+            "attackAtContact",
+            "withOrigin",
+            "resolveAttackExtended",
+            "drainCurrentHp",
+            "takeDamage",
+            "commit",
+            "takeDamage",
+            "takeDamageCommitted",
+            "die",
+            "notifyMonsterDeath",
+            "killMonster",
+            "proto.<computed>",
+            "checkpointCombatFactWorld",
+            "checkpointGenerationWorld",
+            "capture"
+          ]
+        }
+      },
+      {
+        "block": 1634,
+        "commands": [
+          1600,
+          1601
+        ],
+        "objectiveMs": 711.6572089999972,
+        "gcOverlapMs": 87.51842129230499,
+        "exampleStack": {
+          "selfMs": 173.706,
+          "chain": [
+            "(root)",
+            "processImmediate",
+            "runNextTicks",
+            "runMicrotasks",
+            "drain",
+            "tickAdvancement",
+            "stepAdvancement",
+            "advancementLoop",
+            "monsterTakeTurn",
+            "decision",
+            "takeNativeDecision",
+            "withNativeAttackAction",
+            "withCommittedFacts",
+            "commit",
+            "scoped",
+            "synchronous",
+            "takeNativeDecisionWithinAction",
+            "tryUseBolt",
+            "proto.<computed>",
+            "castMonsterBolt",
+            "runicEffectTransaction",
+            "castMonsterBoltBody",
+            "traceBolt",
+            "onCell",
+            "withBodyAttackContact",
+            "withOrigin",
+            "proto.<computed>",
+            "applyMonsterBoltHit",
+            "takeDamage",
+            "commit",
+            "takeDamage",
+            "takeDamageCommitted",
+            "die",
+            "notifyMonsterDeath",
+            "killMonster",
+            "proto.<computed>",
+            "checkpointCombatFactWorld",
+            "checkpointGenerationWorld",
+            "capture"
+          ]
+        }
+      },
+      {
+        "block": 1650,
+        "commands": [
+          1613
+        ],
+        "objectiveMs": 720.8072910000046,
+        "gcOverlapMs": 117.99950242042542,
+        "exampleStack": {
+          "selfMs": 182.836,
+          "chain": [
+            "(root)",
+            "processImmediate",
+            "runNextTicks",
+            "runMicrotasks",
+            "drain",
+            "tickAdvancement",
+            "stepAdvancement",
+            "advancementLoop",
+            "objectiveTimeBlock",
+            "proto.<computed>",
+            "objectiveTimeBlock",
+            "tickCreatureStatuses",
+            "resolveBurningDamage",
+            "withOrigin",
+            "takeDamage",
+            "commit",
+            "takeDamage",
+            "takeDamageCommitted",
+            "die",
+            "notifyMonsterDeath",
+            "killMonster",
+            "proto.<computed>",
+            "checkpointCombatFactWorld",
+            "checkpointGenerationWorld",
+            "capture"
+          ]
+        }
+      },
+      {
+        "block": 1686,
+        "commands": [
+          1644
+        ],
+        "objectiveMs": 152.59149900000193,
+        "gcOverlapMs": 5.713167071342468,
+        "exampleStack": {
+          "selfMs": 13.831000000000001,
+          "chain": [
+            "(root)",
+            "processImmediate",
+            "runNextTicks",
+            "runMicrotasks",
+            "drain",
+            "tickAdvancement",
+            "stepAdvancement",
+            "advancementLoop",
+            "monsterTakeTurn",
+            "decision",
+            "takeNativeDecision",
+            "withNativeAttackAction",
+            "withCommittedFacts",
+            "commit",
+            "scoped",
+            "synchronous",
+            "takeNativeDecisionWithinAction",
+            "trySummon",
+            "summonMinionsFor",
+            "set",
+            "attachCreature",
+            "emit",
+            "dispatch",
+            "invoke",
+            "validateSources",
+            "rows",
+            "collect"
+          ]
+        }
+      },
+      {
+        "block": 1738,
+        "commands": [
+          1688,
+          1689
+        ],
+        "objectiveMs": 816.539208000002,
+        "gcOverlapMs": 175.43995928764343,
+        "exampleStack": {
+          "selfMs": 165.04500000000002,
+          "chain": [
+            "(root)",
+            "processImmediate",
+            "runNextTicks",
+            "runMicrotasks",
+            "drain",
+            "tickAdvancement",
+            "stepAdvancement",
+            "advancementLoop",
+            "monsterTakeTurn",
+            "decision",
+            "takeNativeDecision",
+            "withNativeAttackAction",
+            "withCommittedFacts",
+            "commit",
+            "scoped",
+            "synchronous",
+            "takeNativeDecisionWithinAction",
+            "tryUseBolt",
+            "proto.<computed>",
+            "castMonsterBolt",
+            "runicEffectTransaction",
+            "castMonsterBoltBody",
+            "traceBolt",
+            "onCell",
+            "withBodyAttackContact",
+            "withOrigin",
+            "proto.<computed>",
+            "applyMonsterBoltHit",
+            "attack",
+            "attackAtContact",
+            "withOrigin",
+            "resolveAttack",
+            "takeDamage",
+            "commit",
+            "takeDamage",
+            "takeDamageCommitted",
+            "die",
+            "notifyMonsterDeath",
+            "killMonster",
+            "proto.<computed>",
+            "checkpointCombatFactWorld",
+            "checkpointGenerationWorld",
+            "capture"
+          ]
+        }
+      },
+      {
+        "block": 1867,
+        "commands": [
+          1814,
+          1815
+        ],
+        "objectiveMs": 991.1474160000216,
+        "gcOverlapMs": 272.6239140033722,
+        "exampleStack": {
+          "selfMs": 196.086,
+          "chain": [
+            "(root)",
+            "processImmediate",
+            "runNextTicks",
+            "runMicrotasks",
+            "drain",
+            "tickAdvancement",
+            "stepAdvancement",
+            "advancementLoop",
+            "objectiveTimeBlock",
+            "proto.<computed>",
+            "objectiveTimeBlock",
+            "applyEnvironmentalEffects",
+            "proto.<computed>",
+            "applyEnvironmentalEffects",
+            "runicEffectTransaction",
+            "applyEnvironmentalEffectsBody",
+            "checkEntity",
+            "takeDamage",
+            "commit",
+            "takeDamage",
+            "takeDamageCommitted",
+            "die",
+            "notifyMonsterDeath",
+            "killMonster",
+            "proto.<computed>",
+            "checkpointCombatFactWorld",
+            "checkpointGenerationWorld",
+            "capture"
+          ]
+        }
+      },
+      {
+        "block": 1868,
+        "commands": [
+          1815,
+          1816
+        ],
+        "objectiveMs": 945.8527079999621,
+        "gcOverlapMs": 170.32316720485687,
+        "exampleStack": {
+          "selfMs": 182.832,
+          "chain": [
+            "(root)",
+            "processImmediate",
+            "runNextTicks",
+            "runMicrotasks",
+            "drain",
+            "tickAdvancement",
+            "stepAdvancement",
+            "advancementLoop",
+            "objectiveTimeBlock",
+            "proto.<computed>",
+            "objectiveTimeBlock",
+            "applyEnvironmentalEffects",
+            "proto.<computed>",
+            "applyEnvironmentalEffects",
+            "runicEffectTransaction",
+            "applyEnvironmentalEffectsBody",
+            "checkEntity",
+            "takeDamage",
+            "commit",
+            "takeDamage",
+            "takeDamageCommitted",
+            "die",
+            "notifyMonsterDeath",
+            "killMonster",
+            "proto.<computed>",
+            "checkpointCombatFactWorld",
+            "checkpointGenerationWorld",
+            "capture"
+          ]
+        }
+      },
+      {
+        "block": 2354,
+        "commands": [
+          2284,
+          2285
+        ],
+        "objectiveMs": 283.02537599997595,
+        "gcOverlapMs": 14.13270890712738,
+        "exampleStack": {
+          "selfMs": 18.623,
+          "chain": [
+            "(root)",
+            "processImmediate",
+            "runNextTicks",
+            "runMicrotasks",
+            "drain",
+            "tickAdvancement",
+            "stepAdvancement",
+            "advancementLoop",
+            "objectiveTimeBlock",
+            "proto.<computed>",
+            "objectiveTimeBlock",
+            "spawnPeriodicHorde",
+            "spawnHordeAt",
+            "set",
+            "attachCreature",
+            "emit",
+            "dispatch",
+            "invoke",
+            "validateSources",
+            "rows",
+            "collect"
+          ]
+        }
+      }
+    ]
+  },
+  "equalityChecks": [
+    {
+      "run": "1-B0",
+      "leaves": 3380356,
+      "domainLeaves": 9772,
+      "differences": 0
+    },
+    {
+      "run": "2-A",
+      "leaves": 3380356,
+      "domainLeaves": 9772,
+      "differences": 0
+    },
+    {
+      "run": "2-B0",
+      "leaves": 3380356,
+      "domainLeaves": 9772,
+      "differences": 0
+    },
+    {
+      "run": "3-A",
+      "leaves": 3380356,
+      "domainLeaves": 9772,
+      "differences": 0
+    },
+    {
+      "run": "3-B0",
+      "leaves": 3380356,
+      "domainLeaves": 9772,
+      "differences": 0
+    },
+    {
+      "run": "cpu-A",
+      "leaves": 3380356,
+      "domainLeaves": 9772,
+      "differences": 0
+    },
+    {
+      "run": "cpu-B0",
+      "leaves": 3380356,
+      "domainLeaves": 9772,
+      "differences": 0
+    },
+    {
+      "run": "fixed1-A",
+      "leaves": 3380356,
+      "domainLeaves": 9772,
+      "differences": 0
+    },
+    {
+      "run": "fixed1-B",
+      "leaves": 3380356,
+      "domainLeaves": 9772,
+      "differences": 0
+    },
+    {
+      "run": "fixed2-B",
+      "leaves": 3380356,
+      "domainLeaves": 9772,
+      "differences": 0
+    }
+  ],
+  "sleepAudit": [
+    {
+      "run": "1-A",
+      "start": "2026-10-22T20:14:58.483000+00:00",
+      "end": "2026-10-22T20:22:52.521290+00:00",
+      "sleepWake": []
+    },
+    {
+      "run": "1-B0",
+      "start": "2026-10-22T20:23:00.522000+00:00",
+      "end": "2026-10-22T20:30:54.060984+00:00",
+      "sleepWake": []
+    },
+    {
+      "run": "2-A",
+      "start": "2026-10-22T20:39:02.907000+00:00",
+      "end": "2026-10-22T20:47:04.126720+00:00",
+      "sleepWake": []
+    },
+    {
+      "run": "2-B0",
+      "start": "2026-10-22T20:31:02.169000+00:00",
+      "end": "2026-10-22T20:38:54.775781+00:00",
+      "sleepWake": []
+    },
+    {
+      "run": "3-A",
+      "start": "2026-10-22T20:47:12.470000+00:00",
+      "end": "2026-10-22T20:57:07.681372+00:00",
+      "sleepWake": []
+    },
+    {
+      "run": "3-B0",
+      "start": "2026-10-22T20:57:15.934000+00:00",
+      "end": "2026-10-22T21:06:45.383974+00:00",
+      "sleepWake": []
+    },
+    {
+      "run": "cpu-A",
+      "start": "2026-10-22T21:06:55.395000+00:00",
+      "end": "2026-10-22T21:15:34.139436+00:00",
+      "sleepWake": []
+    },
+    {
+      "run": "cpu-B0",
+      "start": "2026-10-22T21:15:42.761000+00:00",
+      "end": "2026-10-22T21:23:49.695250+00:00",
+      "sleepWake": []
+    },
+    {
+      "run": "fixed1-A",
+      "start": "2026-10-22T21:40:55.617000+00:00",
+      "end": "2026-10-22T21:50:14.064136+00:00",
+      "sleepWake": []
+    },
+    {
+      "run": "fixed1-B",
+      "start": "2026-10-22T21:50:23.739000+00:00",
+      "end": "2026-10-22T22:01:37.206903+00:00",
+      "sleepWake": []
+    },
+    {
+      "run": "fixed2-B",
+      "start": "2026-10-22T22:01:46.528000+00:00",
+      "end": "2026-10-22T22:11:48.244980+00:00",
+      "sleepWake": []
+    }
+  ],
+  "queueStop": {
+    "utc": "2026-10-22T22:12:10.635730+00:00",
+    "reason": "Repeated external Unity batch contention; insufficient quiet three-round cohort",
+    "completed": [
+      "fixed1-A",
+      "fixed1-B",
+      "fixed2-B"
+    ],
+    "notStarted": [
+      "fixed2-A",
+      "fixed3-A",
+      "fixed3-B"
+    ],
+    "mechanism": "Own script entry gate exits 75 before boot/measurement",
+    "observedExitCode": 75
+  },
+  "finalSourceCheck": {
+    "sourceFiles": 1551,
+    "workspaceAndExportMatch": true,
+    "differences": []
+  }
+}

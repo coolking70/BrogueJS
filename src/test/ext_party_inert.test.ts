@@ -8,6 +8,9 @@ import { logger } from '../engine/Systems/Logger';
 import '../i18n';
 it('captures phase6 unchanged run bytes', () => {
  vi.spyOn(Date, 'now').mockReturnValue(1792252800000);
+ // No-party objective work must never enumerate the P1d stationed roster.
+ // Spy on the prototype so the fixture's authoritative own-key check stays intact.
+ const stationed = vi.spyOn(Game.prototype as any, 'activeStationedResidents', 'get');
  const rows=[];
  // Explicit module-bearing configuration lets the dependency guard see this fixed fixture's prerequisites.
  const legacy = {modules:['combat','crafting','foraging','giants','growth','loot','narrative','settlement']};
@@ -24,5 +27,22 @@ it('captures phase6 unchanged run bytes', () => {
  }
  expect(rows).toEqual(expected);
  expect(rows).toHaveLength(5);
+ expect(stationed).not.toHaveBeenCalled();
  vi.restoreAllMocks();
 },120000);
+
+it('no-party light occupancy bypasses the party roster view', () => {
+ const game = new Game({seed:42});
+ const allies = vi.spyOn(Game.prototype, 'nativeAllyActors', 'get');
+ try {
+  expect(game.party).toBeUndefined();
+  const occupied = (x:number,y:number) => (game as any).hasCreatureAtForLight(x,y);
+  expect(occupied(game.player.x,game.player.y)).toBe(true);
+  const monster = game.monsters.find(m => m.hp > 0);
+  if(monster) expect(occupied(monster.x,monster.y)).toBe(true);
+  expect(occupied(-1,-1)).toBe(false);
+  expect(allies).not.toHaveBeenCalled();
+ } finally {
+  allies.mockRestore();game.disposeRecording();game.extensionRuntime?.unload();
+ }
+});

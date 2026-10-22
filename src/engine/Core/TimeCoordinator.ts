@@ -144,7 +144,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                     soonestTurn = m.ticksUntilTurn;
                 }
             }
-            for(const actor of ports.residents?.actors()??[]){
+            if(ports.residents)for(const actor of ports.residents.actors()){
                 if(actor.hp>0&&(!actions||actions.isDecisionOwner(actor.id))&&!actions?.isBusy(actor.id))
                     soonestTurn=Math.min(soonestTurn,actor.ticksUntilTurn);
             }
@@ -170,7 +170,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                     m.ticksUntilTurn -= soonestTurn;
                 }
             }
-            for(const actor of ports.residents?.actors()??[]){
+            if(ports.residents)for(const actor of ports.residents.actors()){
                 if(actor.hp>0&&(!actions||actions.isDecisionOwner(actor.id))&&!actions?.isBusy(actor.id))
                     actor.ticksUntilTurn-=soonestTurn;
             }
@@ -239,10 +239,15 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                 // 再允许攻击建立完整新债务。忙碌玩家的镜像由 advanceActionTime
                 // 唯一倒计时；没有 scheduler 的经典路径仍保持 CE 原顺序。
                 if (!ports.party && actions && !playerWasBusy) ports.world.player.ticksUntilTurn -= soonestTurn;
-                const dueActors = actions
-                    ? [...ports.world.monsters, ...(ports.residents?.actors()??[]), ...(ports.party?ports.party.actors().filter(a=>actions.isBusy(a.id)):playerWasBusy ? [ports.world.player] : [])]
-                        .filter(actor => actions.isDecisionOwner(actor.id)).sort((a, b) => a.id - b.id)
-                    : [...ports.world.monsters,...(ports.residents?.actors()??[])];
+                // Snapshot the native list once. Absent resident/party ports do
+                // not need empty roster arrays on every scheduler boundary.
+                let dueActors: Creature[] = [...ports.world.monsters];
+                if (ports.residents) dueActors.push(...ports.residents.actors());
+                if (actions) {
+                    if (ports.party) dueActors.push(...ports.party.actors().filter(a=>actions.isBusy(a.id)));
+                    else if (playerWasBusy) dueActors.push(ports.world.player);
+                    dueActors = dueActors.filter(actor => actions.isDecisionOwner(actor.id)).sort((a, b) => a.id - b.id);
+                }
                 for (const actor of dueActors) {
                     const resident=ports.residents?.actors().includes(actor);
                     if (actor !== ports.world.player && !ports.party?.actors().includes(actor) && !resident && !ports.world.monsters.includes(actor as Monster)) continue;
