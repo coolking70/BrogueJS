@@ -9,6 +9,7 @@ import {resolve,dirname,relative} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {execFileSync,spawnSync} from 'node:child_process';
 import {randomUUID} from 'node:crypto';
+import {runSupplements} from './ext-perf-supplements.mjs';
 import {cpus,totalmem,platform,arch} from 'node:os';
 import {hash,write} from './ext-perf-common.mjs';
 import {perfIdentity,loadPerfIdentity,comparablePrefix,pendingPerfBaseline} from './ext-perf-selection.mjs';
@@ -28,7 +29,7 @@ const read=p=>JSON.parse(readFileSync(p,'utf8'));
 const git=(root,...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8'}).trim();
 const result={version:1,status:'running',hard:'pending',options,startedAt:new Date().toISOString(),
  runner:{invocation:randomUUID(),job:process.env.GITHUB_JOB??null,shard:options.shard??null,node:process.version,cpu:cpus()[0]?.model,cpus:cpus().length,memoryBytes:totalmem(),platform:platform(),arch:arch(),heapMiB:3072,runId:process.env.GITHUB_RUN_ID??null,attempt:process.env.GITHUB_RUN_ATTEMPT??null},
- identities:{},steps:[],runs:[],gates:[],
+ identities:{},steps:[],runs:[],gates:[],...(options.shard?{supplementContractVersion:1}:{}),
  scope:options.limit?`Local diagnostic: first ${options.limit} production events of both registered routes, plus bounded feature scenes. This is not full-route timing or D20 calibration.`:sameIdentity?'Same-identity regression: both revisions recapture the frozen 6c4 commands with current codec headers; A/B recording, semantic/RNG/domain/final-state equality required. Historical budget is not applied to the new A. D6 thresholds unchanged.':'Registered A/B complete classic/all routes and an outcome-verified identical all prefix. Prefix length is derived from production captures; it is NOT a D20 calibration.',
  policyVersion,policy:timingPolicy};
 const fmt=v=>typeof v==='number'?v.toFixed(2):'—';
@@ -107,7 +108,7 @@ try {
  }
  result.identities.control={commit:git(control,'rev-parse','HEAD'),srcTree:git(control,'rev-parse','HEAD:src'),sourceHash:hash(execFileSync('git',['diff','HEAD','--','scripts','.github'],{cwd:control,encoding:'utf8'}))};
  result.instrumentationHash=instrumentationHash;
- result.toolHashes=Object.fromEntries(['merge-ext-perf-ab.mjs','ext-perf-source-snapshot.mjs','run-ext-perf-ab.mjs','generate-ext-perf.mjs','ext-perf-route-recovery.mjs','profile-ext-6c1.mjs','profile-ext-6c3.mjs','profile-ext-6c4.mjs','ext-perf-selection.mjs','ext-perf-ab-policy.mjs','capture-ext-perf-prefix.mjs','regenerate-ext-perf.mjs','profile-ext-perf.mjs','ext-perf-common.mjs','compare-ext-perf.mjs','ext-perf-budget.mjs'].map(n=>[n,hash(readFileSync(resolve(control,'scripts',n),'utf8'))]));
+ result.toolHashes=Object.fromEntries(['merge-ext-perf-ab.mjs','ext-perf-supplements.mjs','run-ext-perf-supplements.mjs','ext-perf-source-snapshot.mjs','run-ext-perf-ab.mjs','generate-ext-perf.mjs','ext-perf-route-recovery.mjs','profile-ext-6c1.mjs','profile-ext-6c3.mjs','profile-ext-6c4.mjs','ext-perf-selection.mjs','ext-perf-ab-policy.mjs','capture-ext-perf-prefix.mjs','regenerate-ext-perf.mjs','profile-ext-perf.mjs','ext-perf-common.mjs','compare-ext-perf.mjs','ext-perf-budget.mjs'].map(n=>[n,hash(readFileSync(resolve(control,'scripts',n),'utf8'))]));
  const inputs={},routePaths={},sourcePaths={};
  for(const id of options.cases){
   routePaths[`A-${id}`]=resolve(control,baseline.entry.route(id));
@@ -177,9 +178,13 @@ try {
   const args=options.cases.map(id=>`${id}=${resolve(out,`round-${round}`,`A-${id}-full`)}`);
   run(`original-budget-${round}`,roots.A,'ext-perf-budget.mjs',['check',resolve(control,baseline.entry.manifest),...args]);
  }
- if(generated&&options.shard!=='all-prefix'){run('C1-bounded-supplement',roots.B,'profile-ext-6c1.mjs',[resolve(out,'c1-scenes.json')]);result.c1Scenes=read(resolve(out,'c1-scenes.json'));}
- if(options.headIdentity==='6c3'&&options.shard!=='all-prefix'){run('C3-bounded-supplement',roots.B,'profile-ext-6c3.mjs',[resolve(out,'c3-scenes.json')]);result.c3Scenes=read(resolve(out,'c3-scenes.json'));}
- if(options.headIdentity==='6c4'&&options.shard!=='all-prefix'){run('C4-bounded-supplement',roots.B,'profile-ext-6c4.mjs',[resolve(out,'c4-scenes.json')]);result.c4Scenes=read(resolve(out,'c4-scenes.json'));}
+ // The non-sharded freezer retains its original prerequisite gates. CI shards
+ // publish immutable main evidence first and bind a separate supplement report.
+ if(!options.shard){
+  for(const stage of ['c1',...(options.headIdentity==='6c3'?['c3']:options.headIdentity==='6c4'?['c4']:[])])if(generated){
+   run(stage.toUpperCase()+'-bounded-supplement',roots.B,`profile-ext-6${stage}.mjs`,[resolve(out,stage+'-scenes.json')]);result[stage+'Scenes']=read(resolve(out,stage+'-scenes.json'));
+  }
+ }
  result.hard='pass';
  if(options.headSourceHash)assertCandidateSnapshot(options,sourceSnapshot(roots.B));
  result.status=overallStatus(result);
@@ -203,3 +208,9 @@ try {
  if(result.status==='regression')process.exitCode=1;
  // Explicit local diagnostics may succeed, but their report remains incomplete and cannot freeze.
 } catch(error){result.status='failed';result.hard='failed';result.error=String(error.stack??error);result.finishedAt=new Date().toISOString();publish();console.error(result.error);process.exitCode=1;}
+console.log(JSON.stringify({measurement:result.status,hard:result.hard,regressions:result.gates.filter(g=>g.status==='regression').map(g=>`${g.id}/${g.kind}`),supplements:options.supplements==='defer'?'deferred':'separate report follows'}));
+if(result.hard==='pass'&&options.shard&&options.supplements!=='defer'){
+ const supplements=runSupplements(out,out+'-supplements');
+ if(supplements.status==='failed')process.exitCode=1;
+ console.log(JSON.stringify({supplements:supplements.status,report:out+'-supplements/result.json'}));
+}

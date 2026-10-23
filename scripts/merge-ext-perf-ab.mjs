@@ -10,6 +10,7 @@ import {resolve,dirname,relative} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {hash,write} from './ext-perf-common.mjs';
+import {validateSupplements} from './ext-perf-supplements.mjs';
 import {comparablePrefix,pendingPerfBaseline,perfIdentity} from './ext-perf-selection.mjs';
 import {parseOptions,kindsFor,validateRun,withObjectiveP99,evaluateGates,overallStatus,policyVersion,timingPolicy,decisionMarkdown} from './ext-perf-ab-policy.mjs';
 
@@ -24,7 +25,7 @@ for(const input of inputs){const p=relative(resolve(input),out);assert.ok(p==='.
 mkdirSync(out,{recursive:true});
 const read=p=>JSON.parse(readFileSync(p,'utf8'));
 const names=['classic','all-full','all-prefix'];
-const result={version:2,status:'running',hard:'pending',policyVersion,policy:timingPolicy,shards:[],runs:[],gates:[],steps:[],startedAt:new Date().toISOString()};
+const result={version:2,status:'running',hard:'pending',policyVersion,policy:timingPolicy,shards:[],runs:[],gates:[],steps:[],supplements:[],startedAt:new Date().toISOString()};
 const cli=(label,script,args)=>{
  const log=execFileSync(process.execPath,[resolve(root,'scripts',script),...args],{cwd:root,encoding:'utf8'});
  writeFileSync(resolve(out,label+'.log'),log);result.steps.push({label,status:'pass'});
@@ -44,7 +45,7 @@ try {
   const original=read(resolve(dir,'result.json')),options=original.options;
   assert.equal(options.shard,name,'Wrong/duplicate shard');
   assert.deepEqual(options.cases,name==='classic'?['classic']:['all']);
-  const parsed=parseOptions(['--base',options.base,'--head',options.head,'--out',options.out,'--rounds',String(options.rounds),'--limit',String(options.limit),'--base-identity',options.baseIdentity,'--head-identity',options.headIdentity,'--shard',name]);
+  const parsed=parseOptions(['--base',options.base,'--head',options.head,'--out',options.out,'--rounds',String(options.rounds),'--limit',String(options.limit),'--base-identity',options.baseIdentity,'--head-identity',options.headIdentity,'--shard',name,...(options.supplements?['--supplements',options.supplements]:[])]);
   assert.deepEqual(options,parsed,'Invalid shard options');
   assert.equal(original.hard,'pass','Failed/incomplete shard hard gate');
   assert.ok(['incomplete','regression'].includes(original.status)&&original.finishedAt,'Unfinished shard');
@@ -56,7 +57,8 @@ try {
   for(const [tool,digest]of Object.entries(original.toolHashes))assert.equal(digest,tool==='merge-ext-perf-ab.mjs'&&originalMerge?result.recalculation.originalMergeHash:hash(readFileSync(resolve(root,'scripts',tool),'utf8')),`Tool drift ${tool}`);
   assert.ok(original.toolHashes['merge-ext-perf-ab.mjs'],'Missing merge tool provenance');
   if(reference){
-   for(const key of ['rounds','limit','baseIdentity','headIdentity'])assert.deepEqual(options[key],reference.options[key],`Mixed ${key}`);
+   for(const key of ['rounds','limit','baseIdentity','headIdentity','supplements'])assert.deepEqual(options[key],reference.options[key],`Mixed ${key}`);
+   assert.equal(original.supplementContractVersion,reference.supplementContractVersion,'Mixed supplement contract');
    for(const key of ['identities','instrumentationHash','toolHashes'])assert.deepEqual(original[key],reference[key],`Mixed ${key}`);
    // Jobs may receive different CPUs and Node patch versions. No timing is
    // compared across shards; each raw sample is bound to its own runner below.
@@ -89,9 +91,18 @@ try {
   }
   if(name!=='all-prefix'){
    for(const id of options.cases){sources[id]=original.sources[id];assert.ok(sources[id],'Missing candidate source');write(resolve(out,`${id}.source.json`),sources[id]);}
-   for(const stage of ['c1',...(options.headIdentity==='6c3'?['c3']:options.headIdentity==='6c4'?['c4']:[])]){
+   for(const stage of original.supplementContractVersion?[]:['c1',...(options.headIdentity==='6c3'?['c3']:options.headIdentity==='6c4'?['c4']:[])]){
     if(perfIdentity(options.headIdentity).generate){assert.ok(original[stage+'Scenes'],'Missing bounded supplement');assert.deepEqual(read(resolve(dir,stage+'-scenes.json')),original[stage+'Scenes']);assert.ok(original.steps.some(s=>s.label===stage.toUpperCase()+'-bounded-supplement'));}
    }
+  }
+  if(original.supplementContractVersion!==undefined){
+   assert.equal(original.supplementContractVersion,1,'Unknown supplement contract');
+   const supplementalDir=resolve(out,'supplements',name);
+   try{
+    cpSync(resolve(inputs[i]+'-supplements'),supplementalDir,{recursive:true});
+    const report=validateSupplements(original,readFileSync(resolve(dir,'result.json'),'utf8'),supplementalDir);
+    result.supplements.push({name,status:report.status,resultSha256:hash(readFileSync(resolve(supplementalDir,'result.json'),'utf8'))});
+   }catch(error){result.supplements.push({name,status:'failed',error:String(error.stack??error)});}
   }
  }
  // Both all shards must derive their prefix from the same complete captures.
@@ -114,7 +125,8 @@ try {
    cli(`compare-AB-${b.round}-${b.id}-${b.kind}`,'compare-ext-perf.mjs',[a.prefix,b.prefix,resolve(out,`comparison-AB-${b.round}-${b.id}-${b.kind}.json`)]);
   }
  }else if(!result.options.limit&&!pendingPerfBaseline(result.options.baseIdentity,result.options.headIdentity))for(let round=1;round<=result.options.rounds;round++)cli(`original-budget-${round}`,'ext-perf-budget.mjs',['check',resolve(root,perfIdentity(result.options.baseIdentity).manifest),...['classic','all'].map(id=>`${id}=${resolve(dirs[id==='classic'?'classic':'all-full'],`round-${round}`,`A-${id}-full`)}`)]);
- result.hard='pass';result.status=overallStatus(result);
+ result.measurementHard='pass';
+ result.hard=result.supplements.some(s=>s.status==='failed')?'failed':'pass';result.status=overallStatus(result);
  if(result.status==='pass'){
   const candidate=resolve(out,`ext-perf-${result.options.headIdentity}-budget.candidate.json`);
   cli('freeze-candidate','ext-perf-budget.mjs',['freeze-split',candidate,...['classic','all'].map(id=>`${id}=${resolve(out,`${id}.source.json`)},${[1,2,3].map(round=>resolve(dirs[id==='classic'?'classic':'all-full'],`round-${round}`,`B-${id}-full`)).join(',')}`)]);
@@ -131,7 +143,8 @@ write(resolve(out,'result.json'),result);
 const lines=['# ext phase6 split A/B',`Status: **${result.status}**; hard: **${result.hard}**.`,timingPolicy,
  'Each A/B pair and all three repeats stay on one shard runner. Absolute timings from different shards are never compared.',
  ...Object.entries(result.identities??{}).map(([side,v])=>`${side}: ${v.commit}; src tree ${v.srcTree}; dirty hash ${v.sourceHash}.`),
- ...decisionMarkdown(result.gates,result.options.rounds),
+ ...decisionMarkdown(result.gates,result.options?.rounds),
+ '',...result.supplements.map(s=>`Supplement ${s.name}: **${s.status}**. ${s.error??''}`),
  '', '| Pair / round | Metric | A ms | B ms | Crossed |', '| --- | --- | --- | --- | --- |',...result.gates.flatMap(g=>g.pairs.flatMap((pair,i)=>pair.map(v=>`| ${g.id}/${g.kind} / ${i+1} | ${v.metric} | ${v.a.toFixed(3)} | ${v.b.toFixed(3)} | ${v.exceeded} |`))),
  '',...result.shards.map(s=>`- [${s.name} raw summary](shards/${s.name}/summary.md), runner invocation ${s.runner.invocation}; ${s.runner.cpu}.`),
  '',...(result.recalculation?[`Offline merger replacement: ${result.recalculation.originalMergeHash} → ${result.recalculation.currentMergeHash}. Original toolHashes retained; all other tools checked unchanged.`]:[]),

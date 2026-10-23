@@ -5,11 +5,14 @@ import {resolve} from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {hash,stats} from './ext-perf-common.mjs';
 import {parseOptions,withObjectiveP99,policyVersion,timingPolicy,kindsFor} from './ext-perf-ab-policy.mjs';
+import {supplementStages} from './ext-perf-supplements.mjs';
 
 const names=['classic','all-full','all-prefix'],common=['--base','a','--head','b','--out','o'];
 const nodeFor=name=>name==='all-prefix'?'v24.21.0':'v24.22.0';
 for(const name of names){const o=parseOptions([...common,'--shard',name]);assert.deepEqual(o.cases,name==='classic'?['classic']:['all']);assert.deepEqual(kindsFor(o,o.cases[0]),name==='all-prefix'?['prefix']:['full']);}
 for(const flags of [['--shard','all'],['--shard','classic','--case','classic'],['--shard','classic','--head-source-hash','a'.repeat(64)]])assert.throws(()=>parseOptions([...common,...flags]));
+assert.equal(parseOptions([...common,'--shard','all-full','--supplements','defer']).supplements,'defer');
+for(const flags of [['--supplements','defer'],['--shard','all-full','--supplements','skip']])assert.throws(()=>parseOptions([...common,...flags]));
 const dir=mkdtempSync(resolve(tmpdir(),'ext-perf-split-test-'));
 const read=p=>JSON.parse(readFileSync(p,'utf8')),write=(p,v)=>writeFileSync(p,JSON.stringify(v));
 let serial=0;
@@ -94,6 +97,32 @@ try {
   if(name!=='all-prefix')for(const stage of ['c1','c4']){r[stage+'Scenes']={status:'pass'};write(resolve(shards[name].path,stage+'-scenes.json'),r[stage+'Scenes']);r.steps.push({label:stage.toUpperCase()+'-bounded-supplement',status:'pass'});}
  };
  const same=merge(sameIdentity);assert.equal(same.run.status,0,same.run.stderr);assert.equal(same.result.status,'incomplete');assert.equal(same.result.steps.filter(s=>s.label.startsWith('compare-AB-')).length,3);assert.equal(same.result.manifest,undefined);
+ // Separate reports bind the exact immutable main artifact and cannot erase
+ // completed raw comparisons or make a required supplemental failure pass.
+ const separated=(r,name)=>{
+  sameIdentity(r,name);r.supplementContractVersion=1;r.options.supplements='defer';
+  r.steps=r.steps.filter(s=>!s.label?.endsWith('-bounded-supplement'));delete r.c1Scenes;delete r.c4Scenes;
+  const dir=shards[name].path+'-supplements';mkdirSync(dir,{recursive:true});
+  const steps=supplementStages(r.options).map(stage=>{const scenes={status:'pass'};write(resolve(dir,stage+'-scenes.json'),scenes);return {stage,status:'pass',exit:0,scenes};});
+  write(resolve(dir,'result.json'),{version:1,status:steps.length?'pass':'not-required',required:true,finishedAt:'fixture',measurementSha256:hash(JSON.stringify(r)),runnerInvocation:r.runner.invocation,head:r.identities.B,steps});
+ };
+ const separateGood=merge(separated);assert.equal(separateGood.run.status,0,separateGood.run.stderr);assert.equal(separateGood.result.measurementHard,'pass');assert.equal(separateGood.result.supplements.length,3);
+ for(const fault of ['failed','missing','binding','scene','pending','missing-stage']){
+  const bad=merge((r,name)=>{
+   separated(r,name);if(name!=='all-full')return;
+   const dir=shards[name].path+'-supplements',file=resolve(dir,'result.json'),s=read(file);
+   if(fault==='missing'){rmSync(dir,{recursive:true});return;}
+   if(fault==='failed'){s.status='failed';s.steps[0].status='failed';s.steps[0].exit=7;}
+   if(fault==='pending')delete s.finishedAt;
+   if(fault==='binding')s.measurementSha256='wrong';
+   if(fault==='missing-stage')s.steps.pop();
+   if(fault==='scene')write(resolve(dir,'c4-scenes.json'),{status:'failed'});
+   write(file,s);
+  });
+  assert.equal(bad.run.status,1);assert.equal(bad.result.hard,'failed');assert.equal(bad.result.measurementHard,'pass');
+  assert.equal(bad.result.runs.length,6);assert.equal(bad.result.gates.length,3);assert.equal(bad.result.manifest,undefined);
+  assert.equal(bad.result.supplements.find(s=>s.name==='all-full').status,'failed');
+ }
  const stateFile=resolve(shards.classic.path,'round-1/B-classic-full.state.json'),beforeState=readFileSync(stateFile);
  write(stateFile,{state:'changed'});const sameDrift=merge(sameIdentity);assert.notEqual(sameDrift.run.status,0);assert.equal(sameDrift.result.status,'failed');writeFileSync(stateFile,beforeState);
  for(const mutate of [

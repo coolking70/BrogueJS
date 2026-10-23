@@ -7,6 +7,7 @@ import {resolve,dirname,relative} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {hash,write} from './ext-perf-common.mjs';
+import {validateSupplements} from './ext-perf-supplements.mjs';
 import {validateRun,withObjectiveP99,evaluateGates,overallStatus,policyVersion,timingPolicy,decisionMarkdown} from './ext-perf-ab-policy.mjs';
 
 const [input,output,flag,...extra]=process.argv.slice(2);
@@ -29,6 +30,13 @@ for(const shard of original.shards??[]) {
  assert.equal(report.hard,'pass');assert.ok(report.finishedAt&&report.steps.every(s=>s.status==='pass'));
  assert.deepEqual(report.runner,shard.runner);assert.deepEqual(report.identities,original.identities);
  assert.deepEqual(report.toolHashes,original.toolHashes);assert.equal(report.instrumentationHash,original.instrumentationHash);
+ if(report.supplementContractVersion!==undefined){
+  assert.equal(report.supplementContractVersion,1);
+  const dir=resolve(artifact,'supplements',shard.name),entry=original.supplements?.filter(s=>s.name===shard.name);
+  assert.equal(entry?.length,1,'Missing/duplicate supplement result');
+  assert.equal(hash(readFileSync(resolve(dir,'result.json'),'utf8')),entry[0].resultSha256,'Supplement result hash mismatch');
+  assert.equal(validateSupplements(report,raw,dir).status,entry[0].status);
+ }
  shards.set(shard.name,report);
 }
 if(original.shards)assert.deepEqual([...shards.keys()].sort(),['all-full','all-prefix','classic']);

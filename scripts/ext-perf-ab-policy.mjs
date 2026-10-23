@@ -27,7 +27,7 @@ export function parseOptions(args) {
  const options={rounds:3,cases:['classic','all'],limit:0,baseIdentity:'p0',headIdentity:'6b4'};
  const seen=new Set();
  for(let i=0;i<args.length;i+=2){
-  const key=args[i];assert.ok(['--base','--head','--out','--rounds','--case','--limit','--base-identity','--head-identity','--head-source-hash','--shard'].includes(key)&&!seen.has(key),`Unknown/duplicate option ${key}`);
+  const key=args[i];assert.ok(['--base','--head','--out','--rounds','--case','--limit','--base-identity','--head-identity','--head-source-hash','--shard','--supplements'].includes(key)&&!seen.has(key),`Unknown/duplicate option ${key}`);
   seen.add(key);assert.ok(args[i+1]&&!args[i+1].startsWith('--'),`Missing ${key}`);
   if(key==='--case'){assert.ok(['classic','all','both'].includes(args[i+1]));options.cases=args[i+1]==='both'?['classic','all']:[args[i+1]];}
   else if(key==='--base-identity'||key==='--head-identity'){perfIdentity(args[i+1]);options[key==='--base-identity'?'baseIdentity':'headIdentity']=args[i+1];}
@@ -45,6 +45,7 @@ export function parseOptions(args) {
   options.cases=options.shard==='classic'?['classic']:['all'];
  }
  if(options.headSourceHash!==undefined){assert.match(options.headSourceHash,/^[a-f0-9]{64}$/);assert.equal(options.rounds,1);assert.deepEqual(options.cases,['classic','all']);}
+ if(options.supplements!==undefined)assert.ok(options.supplements==='defer'&&options.shard,'Deferred supplements require a shard');
  return options;
 }
 

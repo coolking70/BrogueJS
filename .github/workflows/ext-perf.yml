@@ -183,6 +183,7 @@ jobs:
           --rounds "$PERF_ROUNDS"
           --base-identity "$PERF_BASE_IDENTITY"
           --head-identity "$PERF_HEAD_IDENTITY"
+          --supplements defer
       - name: Publish summary (including failures or partial runs)
         if: always()
         run: |
@@ -202,6 +203,26 @@ jobs:
         with:
           name: ext-perf-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard }}${{ matrix.round != 0 && format('-r{0}', matrix.round) || '' }}
           path: ${{ runner.temp }}/ext-perf/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 6
+      - name: Phase6 bounded supplements (required gates; main artifact already uploaded)
+        if: always() && inputs.suite == 'phase6'
+        run: >-
+          node control/scripts/run-ext-perf-supplements.mjs
+          "$RUNNER_TEMP/ext-perf" "$RUNNER_TEMP/ext-perf-supplements"
+      - name: Publish phase6 supplement summary
+        if: always() && inputs.suite == 'phase6'
+        run: |
+          if test -f "$RUNNER_TEMP/ext-perf-supplements/summary.md"; then
+            cat "$RUNNER_TEMP/ext-perf-supplements/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload phase6 supplement results and logs
+        if: always() && inputs.suite == 'phase6'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ext-perf-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard }}-supplements
+          path: ${{ runner.temp }}/ext-perf-supplements/
           if-no-files-found: error
           retention-days: 7
           compression-level: 6
