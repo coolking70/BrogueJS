@@ -721,3 +721,9 @@ gh workflow run ext-perf.yml --repo coolking70/BrogueJS --ref "$CONTROL_REF" \
 ```
 
 本地只判同输入all/prefix，不代替classic/full、all/full的正式分片、云端runner复验或独立预算验证；历史regression保持。
+
+## 维护者裁定：已知尾部开销（2026-10-23）
+
+无 party 全模块局在 D6 v3 下仍有尾部回退：all/prefix（同输入）客观块 round.p99 三轮中位数约 +30%（A=P1c e72cd62，B=P1d），P95 与墙钟未越线，回放逐字段一致。已做的短路修复（3725955：无 party 时跳过驻营名册查询、光照名单分配、武器旗标复制）未能证明消除该差量；剩余慢块主要落在死亡结算快照与 GC。
+
+维护者裁定：**登记为已知尾部开销，P1d 照常发布**。后续若做小队性能专项，优先排查死亡结算快照与 GC。复测 run 39885820804 的结果仅作记录，不阻断发布。
